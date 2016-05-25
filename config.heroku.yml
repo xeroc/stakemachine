@@ -1,0 +1,23 @@
+witness_url: "{ENV[NODE]}"
+prefix: "BTS"
+
+safe_mode: '{ENV[SAFE_MODE]}'
+watch_markets: '{ENV[MARKETS]}'
+account: '{ENV[ACCOUNT]}'
+wif: '{ENV[WIF]}'
+
+market_separator: ":"
+
+bots:
+
+ MakerWall:
+  module: "stakemachine.strategies.maker"
+  bot: "MakerSellBuyWalls"
+  markets : '{ENV[MARKETS]}'
+  target_price: '{ENV[TARGET_PRICE]}'
+  target_price_offset_percentage: '{ENV[TARGET_PRICE_OFFSET]}'
+  spread_percentage: '{ENV[SPREAD]}'
+  volume_percentage: '{ENV[VOLUME_PERCENTAGE]}'
+  symmetric_sides: True
+  only_buy: False
+  only_sell: False

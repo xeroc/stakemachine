@@ -1,0 +1,29 @@
+{
+  "name": "StakeMachine",
+  "description": "Trading Engine for the DEX (BitShares)",
+  "repository": "https://github.com/xeroc/stakemachine",
+  "logo": "https://avatars0.githubusercontent.com/u/117800",
+  "keywords": ["bitshares", "trading", "bot", "exchange", "dex", "blockchain"],
+  "env": {
+    "ACCOUNT": {
+      "description": "",
+      "value": "xeroc"
+    },
+    "WIF": {
+      "description": "",
+      "value": "5xxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "NODE": {
+      "description": "The public API node to connect to",
+      "value": "wss://bitshares.openledger.info/ws"
+    },
+    "SAFE_MODE": {
+      "description": "",
+      "value": "True"
+    },
+    "MARKETS": {
+      "description": "",
+      "value": "[\"USD:BTS\", \"GOLD:BTS\"]"
+    }
+  }
+}
