@@ -91,14 +91,18 @@ class MakerSellBuyWalls(BaseStrategy):
 
             if isinstance(target_price, float) or isinstance(target_price, int):
                 base_price = float(target_price) * (1 + self.settings["target_price_offset_percentage"] / 100)
-            elif (isinstance(target_price, str) and
-                  target_price is "settlement_price" or
-                  target_price is "feed" or
-                  target_price is "price_feed"):
-                if "settlement_price" in ticker[m] :
-                    base_price = ticker[m]["settlement_price"] * (1 + self.settings["target_price_offset_percentage"] / 100)
-                else :
-                    raise Exception("Pair %s does not have a settlement price!" % m)
+            elif isinstance(target_price, str):
+                if (target_price is "settlement_price" or
+                        target_price is "feed" or
+                        target_price is "price_feed"):
+                    if "settlement_price" in ticker[m] :
+                        base_price = ticker[m]["settlement_price"] * (1 + self.settings["target_price_offset_percentage"] / 100)
+                    else :
+                        raise Exception("Pair %s does not have a settlement price!" % m)
+                elif target_price == "last":
+                    base_price = ticker[m]["last"] * (1 + self.settings["target_price_offset_percentage"] / 100)
+                else:
+                    raise Exception("Invalid option for 'target_price'")
 
             buy_price  = base_price * (1.0 - self.settings["spread_percentage"] / 200)
             sell_price = base_price * (1.0 + self.settings["spread_percentage"] / 200)
@@ -224,14 +228,18 @@ class MakerRamp(BaseStrategy):
             quote, base = m.split(self.config.market_separator)
             if isinstance(target_price, float) or isinstance(target_price, int):
                 base_price = float(target_price)
-            elif (isinstance(target_price, str) and
-                  target_price is "settlement_price" or
-                  target_price is "feed" or
-                  target_price is "price_feed"):
-                if "settlement_price" in ticker[m] :
-                    base_price = ticker[m]["settlement_price"]
-                else :
-                    raise Exception("Pair %s does not have a settlement price!" % m)
+            elif isinstance(target_price, str):
+                if(target_price is "settlement_price" or
+                        target_price is "feed" or
+                        target_price is "price_feed"):
+                    if "settlement_price" in ticker[m] :
+                        base_price = ticker[m]["settlement_price"]
+                    else :
+                        raise Exception("Pair %s does not have a settlement price!" % m)
+                elif target_price == "last":
+                    base_price = ticker[m]["last"] * (1 + self.settings["target_price_offset_percentage"] / 100)
+                else:
+                    raise Exception("Invalid option for 'target_price'")
             else:
                 raise Exception("Invalid target_price!")
 
