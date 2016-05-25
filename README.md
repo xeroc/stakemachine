@@ -3,6 +3,8 @@
 Trading Bot Infrastructure for the BitShares Decentralized Exchange
 (DEX).
 
+**Warning**: This is highly experimental code! Use at your OWN risk!
+
 ## Configuration
 
 Configuration happens in `config.yml`
@@ -12,6 +14,12 @@ Configuration happens in `config.yml`
 * `stakemachine run`
 * `stakemachine once`
 * `stakemachine cancel_all`
+
+## Deploy on Heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+Remark: Please understand the risks of exposing private keys to heroku!
 
 # IMPORTANT NOTE
 
