@@ -5,7 +5,6 @@ import os
 import argparse
 import time
 from pprint import pprint
-from prettytable import PrettyTable
 import yaml
 from stakemachine import bot
 
