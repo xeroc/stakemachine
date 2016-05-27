@@ -50,6 +50,9 @@ def main() :
     cont = subparsers.add_parser('run', help='Run the bot continuously')
     cont.set_defaults(command="run")
 
+    cont = subparsers.add_parser('cancelall', help='Run the bot continuously')
+    cont.set_defaults(command="cancelall")
+
     args = parser.parse_args()
 
     with open(args.config, 'r') as ymlfile:
@@ -81,7 +84,7 @@ def main() :
         bot.run()
     elif args.command == "once":
         bot.once()
-    elif args.command == "cancel_all":
+    elif args.command == "cancelall":
         bot.cancel_all()
 
 args = None

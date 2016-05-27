@@ -56,7 +56,7 @@ docs/html
 target/
 
 # Configuration Files
-*config.py
+*config.yml
 
 # Vim temp files
 *.swp

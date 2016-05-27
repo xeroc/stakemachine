@@ -43,7 +43,7 @@ class BaseStrategy():
         if "markets" not in self.settings:
             raise MissingSettingsException("markets")
 
-    def cancel_all(self, side="both") :
+    def cancel_all(self, markets=None, side="both") :
         """ Cancel all the account's orders **of all market** including
             those orders of other bot instances
 
@@ -52,22 +52,22 @@ class BaseStrategy():
             :rtype: number
 
         """
+        if not markets:
+            markets = self.settings["markets"]
         numCanceled = 0
         curOrders = self.dex.returnOpenOrders()
-        for m in self.settings["markets"]:
+        for m in markets:
             if m in curOrders:
                 for o in curOrders[m]:
                     if o["type"] is side or side is "both":
-                        try :
-                            print("Canceling %s" % o["orderNumber"])
-                            self.dex.cancel(o["orderNumber"])
+                        print("Canceling %s" % o["orderNumber"])
+                        self.dex.cancel(o["orderNumber"])
+                        if o["orderNumber"] in self.state["orders"][m]:
                             self.state["orders"][m].remove(o["orderNumber"])
-                            numCanceled += 1
-                        except:
-                            print("An error has occured when trying to cancel order %s!" % o)
+                        numCanceled += 1
         return numCanceled
 
-    def cancel_mine(self, side="both") :
+    def cancel_mine(self, markets=None, side="both") :
         """ Cancel only the orders of this particular bot in all markets
             the bot serves.
 
@@ -75,23 +75,26 @@ class BaseStrategy():
             :return: number of canceld orders
             :rtype: number
         """
+        if not markets:
+            markets = self.settings["markets"]
         curOrders = self.dex.returnOpenOrders()
         state = self.getState()
         numCanceled = 0
-        for o in state["orders"]:
-            for m in self.settings["markets"]:
-                if o in curOrders[m] :
-                    if o["type"] is side or side is "both":
-                        try :
-                            print("Canceling %s" % o["orderNumber"])
-                            self.dex.cancel(o["orderNumber"])
-                            self.state["orders"][m].remove(o["orderNumber"])
-                            numCanceled += 1
-                        except:
-                            print("An error has occured when trying to cancel order %s!" % o["orderNumber"])
+        for m in markets:
+            for currentOrderStates in curOrders[m]:
+                stateOrderId = currentOrderStates["orderNumber"]
+                if m not in state["orders"]:
+                    continue
+                if stateOrderId in state["orders"][m]:
+                    if currentOrderStates["type"] is side or side is "both":
+                        print("Canceling %s" % currentOrderStates["orderNumber"])
+                        self.dex.cancel(currentOrderStates["orderNumber"])
+                        if currentOrderStates["orderNumber"] in self.state["orders"][m]:
+                            self.state["orders"][m].remove(currentOrderStates["orderNumber"])
+                        numCanceled += 1
         return numCanceled
 
-    def cancel_this_markets(self, side="both") :
+    def cancel_this_markets(self, markets=None, side="both") :
         """ Cancel all orders in all markets of that are served by this
             bot.
 
@@ -99,18 +102,18 @@ class BaseStrategy():
             :return: number of canceld orders
             :rtype: number
         """
+        if not markets:
+            markets = self.settings["markets"]
         orders = self.dex.returnOpenOrders()
         numCanceled = 0
-        for m in self.settings["markets"]:
+        for m in markets:
             for o in orders[m]:
                 if o["type"] is side or side is "both":
-                    try :
-                        print("Canceling %s" % o["orderNumber"])
-                        self.dex.cancel(o["orderNumber"])
+                    print("Canceling %s" % o["orderNumber"])
+                    self.dex.cancel(o["orderNumber"])
+                    if o["orderNumber"] in self.state["orders"][m]:
                         self.state["orders"][m].remove(o["orderNumber"])
-                        numCanceled += 1
-                    except:
-                        print("An error has occured when trying to cancel order %s!" % o["orderNumber"])
+                    numCanceled += 1
         return numCanceled
 
     def cancel_all_sell_orders(self):
@@ -219,10 +222,22 @@ class BaseStrategy():
                 for orderid in old_orders[market] :
                     if orderid not in cur_orders[market] :
                         # Remove it from the state
-                        self.state["orders"][market].remove(orderid)
+                        if orderid in self.state["orders"][market]:
+                            self.state["orders"][market].remove(orderid)
                         # Execute orderFilled call
                         if notify :
                             self.orderFilled(orderid)
+
+    def getMyOrders(self):
+        """ Return open orders for this bot
+        """
+        myOrders = {}
+        for market in self.settings["markets"] :
+            if market in self.state["orders"]:
+                myOrders[market] = self.state["orders"][market]
+            else:
+                myOrders[market] = []
+        return myOrders
 
     def sell(self, market, price, amount, expiration=60 * 60 * 24):
         """ Places a sell order in a given market (sell ``quote``, buy

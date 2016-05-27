@@ -28,19 +28,19 @@ class CoreExchangeRateTracker(BaseStrategy):
 
         * **skip_blocks**: Checks the CER only every x blocks
 
-        .. code-block:: python
+        .. code-block:: yaml
 
-            from strategies.cer_tracker import CoreExchangeRateTracker
-
-            bots["CERTracker"] = {"bot" : CoreExchangeRateTracker,
-                                  "markets" : ["MKR : BTS"],
-                                  "target_premium_percentage" : 2.0,
-                                  "target_relative_to" : "highest_bid",
-                                  "upper_bound_threshold" : 15,
-                                  "lower_bound_threshold" : 4,
-                                  "force_lower_than_higest_bid" : True,
-                                  "skip_blocks" : 20 * 5,
-                                  }
+              CERTracker:
+                  module: "stakemachine.strategies.cer_tracker"
+                  bot: "CoreExchangeRateTracker"
+                  markets:
+                    - "MKR:BTS"
+                  target_premium_percentage: 2.0
+                  target_relative_to: "highest_bid"
+                  upper_bound_threshold: 15
+                  lower_bound_threshold: 4
+                  force_lower_than_higest_bid: True
+                  skip_blocks: 100
     """
 
     block_counter = 0
@@ -65,7 +65,7 @@ class CoreExchangeRateTracker(BaseStrategy):
     def update_asset_cer(self, asset_name, new_cer):
         """ Actually update the asset's cer
         """
-        asset = self.dex.rpc.get_asset(asset_name)
+        asset = self.dex.ws.get_asset(asset_name)
         options = asset["options"]
         core_asset = self.dex.core_asset
 
@@ -80,6 +80,10 @@ class CoreExchangeRateTracker(BaseStrategy):
                 "amount": quote_amount,
                 "asset_id": "1.3.0"}
         }
+        if not self.dex.rpc:
+            raise Exception(
+                "This bot still requires a cli-wallet connection"
+            )
         pprint(self.dex.rpc.update_asset(asset["symbol"], None, options, True))
 
     def update_cer(self, market):

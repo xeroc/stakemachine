@@ -22,23 +22,27 @@ class LiquiditySellBuyWalls(BaseStrategy):
 
         * **skip_blocks**: Runs the bot logic only every x blocks
 
-        .. code-block:: python
+        .. code-block:: yaml
 
-            from strategies.maker import LiquiditySellBuyWalls
-            bots["LiquidityWall"] = {"bot" : LiquiditySellBuyWalls,
-                                 "markets" : ["USD : BTS"],
-                                 "borrow" : True,
-                                 "borrow_percentages" : ["USD" : 30, "BTS" : 70]
-                                 "minimum_amounts" : ["USD" : 0.2]
-                                 "target_price" : "feed",
-                                 "spread_percentage" : 5,
-                                 "allowed_spread_percentage" : 2.5,
-                                 "volume_percentage" : 10,
-                                 "symmetric_sides" : True,
-                                 "expiration" : 60 * 60 * 6
-                                 "ratio" : 2.5,
-                                 "skip_blocks" : 3,
-                                 }
+            LiquidityWall:
+                module: "stakemachine.strategies.liquidity_wall"
+                bot: "LiquiditySellBuyWalls"
+                markets:
+                    - "USD: BTS"
+                borrow: True
+                borrow_percentages:
+                  - USD: 30
+                  - BTS: 70
+                minimum_amounts:
+                    - USD: 0.2
+                target_price: "feed"
+                spread_percentage: 5
+                allowed_spread_percentage: 2.5
+                volume_percentage: 10
+                symmetric_sides: True
+                expiration: 21600
+                ratio: 2.5
+                skip_blocks: 3
 
 
     """
@@ -88,8 +92,8 @@ class LiquiditySellBuyWalls(BaseStrategy):
         """
         for market in self.settings["markets"]:
             quote_name, base_name = market.split(self.dex.market_separator)
-            quote = self.dex.rpc.get_asset(quote_name)
-            base = self.dex.rpc.get_asset(base_name)
+            quote = self.dex.ws.get_asset(quote_name)
+            base = self.dex.ws.get_asset(base_name)
             if "bitasset_data_id" not in quote:
                 raise ValueError(
                     "The quote asset %s is not a bitasset "

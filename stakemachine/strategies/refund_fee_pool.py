@@ -25,17 +25,17 @@ class RefundFeePool(BaseStrategy):
 
         * **skip_blocks**: Checks the CER only every x blocks
 
-        .. code-block:: python
+        .. code-block:: yaml
 
-            from strategies.refund_fee_pool import RefundFeePool
-
-            bots["PoolRefill"] = {"bot" : RefundFeePool,
-                                  "markets" : ["MKR : BTS", "OPEN.BTC : BTS"],
-                                  "target_fill_rate" : 5000.0,  # in BTS
-                                  "lower_threshold" : 100.0,  # in BTS
-                                  "skip_blocks" : 1,
-                                  }
-
+            PoolRefill:
+                module: "stakemachine.strategies.refund_fee_pool"
+                bot: "RefundFeePool"
+                markets:
+                    - "MKR:BTS"
+                    - "OPEN.BTC:BTS"
+                target_fill_rate: 5000.0
+                lower_threshold: 100.0
+                skip_blocks: 1
 
     """
 
@@ -61,6 +61,10 @@ class RefundFeePool(BaseStrategy):
     def refill_fee_pool(self, quote_symbol, amount):
         """ Actually refill the fee pool
         """
+        if not self.dex.rpc:
+            raise Exception(
+                "This bot still requires a cli-wallet connection"
+            )
         pprint(self.dex.rpc.fund_asset_fee_pool(
             self.config.account,
             quote_symbol,
@@ -77,7 +81,7 @@ class RefundFeePool(BaseStrategy):
             for m in self.settings["markets"]:
                 quote_symbol = m.split(self.dex.market_separator)[0]
                 print("Checking fee pool of %s" % quote_symbol)
-                asset = self.dex.rpc.get_asset(quote_symbol)
+                asset = self.dex.ws.get_asset(quote_symbol)
                 core_asset = self.dex.getObject("1.3.0")
                 asset_data = self.dex.getObject(asset["dynamic_asset_data_id"])
                 fee_pool = int(asset_data["fee_pool"]) / 10 ** core_asset["precision"]

@@ -17,24 +17,27 @@ class MakerSellBuyWalls(BaseStrategy):
         * **only_sell**: Serve only on of both sides
         * **expiration**: Expiration time of the order in seconds
 
-        .. code-block:: python
+        .. code-block:: yaml
 
-            from strategies.maker import MakerSellBuyWalls
-            bots["MakerWall"] = {"bot" : MakerSellBuyWalls,
-                                 "markets" : ["USD : BTS"],
-                                 "target_price" : "feed",
-                                 "target_price_offset_percentage" : 5,
-                                 "spread_percentage" : 5,
-                                 "volume_percentage" : 10,
-                                 "symmetric_sides" : True,
-                                 "only_buy" : False,
-                                 "only_sell" : False,
-                                 "expiration" : 60*60*6
-                                 }
+             MakerWall:
+                  module: "stakemachine.strategies.maker"
+                  bot: "MakerSellBuyWalls"
+                  markets :
+                   - "TEMPA:LIVE"
+                  target_price: 10.0
+                  target_price_offset_percentage: 0
+                  spread_percentage: 15
+                  volume_percentage: 10
+                  symmetric_sides: True
+                  only_buy: False
+                  only_sell: False
 
         .. note:: This module does not watch your orders, all it does is
                   place new orders!
     """
+    delayState = "waiting"
+    delayCounter = 0
+    refreshMarkets = []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,15 +60,57 @@ class MakerSellBuyWalls(BaseStrategy):
         if "symmetric_sides" not in self.settings:
             self.settings["symmetric_sides"] = True
 
-        if "expiration" not in self.settings:
+        if "expiration" not in self.settings or not self.settings["expiration"]:
             self.settings["expiration"] = 60 * 60 * 24 * 7
+
+        if "delay" not in self.settings:
+            self.settings["delay"] = 3
 
     def orderFilled(self, oid):
         """ Do nothing, when an order is Filled
         """
+        self.ensureOrders()
+
+    def tick(self, *args, **kwargs):
+        """ Do nothing
+        """
+        self.ensureOrders()
+
+        if self.delayState == "updating":
+            print("Refreshing markets %s" % str(self.refreshMarkets))
+            self.cancel_mine(markets=self.refreshMarkets)
+            self.place(markets=self.refreshMarkets)
+            # reset
+            self.delayState = "waiting"
+            self.delayCounter = 0
+            self.refreshMarkets = []
+
+        if self.delayState == "counting":
+            self.delayCounter += 1
+            if self.delayCounter > self.settings["delay"]:
+                self.delayState = "updating"
+
+    def orderPlaced(seld, *args, **kwargs):
+        """ Do nothing
+        """
         pass
 
-    def place(self) :
+    def ensureOrders(self):
+        """ Make sure that there are two orders open for this bot. If
+            not, place them!
+        """
+        if self.delayState == "waiting":
+            myOrders = self.getMyOrders()
+            for market in self.settings["markets"]:
+                if len(myOrders[market]) != 2:
+                    self.refreshMarkets.append(market)
+            self.refreshMarkets = list(set(self.refreshMarkets))
+            if self.refreshMarkets:
+                self.delayState = "counting"
+
+    def place(self, markets=None) :
+        if not markets:
+            markets = self.settings["markets"]
         """ Place all orders according to the settings.
         """
         print("Placing Orders:")
@@ -77,7 +122,7 @@ class MakerSellBuyWalls(BaseStrategy):
         balances = self.dex.returnBalances()
         asset_ids = []
         amounts = {}
-        for market in self.settings["markets"] :
+        for market in markets:
             quote, base = market.split(self.config.market_separator)
             asset_ids.append(base)
             asset_ids.append(quote)
@@ -87,7 +132,7 @@ class MakerSellBuyWalls(BaseStrategy):
                 amounts[a] = balances[a] * self.settings["volume_percentage"] / 100 / asset_ids.count(a)
 
         ticker = self.dex.returnTicker()
-        for m in self.settings["markets"]:
+        for m in markets:
 
             if isinstance(target_price, float) or isinstance(target_price, int):
                 base_price = float(target_price) * (1 + self.settings["target_price_offset_percentage"] / 100)
@@ -139,23 +184,23 @@ class MakerRamp(BaseStrategy):
         * **ramp_step_percentage**: from spread/2 to ramp_price, place an order every x%
         * **expiration**: Expiration time of the order in seconds
 
-        .. code-block:: python
+        .. code-block:: yaml
 
-            from strategies.maker import MakerRamp
-
-            bots["MakerRexp"] = {"bot" : MakerRamp,
-                                 "markets" : ["USD : BTS"],
-                                 "target_price" : "feed",
-                                 "target_price_offset_percentage" : 5,
-                                 "spread_percentage" : 0.2,
-                                 "volume_percentage" : 30,
-                                 "ramp_price_percentage" : 2,
-                                 "ramp_step_percentage" : 0.3,
-                                 "ramp_mode" : "linear",
-                                 "only_buy" : False,
-                                 "only_sell" : False,
-                                 "expiration" : 60*60*6,
-                                 }
+            MakerRexp:
+                module: "stakemachine.strategies.maker"
+                bot: "MakerRamp"
+                markets:
+                    - "USD:BTS"
+                target_price: "feed"
+                target_price_offset_percentage: 5
+                spread_percentage: 0.2
+                volume_percentage: 30
+                ramp_price_percentage: 2
+                ramp_step_percentage: 0.3
+                ramp_mode: "linear"
+                only_buy: False
+                only_sell: False
+                expiration: 21400
 
         .. note:: This module does not watch your orders, all it does is
                   place new orders!
@@ -164,6 +209,10 @@ class MakerRamp(BaseStrategy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.delayCounter = 0
+        self.delayStarted = False
+        self.refreshNow = False
+        self.refreshMarkets = []
 
     def init(self) :
         """ set default settings
@@ -192,12 +241,52 @@ class MakerRamp(BaseStrategy):
         if "expiration" not in self.settings:
             self.settings["expiration"] = 60 * 60 * 24 * 7
 
+        if "delay" not in self.settings:
+            self.settings["delay"] = 3
+
+        self.ensureOrders()
+
     def orderFilled(self, oid):
         """ Do nothing, when an order is Filled
         """
+        self.ensureOrders()
+
+    def tick(self, *args, **kwargs):
+        """ Do nothing
+        """
+        if self.delayStarted:
+            self.delayCounter += 1
+            if self.delayCounter > self.settings["delay"]:
+                self.refreshNow = True
+                self.delayCounter = 0
+
+        if self.refreshNow:
+            print("Refreshing markets %s" % str(self.refreshMarkets))
+            self.cancel_mine(markets=self.refreshMarkets)
+            self.place(markets=self.refreshMarkets)
+            self.delayStarted = False
+            self.refreshNow = False
+
+    def orderPlaced(seld, *args, **kwargs):
+        """ Do nothing
+        """
         pass
 
-    def place(self) :
+    def ensureOrders(self):
+        """ Make sure that there are two orders open for this bot. If
+            not, place them!
+        """
+        if not self.delayStarted:
+            myOrders = self.getMyOrders()
+            for market in self.settings["markets"]:
+                if len(myOrders[market]) != 2:
+                    self.refreshMarkets.append(market)
+            if self.refreshMarkets:
+                self.delayStarted = True
+
+    def place(self, markets=None) :
+        if not markets:
+            markets = self.settings["markets"]
         """ Place all orders according to the settings.
         """
         print("Placing Orders:")
@@ -213,7 +302,7 @@ class MakerRamp(BaseStrategy):
         balances = self.dex.returnBalances()
         asset_ids = []
         amounts = {}
-        for market in self.settings["markets"]:
+        for market in markets:
             quote, base = market.split(self.config.market_separator)
             asset_ids.append(base)
             asset_ids.append(quote)
@@ -223,7 +312,7 @@ class MakerRamp(BaseStrategy):
                 amounts[a] = balances[a] * self.settings["volume_percentage"] / 100 / asset_ids.count(a)
 
         ticker = self.dex.returnTicker()
-        for m in self.settings["markets"]:
+        for m in markets:
 
             quote, base = m.split(self.config.market_separator)
             if isinstance(target_price, float) or isinstance(target_price, int):

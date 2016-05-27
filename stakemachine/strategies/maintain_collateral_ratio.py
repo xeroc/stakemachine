@@ -31,17 +31,19 @@ class MaintainCollateralRatio(BaseStrategy):
 
         * **skip_blocks**: Checks the collateral ratio only every x blocks
 
-        .. code-block:: python
+        .. code-block:: yaml
 
-            from strategies.maintain_collateral_ratio import MaintainCollateralRatio
-
-            bots["Collateral"] = {"bot" : MaintainCollateralRatio,
-                                  "markets" : ["USD : BTS", "SILVER : BTS", "GOLD : BTS"],
-                                  "target_ratio" : 2.75,
-                                  "lower_threshold" : 2.5,
-                                  "upper_threshold" : 3.0,
-                                  "skip_blocks" : 1,
-                                  }
+            Collateral:
+                module: "stakemachine.strategies.maintain_collateral_ratio"
+                bot: "MaintainCollateralRatio"
+                markets:
+                    - "USD:BTS"
+                    - "SILVER:BTS"
+                    - "GOLD:BTS"]
+                target_ratio: 2.75
+                lower_threshold: 2.5
+                upper_threshold: 3.0
+                skip_blocks: 1
 
     """
 
@@ -55,8 +57,8 @@ class MaintainCollateralRatio(BaseStrategy):
         """
         for m in self.settings["markets"]:
             quote_name, base_name = m.split(self.dex.market_separator)
-            quote = self.dex.rpc.get_asset(quote_name)
-            base  = self.dex.rpc.get_asset(base_name)
+            quote = self.dex.ws.get_asset(quote_name)
+            base  = self.dex.ws.get_asset(base_name)
             if "bitasset_data_id" not in quote:
                 raise ValueError(
                     "The quote asset %s is not a bitasset "
