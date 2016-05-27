@@ -29,7 +29,6 @@ setup(name='stakemachine',
               'stakemachine = stakemachine.__main__:main',
           ],
       },
-      install_requires=["graphenelib>=0.4"
-                        ],
+      install_requires=["graphenelib"],
       include_package_data=True,
       )

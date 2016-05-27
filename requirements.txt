@@ -1,0 +1,1 @@
+-e git://github.com/xeroc/python-graphenelib@develop#egg=graphenelib
