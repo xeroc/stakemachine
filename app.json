@@ -6,23 +6,27 @@
   "keywords": ["bitshares", "trading", "bot", "exchange", "dex", "blockchain"],
   "env": {
     "ACCOUNT": {
-      "description": "",
+      "description": "The trading account",
       "value": "xeroc"
     },
     "WIF": {
-      "description": "",
+      "description": "The active private key to the above account",
       "value": "5xxxxxxxxxxxxxxxxxxxxxx"
     },
     "NODE": {
       "description": "The public API node to connect to",
       "value": "wss://bitshares.openledger.info/ws"
     },
+    "PREFIX": {
+      "description": "Network's prefix (BTS: BitShares)",
+      "value": "BTS"
+    },
     "SAFE_MODE": {
-      "description": "",
+      "description": "Defines whether or not to actually perform anything on the blockchain",
       "value": "True"
     },
     "MARKETS": {
-      "description": "",
+      "description": "Markets to serve",
       "value": "[\"USD:BTS\", \"GOLD:BTS\"]"
     }
   }

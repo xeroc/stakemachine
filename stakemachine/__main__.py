@@ -17,9 +17,9 @@ def replaceEnvironmentalVariables(config):
         for key in config:
             if isinstance(config[key], str):
                 try:
-                    config[key] = json.loads(config[key].format(ENV=os.environ))
+                    config[key] = json.loads(config[key].format(**os.environ))
                 except:
-                    config[key] = config[key].format(ENV=os.environ)
+                    config[key] = config[key].format(**os.environ)
             else:
                 config[key] = replaceEnvironmentalVariables(config[key])
         return config
