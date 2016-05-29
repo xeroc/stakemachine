@@ -2,8 +2,51 @@ from .basestrategy import BaseStrategy, MissingSettingsException
 from datetime import datetime
 import math
 import logging
+import time
+import copy
 
-class LiquidityWall(BaseStrategy):
+class LiquiditySellBuyWalls(BaseStrategy):
+    """ Puts up buy/sell walls at a specific spread in the market, replacing orders as the price changes.
+
+        **Settings**:
+
+        * **borrow**: Borrow bitassets? (Boolean)
+        * **borrow_percentages**: how to divide the bts for lending bitAssets
+        * **minimum_amounts**: the minimum amount an order has to be
+        * **target_price**: target_price to place walls around (floating number or "feed")
+        * **spread_percentage**: Another "offset". Allows a spread. The lowest orders will be placed here
+        * **allowed_spread_percentage**: The allowed spread an order may have before it gets replaced
+        * **volume_percentage**: The amount of funds (%) you want to use
+        * **expiration**: Expiration time of the order in seconds
+        * **ratio**: The desired collateral ratio (same as maintain_collateral_ratio.py)
+
+
+        * **skip_blocks**: Runs the bot logic only every x blocks
+
+        .. code-block:: yaml
+
+            LiquidityWall:
+                module: "stakemachine.strategies.liquidity_wall"
+                bot: "LiquiditySellBuyWalls"
+                markets:
+                    - "USD: BTS"
+                borrow: True
+                borrow_percentages:
+                  - USD: 30
+                  - BTS: 70
+                minimum_amounts:
+                    - USD: 0.2
+                target_price: "feed"
+                spread_percentage: 5
+                allowed_spread_percentage: 2.5
+                volume_percentage: 10
+                symmetric_sides: True
+                expiration: 21600
+                ratio: 2.5
+                skip_blocks: 3
+
+
+    """
 
     delayState = "waiting"
     delayCounter = 0
@@ -25,17 +68,20 @@ class LiquidityWall(BaseStrategy):
             raise MissingSettingsException("volume_percentage")
 
         if "symmetric_sides" not in self.settings:
-            self.settings["symmetric_sides"] = True
+            self.settings["symmetric_sides"] = False
 
         if "expiration" not in self.settings or not self.settings["expiration"]:
             self.settings["expiration"] = 60 * 60 * 24
 
         if "delay" not in self.settings:
-            self.settings["delay"] = 3
+            self.settings["delay"] = 1
+
+        self.update_data()
+        time.sleep(1) # looks like part of the config is missing without waiting a second.
 
     def update_data(self):
         self.ticker = self.dex.returnTicker()
-        self.open_orders = self.getMyOrders()
+        self.open_orders = self.dex.returnOpenOrders()
         self.balances = self.dex.returnBalances()
         self.filled_orders = self.get_filled_orders_data()
 
@@ -44,7 +90,7 @@ class LiquidityWall(BaseStrategy):
 
         if self.delayState == "updating":
             print("Refreshing markets %s" % str(self.refreshMarkets))
-            self.cancel_mine(markets=self.refreshMarkets)
+            self.cancel_orders(self.refreshMarkets)
             self.place(markets=self.refreshMarkets)
             # reset
             self.delayState = "waiting"
@@ -62,15 +108,15 @@ class LiquidityWall(BaseStrategy):
             for market in self.settings["markets"]:
                 base_price = self.get_price(market)
                 if base_price:
-                    buy_price, sell_price = self.get_place_order_price(base_price)
+                    buy_price, sell_price = self.get_order_prices(base_price)
                     if buy_price and sell_price:
                         if len(self.open_orders[market]) == 0:
                             self.refreshMarkets.append(market)
                         if len(self.open_orders[market]) == 1:
                             if self.open_orders[market][0]['type'] == "sell":
-                                self.place(market, only_buy=True)
+                                self.place(markets=[market], only_buy=True)
                             elif self.open_orders[market][0]['type'] == "buy":
-                                self.place(market, only_sell=True)
+                                self.place(markets=[market], only_sell=True)
                         for o in self.open_orders[market]:
                             order_feed_spread = math.fabs((o["rate"] - self.ticker[market]["settlement_price"]) / self.ticker[market]["settlement_price"] * 100)
                             print("%s | Order: %s is %.3f%% away from feed" % (datetime.now(), o['orderNumber'], order_feed_spread))
@@ -90,7 +136,7 @@ class LiquidityWall(BaseStrategy):
             amounts = self.get_amounts()
             base_price = self.get_price(m)
             if base_price:
-                buy_price, sell_price = self.get_place_order_price(base_price)
+                buy_price, sell_price = self.get_order_prices(base_price)
                 quote, base = m.split(self.config.market_separator)
                 if quote in amounts and not only_buy:
                     if "symmetric_sides" in self.settings and self.settings["symmetric_sides"] and not only_sell:
@@ -111,7 +157,20 @@ class LiquidityWall(BaseStrategy):
                         if self.validate_amount(amount, quote):
                             self.buy(m, buy_price, amount, self.settings["expiration"])
             else:
-                logging.warning("NO PRICE AVAILABLE WARNING")
+                logging.warning("No price available for %s" % m)
+
+    def cancel_orders(self, markets):
+        """ Cancel all orders for all markets or a specific market
+        """
+        for market in markets:
+            print("%s | Cancelling orders for %s market(s)" % (datetime.now(), market))
+            for order in self.open_orders[market]:
+                try:
+                    print("Cancelling %s" % order["orderNumber"])
+                    self.dex.cancel(order["orderNumber"])
+                except Exception as e:
+                    print("An error has occured when trying to cancel order %s!" % order)
+                    print(e)
 
     def orderFilled(self, oid):
         self.ensureOrders()
@@ -123,8 +182,8 @@ class LiquidityWall(BaseStrategy):
         filled_orders_markets = {}
         for market in self.settings["markets"]:
             quote_symbol, base_symbol = market.split(self.config.market_separator)
-            base_id = self.dex.rpc.get_asset(base_symbol)['id']
-            quote_id = self.dex.rpc.get_asset(quote_symbol)['id']
+            base_id = self.dex.ws.get_asset(base_symbol)['id']
+            quote_id = self.dex.ws.get_asset(quote_symbol)['id']
             m = {"base": base_id, "quote": quote_id}
             filled_orders = self.dex.ws.get_fill_order_history(quote_id, base_id, 1000, api="history")
             price_list = []
@@ -160,7 +219,7 @@ class LiquidityWall(BaseStrategy):
         else:
             raise Exception("Pair %s does not have a settlement price!" % market)
 
-    def price_target(self, market):
+    def price_target(self):
         return float(self.settings['target_price']) * (1 + self.settings["target_price_offset_percentage"] / 100)
 
     def price_bid_ask(self, market):
@@ -169,77 +228,79 @@ class LiquidityWall(BaseStrategy):
     def price_last(self, market):
         return self.ticker[market]['last']
 
-    def get_price(self, market):
-        target_price = self.settings['target_price']
+    def get_price(self, market, target_price=None):
+        if not target_price:
+            target_price = self.settings['target_price']
         if isinstance(target_price, float) or isinstance(target_price, int):
-            return self.price_target
+            return self.price_target()
         elif (isinstance(target_price, str) and
-            target_price is "settlement_price" or
-            target_price is "feed" or
-            target_price is "price_feed"):
+            target_price == "settlement_price" or
+            target_price == "feed" or
+            target_price == "price_feed"):
             return self.price_feed(market)
         elif (isinstance(target_price, str) and
-            target_price is "filled_orders"):
+            target_price == "filled_orders"):
             return self.price_filled_orders(market)
         elif (isinstance(target_price, str) and
-            target_price is "bid_ask" or
-            target_price is "gap"):
+            target_price == "bid_ask" or
+            target_price == "gap"):
             return self.price_bid_ask(market)
         elif (isinstance(target_price, str) and
-            target_price is "last"):
+            target_price == "last"):
             return self.price_last(market)
 
         if isinstance(target_price, dict):
-            price_weight_sum = sum([self.get_price(market, target_price=target) * weight for target, weight in target_price.items() if self.get_price(market, target_price=target) > 0])
-            weight_sum = sum([weight for target, weight in target_price.items() if self.get_price(market, target_price=target) > 0])
+            price_weight_sum = sum([self.get_price(market, target_price=target) * weight for target, weight in target_price.items() if self.get_price(market, target_price=target) != None])
+            weight_sum = sum([weight for target, weight in target_price.items() if self.get_price(market, target_price=target) != None])
             try:
                 return price_weight_sum / weight_sum
             except ZeroDivisionError:
                 return None
 
-    def get_place_order_price(self, base_price):
-        if self.settings['place_order_strategy'] is "spread_percentage":
-            return self.price_spread_percentage(base_price)
-        elif self.settings['place_order_strategy'] is "set_amount":
-            return self.price_set_amount(base_price)
+    def get_order_prices(self, base_price):
+        if self.settings['place_order_strategy'] == "spread_percentage":
+            return self.order_prices_spread_percentage(base_price)
+        elif self.settings['place_order_strategy'] == "set_amount":
+            return self.order_prices_set_amount(base_price)
 
-    def price_orders_spread_percentage(self, base_price):
+    def order_prices_spread_percentage(self, base_price):
         buy_price  = base_price * (1.0 - self.settings["spread_percentage"] / 200)
         sell_price = base_price * (1.0 + self.settings["spread_percentage"] / 200)
         return (buy_price, sell_price)
 
-    def price_set_amount(self, base_price):
+    def order_prices_set_amount(self, base_price):
         buy_price = base_price + self.settings["set_amount"]
         sell_price = base_price - self.settings["set_amount"]
         return (buy_price, sell_price)
 
     def validate_amount(self, amount, quote):
         for validator in self.settings["amount_validators"]:
-            if validator is "minimum_amounts":
+            if validator == "minimum_amount":
                 valid = self.minimum_amount(amount, quote)
-            elif validator is "maximum_amount":
+    # to be removed, pretty stupid to not place an order because the amount is too high instead of adjusting the amount to the maximum allowable
+            elif validator == "maximum_amount":
                 valid = self.maximum_amount(amount, quote)
             if not valid:
                 return False
         return True
 
     def minimum_amount(self, amount, quote):
-        return amount >= self.settings["amount_validators"]["minimum_amounts"][quote]
+        return amount >= self.settings["amount_validators"]["minimum_amount"][quote]
 
     def maximum_amount(self, amount, quote):
-        return amount <= self.settings["amount_validators"]["maximum_amounts"][quote]
+        return amount <= self.settings["amount_validators"]["maximum_amount"][quote]
 
     def get_amounts(self):
-        if self.settings["amount_calculation"] is "volume_percentage":
-            return self.get_amounts_volume_percentage()
+        if self.settings["amount_calculation"] == "volume_percentage":
+            return self.amounts_volume_percentage()
 
-    def get_amounts_volume_percentage(self):
+    def amounts_volume_percentage(self):
         amounts = {}
         asset_ids = []
         for single_market in self.settings["markets"]:
-                quote, base = single_market.split(self.config.market_separator)
-                asset_ids.append(base)
-                asset_ids.append(quote)
+            quote, base = single_market.split(self.config.market_separator)
+            asset_ids.append(base)
+            asset_ids.append(quote)
             assets_unique = list(set(asset_ids))
         for a in assets_unique:
             if a in self.balances:
