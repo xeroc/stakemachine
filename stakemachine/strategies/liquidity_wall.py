@@ -1,8 +1,9 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
 from datetime import datetime
 import math
+import logging
 
-class LiquidityWallReloaded(BaseStrategy):
+class LiquidityWall(BaseStrategy):
 
     delayState = "waiting"
     delayCounter = 0
@@ -86,17 +87,7 @@ class LiquidityWallReloaded(BaseStrategy):
             markets = self.settings["markets"]
 
         for m in markets:
-            balances = self.dex.returnBalances()
-            asset_ids = []
-            amounts = {}
-            for single_market in self.settings["markets"]:
-                quote, base = single_market.split(self.config.market_separator)
-                asset_ids.append(base)
-                asset_ids.append(quote)
-            assets_unique = list(set(asset_ids))
-            for a in assets_unique:
-                if a in balances:
-                    amounts[a] = balances[a] * self.settings["volume_percentage"] / 100 / asset_ids.count(a)
+            amounts = self.get_amounts()
             base_price = self.get_price(m)
             if base_price:
                 buy_price, sell_price = self.get_place_order_price(base_price)
@@ -120,7 +111,7 @@ class LiquidityWallReloaded(BaseStrategy):
                         if self.validate_amount(amount, quote):
                             self.buy(m, buy_price, amount, self.settings["expiration"])
             else:
-                print("NO PRICE AVAILABLE WARNING")
+                logging.warning("NO PRICE AVAILABLE WARNING")
 
     def orderFilled(self, oid):
         self.ensureOrders()
@@ -237,3 +228,20 @@ class LiquidityWallReloaded(BaseStrategy):
 
     def maximum_amount(self, amount, quote):
         return amount <= self.settings["amount_validators"]["maximum_amounts"][quote]
+
+    def get_amounts(self):
+        if self.settings["amount_calculation"] is "volume_percentage":
+            return self.get_amounts_volume_percentage()
+
+    def get_amounts_volume_percentage(self):
+        amounts = {}
+        asset_ids = []
+        for single_market in self.settings["markets"]:
+                quote, base = single_market.split(self.config.market_separator)
+                asset_ids.append(base)
+                asset_ids.append(quote)
+            assets_unique = list(set(asset_ids))
+        for a in assets_unique:
+            if a in self.balances:
+                amounts[a] = self.balances[a] * self.settings["volume_percentage"] / 100 / asset_ids.count(a)
+        return amounts
