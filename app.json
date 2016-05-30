@@ -27,7 +27,7 @@
     },
     "MARKETS": {
       "description": "Markets to serve",
-      "value": "[\"USD:BTS\", \"GOLD:BTS\"]"
+      "value": "[\"USD:BTS\", \"BTC:BTS\", \"EUR:BTS\"]"
     },
     "SPREAD": {
       "description": "Serve market with this spread (percentage)",
@@ -39,7 +39,7 @@
     },
     "TARGET_PRICE_OFFSET": {
       "description": "Additional offset from the target price (percentage)",
-      "value": "0"
+      "value": "1"
     },
     "VOLUME_PERCENTAGE": {
       "description": "Percentage of available funds to use for trading",
