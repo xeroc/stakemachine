@@ -2,14 +2,16 @@ from graphenebase import account
 import requests
 import json
 
+
 faucet = "https://bitshares.openledger.info/"
 referrer = "xeroc"
+
 
 def register_account_faucet(account, public_key, referrer = referrer, faucet = faucet):
     headers = {
                 "Accept": "application/json",
                 "Content-type": "application/json",
-                "User-Agent": "stakemachine/1.0"
+                "User-Agent": "stakemachine/0.5"
     }
     payload = {
                 "account": {
@@ -36,10 +38,13 @@ def register_account(account_name):
         print("Brain key: %s" % brainKey.get_brainkey())
         print("Write it down/back it up ^")
         print("Send funds to %s and start the bot again" % account_name)
+        return brainKey.get_private()
     else:
         print("Account creation failed")
         print(brainKey.get_brainkey())  
         print(faucet + " response: ", account_registration_response)
+        return None
+
 
 if __name__ == '__main__':
     account_name = input("Enter the account name to register: ")

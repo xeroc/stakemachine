@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import json
-import sys
 import os
 import argparse
-import time
 from pprint import pprint
 import yaml
 from stakemachine import bot
+from . import registration
 
 
 def replaceEnvironmentalVariables(config):
@@ -68,11 +67,21 @@ def main() :
         for name in config["bots"]:
             config["bots"][name]["markets"] = markets
 
+    if (("wif" not in config or not config["wif"]) and "wif" in os.environ):
+        wif = os.environ["wif"]
+        config["wif"] = wif
+
     if (("wallet_host" not in config or not config["wallet_host"]) and
-            ("wif" not in config or not config["wif"])):
+            ("account" not in config or not config["account"])):
         raise Exception(
-            "Need either a wif key or connection details for to the cli wallet."
+            "Need either an account (name) or connection details for to the cli wallet."
         )
+
+    if ("wif" not in config or not config["wif"]):
+        print("No wif given, creating and registering %s" % config["account"])
+        wif_key = registration.register_account(config["account"])
+        if wif_key:
+            os.environ["wif"] = wif_key
 
     pprint(config)
 
