@@ -4,8 +4,7 @@ import os
 import argparse
 from pprint import pprint
 import yaml
-from stakemachine import bot
-from . import registration
+from stakemachine import bot, registration
 
 
 def replaceEnvironmentalVariables(config):
@@ -82,6 +81,11 @@ def main() :
         wif_key = registration.register_account(config["account"])
         if wif_key:
             os.environ["wif"] = wif_key
+            config["wif"] = wif_key
+        else:
+            raise Exception(
+                "No wif key given and account creation failed."
+            )
 
     pprint(config)
 

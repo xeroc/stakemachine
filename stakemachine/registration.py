@@ -34,11 +34,11 @@ def register_account(account_name):
     account_registered, account_registration_response = register_account_faucet(account_name, public_key)
     if account_registered:
         print("Account: %s successfully registered" % account_name)
-        print("WIF key (add this to config.yml) %s" % brainKey.get_private())
+        print("WIF key ((optional) add this to config.yml, currently stored in environment variable) %s" % brainKey.get_private())
         print("Brain key: %s" % brainKey.get_brainkey())
         print("Write it down/back it up ^")
         print("Send funds to %s and start the bot again" % account_name)
-        return brainKey.get_private()
+        return format(brainKey.get_private(), "WIF")
     else:
         print("Account creation failed")
         print(brainKey.get_brainkey())  
