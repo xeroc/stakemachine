@@ -46,6 +46,10 @@ class CoreExchangeRateTracker(BaseStrategy):
     block_counter = 0
 
     def __init__(self, *args, **kwargs):
+        if not self.dex.rpc:
+            raise NotImplemented(
+                "The CER tracker currently does not run with wif key"
+            )
         super().__init__(*args, **kwargs)
 
     def init(self):

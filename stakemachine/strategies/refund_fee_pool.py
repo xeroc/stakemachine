@@ -61,16 +61,15 @@ class RefundFeePool(BaseStrategy):
     def refill_fee_pool(self, quote_symbol, amount):
         """ Actually refill the fee pool
         """
-        if not self.dex.rpc:
-            raise Exception(
-                "This bot still requires a cli-wallet connection"
+        if self.dex.rpc:
+            pprint(self.dex.rpc.fund_asset_fee_pool(
+                self.config.account,
+                quote_symbol,
+                amount,
+                False)
             )
-        pprint(self.dex.rpc.fund_asset_fee_pool(
-            self.config.account,
-            quote_symbol,
-            amount,
-            False)
-        )
+        else:
+            pprint(self.dex.rpc.fund_fee_pool(quote_symbol, amount))
 
     def tick(self):
         """ We can check every block if the fee pool goes belos the
