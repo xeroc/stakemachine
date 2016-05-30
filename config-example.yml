@@ -1,8 +1,8 @@
-witness_url: "wss://bitshares.openledger.info/ws"
-prefix: "BTS"
+witness_url: "ws://testnet.bitshares.eu/ws"
+prefix: "TEST"
 safe_mode: True
-account: "liquidity-bot-mauritso"
-wif: ""
+account: "xeroc"
+wif: "5xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 market_separator: ":"
 
@@ -32,27 +32,3 @@ bots:
         symmetric_sides: True
         only_buy: False
         only_sell: False
-
-    LiquidityWall:
-        module: "stakemachine.strategies.liquidity_wall"
-        bot: "LiquiditySellBuyWalls"
-        markets:
-            - "CAD:BTS"
-        amount_validators:
-            minimum_amount:
-                CAD: 0.2
-            maximum_amount:
-                CAD: 5
-        target_price:
-            last: 0.5
-            feed: 1
-            gap: 1
-            filled_orders: 1
-        filled_order_age: 10000
-        place_order_strategy: "spread_percentage"
-        spread_percentage: 5
-        amount_calculation: "volume_percentage"
-        volume_percentage: 70
-        allowed_spread_percentage: 2.5
-        symmetric_sides: False
-        expiration: 21600

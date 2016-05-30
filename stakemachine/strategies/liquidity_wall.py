@@ -1,17 +1,19 @@
-from .basestrategy import BaseStrategy, MissingSettingsException
+from .basestrategy import MissingSettingsException
+from .advanced_basestrategy import AdvancedBaseStrategy
 from datetime import datetime
 import math
 import logging
 import time
-import copy
 
-class LiquiditySellBuyWalls(BaseStrategy):
+
+logging.basicConfig(level=logging.INFO)
+
+
+class LiquiditySellBuyWalls(AdvancedBaseStrategy):
     """ Puts up buy/sell walls at a specific spread in the market, replacing orders as the price changes.
 
         **Settings**:
 
-        * **borrow**: Borrow bitassets? (Boolean)
-        * **borrow_percentages**: how to divide the bts for lending bitAssets
         * **minimum_amounts**: the minimum amount an order has to be
         * **target_price**: target_price to place walls around (floating number or "feed")
         * **spread_percentage**: Another "offset". Allows a spread. The lowest orders will be placed here
@@ -29,23 +31,23 @@ class LiquiditySellBuyWalls(BaseStrategy):
                 module: "stakemachine.strategies.liquidity_wall"
                 bot: "LiquiditySellBuyWalls"
                 markets:
-                    - "USD: BTS"
-                borrow: True
-                borrow_percentages:
-                  - USD: 30
-                  - BTS: 70
-                minimum_amounts:
-                    - USD: 0.2
-                target_price: "feed"
+                    - "USD : BTS"
+                amount_validators:
+                    minimum_amount:
+                        USD: 0.2
+                target_price:
+                    last: 0.5
+                    feed: 2
+                    gap: 1
+                    filled_orders: 0.7
+                filled_order_age: 10000
+                place_order_strategy: "spread_percentage"
                 spread_percentage: 5
+                amount_calculation: "volume_percentage"
+                volume_percentage: 70
                 allowed_spread_percentage: 2.5
-                volume_percentage: 10
-                symmetric_sides: True
+                symmetric_sides: False
                 expiration: 21600
-                ratio: 2.5
-                skip_blocks: 3
-
-
     """
 
     delayState = "waiting"
@@ -74,193 +76,23 @@ class LiquiditySellBuyWalls(BaseStrategy):
             self.settings["expiration"] = 60 * 60 * 24
 
         if "delay" not in self.settings:
-            self.settings["delay"] = 1
+            self.settings["delay"] = 0
 
-        self.update_data()
         time.sleep(1) # looks like part of the config is missing without waiting a second.
 
-    def update_data(self):
-        self.ticker = self.dex.returnTicker()
-        self.open_orders = self.dex.returnOpenOrders()
-        self.balances = self.dex.returnBalances()
-        self.filled_orders = self.get_filled_orders_data()
-
-    def tick(self, *args, **kwargs):
-        self.ensureOrders()
-
-        if self.delayState == "updating":
-            print("Refreshing markets %s" % str(self.refreshMarkets))
-            self.cancel_orders(self.refreshMarkets)
-            self.place(markets=self.refreshMarkets)
-            # reset
-            self.delayState = "waiting"
-            self.delayCounter = 0
-            self.refreshMarkets = []
-
-        if self.delayState == "counting":
-            self.delayCounter += 1
-            if self.delayCounter > self.settings["delay"]:
-                self.delayState = "updating"
-
-    def ensureOrders(self):
-        if self.delayState == "waiting":
-            self.update_data()
-            for market in self.settings["markets"]:
-                base_price = self.get_price(market)
-                if base_price:
-                    buy_price, sell_price = self.get_order_prices(base_price)
-                    if buy_price and sell_price:
-                        if len(self.open_orders[market]) == 0:
-                            self.refreshMarkets.append(market)
-                        if len(self.open_orders[market]) == 1:
-                            if self.open_orders[market][0]['type'] == "sell":
-                                self.place(markets=[market], only_buy=True)
-                            elif self.open_orders[market][0]['type'] == "buy":
-                                self.place(markets=[market], only_sell=True)
-                        for o in self.open_orders[market]:
-                            order_feed_spread = math.fabs((o["rate"] - self.ticker[market]["settlement_price"]) / self.ticker[market]["settlement_price"] * 100)
-                            print("%s | Order: %s is %.3f%% away from feed" % (datetime.now(), o['orderNumber'], order_feed_spread))
-                            if order_feed_spread <= self.settings["allowed_spread_percentage"] / 2 or order_feed_spread >= (self.settings["allowed_spread_percentage"] + self.settings["spread_percentage"]) / 2:
-                                self.refreshMarkets.append(market)
-                else:
-                    print("NO PRICE AVAILABLE WARNING")
-            self.refreshMarkets = list(set(self.refreshMarkets))
-            if self.refreshMarkets:
-                self.delayState = "counting"
 
     def place(self, markets=None, only_sell=False, only_buy=False) :
         if not markets:
             markets = self.settings["markets"]
 
         for m in markets:
-            amounts = self.get_amounts()
-            base_price = self.get_price(m)
-            if base_price:
-                buy_price, sell_price = self.get_order_prices(base_price)
-                quote, base = m.split(self.config.market_separator)
-                if quote in amounts and not only_buy:
-                    if "symmetric_sides" in self.settings and self.settings["symmetric_sides"] and not only_sell:
-                        amount = min([amounts[quote], amounts[base] / buy_price]) if base in amounts else amounts[quote]
-                        if self.validate_amount(amount, quote):
-                            self.sell(m, sell_price, amount, self.settings["expiration"])
-                    else :
-                        amount = amounts[quote]
-                        if self.validate_amount(amount, quote):
-                            self.sell(m, sell_price, amount, self.settings["expiration"])
-                if base in amounts and not only_sell:
-                    if "symmetric_sides" in self.settings and self.settings["symmetric_sides"] and not only_buy:
-                        amount = min([amounts[quote], amounts[base] / buy_price]) if quote in amounts else amounts[base] / buy_price
-                        if self.validate_amount(amount, quote):
-                            self.buy(m, buy_price, amount, self.settings["expiration"])
-                    else:
-                        amount = amounts[base] / buy_price
-                        if self.validate_amount(amount, quote):
-                            self.buy(m, buy_price, amount, self.settings["expiration"])
-            else:
-                logging.warning("No price available for %s" % m)
-
-    def cancel_orders(self, markets):
-        """ Cancel all orders for all markets or a specific market
-        """
-        for market in markets:
-            print("%s | Cancelling orders for %s market(s)" % (datetime.now(), market))
-            for order in self.open_orders[market]:
-                try:
-                    print("Cancelling %s" % order["orderNumber"])
-                    self.dex.cancel(order["orderNumber"])
-                except Exception as e:
-                    print("An error has occured when trying to cancel order %s!" % order)
-                    print(e)
-
-    def orderFilled(self, oid):
-        self.ensureOrders()
-
-    def orderPlaced(self, *args, **kwargs):
-        pass
-
-    def get_filled_orders_data(self):
-        filled_orders_markets = {}
-        for market in self.settings["markets"]:
-            quote_symbol, base_symbol = market.split(self.config.market_separator)
-            base_id = self.dex.ws.get_asset(base_symbol)['id']
-            quote_id = self.dex.ws.get_asset(quote_symbol)['id']
-            m = {"base": base_id, "quote": quote_id}
-            filled_orders = self.dex.ws.get_fill_order_history(quote_id, base_id, 1000, api="history")
-            price_list = []
-            for order in filled_orders:
-                timestamp = datetime.strptime(order['time'], "%Y-%m-%dT%H:%M:%S")
-                seconds_ago = (datetime.now() - timestamp).total_seconds()
-                op = order['op']
-                if seconds_ago <= self.settings["filled_order_age"]:
-                    price_data = {
-                        "price": self.dex._get_price_filled(order, m),
-                        "seconds_ago": (datetime.now() - timestamp).total_seconds(),
-                        "volume": op['pays']['amount'] if op['pays']['asset_id'] == quote_id else op['receives']['amount']
-                    }
-                    price_list.append(price_data)
-            filled_orders_markets[market] = price_list
-        return filled_orders_markets
-
-    def price_filled_orders(self, market):
-        price_list = self.filled_orders[market]
-        price_weight_total = sum([order['volume'] * (1 / (self.settings["time_weight_factor"] * order['seconds_ago'])) * order['price'] for order in price_list])
-        weight_total = sum([order['volume'] * (1 / (self.settings["time_weight_factor"] * order['seconds_ago'])) for order in price_list])
-        volume_total = sum([order['volume'] for order in price_list])
-        try:
-            price = (price_weight_total / weight_total)
-        except ZeroDivisionError:
-            return None
-        else:
-            return price if volume_total >= self.settings["minimum_volume"] else None
-
-    def price_feed(self, market):
-        if "settlement_price" in self.ticker[market]:
-            return(self.ticker[market]["settlement_price"] * (1 + self.settings["target_price_offset_percentage"] / 100))
-        else:
-            raise Exception("Pair %s does not have a settlement price!" % market)
-
-    def price_target(self):
-        return float(self.settings['target_price']) * (1 + self.settings["target_price_offset_percentage"] / 100)
-
-    def price_bid_ask(self, market):
-        return (self.ticker[market]['highestBid'] + self.ticker[market]['lowestAsk']) / 2
-
-    def price_last(self, market):
-        return self.ticker[market]['last']
-
-    def get_price(self, market, target_price=None):
-        if not target_price:
-            target_price = self.settings['target_price']
-        if isinstance(target_price, float) or isinstance(target_price, int):
-            return self.price_target()
-        elif (isinstance(target_price, str) and
-            target_price == "settlement_price" or
-            target_price == "feed" or
-            target_price == "price_feed"):
-            return self.price_feed(market)
-        elif (isinstance(target_price, str) and
-            target_price == "filled_orders"):
-            return self.price_filled_orders(market)
-        elif (isinstance(target_price, str) and
-            target_price == "bid_ask" or
-            target_price == "gap"):
-            return self.price_bid_ask(market)
-        elif (isinstance(target_price, str) and
-            target_price == "last"):
-            return self.price_last(market)
-
-        if isinstance(target_price, dict):
-            price_weight_sum = sum([self.get_price(market, target_price=target) * weight for target, weight in target_price.items() if self.get_price(market, target_price=target) != None])
-            weight_sum = sum([weight for target, weight in target_price.items() if self.get_price(market, target_price=target) != None])
-            try:
-                return price_weight_sum / weight_sum
-            except ZeroDivisionError:
-                return None
+            if self.settings["place_order_strategy"] == "walls":
+                self.place_walls(m, only_buy, only_sell)
 
     def get_order_prices(self, base_price):
-        if self.settings['place_order_strategy'] == "spread_percentage":
+        if self.settings['place_order_price_strategy'] == "spread_percentage_walls":
             return self.order_prices_spread_percentage(base_price)
-        elif self.settings['place_order_strategy'] == "set_amount":
+        elif self.settings['place_order_price_strategy'] == "set_amount_walls":
             return self.order_prices_set_amount(base_price)
 
     def order_prices_spread_percentage(self, base_price):
@@ -273,36 +105,54 @@ class LiquiditySellBuyWalls(BaseStrategy):
         sell_price = base_price - self.settings["set_amount"]
         return (buy_price, sell_price)
 
-    def validate_amount(self, amount, quote):
-        for validator in self.settings["amount_validators"]:
-            if validator == "minimum_amount":
-                valid = self.minimum_amount(amount, quote)
-    # to be removed, pretty stupid to not place an order because the amount is too high instead of adjusting the amount to the maximum allowable
-            elif validator == "maximum_amount":
-                valid = self.maximum_amount(amount, quote)
-            if not valid:
-                return False
-        return True
+    def place_walls(self, m, only_buy, only_sell):
+        amounts = self.get_amounts()
+        base_price = self.get_price(m)
+        if base_price:
+            buy_price, sell_price = self.get_order_prices(base_price)
+            quote, base = m.split(self.config.market_separator)
+            if quote in amounts and not only_buy:
+                if "symmetric_sides" in self.settings and self.settings["symmetric_sides"] and not only_sell:
+                    amount = min([amounts[quote], amounts[base] / buy_price]) if base in amounts else amounts[quote]
+                    if self.validate_order("sell", quote, sell_price, amount):
+                        self.sell(m, sell_price, amount, self.settings["expiration"])
+                else :
+                    amount = amounts[quote]
+                    if self.validate_order("sell", quote, sell_price, amount):
+                        self.sell(m, sell_price, amount, self.settings["expiration"])
+            if base in amounts and not only_sell:
+                if "symmetric_sides" in self.settings and self.settings["symmetric_sides"] and not only_buy:
+                    amount = min([amounts[quote], amounts[base] / buy_price]) if quote in amounts else amounts[base] / buy_price
+                    if self.validate_order("buy", quote, buy_price, amount):
+                        self.buy(m, buy_price, amount, self.settings["expiration"])
+                else:
+                    amount = amounts[base] / buy_price
+                    if self.validate_order("buy", quote, buy_price, amount):
+                        self.buy(m, buy_price, amount, self.settings["expiration"])
+        else:
+            logging.warning("No price available for %s" % m)
 
-    def minimum_amount(self, amount, quote):
-        return amount >= self.settings["amount_validators"]["minimum_amount"][quote]
 
-    def maximum_amount(self, amount, quote):
-        return amount <= self.settings["amount_validators"]["maximum_amount"][quote]
+    def verify_place_orders(self, m):
+        if self.settings["place_order_strategy"] == "walls":
+            self.verify_place_orders_walls(m)
 
-    def get_amounts(self):
-        if self.settings["amount_calculation"] == "volume_percentage":
-            return self.amounts_volume_percentage()
-
-    def amounts_volume_percentage(self):
-        amounts = {}
-        asset_ids = []
-        for single_market in self.settings["markets"]:
-            quote, base = single_market.split(self.config.market_separator)
-            asset_ids.append(base)
-            asset_ids.append(quote)
-            assets_unique = list(set(asset_ids))
-        for a in assets_unique:
-            if a in self.balances:
-                amounts[a] = self.balances[a] * self.settings["volume_percentage"] / 100 / asset_ids.count(a)
-        return amounts
+    def verify_place_orders_walls(self, m):
+        base_price = self.get_price(m)
+        if base_price:
+            buy_price, sell_price = self.get_order_prices(base_price)
+            if buy_price and sell_price:
+                if len(self.open_orders[m]) == 0:
+                    self.refreshMarkets.append(m)
+                if len(self.open_orders[m]) == 1:
+                    if self.open_orders[m][0]['type'] == "sell":
+                        self.place(markets=[m], only_buy=True)
+                    elif self.open_orders[m][0]['type'] == "buy":
+                        self.place(markets=[m], only_sell=True)
+                for o in self.open_orders[m]:
+                    order_feed_spread = math.fabs((o["rate"] - self.ticker[m]["settlement_price"]) / self.ticker[m]["settlement_price"] * 100)
+                    logging.info("%s | Order: %s is %.3f%% away from feed" % (datetime.now(), o['orderNumber'], order_feed_spread))
+                    if order_feed_spread <= self.settings["allowed_spread_percentage"] / 2 or order_feed_spread >= (self.settings["allowed_spread_percentage"] + self.settings["spread_percentage"]) / 2:
+                        self.refreshMarkets.append(m)
+        else:
+            logging.warning("No price available for %s" % m)
