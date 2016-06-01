@@ -5,4 +5,5 @@ __all__ = ["basestrategy",
            "maintain_spread",
            "maker",
            "refund_fee_pool",
+           "advanced_basestrategy",
            ]
