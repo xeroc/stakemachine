@@ -27,21 +27,28 @@ def register_account_faucet(account, public_key, referrer = referrer, faucet = f
     return (request.status_code == 201, request.text)
 
 
-def register_account(account_name):
-    brainKey = account.BrainKey()
-    publicKey = brainKey.get_private().pubkey
+def register_account(account_name, wif_key=None):
+    if not wif_key:
+        brainKey = account.BrainKey()
+        privateKey = brainKey.get_private()
+    else:
+        privateKey = account.PrivateKey(wif_key)
+
+    publicKey = privateKey.pubkey
     public_key = format(publicKey, "BTS")
     account_registered, account_registration_response = register_account_faucet(account_name, public_key)
     if account_registered:
+        if not wif_key:
+            print("Brain key: %s" % brainKey.get_brainkey())
+            print("Write it down/back it up ^")
         print("Account: %s successfully registered" % account_name)
-        print("WIF key ((optional) add this to config.yml, currently stored in environment variable) %s" % brainKey.get_private())
-        print("Brain key: %s" % brainKey.get_brainkey())
-        print("Write it down/back it up ^")
+        print("WIF key add this to config.yml: %s" % format(privateKey, "WIF"))
         print("Send funds to %s and start the bot again" % account_name)
-        return format(brainKey.get_private(), "WIF")
+        return format(privateKey, "WIF")
     else:
         print("Account creation failed")
-        print(brainKey.get_brainkey())  
+        if not wif_key:
+            print(brainKey.get_brainkey())
         print(faucet + " response: ", account_registration_response)
         return None
 
