@@ -2,6 +2,8 @@ from grapheneexchange import GrapheneExchange
 import json
 import os
 
+from stakemachine.storage import Storage
+
 
 class MissingSettingsException(Exception):
     pass
@@ -35,9 +37,9 @@ class BaseStrategy():
         if "name" not in kwargs:
             raise MissingSettingsException("Missing parameter 'name'!")
 
-        self.filename = "data_%s.json" % self.name
         self.settings = self.config.bots[self.name]
         self.opened_orders = []
+        self.storage = Storage(self.name, self.config)
         self.restore()
 
         if "markets" not in self.settings:
@@ -170,13 +172,6 @@ class BaseStrategy():
         """
         self.state[key] = value
 
-    def setFullState(self, state):
-        """ Set the full state
-
-            :param json state: the new state that overwrites the current state
-        """
-        self.state = state
-
     def store(self):
         """ Evaluate the changes (orders) made by the bot and store the
             state on disk.
@@ -195,16 +190,12 @@ class BaseStrategy():
                         self.orderPlaced(orderid)
 
         state["orders"] = myorders
-        with open(self.filename, 'w') as fp:
-            json.dump(state, fp)
+        self.storage.store(state)
 
     def restore(self):
         """ Restore the data stored on the disk
         """
-        if os.path.isfile(self.filename) :
-            with open(self.filename, 'r') as fp:
-                state = json.load(fp)
-                self.setFullState(state)
+        self.state = self.storage.restore()
 
     def loadMarket(self, notify=True):
         """ Load the markets and compare the stored orders with the
