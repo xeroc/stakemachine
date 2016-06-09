@@ -6,4 +6,5 @@ __all__ = ["basestrategy",
            "maker",
            "refund_fee_pool",
            "advanced_basestrategy",
+           "replicatebooks"
            ]
