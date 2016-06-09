@@ -45,6 +45,18 @@ class BaseStrategy():
         if "markets" not in self.settings:
             raise MissingSettingsException("markets")
 
+    def _cancel_set(self, toCancel):
+        numCanceled = 0
+        for orderId in toCancel:
+            print("Canceling %s" % orderId)
+            self.dex.cancel(orderId)
+            self.orderCanceled(orderId)
+            for m in self.state["orders"]:
+                if orderId in self.state["orders"][m]:
+                    self.state["orders"][m].remove(orderId)
+            numCanceled += 1
+        return numCanceled
+
     def cancel_all(self, markets=None, side="both") :
         """ Cancel all the account's orders **of all market** including
             those orders of other bot instances
@@ -56,18 +68,14 @@ class BaseStrategy():
         """
         if not markets:
             markets = self.settings["markets"]
-        numCanceled = 0
         curOrders = self.dex.returnOpenOrders()
+        toCancel = set()
         for m in markets:
             if m in curOrders:
                 for o in curOrders[m]:
                     if o["type"] is side or side is "both":
-                        print("Canceling %s" % o["orderNumber"])
-                        self.dex.cancel(o["orderNumber"])
-                        if o["orderNumber"] in self.state["orders"][m]:
-                            self.state["orders"][m].remove(o["orderNumber"])
-                        numCanceled += 1
-        return numCanceled
+                        toCancel.add(o["orderNumber"])
+        return self._cancel_set(toCancel)
 
     def cancel_mine(self, markets=None, side="both") :
         """ Cancel only the orders of this particular bot in all markets
@@ -81,7 +89,7 @@ class BaseStrategy():
             markets = self.settings["markets"]
         curOrders = self.dex.returnOpenOrders()
         state = self.getState()
-        numCanceled = 0
+        toCancel = set()
         for m in markets:
             for currentOrderStates in curOrders[m]:
                 stateOrderId = currentOrderStates["orderNumber"]
@@ -89,12 +97,8 @@ class BaseStrategy():
                     continue
                 if stateOrderId in state["orders"][m]:
                     if currentOrderStates["type"] is side or side is "both":
-                        print("Canceling %s" % currentOrderStates["orderNumber"])
-                        self.dex.cancel(currentOrderStates["orderNumber"])
-                        if currentOrderStates["orderNumber"] in self.state["orders"][m]:
-                            self.state["orders"][m].remove(currentOrderStates["orderNumber"])
-                        numCanceled += 1
-        return numCanceled
+                        toCancel.add(currentOrderStates["orderNumber"])
+        return self._cancel_set(toCancel)
 
     def cancel_this_markets(self, markets=None, side="both") :
         """ Cancel all orders in all markets of that are served by this
@@ -107,16 +111,12 @@ class BaseStrategy():
         if not markets:
             markets = self.settings["markets"]
         orders = self.dex.returnOpenOrders()
-        numCanceled = 0
+        toCancel = set()
         for m in markets:
             for o in orders[m]:
                 if o["type"] is side or side is "both":
-                    print("Canceling %s" % o["orderNumber"])
-                    self.dex.cancel(o["orderNumber"])
-                    if o["orderNumber"] in self.state["orders"][m]:
-                        self.state["orders"][m].remove(o["orderNumber"])
-                    numCanceled += 1
-        return numCanceled
+                    toCancel.add(o["orderNumber"])
+        return self._cancel_set(toCancel)
 
     def cancel_all_sell_orders(self):
         """ alias for ``self.cancel_all("sell")``
@@ -317,3 +317,10 @@ class BaseStrategy():
             :param str oid: The order object id
         """
         print("New Order. Please define `%s.orderPlaced(%s)`" % (self.name, oid))
+
+    def orderCanceled(self, oid):
+        """ An order has been canceld
+
+            :param str oid: The order object id
+        """
+        print("Order Canceld. Please define `%s.orderCanceled(%s)`" % (self.name, oid))
