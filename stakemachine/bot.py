@@ -117,6 +117,14 @@ def once():
         bots[name].store()
 
 
+def orderplaced(orderid):
+    """ Execute the core unit of the bot
+    """
+    for name in bots:
+        print("Executing bot %s" % name)
+        bots[name].orderPlaced(orderid)
+
+
 def run():
     """ This call will run the bot in **continous mode** and make it
         receive notification from the network

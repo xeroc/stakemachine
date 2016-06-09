@@ -49,10 +49,22 @@ def main() :
     cont = subparsers.add_parser('run', help='Run the bot continuously')
     cont.set_defaults(command="run")
 
-    cont = subparsers.add_parser('cancelall', help='Run the bot continuously')
-    cont.set_defaults(command="cancelall")
+    cancel = subparsers.add_parser('cancelall', help='Run the bot continuously')
+    cancel.set_defaults(command="cancelall")
+
+    placed = subparsers.add_parser('orderplaced', help='')
+    placed.set_defaults(command="orderplaced")
+    placed.add_argument(
+        'orderid',
+        type=str,
+        help=''
+    )
 
     args = parser.parse_args()
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
 
     with open(args.config, 'r') as ymlfile:
         config = yaml.load(ymlfile)
@@ -85,6 +97,8 @@ def main() :
         bot.once()
     elif args.command == "cancelall":
         bot.cancel_all()
+    elif args.command == "orderplaced":
+        bot.orderplaced(args.orderid)
 
 args = None
 if __name__ == '__main__':
