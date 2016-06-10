@@ -64,7 +64,6 @@ class ReplicateBooks(BaseStrategy):
 
     def tick(self, *args, **kwargs):
         self.place()
-        pass
 
     def orderCanceled(self, oid):
         for o in self.state["replicated"].copy():  # copy the list so I can iterate AND pop
@@ -74,6 +73,11 @@ class ReplicateBooks(BaseStrategy):
 
     def orderPlaced(self, orderid):
         """ Get the new order ID for the replicated order
+        """
+        pass
+        """ Legacy code that could be used eventually to make the bot
+            faster
+        """
         """
         orders = self.dex.returnOpenOrders()
         for i in self.state["replicated"]:
@@ -92,23 +96,31 @@ class ReplicateBooks(BaseStrategy):
                     if priceA == priceB:
                         self.state["replicated"][i]["replicatedOrder"] = order["orderNumber"]
                     break
+        """
 
     def place(self):
         ticker = self.dex.returnTicker()
         for replicate in self.settings["replicate"]:
             source = self.dex._get_assets_from_market(replicate["source"])
             target = self.dex._get_assets_from_market(replicate["target"])
+
+            # Get base price, e.g. price feed
             if replicate["price"] == "feed":
                 base_market = target["base"]["symbol"] + self.config.market_separator + source["base"]["symbol"]
                 base_price = ticker[base_market]["settlement_price"]
             else:
                 raise ValueError("Invalid option for 'price'!")
 
-            openOrders = self.dex.returnOpenOrders(replicate["target"])
+            # Obtain order book of the source market
             orderbook = self.dex.returnOrderBook(
                 replicate["source"],
                 limit=replicate["limit"]
             )
+
+            ###################################################################
+            # Test for NEW orders that we have not replicated
+            ###################################################################
+
             # As we are only 'selling' in this strategy, we only
             # consider replicating 'asks' for different markets!
             for order in orderbook[replicate["source"]]["asks"]:
@@ -116,36 +128,46 @@ class ReplicateBooks(BaseStrategy):
                 amount = order[1] if ("maxamount" in replicate and
                                       order[1] < replicate["maxamount"]) else replicate["maxamount"]
                 orderid = order[2]
+
+                # Already have this order replicated?
+                if orderid in self.state["replicated"]:
+                    continue
+
+                # derive the new sell price
                 sell_price = price / base_price
                 if "premium" in replicate:
                     sell_price *= float(1 + replicate["premium"] / 100)
 
-                if orderid in self.state["replicated"]:
-                    # Already have a matching order
-                    continue
+                # Print a notification
+                print(
+                    "Existing bid in %s" % (replicate["source"]) +
+                    ": %f @ %f %s/%s, " % (amount, price, source["base"]["symbol"], source["quote"]["symbol"]) +
+                    "feed @%f %s/%s, " % (base_price, source["base"]["symbol"], target["base"]["symbol"]) +
+                    "new price: %.10f %s/%s" % (sell_price, target["base"]["symbol"], target["quote"]["symbol"])
+                )
 
-                existingOrder = False
-                for openorder in openOrders[replicate["target"]]:
-                    if sell_price == openorder["rate"]:
-                        existingOrder = True
-                        break
+                # Do the actual sell
+                replicatedOrder = self.sell(
+                    replicate["target"],
+                    sell_price,
+                    amount,
+                    returnID=True
+                )
 
-                if not existingOrder:
-                    print(
-                        "Existing bid in %s" % (replicate["source"]) +
-                        ": %f @ %f %s/%s, " % (amount, price, source["base"]["symbol"], source["quote"]["symbol"]) +
-                        "feed @%f %s/%s, " % (base_price, source["base"]["symbol"], target["base"]["symbol"]) +
-                        "new price: %.10f %s/%s" % (sell_price, target["base"]["symbol"], target["quote"]["symbol"])
-                    )
-                    self.sell(
-                        replicate["target"],
-                        sell_price,
-                        amount
-                    )
-                    self.state["replicated"][orderid] = {
-                        "source": replicate["source"],
-                        "target": replicate["target"],
-                        "price": price,
-                        "sell_price": sell_price,
-                        "amount": amount
-                    }
+                # Store side information of the replicated data
+                self.state["replicated"][orderid] = {
+                    "source": replicate["source"],
+                    "target": replicate["target"],
+                    "price": price,
+                    "sell_price": sell_price,
+                    "amount": amount,
+                    "replicatedOrder": replicatedOrder
+                }
+
+            ###################################################################
+            # See if we can clear some orders that no longer exist
+            ###################################################################
+            orders  = [x[2] for x in orderbook[replicate["source"]]["asks"]]
+            for repOrderId in self.state["replicated"]:
+                if repOrderId not in orders:
+                    self.cancel(self.state["replicated"]["replicatedOrder"])

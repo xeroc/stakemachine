@@ -230,7 +230,7 @@ class BaseStrategy():
                 myOrders[market] = []
         return myOrders
 
-    def sell(self, market, price, amount, expiration=60 * 60 * 24):
+    def sell(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
         """ Places a sell order in a given market (sell ``quote``, buy
             ``base`` in market ``quote_base``). Required POST parameters
             are "currencyPair", "rate", and "amount". If successful, the
@@ -254,9 +254,9 @@ class BaseStrategy():
         """
         quote, base = market.split(self.config.market_separator)
         print(" - Selling %f %s for %s @%f %s/%s" % (amount, quote, base, price, base, quote))
-        self.dex.sell(market, price, amount, expiration)
+        self.dex.sell(market, price, amount, expiration, **kwargs)
 
-    def buy(self, market, price, amount, expiration=60 * 60 * 24):
+    def buy(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
         """ Places a buy order in a given market (buy ``quote``, sell
             ``base`` in market ``quote_base``). Required POST parameters
             are "currencyPair", "rate", and "amount". If successful, the
@@ -280,7 +280,7 @@ class BaseStrategy():
         """
         quote, base = market.split(self.config.market_separator)
         print(" - Buying %f %s with %s @%f %s/%s" % (amount, quote, base, price, base, quote))
-        self.dex.buy(market, price, amount, expiration)
+        self.dex.buy(market, price, amount, expiration, **kwargs)
 
     def init(self) :
         """ Initialize the bot's individual settings
