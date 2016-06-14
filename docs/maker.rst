@@ -2,5 +2,5 @@
 Example: Simple Market Maker
 ****************************
 
-.. automodule:: exchangebots.strategies.maker
+.. automodule:: stakemachine.strategies.maker
       :members:
