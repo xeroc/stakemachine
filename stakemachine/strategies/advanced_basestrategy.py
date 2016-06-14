@@ -41,13 +41,13 @@ class AdvancedBaseStrategy(BaseStrategy):
         if "time_weight_factor" not in self.settings:
             self.settings["time_weight_factor"] = 1
 
-        time.sleep(1) # looks like part of the config is missing without waiting a second.
+        time.sleep(1)  # looks like part of the config is missing without waiting a second.
 
     def update_data(self):
         if self.delayState == "waiting":
             self.ticker = self.dex.returnTicker()
             self.open_orders = self.dex.returnOpenOrders()
-            self.balances = self.dex.returnBalances()
+            self.balances = self.returnBalances()
             self.filled_orders = self.get_filled_orders_data()
             self.delayState = "updated"
 

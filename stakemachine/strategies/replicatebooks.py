@@ -15,6 +15,7 @@ class ReplicateBooks(BaseStrategy):
             * **limit**: Limit to x orders per replication
             * **premium**: Percentage premium for replication
             * **maxamount**: The max amount of 'quote' for a replicated order
+            * **minamount**: The min amount of an order to be replicated
 
         Only used if run in continuous mode (e.g. with ``stakemachine run``):
 
@@ -155,16 +156,33 @@ class ReplicateBooks(BaseStrategy):
             # As we are only 'selling' in this strategy, we only
             # consider replicating 'asks' for different markets!
             for order in orderbook[replicate["source"]]["asks"]:
-                price = order[0]
-                amount = order[1] if ("maxamount" in replicate and
-                                      order[1] < replicate["maxamount"]) else replicate["maxamount"]
-                orderid = order[2]
+                balances = self.returnBalances()
+                pprint(balances)
+                quote_symbol = target["quote"]["symbol"]
+
+                # Define and limit the amounts
+                amount = order[1]
+                if ("maxamount" in replicate and
+                        amount > replicate["maxamount"]):
+                    amount = replicate["maxamount"]
+                if quote_symbol not in balances:
+                    continue
+
+                if amount > balances.get(quote_symbol):
+                    amount = balances.get(quote_symbol)
+                if ("minamount" in replicate and
+                        amount < replicate["minamount"]):
+                    continue
+                if not amount:
+                    continue
 
                 # Already have this order replicated?
+                orderid = order[2]
                 if orderid in self.state["replicated"]:
                     continue
 
                 # derive the new sell price
+                price = order[0]
                 sell_price = price / base_price
                 if "premium" in replicate:
                     sell_price *= float(1 + replicate["premium"] / 100)

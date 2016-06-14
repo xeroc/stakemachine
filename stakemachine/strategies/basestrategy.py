@@ -161,7 +161,7 @@ class BaseStrategy():
     def cancel(self, orderid):
         """ Cancel the order with id ``orderid``
         """
-        print("Canceling %s" % orderId)
+        print("Canceling %s" % orderid)
         return self.dex.cancel(orderid)
 
     def getState(self):
@@ -235,6 +235,29 @@ class BaseStrategy():
             else:
                 myOrders[market] = []
         return myOrders
+
+    def returnBalances(self):
+        """ This is a wrapper for self.dex.returnBalances()
+            that limits the amounts such that the reserves are always
+            available in the account. The reserves are defined in the
+            configuration with:
+
+            ```
+            reserves:
+             - BTS: 1000
+             - USD: 10
+            ```
+        """
+        balances = self.dex.returnBalances()
+        if not hasattr(self.config, "reserves"):
+            return balances
+
+        reserves = getattr(self.config, "reserves")
+        for a in balances:
+            balances[a] -= reserves.get(a, 0)
+            if balances[a] < 0:
+                balances[a] = 0.0
+        return balances
 
     def sell(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
         """ Places a sell order in a given market (sell ``quote``, buy

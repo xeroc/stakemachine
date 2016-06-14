@@ -119,7 +119,7 @@ class MakerSellBuyWalls(BaseStrategy):
         only_buy = True if "only_buy" in self.settings and self.settings["only_buy"] else False
 
         #: Amount of Funds available for trading (per asset)
-        balances = self.dex.returnBalances()
+        balances = self.returnBalances()
         asset_ids = []
         amounts = {}
         for market in markets:
@@ -299,7 +299,7 @@ class MakerSellBuyWalls(BaseStrategy):
 #        only_sell = True if "only_sell" in self.settings and self.settings["only_sell"] else False
 #        only_buy = True if "only_buy" in self.settings and self.settings["only_buy"] else False
 #
-#        balances = self.dex.returnBalances()
+#        balances = self.returnBalances()
 #        asset_ids = []
 #        amounts = {}
 #        for market in markets:
