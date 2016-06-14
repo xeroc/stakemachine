@@ -1,7 +1,9 @@
-from grapheneapi.graphenewsprotocol import GrapheneWebsocketProtocol
-from grapheneexchange import GrapheneExchange
 import time
 import importlib
+import logging
+from grapheneapi.graphenewsprotocol import GrapheneWebsocketProtocol
+from grapheneexchange import GrapheneExchange
+log = logging.getLogger(__name__)
 
 config = None
 bots = {}
@@ -17,6 +19,7 @@ class BotProtocol(GrapheneWebsocketProtocol):
         """ If the account updates, reload every market
         """
         for name in bots:
+            log.debug("onAccountUpdate: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].store()
 
@@ -24,13 +27,26 @@ class BotProtocol(GrapheneWebsocketProtocol):
         """ If a Market updates upgrades, reload every market
         """
         for name in bots:
+            log.debug("onMarketUpdate: %s" % name)
             bots[name].loadMarket(notify=True)
+            bots[name].store()
+
+    def onAssetUpdate(self, data):
+        """ This method is called only once after the websocket
+            connection has successfully registered with the blockchain
+            database
+        """
+        for name in bots:
+            log.debug("onAssetUpdate: %s" % name)
+            bots[name].loadMarket(notify=True)
+            bots[name].asset_tick()
             bots[name].store()
 
     def onBlock(self, data) :
         """ Every block let the bots know via ``tick()``
         """
         for name in bots:
+            log.debug("onBlock: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].tick()
             bots[name].store()
@@ -41,6 +57,7 @@ class BotProtocol(GrapheneWebsocketProtocol):
             database
         """
         for name in bots:
+            log.debug("onRegisterDatabase: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].tick()
             bots[name].store()
@@ -62,14 +79,20 @@ def init(conf, **kwargs):
     [setattr(config, key, conf[key]) for key in conf.keys()]
 
     if not hasattr(config, "prefix") or not config.prefix:
+        log.debug("Setting default network (BTS)")
         config.prefix = "BTS"
 
     # Construct watch_markets attribute from all bots:
     watch_markets = set()
     for name in config.bots:
-        watch_markets = watch_markets.union(config.bots[name]["markets"])
-    watch_markets = (watch_markets)
+        watch_markets = watch_markets.union(config.bots[name].get("markets", []))
     setattr(config, "watch_markets", watch_markets)
+
+    # Construct watch_assets attribute from all bots:
+    watch_assets = set()
+    for name in config.bots:
+        watch_assets = watch_assets.union(config.bots[name].get("assets", []))
+    setattr(config, "watch_assets", watch_assets)
 
     # Connect to the DEX
     dex    = GrapheneExchange(config,
@@ -78,6 +101,7 @@ def init(conf, **kwargs):
 
     # Initialize all bots
     for index, name in enumerate(config.bots, 1):
+        log.debug("Initializing bot %s" % name)
         if "module" not in config.bots[name]:
             raise ValueError("No 'module' defined for bot %s" % name)
         klass = getattr(
@@ -88,21 +112,17 @@ def init(conf, **kwargs):
                            dex=dex, index=index)
         # Maybe the strategy/bot has some additional customized
         # initialized besides the basestrategy's __init__()
+        log.debug("Calling %s.init()" % name)
         bots[name].loadMarket(notify=False)
         bots[name].init()
         bots[name].store()
-
-
-def wait_block():
-    """ This is sooo dirty! FIXIT!
-    """
-    time.sleep(6)
 
 
 def cancel_all():
     """ Cancel all orders of all markets that are served by the bots
     """
     for name in bots:
+        log.info("Cancel-all %s" % name)
         bots[name].loadMarket(notify=False)
         bots[name].cancel_this_markets()
         bots[name].store()
@@ -112,7 +132,7 @@ def once():
     """ Execute the core unit of the bot
     """
     for name in bots:
-        print("Executing bot %s" % name)
+        log.info("Executing bot %s" % name)
         bots[name].loadMarket(notify=True)
         bots[name].place()
         bots[name].store()
@@ -122,7 +142,7 @@ def orderplaced(orderid):
     """ Execute the core unit of the bot
     """
     for name in bots:
-        print("Executing bot %s" % name)
+        log.info("Executing bot %s" % name)
         bots[name].orderPlaced(orderid)
 
 

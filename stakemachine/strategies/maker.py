@@ -95,6 +95,11 @@ class MakerSellBuyWalls(BaseStrategy):
         """
         pass
 
+    def orderCancled(seld, *args, **kwargs):
+        """ Do nothing
+        """
+        pass
+
     def ensureOrders(self):
         """ Make sure that there are two orders open for this bot. If
             not, place them!

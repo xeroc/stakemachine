@@ -1,6 +1,8 @@
 from pymongo import MongoClient
 import os
 import json
+import logging
+log = logging.getLogger(__name__)
 
 
 class InvalidStorageType(Exception):
@@ -43,7 +45,7 @@ class Storage(object):
             r = self.db.config.find_one({"name": self.name})
         if not r:
             r = {}
-        if not "orders" in r:
+        if "orders" not in r:
             r["orders"] = {}
         return r
 

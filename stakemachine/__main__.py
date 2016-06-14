@@ -6,7 +6,11 @@ import argparse
 import time
 from pprint import pprint
 import yaml
+
+import logging
+from logging.handlers import SMTPHandler, RotatingFileHandler
 from stakemachine import bot
+log = logging.getLogger(__name__)
 
 
 def replaceEnvironmentalVariables(config):
@@ -41,6 +45,13 @@ def main() :
         default="config.yml",
         help='Configuration python file'
     )
+    parser.add_argument(
+        '--verbose', '-v',
+        type=str,
+        default="info",
+        choices=["critical", "error", "warn", "info", "debug"],
+        help='Verbosity'
+    )
     subparsers = parser.add_subparsers(help='sub-command help')
 
     once = subparsers.add_parser('once', help='Run the bot once')
@@ -66,6 +77,23 @@ def main() :
         parser.print_help()
         sys.exit(1)
 
+    # Logging
+    log = logging.getLogger("stakemachine")
+    log.setLevel(getattr(logging, args.verbose.upper()))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch = logging.StreamHandler()
+    ch.setLevel(getattr(logging, args.verbose.upper()))
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
+
+    # GrapheneAPI logging
+    gphlog = logging.getLogger("graphenebase")
+    gphlog.setLevel(getattr(logging, args.verbose.upper()))
+    gphlog.addHandler(ch)
+    gphlog = logging.getLogger("grapheneapi")
+    gphlog.setLevel(getattr(logging, args.verbose.upper()))
+    gphlog.addHandler(ch)
+
     with open(args.config, 'r') as ymlfile:
         config = yaml.load(ymlfile)
 
@@ -86,7 +114,7 @@ def main() :
             "Need either a wif key or connection details for to the cli wallet."
         )
 
-    pprint(config)
+    log.info("Configuration: %s" % json.dumps(config, indent=4))
 
     # initialize the bot infrastructure with our settings
     bot.init(config)
@@ -101,5 +129,6 @@ def main() :
         bot.orderplaced(args.orderid)
 
 args = None
+
 if __name__ == '__main__':
     main()

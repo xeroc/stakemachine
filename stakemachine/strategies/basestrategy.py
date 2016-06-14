@@ -1,8 +1,9 @@
-from grapheneexchange import GrapheneExchange
 import json
 import os
-
+import logging
+from grapheneexchange import GrapheneExchange
 from stakemachine.storage import Storage
+log = logging.getLogger(__name__)
 
 
 class MissingSettingsException(Exception):
@@ -48,7 +49,7 @@ class BaseStrategy():
     def _cancel_set(self, toCancel):
         numCanceled = 0
         for orderId in toCancel:
-            print("Canceling %s" % orderId)
+            log.info("Canceling %s" % orderId)
             self.dex.cancel(orderId)
             self.orderCanceled(orderId)
             for m in self.state["orders"]:
@@ -161,7 +162,7 @@ class BaseStrategy():
     def cancel(self, orderid):
         """ Cancel the order with id ``orderid``
         """
-        print("Canceling %s" % orderid)
+        log.info("Canceling %s" % orderid)
         return self.dex.cancel(orderid)
 
     def getState(self):
@@ -282,7 +283,7 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        print(" - Selling %f %s for %s @%f %s/%s" % (amount, quote, base, price, base, quote))
+        log.warning(" - Selling %f %s for %s @%f %s/%s" % (amount, quote, base, price, base, quote))
         self.dex.sell(market, price, amount, expiration, **kwargs)
 
     def buy(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
@@ -308,48 +309,53 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        print(" - Buying %f %s with %s @%f %s/%s" % (amount, quote, base, price, base, quote))
+        log.warning(" - Buying %f %s with %s @%f %s/%s" % (amount, quote, base, price, base, quote))
         self.dex.buy(market, price, amount, expiration, **kwargs)
 
     def init(self) :
         """ Initialize the bot's individual settings
         """
-        print("Init. Please define `%s.init()`" % self.name)
+        log.debug("Init. Please define `%s.init()`" % self.name)
 
     def place(self) :
         """ Place orders
         """
-        print("Place order. Please define `%s.place()`" % self.name)
+        log.debug("Place order. Please define `%s.place()`" % self.name)
 
     def tick(self) :
         """ Tick every block
         """
-        print("New block. Please define `%s.tick()`" % self.name)
+        log.debug("New block. Please define `%s.tick()`" % self.name)
+
+    def asset_tick(self) :
+        """ Tick every block
+        """
+        log.debug("Asset Updated. Please define `%s.asset_tick()`" % self.name)
 
     def orderFilled(self, oid):
         """ An order has been fully filled
 
             :param str oid: The order object id
         """
-        print("Order Filled. Please define `%s.orderFilled(%s)`" % (self.name, oid))
+        log.debug("Order Filled. Please define `%s.orderFilled(%s)`" % (self.name, oid))
 
 #    def orderMatched(self, oid):
 #        """ An order has been machted / partially filled
 #
 #            :param str oid: The order object id
 #        """
-#        print("An order has been matched: %s" % oid)
+#        log.debug("An order has been matched: %s" % oid)
 
     def orderPlaced(self, oid):
         """ An order has been placed
 
             :param str oid: The order object id
         """
-        print("New Order. Please define `%s.orderPlaced(%s)`" % (self.name, oid))
+        log.debug("New Order. Please define `%s.orderPlaced(%s)`" % (self.name, oid))
 
     def orderCanceled(self, oid):
         """ An order has been canceld
 
             :param str oid: The order object id
         """
-        print("Order Canceld. Please define `%s.orderCanceled(%s)`" % (self.name, oid))
+        log.debug("Order Canceld. Please define `%s.orderCanceled(%s)`" % (self.name, oid))
