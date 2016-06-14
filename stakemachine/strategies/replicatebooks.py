@@ -157,7 +157,6 @@ class ReplicateBooks(BaseStrategy):
             # consider replicating 'asks' for different markets!
             for order in orderbook[replicate["source"]]["asks"]:
                 balances = self.returnBalances()
-                pprint(balances)
                 quote_symbol = target["quote"]["symbol"]
 
                 # Define and limit the amounts
