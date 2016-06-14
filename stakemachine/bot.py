@@ -16,22 +16,16 @@ class BotProtocol(GrapheneWebsocketProtocol):
     def onAccountUpdate(self, data):
         """ If the account updates, reload every market
         """
-        print("Account Update! Notifying bots: ", end="")
         for name in bots:
-            print("%s " % name, end="")
             bots[name].loadMarket(notify=True)
             bots[name].store()
-        print()
 
     def onMarketUpdate(self, data):
         """ If a Market updates upgrades, reload every market
         """
-        print("Market Update! Notifying bots: ", end="")
         for name in bots:
-            print("%s " % name, end="")
             bots[name].loadMarket(notify=True)
             bots[name].store()
-        print()
 
     def onBlock(self, data) :
         """ Every block let the bots know via ``tick()``
@@ -42,7 +36,14 @@ class BotProtocol(GrapheneWebsocketProtocol):
             bots[name].store()
 
     def onRegisterDatabase(self):
-        print("Websocket successfully initialized!")
+        """ This method is called only once after the websocket
+            connection has successfully registered with the blockchain
+            database
+        """
+        for name in bots:
+            bots[name].loadMarket(notify=True)
+            bots[name].tick()
+            bots[name].store()
 
 
 def init(conf, **kwargs):

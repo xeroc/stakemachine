@@ -21,7 +21,7 @@ class RefundFeePool(BaseStrategy):
         * **target_fill_rate**: target balance of the fee pool (in BTS). The bot will not put more than this into the pool
         * **lower_threshold**: lower threshold of the core asset (e.g.  BTS). If this is reached, the bot will try to refill the pool
 
-        Only used if run in continuous mode (e.g. with ``run_conf.py``):
+        Only used if run in continuous mode (e.g. with ``stakemachine run``):
 
         * **skip_blocks**: Checks the CER only every x blocks
 
@@ -39,10 +39,9 @@ class RefundFeePool(BaseStrategy):
 
     """
 
-    block_counter = 0
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.block_counter = 0
 
     def init(self):
         """ Verify that the markets are against the core asset

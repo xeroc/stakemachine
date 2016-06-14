@@ -158,6 +158,12 @@ class BaseStrategy():
         """
         return self.cancel_my_sells()
 
+    def cancel(self, orderid):
+        """ Cancel the order with id ``orderid``
+        """
+        print("Canceling %s" % orderId)
+        return self.dex.cancel(orderid)
+
     def getState(self):
         """ Return the stored state of the bot. This includes the
             ``orders`` that have been placed by this bot

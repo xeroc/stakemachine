@@ -14,6 +14,11 @@ class ReplicateBooks(BaseStrategy):
             * **price**: derive the price according to "feed" (only option available atm)
             * **limit**: Limit to x orders per replication
             * **premium**: Percentage premium for replication
+            * **maxamount**: The max amount of 'quote' for a replicated order
+
+        Only used if run in continuous mode (e.g. with ``stakemachine run``):
+
+        * **skip_blocks**: Checks the market only every x blocks
 
         **Example Configuration**:
 
@@ -36,6 +41,7 @@ class ReplicateBooks(BaseStrategy):
              BitCashReplicate:
               module: "stakemachine.strategies.replicatebooks"
               bot: "ReplicateBooks"
+              skip_blocks: 1
               markets:
                - "CASH.BTC:CASH.USD"
                - "CASH.BTC:BTS"
@@ -54,15 +60,40 @@ class ReplicateBooks(BaseStrategy):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.block_counter = -1
 
     def init(self):
         if "replicated" not in self.state:
             self.state["replicated"] = {}
 
+        ticker = self.dex.returnTicker()
+        for replicate in self.settings["replicate"]:
+            source = self.dex._get_assets_from_market(replicate["source"])
+            target = self.dex._get_assets_from_market(replicate["target"])
+
+            base_market = target["base"]["symbol"] + self.config.market_separator + source["base"]["symbol"]
+            if source["quote"]["symbol"] != target["quote"]["symbol"]:
+                raise ValueError("The quotes of source and target in "
+                                 "a replicate need to be identical")
+            if (replicate["source"] not in self.settings["markets"] or
+                    replicate["target"] not in self.settings["markets"]):
+                raise ValueError("Please add ALL source and target "
+                                 "markets to the 'markets' settings.")
+            if base_market not in self.settings["markets"]:
+                raise ValueError("Please add %s " % base_market +
+                                 "to the 'markets' settings.")
+            if ("settlement_price" not in ticker[base_market] and
+                    replicate["price"] == "feed"):
+                raise ValueError("The market %s " % base_market +
+                                 "has no settlement/feed price!")
+
     def orderFilled(self, oid):
         pass
 
     def tick(self, *args, **kwargs):
+        self.block_counter += 1
+        if (self.block_counter % self.settings["skip_blocks"]) != 0:
+            return
         self.place()
 
     def orderCanceled(self, oid):
@@ -169,5 +200,6 @@ class ReplicateBooks(BaseStrategy):
             ###################################################################
             orders  = [x[2] for x in orderbook[replicate["source"]]["asks"]]
             for repOrderId in self.state["replicated"]:
-                if repOrderId not in orders:
+                if (repOrderId not in orders and
+                        "replicatedOrder" in self.state["replicated"]):
                     self.cancel(self.state["replicated"]["replicatedOrder"])
