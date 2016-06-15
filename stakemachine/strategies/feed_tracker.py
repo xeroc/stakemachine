@@ -128,6 +128,9 @@ class FeedTracker(BaseStrategy):
                 self.changeFSM("counting")
 
     def tick(self, *args, **kwargs):
+        pass
+
+    def asset_tick(self, *args, **kwargs):
         self.ensureOrders()
 
         if self.getFSM() == "updating":
@@ -143,11 +146,8 @@ class FeedTracker(BaseStrategy):
             if self.getFSMCounter() > self.settings["delay"]:
                 self.changeFSM("updating")
 
-    def asset_tick(self, *args, **kwargs):
-        pass
-
     def orderCanceled(self, oid):
-        pass
+        self.asset_tick()
 
     def orderPlaced(self, orderid):
         pass
