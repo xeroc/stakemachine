@@ -1,5 +1,6 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
 from pprint import pprint
+import math
 import logging
 log = logging.getLogger(__name__)
 
@@ -24,9 +25,9 @@ class FeedTracker(BaseStrategy):
              FeedTrack:
               module: "stakemachine.strategies.feed_tracker"
               bot: "FeedTracker"
-              assets: 
+              assets:
                - "USD"
-              markets: 
+              markets:
                - "USD:BTS"
               spread: 5
               offset: +1.0
@@ -97,16 +98,19 @@ class FeedTracker(BaseStrategy):
             openOrders = self.dex.returnOpenOrders()
             myOrders = self.getMyOrders()
             for market in self.settings["markets"]:
+                quote, base = market.split(self.config.market_separator)
+
                 # Update if one of the orders has been fully filled
                 if len(myOrders[market]) != 2:
                     self.refreshMarkets.append(market)
                     continue
 
                 # Update if the price change is bigger than the threshold
+                ticker = tickers[market]
                 for oId in myOrders[market]:
                     for o in openOrders:
                         if o["orderNumber"] == oId:
-                            change = math.fabs(o["rate"]/ticker[market]["settlement_price"])
+                            change = math.fabs(o["rate"] / ticker[market]["settlement_price"])
                             if change > self.settings["threshold"] / 100.0:
                                 log.info(
                                     "Price feed %f %s/%s is closer than %f%% to my order %f %s/%s" % (
@@ -157,7 +161,10 @@ class FeedTracker(BaseStrategy):
             ticker = tickers.get(m)
             quote, base = m.split(self.config.market_separator)
 
-            base_price = ticker["settlement_price"] + self.settings["offset"] / 100
+            base_price = ticker["settlement_price"]
+            # offset
+            base_price = base_price * (1.0 + self.settings["offset"] / 100)
+            # spread
             buy_price  = base_price * (1.0 - self.settings["spread"] / 200)
             sell_price = base_price * (1.0 + self.settings["spread"] / 200)
 
@@ -173,7 +180,7 @@ class FeedTracker(BaseStrategy):
             elif amountSettings.get("type") == "percentage":
                 for a in amountSettings.get("percentages"):
                     amounts[a] = (
-                        balances.get(a,0) *
+                        balances.get(a, 0) *
                         amountSettings["percentages"].get(a, 0) /
                         100
                     )
@@ -196,7 +203,7 @@ class FeedTracker(BaseStrategy):
                     buy_amount = amounts.get(base, 0) / buy_price
 
             if sell_amount and sell_amount < balances.get(quote, 0):
-               self.sell(m, sell_price, sell_amount)
+                self.sell(m, sell_price, sell_amount)
             else:
                 log.debug("[%s] You don't have %f %s!" % (m, sell_amount, quote))
 

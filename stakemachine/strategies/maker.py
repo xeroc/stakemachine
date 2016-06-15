@@ -1,4 +1,6 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
+import logging
+log = logging.getLogger(__name__)
 # import math
 # from numpy import linspace
 
@@ -9,13 +11,11 @@ class MakerSellBuyWalls(BaseStrategy):
         **Settings**:
 
         * **target_price**: target_price to place Ramps around (floating number or "feed")
-        * **target_price_offset_percentage**: +-percentage offset from target_price
         * **spread_percentage**: Another "offset". Allows a spread. The lowest orders will be placed here
-        * **volume_percentage**: The amount of funds (%) you want to use
-        * **symmetric_sides**: (boolean) Place symmetric walls on both sides?
         * **only_buy**: Serve only on of both sides
         * **only_sell**: Serve only on of both sides
         * **expiration**: Expiration time of the order in seconds
+        * **amount**: Definition of the amounts to be used
 
         .. code-block:: yaml
 
@@ -25,46 +25,66 @@ class MakerSellBuyWalls(BaseStrategy):
                   markets :
                    - "TEMPA:LIVE"
                   target_price: 10.0
-                  target_price_offset_percentage: 0
                   spread_percentage: 15
-                  volume_percentage: 10
-                  symmetric_sides: True
                   only_buy: False
                   only_sell: False
+                  amount:
+                    [...]
+
+        **Amount Configuration**
+
+        Absolute Amounts:
+
+        ..code-block:: yaml
+
+              amount:
+               type: "absolute"
+               amounts:
+                USD: 2
+                BTS: 200
+                EUR: 500
+
+        Percentage (of remaining balance) amounts (per order!!)
+
+        ..code-block:: yaml
+
+              amount:
+               type: "percentage"
+               percentages:
+                USD: 50
+                BTS: 50
+
+        Balanced Amounts such that the orders on both sides are equal "value"
+
+        ..code-block:: yaml
+
+              amount:
+               type: "balanced"
+               balance: "BTS"
+               amounts:
+                USD: .5
+                EUR: .5
+                SILVER: 0.01
 
         .. note:: This module does not watch your orders, all it does is
                   place new orders!
     """
-    delayState = "waiting"
-    delayCounter = 0
-    refreshMarkets = []
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def init(self):
         """ set default settings
         """
-        if "target_price_offset_percentage" not in self.settings:
-            self.settings["target_price_offset_percentage"] = 0.0
-
         if "target_price" not in self.settings:
             raise MissingSettingsException("target_price")
 
         if "spread_percentage" not in self.settings:
             raise MissingSettingsException("spread_percentage")
 
-        if "volume_percentage" not in self.settings:
-            raise MissingSettingsException("volume_percentage")
-
-        if "symmetric_sides" not in self.settings:
-            self.settings["symmetric_sides"] = True
-
-        if "expiration" not in self.settings or not self.settings["expiration"]:
-            self.settings["expiration"] = 60 * 60 * 24 * 7
-
-        if "delay" not in self.settings:
-            self.settings["delay"] = 3
+        self.settings["expiration"] = self.settings.get("expiration", 60 * 60 * 24 * 7)
+        self.settings["delay"] = self.settings.get("delay", 5)
+        self.settings["offset"] = self.settings.get("offset", 0)
+        self.refreshMarkets = []
 
     def orderFilled(self, oid):
         self.ensureOrders()
@@ -72,19 +92,18 @@ class MakerSellBuyWalls(BaseStrategy):
     def tick(self, *args, **kwargs):
         self.ensureOrders()
 
-        if self.delayState == "updating":
-            print("Refreshing markets %s" % str(self.refreshMarkets))
+        if self.getFSM() == "updating":
+            log.info("Refreshing markets %s" % str(self.refreshMarkets))
             self.cancel_mine(markets=self.refreshMarkets)
             self.place(markets=self.refreshMarkets)
             # reset
-            self.delayState = "waiting"
-            self.delayCounter = 0
+            self.changeFSM("waiting")
             self.refreshMarkets = []
 
-        if self.delayState == "counting":
-            self.delayCounter += 1
-            if self.delayCounter > self.settings["delay"]:
-                self.delayState = "updating"
+        if self.getFSM() == "counting":
+            self.incrementFSMCounter()
+            if self.getFSMCounter() > self.settings["delay"]:
+                self.changeFSM("updating")
 
     def orderPlaced(seld, *args, **kwargs):
         """ Do nothing
@@ -100,277 +119,97 @@ class MakerSellBuyWalls(BaseStrategy):
         """ Make sure that there are two orders open for this bot. If
             not, place them!
         """
-        if self.delayState == "waiting":
+        if self.getFSM() == "waiting":
             myOrders = self.getMyOrders()
             for market in self.settings["markets"]:
+                # Update if one of the orders has been fully filled
                 if len(myOrders[market]) != 2:
                     self.refreshMarkets.append(market)
+
+            # unique list
             self.refreshMarkets = list(set(self.refreshMarkets))
-            if self.refreshMarkets:
-                self.delayState = "counting"
+            if len(self.refreshMarkets):
+                self.changeFSM("counting")
 
     def place(self, markets=None) :
         if not markets:
             markets = self.settings["markets"]
         """ Place all orders according to the settings.
         """
-        print("Placing Orders:")
         target_price = self.settings["target_price"]
+
         only_sell = True if "only_sell" in self.settings and self.settings["only_sell"] else False
         only_buy = True if "only_buy" in self.settings and self.settings["only_buy"] else False
 
-        #: Amount of Funds available for trading (per asset)
-        balances = self.returnBalances()
-        asset_ids = []
-        amounts = {}
-        for market in markets:
-            quote, base = market.split(self.config.market_separator)
-            asset_ids.append(base)
-            asset_ids.append(quote)
-        assets_unique = list(set(asset_ids))
-        for a in assets_unique:
-            if a in balances :
-                amounts[a] = balances[a] * self.settings["volume_percentage"] / 100 / asset_ids.count(a)
-
         ticker = self.dex.returnTicker()
         for m in markets:
+            balances = self.dex.returnBalances()
+            quote, base = m.split(self.config.market_separator)
 
+            # Get price relation (base price)
             if isinstance(target_price, float) or isinstance(target_price, int):
-                base_price = float(target_price) * (1 + self.settings["target_price_offset_percentage"] / 100)
+                base_price = float(target_price)
             elif isinstance(target_price, str):
                 if (target_price is "settlement_price" or
                         target_price is "feed" or
                         target_price is "price_feed"):
                     if "settlement_price" in ticker[m] :
-                        base_price = ticker[m]["settlement_price"] * (1 + self.settings["target_price_offset_percentage"] / 100)
+                        base_price = ticker[m]["settlement_price"]
                     else :
-                        raise Exception("Pair %s does not have a settlement price!" % m)
+                        log.critical("Pair %s does not have a settlement price!" % m)
+                        continue
                 elif target_price == "last":
-                    base_price = ticker[m]["last"] * (1 + self.settings["target_price_offset_percentage"] / 100)
+                    base_price = ticker[m]["last"]
                 else:
-                    raise Exception("Invalid option for 'target_price'")
+                    log.critical("Invalid option for 'target_price'")
+                    continue
 
+            # offset
+            base_price = base_price * (1.0 + self.settings["offset"] / 100)
+            # spread
             buy_price  = base_price * (1.0 - self.settings["spread_percentage"] / 200)
             sell_price = base_price * (1.0 + self.settings["spread_percentage"] / 200)
 
-            quote, base = m.split(self.config.market_separator)
-            if quote in amounts and not only_buy:
-                if "symmetric_sides" in self.settings and self.settings["symmetric_sides"] and not only_sell:
-                    thisAmount = min([amounts[quote], amounts[base] / buy_price]) if base in amounts else amounts[quote]
-                    self.sell(m, sell_price, thisAmount, self.settings["expiration"])
-                else :
-                    self.sell(m, sell_price, amounts[quote], self.settings["expiration"])
-            if base in amounts and not only_sell:
-                if "symmetric_sides" in self.settings and self.settings["symmetric_sides"] and not only_buy:
-                    thisAmount = min([amounts[quote], amounts[base] / buy_price]) if quote in amounts else amounts[base] / buy_price
-                    self.buy(m, buy_price, thisAmount, self.settings["expiration"])
-                else :
-                    self.buy(m, buy_price, amounts[base] / buy_price, self.settings["expiration"])
+            # Amount Settings
+            amounts = {}
+            amountSettings = self.settings.get("amount")
+            if quote not in amountSettings.get("amounts"):
+                log.warn("You have mentioned %s in 'assets' " % quote +
+                         "but have not defined an amount")
+                continue
+            if amountSettings.get("type") == "absolute":
+                amounts = amountSettings.get("amounts")
+            elif amountSettings.get("type") == "percentage":
+                for a in amountSettings.get("percentages"):
+                    amounts[a] = (
+                        balances.get(a, 0) *
+                        amountSettings["percentages"].get(a, 0) /
+                        100
+                    )
+            elif amountSettings.get("type") == "balanced":
+                # Do the balancing later!
+                amounts = amountSettings.get("amounts")
+            else:
+                log.error("No Amount specified")
+                continue
 
+            sell_amount = amounts.get(quote, 0)
+            buy_amount = amounts.get(base, 0) / buy_price
 
-#class MakerRamp(BaseStrategy):
-#
-#    """ Play Buy/Sell Walls into a market
-#
-#        **Settings**:
-#
-#        * **target_price**: target_price to place Ramps around (floating number or "feed")
-#        * **target_price_offset_percentage**: +-percentage offset from target_price
-#        * **spread_percentage**: Another "offset". Allows a spread. The lowest orders will be placed here
-#        * **volume_percentage**: The amount of funds (%) you want to use
-#        * **only_buy**: Serve only on of both sides
-#        * **only_sell**: Serve only on of both sides
-#        * **ramp_mode**: "linear" ramp (equal amounts) or "exponential" (linearily increasing amounts)
-#        * **ramp_price_percentage**: Ramp goes up with volume up to a price increase of x%
-#        * **ramp_step_percentage**: from spread/2 to ramp_price, place an order every x%
-#        * **expiration**: Expiration time of the order in seconds
-#
-#        .. code-block:: yaml
-#
-#            MakerRexp:
-#                module: "stakemachine.strategies.maker"
-#                bot: "MakerRamp"
-#                markets:
-#                    - "USD:BTS"
-#                target_price: "feed"
-#                target_price_offset_percentage: 5
-#                spread_percentage: 0.2
-#                volume_percentage: 30
-#                ramp_price_percentage: 2
-#                ramp_step_percentage: 0.3
-#                ramp_mode: "linear"
-#                only_buy: False
-#                only_sell: False
-#                expiration: 21400
-#
-#        .. note:: This module does not watch your orders, all it does is
-#                  place new orders!
-#
-#    """
-#
-#    def __init__(self, *args, **kwargs):
-#        super().__init__(*args, **kwargs)
-#        self.delayCounter = 0
-#        self.delayStarted = False
-#        self.refreshNow = False
-#        self.refreshMarkets = []
-#
-#    def init(self) :
-#        """ set default settings
-#        """
-#        if "target_price_offset_percentage" not in self.settings:
-#            self.settings["target_price_offset_percentage"] = 0.0
-#
-#        if "target_price" not in self.settings:
-#            raise MissingSettingsException("target_price")
-#
-#        if "spread_percentage" not in self.settings:
-#            raise MissingSettingsException("spread_percentage")
-#
-#        if "volume_percentage" not in self.settings:
-#            raise MissingSettingsException("volume_percentage")
-#
-#        if "ramp_price_percentage" not in self.settings:
-#            raise MissingSettingsException("ramp_price_percentage")
-#
-#        if "ramp_step_percentage" not in self.settings:
-#            raise MissingSettingsException("ramp_step_percentage")
-#
-#        if "ramp_mode" not in self.settings:
-#            self.settings["ramp_mode"] = "linear"
-#
-#        if "expiration" not in self.settings:
-#            self.settings["expiration"] = 60 * 60 * 24 * 7
-#
-#        if "delay" not in self.settings:
-#            self.settings["delay"] = 3
-#
-#        self.ensureOrders()
-#
-#    def orderFilled(self, oid):
-#        """ Do nothing, when an order is Filled
-#        """
-#        self.ensureOrders()
-#
-#    def tick(self, *args, **kwargs):
-#        """ Do nothing
-#        """
-#        if self.delayStarted:
-#            self.delayCounter += 1
-#            if self.delayCounter > self.settings["delay"]:
-#                self.refreshNow = True
-#                self.delayCounter = 0
-#
-#        if self.refreshNow:
-#            print("Refreshing markets %s" % str(self.refreshMarkets))
-#            self.cancel_mine(markets=self.refreshMarkets)
-#            self.place(markets=self.refreshMarkets)
-#            self.delayStarted = False
-#            self.refreshNow = False
-#
-#    def orderPlaced(seld, *args, **kwargs):
-#        """ Do nothing
-#        """
-#        pass
-#
-#    def ensureOrders(self):
-#        """ Make sure that there are two orders open for this bot. If
-#            not, place them!
-#        """
-#        if not self.delayStarted:
-#            myOrders = self.getMyOrders()
-#            for market in self.settings["markets"]:
-#                if len(myOrders[market]) != 2:
-#                    self.refreshMarkets.append(market)
-#            if self.refreshMarkets:
-#                self.delayStarted = True
-#
-#    def place(self, markets=None) :
-#        if not markets:
-#            markets = self.settings["markets"]
-#        """ Place all orders according to the settings.
-#        """
-#        print("Placing Orders:")
-#        #: Amount of Funds available for trading (per asset)
-#        if "ramp_mode" not in self.settings:
-#            mode = "linear"
-#        else :
-#            mode = self.settings["ramp_mode"]
-#        target_price = self.settings["target_price"]
-#        only_sell = True if "only_sell" in self.settings and self.settings["only_sell"] else False
-#        only_buy = True if "only_buy" in self.settings and self.settings["only_buy"] else False
-#
-#        balances = self.returnBalances()
-#        asset_ids = []
-#        amounts = {}
-#        for market in markets:
-#            quote, base = market.split(self.config.market_separator)
-#            asset_ids.append(base)
-#            asset_ids.append(quote)
-#        assets_unique = list(set(asset_ids))
-#        for a in assets_unique:
-#            if a in balances :
-#                amounts[a] = balances[a] * self.settings["volume_percentage"] / 100 / asset_ids.count(a)
-#
-#        ticker = self.dex.returnTicker()
-#        for m in markets:
-#
-#            quote, base = m.split(self.config.market_separator)
-#            if isinstance(target_price, float) or isinstance(target_price, int):
-#                base_price = float(target_price)
-#            elif isinstance(target_price, str):
-#                if(target_price is "settlement_price" or
-#                        target_price is "feed" or
-#                        target_price is "price_feed"):
-#                    if "settlement_price" in ticker[m] :
-#                        base_price = ticker[m]["settlement_price"]
-#                    else :
-#                        raise Exception("Pair %s does not have a settlement price!" % m)
-#                elif target_price == "last":
-#                    base_price = ticker[m]["last"] * (1 + self.settings["target_price_offset_percentage"] / 100)
-#                else:
-#                    raise Exception("Invalid option for 'target_price'")
-#            else:
-#                raise Exception("Invalid target_price!")
-#
-#            base_price = base_price * (1 + self.settings["target_price_offset_percentage"] / 100)
-#
-#            if quote in amounts and not only_buy:
-#                price_start  = base_price * (1 + self.settings["spread_percentage"] / 200.0)
-#                price_end    = base_price * (1 + self.settings["ramp_price_percentage"] / 100.0)
-#                if not only_sell :
-#                    amount       = min([amounts[quote], amounts[base] / (price_start)]) if base in amounts else amounts[quote]
-#                else:
-#                    amount = amounts[quote]
-#                number_orders = math.floor((self.settings["ramp_price_percentage"] / 100.0 - self.settings["spread_percentage"] / 200.0) / (self.settings["ramp_step_percentage"] / 100.0))
-#                if mode == "linear" :
-#                    for price in linspace(price_start, price_end, number_orders) :
-#                        self.sell(m, price, amount / number_orders, self.settings["expiration"])
-#                elif mode == "exponential" :
-#                    k = linspace(1 / number_orders, 1, number_orders)
-#                    k = [v / sum(k) for v in k]
-#                    order_amounts = [v * amount for v in k]
-#                    for i, price in enumerate(linspace(price_start, price_end, number_orders)):
-#                        self.sell(m, price, order_amounts[i], self.settings["expiration"])
-#                else :
-#                    raise Exception("ramp_mode '%s' not known" % mode)
-#
-#            if base in amounts and not only_sell:
-#                price_start  = base_price * (1 - self.settings["spread_percentage"] / 200.0)
-#                price_end    = base_price * (1 - self.settings["ramp_price_percentage"] / 100.0)
-#                if not only_buy:
-#                    amount       = min([amounts[quote], amounts[base] / (price_start)]) if quote in amounts else amounts[base] / (price_start)
-#                else:
-#                    amount = amounts[base] / price_start
-#                number_orders = math.floor((self.settings["ramp_price_percentage"] / 100.0 - self.settings["spread_percentage"] / 200.0) / (self.settings["ramp_step_percentage"] / 100.0))
-#                if mode == "linear" :
-#                    for price in linspace(price_start, price_end, number_orders) :
-#                        self.buy(m, price, amount / number_orders, self.settings["expiration"])
-#                elif mode == "exponential" :
-#                    k = linspace(1 / number_orders, 1, number_orders)
-#                    k = [v / sum(k) for v in k]
-#                    order_amounts = [v * amount for v in k]
-#                    for i, price in enumerate(linspace(price_start, price_end, number_orders)):
-#                        self.buy(m, price, order_amounts[i], self.settings["expiration"])
-#                else :
-#                    raise Exception("ramp_mode '%s' not known" % mode)
+            if amountSettings.get("type") == "balanced":
+                if base == amountSettings.get("balance"):
+                    sell_amount = amounts.get(quote, 0)
+                    buy_amount = amounts.get(quote, 0)
+                if quote == amountSettings.get("balance"):
+                    sell_amount = amounts.get(base, 0) / sell_price
+                    buy_amount = amounts.get(base, 0) / buy_price
+
+            if not only_buy and sell_amount and sell_amount < balances.get(quote, 0):
+                self.sell(m, sell_price, sell_amount)
+            else:
+                log.debug("[%s] You don't have %f %s!" % (m, sell_amount, quote))
+
+            if not only_sell and buy_amount and buy_amount < balances.get(base, 0):
+                self.buy(m, buy_price, buy_amount)
+            else:
+                log.debug("[%s] You don't have %f %s!" % (m, buy_amount, base))
