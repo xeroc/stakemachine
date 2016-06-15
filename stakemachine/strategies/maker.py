@@ -89,6 +89,9 @@ class MakerSellBuyWalls(BaseStrategy):
     def orderFilled(self, oid):
         self.ensureOrders()
 
+    def orderCanceled(self, oid):
+        pass
+
     def tick(self, *args, **kwargs):
         self.ensureOrders()
 
@@ -215,11 +218,11 @@ class MakerSellBuyWalls(BaseStrategy):
                     buy_amount = amounts.get(base, 0) / buy_price
 
             if not only_buy and sell_amount and sell_amount < balances.get(quote, 0):
-                self.sell(m, sell_price, sell_amount)
+                self.sell(m, sell_price, sell_amount, returnID=True)
             else:
                 log.debug("[%s] You don't have %f %s!" % (m, sell_amount, quote))
 
             if not only_sell and buy_amount and buy_amount * buy_price < balances.get(base, 0):
-                self.buy(m, buy_price, buy_amount)
+                self.buy(m, buy_price, buy_amount, returnID=True)
             else:
                 log.debug("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))
