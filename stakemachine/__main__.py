@@ -48,7 +48,7 @@ def main() :
     parser.add_argument(
         '--verbose', '-v',
         type=int,
-        default=0,
+        default=3,
         help='Verbosity'
     )
     subparsers = parser.add_subparsers(help='sub-command help')
