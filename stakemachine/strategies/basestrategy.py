@@ -46,6 +46,10 @@ class BaseStrategy():
         if "markets" not in self.settings:
             raise MissingSettingsException("markets")
 
+        # Finite State machinge for tracking
+        self.fsm = "waiting"
+        self.fsm_cnt = 0
+
     def _cancel_set(self, toCancel):
         numCanceled = 0
         for orderId in toCancel:
@@ -227,6 +231,23 @@ class BaseStrategy():
                         if notify :
                             self.orderFilled(orderid)
 
+    def changeFSM(self, state):
+        log.debug("Changing State to: %s" % state)
+        self.fsm = state
+        self.resetFSMCounter()
+
+    def getFSM(self):
+        return self.fsm
+
+    def incrementFSMCounter(self):
+        self.fsm_cnt += 1
+
+    def resetFSMCounter(self):
+        self.fsm_cnt = 0
+
+    def getFSMCounter(self):
+        return self.fsm_cnt
+
     def getMyOrders(self):
         """ Return open orders for this bot
         """
@@ -284,7 +305,7 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        log.info(" - Selling %f %s for %s @%f %s/%s" % (amount, quote, base, price, base, quote))
+        log.info(" - Selling %f %s for %f %s @%f %s/%s" % (amount, quote, amount * price, base, price, base, quote))
         self.dex.sell(market, price, amount, expiration, **kwargs)
 
     def buy(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
@@ -310,25 +331,25 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        log.info(" - Buying %f %s with %s @%f %s/%s" % (amount, quote, base, price, base, quote))
+        log.info(" - Buying %f %s with %f %s @%f %s/%s" % (amount, quote, amount * price, base, price, base, quote))
         self.dex.buy(market, price, amount, expiration, **kwargs)
 
-    def init(self) :
+    def init(self):
         """ Initialize the bot's individual settings
         """
         log.debug("Init. Please define `%s.init()`" % self.name)
 
-    def place(self) :
+    def place(self):
         """ Place orders
         """
         log.debug("Place order. Please define `%s.place()`" % self.name)
 
-    def tick(self) :
+    def tick(self):
         """ Tick every block
         """
         log.debug("New block. Please define `%s.tick()`" % self.name)
 
-    def asset_tick(self) :
+    def asset_tick(self):
         """ Tick every block
         """
         log.debug("Asset Updated. Please define `%s.asset_tick()`" % self.name)
