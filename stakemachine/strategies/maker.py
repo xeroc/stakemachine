@@ -123,7 +123,12 @@ class MakerSellBuyWalls(BaseStrategy):
             myOrders = self.getMyOrders()
             for market in self.settings["markets"]:
                 # Update if one of the orders has been fully filled
-                if len(myOrders[market]) != 2:
+                numOrders = 2
+                if self.settings.get("only_buy", False):
+                    numOrders -= 1
+                if self.settings.get("only_sell", False):
+                    numOrders -= 1
+                if numOrders and len(myOrders[market]) != numOrders:
                     self.refreshMarkets.append(market)
 
             # unique list
@@ -138,8 +143,8 @@ class MakerSellBuyWalls(BaseStrategy):
             markets = self.settings["markets"]
         target_price = self.settings["target_price"]
 
-        only_sell = True if "only_sell" in self.settings and self.settings["only_sell"] else False
-        only_buy = True if "only_buy" in self.settings and self.settings["only_buy"] else False
+        only_sell = self.settings.get("only_sell", False)
+        only_buy = self.settings.get("only_buy", False)
 
         ticker = self.dex.returnTicker()
         for m in markets:
