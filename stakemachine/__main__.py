@@ -47,9 +47,8 @@ def main() :
     )
     parser.add_argument(
         '--verbose', '-v',
-        type=str,
-        default="info",
-        choices=["critical", "error", "warn", "info", "debug"],
+        type=int,
+        default=0,
         help='Verbosity'
     )
     subparsers = parser.add_subparsers(help='sub-command help')
@@ -79,20 +78,37 @@ def main() :
 
     # Logging
     log = logging.getLogger("stakemachine")
-    log.setLevel(getattr(logging, args.verbose.upper()))
+    verbosity = ["critical",
+                 "error",
+                 "warn",
+                 "info",
+                 "debug"][int(min(args.verbose, 4))]
+    log.setLevel(getattr(logging, verbosity.upper()))
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch = logging.StreamHandler()
-    ch.setLevel(getattr(logging, args.verbose.upper()))
+    ch.setLevel(getattr(logging, verbosity.upper()))
     ch.setFormatter(formatter)
     log.addHandler(ch)
 
     # GrapheneAPI logging
-    gphlog = logging.getLogger("graphenebase")
-    gphlog.setLevel(getattr(logging, args.verbose.upper()))
-    gphlog.addHandler(ch)
-    gphlog = logging.getLogger("grapheneapi")
-    gphlog.setLevel(getattr(logging, args.verbose.upper()))
-    gphlog.addHandler(ch)
+    if args.verbose > 4:
+        verbosity = ["critical",
+                     "error",
+                     "warn",
+                     "info",
+                     "debug"][int(min((args.verbose - 4), 4))]
+        gphlog = logging.getLogger("graphenebase")
+        gphlog.setLevel(getattr(logging, verbosity.upper()))
+        gphlog.addHandler(ch)
+    if args.verbose > 8:
+        verbosity = ["critical",
+                     "error",
+                     "warn",
+                     "info",
+                     "debug"][int(min((args.verbose - 8), 4))]
+        gphlog = logging.getLogger("grapheneapi")
+        gphlog.setLevel(getattr(logging, verbosity.upper()))
+        gphlog.addHandler(ch)
 
     with open(args.config, 'r') as ymlfile:
         config = yaml.load(ymlfile)
