@@ -92,6 +92,11 @@ class MakerSellBuyWalls(BaseStrategy):
     def tick(self, *args, **kwargs):
         self.ensureOrders()
 
+        if self.getFSM() == "counting":
+            self.incrementFSMCounter()
+            if self.getFSMCounter() > self.settings["delay"]:
+                self.changeFSM("updating")
+
         if self.getFSM() == "updating":
             log.info("Refreshing markets %s" % str(self.refreshMarkets))
             self.cancel_mine(markets=self.refreshMarkets)
@@ -99,11 +104,6 @@ class MakerSellBuyWalls(BaseStrategy):
             # reset
             self.changeFSM("waiting")
             self.refreshMarkets = []
-
-        if self.getFSM() == "counting":
-            self.incrementFSMCounter()
-            if self.getFSMCounter() > self.settings["delay"]:
-                self.changeFSM("updating")
 
     def orderPlaced(seld, *args, **kwargs):
         """ Do nothing
