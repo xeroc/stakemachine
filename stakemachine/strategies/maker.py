@@ -132,10 +132,10 @@ class MakerSellBuyWalls(BaseStrategy):
                 self.changeFSM("counting")
 
     def place(self, markets=None) :
-        if not markets:
-            markets = self.settings["markets"]
         """ Place all orders according to the settings.
         """
+        if not markets:
+            markets = self.settings["markets"]
         target_price = self.settings["target_price"]
 
         only_sell = True if "only_sell" in self.settings and self.settings["only_sell"] else False
@@ -209,7 +209,7 @@ class MakerSellBuyWalls(BaseStrategy):
             else:
                 log.debug("[%s] You don't have %f %s!" % (m, sell_amount, quote))
 
-            if not only_sell and buy_amount and buy_amount < balances.get(base, 0):
+            if not only_sell and buy_amount and buy_amount * buy_price < balances.get(base, 0):
                 self.buy(m, buy_price, buy_amount)
             else:
-                log.debug("[%s] You don't have %f %s!" % (m, buy_amount, base))
+                log.debug("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))

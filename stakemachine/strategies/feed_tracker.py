@@ -1,6 +1,5 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
 from pprint import pprint
-import math
 import logging
 log = logging.getLogger(__name__)
 
@@ -89,12 +88,42 @@ class FeedTracker(BaseStrategy):
     def orderFilled(self, oid):
         self.ensureOrders()
 
+    def tick(self, *args, **kwargs):
+        if self.getFSM() == "counting":
+            self.incrementFSMCounter()
+            if self.getFSMCounter() > self.settings["delay"]:
+                self.changeFSM("updating")
+
+        if self.getFSM() == "updating":
+            log.info("Refreshing markets %s" % str(self.refreshMarkets))
+            self.cancel_mine(markets=self.refreshMarkets)
+            self.place(markets=self.refreshMarkets)
+            # reset
+            self.changeFSM("waiting")
+            self.refreshMarkets = []
+
+    def asset_tick(self, *args, **kwargs):
+        self.ensureOrders()
+
+    def orderCanceled(self, oid):
+        self.asset_tick()
+
+    def orderPlaced(seld, *args, **kwargs):
+        """ Do nothing
+        """
+        pass
+
+    def orderCancled(seld, *args, **kwargs):
+        """ Do nothing
+        """
+        pass
+
     def ensureOrders(self):
         """ Make sure that there are two orders open for this bot. If
             not, place them!
         """
         if self.getFSM() == "waiting":
-            tickers = self.dex.returnTicker()
+            ticker = self.dex.returnTicker()
             openOrders = self.dex.returnOpenOrders()
             myOrders = self.getMyOrders()
             for market in self.settings["markets"]:
@@ -106,11 +135,10 @@ class FeedTracker(BaseStrategy):
                     continue
 
                 # Update if the price change is bigger than the threshold
-                ticker = tickers[market]
                 for oId in myOrders[market]:
-                    for o in openOrders:
+                    for o in openOrders[market]:
                         if o["orderNumber"] == oId:
-                            change = math.fabs(o["rate"] / ticker[market]["settlement_price"])
+                            change = 1.0 - (o["rate"] / ticker[market]["settlement_price"])
                             if change > self.settings["threshold"] / 100.0:
                                 log.info(
                                     "Price feed %f %s/%s is closer than %f%% to my order %f %s/%s" % (
@@ -127,32 +155,9 @@ class FeedTracker(BaseStrategy):
             if len(self.refreshMarkets):
                 self.changeFSM("counting")
 
-    def tick(self, *args, **kwargs):
-        pass
-
-    def asset_tick(self, *args, **kwargs):
-        self.ensureOrders()
-
-        if self.getFSM() == "updating":
-            log.info("Refreshing markets %s" % str(self.refreshMarkets))
-            self.cancel_mine(markets=self.refreshMarkets)
-            self.place(markets=self.refreshMarkets)
-            # reset
-            self.changeFSM("waiting")
-            self.refreshMarkets = []
-
-        if self.getFSM() == "counting":
-            self.incrementFSMCounter()
-            if self.getFSMCounter() > self.settings["delay"]:
-                self.changeFSM("updating")
-
-    def orderCanceled(self, oid):
-        self.asset_tick()
-
-    def orderPlaced(self, orderid):
-        pass
-
     def place(self, markets=None) :
+        """ Place all orders according to the settings.
+        """
         if not markets:
             markets = self.settings["markets"]
         tickers = self.dex.returnTicker()
@@ -207,7 +212,7 @@ class FeedTracker(BaseStrategy):
             else:
                 log.debug("[%s] You don't have %f %s!" % (m, sell_amount, quote))
 
-            if buy_amount and buy_amount < balances.get(base, 0):
+            if buy_amount and buy_amount * buy_price < balances.get(base, 0):
                 self.buy(m, buy_price, buy_amount)
             else:
-                log.debug("[%s] You don't have %f %s!" % (m, buy_amount, base))
+                log.debug("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))
