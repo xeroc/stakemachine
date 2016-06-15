@@ -18,16 +18,16 @@ class BotProtocol(GrapheneWebsocketProtocol):
     def onAccountUpdate(self, data):
         """ If the account updates, reload every market
         """
+        log.debug("onAccountUpdate")
         for name in bots:
-            log.debug("onAccountUpdate: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].store()
 
     def onMarketUpdate(self, data):
         """ If a Market updates upgrades, reload every market
         """
+        log.debug("onMarketUpdate")
         for name in bots:
-            log.debug("onMarketUpdate: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].store()
 
@@ -36,8 +36,8 @@ class BotProtocol(GrapheneWebsocketProtocol):
             connection has successfully registered with the blockchain
             database
         """
+        log.debug("onAssetUpdate")
         for name in bots:
-            log.debug("onAssetUpdate: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].asset_tick()
             bots[name].store()
@@ -45,8 +45,8 @@ class BotProtocol(GrapheneWebsocketProtocol):
     def onBlock(self, data) :
         """ Every block let the bots know via ``tick()``
         """
+        log.debug("onBlock")
         for name in bots:
-            log.debug("onBlock: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].tick()
             bots[name].store()
@@ -56,8 +56,8 @@ class BotProtocol(GrapheneWebsocketProtocol):
             connection has successfully registered with the blockchain
             database
         """
+        log.debug("onRegisterDatabase")
         for name in bots:
-            log.debug("onRegisterDatabase: %s" % name)
             bots[name].loadMarket(notify=True)
             bots[name].tick()
             bots[name].store()

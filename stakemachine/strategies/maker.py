@@ -105,6 +105,11 @@ class MakerSellBuyWalls(BaseStrategy):
             self.changeFSM("waiting")
             self.refreshMarkets = []
 
+    def asset_tick(self, *args, **kwargs):
+        """ Do nothing
+        """
+        pass
+
     def orderPlaced(seld, *args, **kwargs):
         """ Do nothing
         """

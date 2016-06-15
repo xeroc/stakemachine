@@ -7,8 +7,8 @@ wif: "5xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 market_separator: ":"
 
 reserves:
- - BTS: 1000
- - USD: 10
+ BTS: 1000
+ USD: 10
 
 bots:
     MakerWall:
