@@ -197,7 +197,8 @@ class BaseStrategy():
                         self.orderPlaced(orderid)
 
         state["orders"] = myorders
-        self.storage.store(state)
+        if not self.config.safe_mode:
+            self.storage.store(state)
 
     def restore(self):
         """ Restore the data stored on the disk
