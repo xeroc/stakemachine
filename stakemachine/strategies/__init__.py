@@ -7,4 +7,5 @@ __all__ = ["basestrategy",
            "refund_fee_pool",
            "advanced_basestrategy",
            "replicatebooks"
+           "feed_tracker",
            ]

@@ -67,13 +67,9 @@ class MakerSellBuyWalls(BaseStrategy):
             self.settings["delay"] = 3
 
     def orderFilled(self, oid):
-        """ Do nothing, when an order is Filled
-        """
         self.ensureOrders()
 
     def tick(self, *args, **kwargs):
-        """ Do nothing
-        """
         self.ensureOrders()
 
         if self.delayState == "updating":
