@@ -1,5 +1,7 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
 from pprint import pprint
+import logging
+log = logging.getLogger(__name__)
 
 
 class ReplicateBooks(BaseStrategy):
@@ -136,6 +138,8 @@ class ReplicateBooks(BaseStrategy):
             source = self.dex._get_assets_from_market(replicate["source"])
             target = self.dex._get_assets_from_market(replicate["target"])
 
+            log.debug("Replicating market %s into market %s" % (replicate["source"], replicate["target"]))
+
             # Get base price, e.g. price feed
             if replicate["price"] == "feed":
                 base_market = target["base"]["symbol"] + self.config.market_separator + source["base"]["symbol"]
@@ -149,6 +153,9 @@ class ReplicateBooks(BaseStrategy):
                 limit=replicate["limit"]
             )
 
+            log.debug("%d asks and %d bids" % (len(orderbook[replicate["source"]]["asks"]),
+                                               len(orderbook[replicate["source"]]["bids"])))
+
             ###################################################################
             # Test for NEW orders that we have not replicated
             ###################################################################
@@ -156,6 +163,8 @@ class ReplicateBooks(BaseStrategy):
             # As we are only 'selling' in this strategy, we only
             # consider replicating 'asks' for different markets!
             for order in orderbook[replicate["source"]]["asks"]:
+                log.debug("Looking into order %s" % order[2])
+
                 balances = self.returnBalances()
                 quote_symbol = target["quote"]["symbol"]
 
@@ -165,19 +174,23 @@ class ReplicateBooks(BaseStrategy):
                         amount > replicate["maxamount"]):
                     amount = replicate["maxamount"]
                 if quote_symbol not in balances:
+                    log.debug("- skipping due to no balance")
                     continue
 
                 if amount > balances.get(quote_symbol):
                     amount = balances.get(quote_symbol)
                 if ("minamount" in replicate and
                         amount < replicate["minamount"]):
+                    log.debug("- skipping due to low balance")
                     continue
                 if not amount:
+                    log.debug("- skipping due to no balance")
                     continue
 
                 # Already have this order replicated?
                 orderid = order[2]
                 if orderid in self.state["replicated"]:
+                    log.debug("- skipping because already replicated")
                     continue
 
                 # derive the new sell price
@@ -187,8 +200,8 @@ class ReplicateBooks(BaseStrategy):
                     sell_price *= float(1 + replicate["premium"] / 100)
 
                 # Print a notification
-                print(
-                    "Existing bid in %s" % (replicate["source"]) +
+                log.info(
+                    "Existing ask in %s" % (replicate["source"]) +
                     ": %f @ %f %s/%s, " % (amount, price, source["base"]["symbol"], source["quote"]["symbol"]) +
                     "feed @%f %s/%s, " % (base_price, source["base"]["symbol"], target["base"]["symbol"]) +
                     "new price: %.10f %s/%s" % (sell_price, target["base"]["symbol"], target["quote"]["symbol"])
