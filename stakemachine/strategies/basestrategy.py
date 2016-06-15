@@ -284,7 +284,7 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        log.warning(" - Selling %f %s for %s @%f %s/%s" % (amount, quote, base, price, base, quote))
+        log.info(" - Selling %f %s for %s @%f %s/%s" % (amount, quote, base, price, base, quote))
         self.dex.sell(market, price, amount, expiration, **kwargs)
 
     def buy(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
@@ -310,7 +310,7 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        log.warning(" - Buying %f %s with %s @%f %s/%s" % (amount, quote, base, price, base, quote))
+        log.info(" - Buying %f %s with %s @%f %s/%s" % (amount, quote, base, price, base, quote))
         self.dex.buy(market, price, amount, expiration, **kwargs)
 
     def init(self) :
