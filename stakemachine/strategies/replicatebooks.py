@@ -160,70 +160,77 @@ class ReplicateBooks(BaseStrategy):
             # Test for NEW orders that we have not replicated
             ###################################################################
 
-            # As we are only 'selling' in this strategy, we only
-            # consider replicating 'asks' for different markets!
-            for order in orderbook[replicate["source"]]["asks"]:
-                log.debug("Looking into order %s" % order[2])
+            # We here only consider 'selling' and thus
+            # replicate 'asks' for different markets!
 
-                balances = self.returnBalances()
-                quote_symbol = target["quote"]["symbol"]
+            replicateActions = [["asks", self.sell],
+                                ["bids", self.buy]]
+            for action in replicateActions:
+                side = action[0]
+                placeOrder = action[1]
 
-                # Define and limit the amounts
-                amount = order[1]
-                if ("maxamount" in replicate and
-                        amount > replicate["maxamount"]):
-                    amount = replicate["maxamount"]
-                if quote_symbol not in balances:
-                    log.debug("- skipping due to no balance")
-                    continue
+                for order in orderbook[replicate["source"]][side]:
+                    log.debug("Looking into order %s" % order[2])
 
-                if amount > balances.get(quote_symbol):
-                    amount = balances.get(quote_symbol)
-                if ("minamount" in replicate and
-                        amount < replicate["minamount"]):
-                    log.debug("- skipping due to low balance")
-                    continue
-                if not amount:
-                    log.debug("- skipping due to no balance")
-                    continue
+                    balances = self.returnBalances()
+                    quote_symbol = target["quote"]["symbol"]
 
-                # Already have this order replicated?
-                orderid = order[2]
-                if orderid in self.state["replicated"]:
-                    log.debug("- skipping because already replicated")
-                    continue
+                    # Define and limit the amounts
+                    amount = order[1]
+                    if ("maxamount" in replicate and
+                            amount > replicate["maxamount"]):
+                        amount = replicate["maxamount"]
+                    if quote_symbol not in balances:
+                        log.debug("- skipping due to no balance")
+                        continue
 
-                # derive the new sell price
-                price = order[0]
-                sell_price = price / base_price
-                if "premium" in replicate:
-                    sell_price *= float(1 + replicate["premium"] / 100)
+                    if amount > balances.get(quote_symbol):
+                        amount = balances.get(quote_symbol)
+                    if ("minamount" in replicate and
+                            amount < replicate["minamount"]):
+                        log.debug("- skipping due to low balance")
+                        continue
+                    if not amount:
+                        log.debug("- skipping due to no balance")
+                        continue
 
-                # Print a notification
-                log.info(
-                    "Existing ask in %s" % (replicate["source"]) +
-                    ": %f @ %f %s/%s, " % (amount, price, source["base"]["symbol"], source["quote"]["symbol"]) +
-                    "feed @%f %s/%s, " % (base_price, source["base"]["symbol"], target["base"]["symbol"]) +
-                    "new price: %.10f %s/%s" % (sell_price, target["base"]["symbol"], target["quote"]["symbol"])
-                )
+                    # Already have this order replicated?
+                    orderid = order[2]
+                    if orderid in self.state["replicated"]:
+                        log.debug("- skipping because already replicated")
+                        continue
 
-                # Do the actual sell
-                replicatedOrder = self.sell(
-                    replicate["target"],
-                    sell_price,
-                    amount,
-                    returnID=True
-                )
+                    # derive the new sell price
+                    price = order[0]
+                    sell_price = price / base_price
+                    if "premium" in replicate:
+                        sell_price *= float(1 + replicate["premium"] / 100)
 
-                # Store side information of the replicated data
-                self.state["replicated"][orderid] = {
-                    "source": replicate["source"],
-                    "target": replicate["target"],
-                    "price": price,
-                    "sell_price": sell_price,
-                    "amount": amount,
-                    "replicatedOrder": replicatedOrder
-                }
+                    # Print a notification
+                    log.info(
+                        "Existing ask in %s" % (replicate["source"]) +
+                        ": %f @ %f %s/%s, " % (amount, price, source["base"]["symbol"], source["quote"]["symbol"]) +
+                        "feed @%f %s/%s, " % (base_price, source["base"]["symbol"], target["base"]["symbol"]) +
+                        "new price: %.10f %s/%s" % (sell_price, target["base"]["symbol"], target["quote"]["symbol"])
+                    )
+
+                    # Do the actual sell
+                    replicatedOrder = placeOrder(
+                        replicate["target"],
+                        sell_price,
+                        amount,
+                        returnID=True
+                    )
+
+                    # Store side information of the replicated data
+                    self.state["replicated"][orderid] = {
+                        "source": replicate["source"],
+                        "target": replicate["target"],
+                        "price": price,
+                        "sell_price": sell_price,
+                        "amount": amount,
+                        "replicatedOrder": replicatedOrder
+                    }
 
             ###################################################################
             # See if we can clear some orders that no longer exist
