@@ -80,11 +80,12 @@ class FeedTracker(BaseStrategy):
         ticker = self.dex.returnTicker()
 
         self.settings["delay"] = self.settings.get("delay", 3)
+        self.settings["offset"] = self.settings.get("offset", 0)
         self.settings["spread"] = self.settings.get("spread", 5)
         self.settings["threshold"] = self.settings.get("threshold", self.settings["spread"] / 4)
 
-        if self.settings["threshold"] * 2 >= self.settings["spread"]:
-            raise ValueError("'threshold' has to be smaller than half the 'spread'!")
+        if self.settings["threshold"] * 2 + self.settings["offset"] >= self.settings["spread"]:
+            raise ValueError("threshold * 2 + offset has to be smaller than 'spread'!")
 
         for m in self.settings.get("markets"):
             if ("settlement_price" not in ticker[m]):
