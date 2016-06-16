@@ -1,5 +1,4 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
-from pprint import pprint
 import logging
 log = logging.getLogger(__name__)
 
@@ -206,7 +205,7 @@ class ReplicateBooks(BaseStrategy):
                     if "premium" in replicate:
                         sell_price *= float(1 + replicate["premium"] / 100)
 
-                    # Print a notification
+                    # Log a notification
                     log.info(
                         "Existing ask in %s" % (replicate["source"]) +
                         ": %f @ %f %s/%s, " % (amount, price, source["base"]["symbol"], source["quote"]["symbol"]) +

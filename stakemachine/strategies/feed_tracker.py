@@ -1,5 +1,4 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
-from pprint import pprint
 import logging
 import math
 log = logging.getLogger(__name__)
@@ -154,8 +153,8 @@ class FeedTracker(BaseStrategy):
                             distance = math.fabs(
                                 1.0 -
                                 # correct by offset
-                                (o["rate"] * (1.0 + self.settings["offset"] / 100.0)
-                                / ticker[market]["settlement_price"])
+                                (o["rate"] * (1.0 + self.settings["offset"] / 100.0) / 
+                                    ticker[market]["settlement_price"])
                             )
                             if distance < self.settings["threshold"] / 100.0:
                                 log.info(

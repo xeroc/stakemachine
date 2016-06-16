@@ -1,5 +1,6 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
-from pprint import pprint
+import logging
+log = logging.getLogger(__name__)
 
 
 class RefundFeePool(BaseStrategy):
@@ -60,15 +61,18 @@ class RefundFeePool(BaseStrategy):
     def refill_fee_pool(self, quote_symbol, amount):
         """ Actually refill the fee pool
         """
+        log.info(
+            "Refunding Feed pool for %s with %f core tokens" %
+            (quote_symbol, amount)
+        )
         if self.dex.rpc:
-            pprint(self.dex.rpc.fund_asset_fee_pool(
+            self.dex.rpc.fund_asset_fee_pool(
                 self.config.account,
                 quote_symbol,
                 amount,
                 False)
-            )
         else:
-            pprint(self.dex.rpc.fund_fee_pool(quote_symbol, amount))
+            self.dex.rpc.fund_fee_pool(quote_symbol, amount)
 
     def tick(self):
         """ We can check every block if the fee pool goes belos the
@@ -78,7 +82,7 @@ class RefundFeePool(BaseStrategy):
         if (self.block_counter % self.settings["skip_blocks"]) == 0:
             for m in self.settings["markets"]:
                 quote_symbol = m.split(self.dex.market_separator)[0]
-                print("Checking fee pool of %s" % quote_symbol)
+                log.info("Checking fee pool of %s" % quote_symbol)
                 asset = self.dex.ws.get_asset(quote_symbol)
                 core_asset = self.dex.getObject("1.3.0")
                 asset_data = self.dex.getObject(asset["dynamic_asset_data_id"])

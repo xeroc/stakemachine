@@ -4,7 +4,6 @@ import sys
 import os
 import argparse
 import time
-from pprint import pprint
 import yaml
 
 import logging

@@ -1,5 +1,6 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
-from pprint import pprint
+import logging
+log = logging.getLogger(__name__)
 
 
 class CoreExchangeRateTracker(BaseStrategy):
@@ -46,13 +47,13 @@ class CoreExchangeRateTracker(BaseStrategy):
     block_counter = 0
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def init(self):
         if not self.dex.rpc:
             raise NotImplemented(
                 "The CER tracker currently does not run with wif key"
             )
-        super().__init__(*args, **kwargs)
-
-    def init(self):
         """ Verify that the markets are against the core asset
         """
         sym = self.dex.core_asset["symbol"]
@@ -85,16 +86,17 @@ class CoreExchangeRateTracker(BaseStrategy):
                 "asset_id": "1.3.0"}
         }
         if not self.dex.rpc:
-            raise Exception(
-                "This bot still requires a cli-wallet connection"
+            log.critical(
+                "This bot still requires a cli-wallet connection!"
             )
-        pprint(self.dex.rpc.update_asset(asset["symbol"], None, options, True))
+            return
+        self.dex.rpc.update_asset(asset["symbol"], None, options, True)
 
     def update_cer(self, market):
         """ Calcualte the new CER
         """
         asset = market.split(self.dex.market_separator)[0]
-        print("Updating CER of %s" % asset)
+        log.info("Updating CER of %s" % asset)
 
         ticker = self.dex.returnTicker()[market]
         premium = self.settings["target_premium_percentage"] / 100.0
@@ -108,7 +110,8 @@ class CoreExchangeRateTracker(BaseStrategy):
         elif self.settings["target_relative_to"] == "highest_bid":
             new_cer = ticker["highestBid"] * (1.0 - premium)
         else:
-            raise MissingSettingsException()
+            log.critical("Invalid option for 'target_relative_to'.  Skipping")
+            return
 
         if (self.settings["force_lower_than_higest_bid"] and
                 new_cer > ticker["highestBid"]):
@@ -124,7 +127,7 @@ class CoreExchangeRateTracker(BaseStrategy):
         if (self.block_counter % self.settings["skip_blocks"]) == 0:
             ticker = self.dex.returnTicker()
             for m in ticker:
-                print("Checking CER of %s" % m.split(self.dex.market_separator)[0])
+                log.info("Checking CER of %s" % m.split(self.dex.market_separator)[0])
                 cer = ticker[m]["core_exchange_rate"]
                 price24h = ticker[m]["price24h"]
                 highest_bid = ticker[m]["highestBid"]
@@ -142,7 +145,8 @@ class CoreExchangeRateTracker(BaseStrategy):
                 elif self.settings["target_relative_to"] == "highest_bid":
                     premium = (1.0 - cer / highest_bid) * 100
                 else:
-                    raise MissingSettingsException()
+                    log.critical("Invalid option for 'target_relative_to'.  Skipping")
+                    return
 
                 if (premium < lower_bound or
                     premium > upper_bound or
