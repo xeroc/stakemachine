@@ -130,7 +130,9 @@ def main() :
             "Need either a wif key or connection details for to the cli wallet."
         )
 
-    log.info("Configuration: %s" % json.dumps(config, indent=4))
+    clean_config = config.copy()
+    clean_config.pop("wif", None)
+    log.info("Configuration: %s" % json.dumps(clean_config, indent=4))
 
     # initialize the bot infrastructure with our settings
     bot.init(config)
