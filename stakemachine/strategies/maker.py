@@ -136,13 +136,13 @@ class MakerSellBuyWalls(BaseStrategy):
                     numOrders -= 1
                 if self.settings.get("only_sell", False):
                     numOrders -= 1
-                if self.state.get("insufficient_sell", False):
+                if self._get(market, "insufficient_sell"):
                     numOrders -= 1
-                if self.state.get("insufficient_buy", False):
+                if self._get(market, "insufficient_buy"):
                     numOrders -= 1
                 if numOrders and len(myOrders[market]) != numOrders:
-                    log.info("An order has dissappeard/was filled. "
-                             "Gogint to refresh market %s" % market)
+                    log.info("Expected %d orders, found %d." % (numOrders, len(myOrders[market])) +
+                             " Goging to refresh market %s" % market)
                     self.refreshMarkets.append(market)
 
             # unique list
@@ -225,12 +225,14 @@ class MakerSellBuyWalls(BaseStrategy):
 
             if not only_buy and sell_amount < balances.get(quote, 0):
                 self.sell(m, sell_price, sell_amount, returnID=True)
+                self._set(m, "insufficient_sell", False)
             else:
                 log.info("[%s] You don't have %f %s!" % (m, sell_amount, quote))
-                self.state["insufficient_sell"] = True
+                self._set(m, "insufficient_sell", True)
 
             if not only_sell and buy_amount * buy_price < balances.get(base, 0):
                 self.buy(m, buy_price, buy_amount, returnID=True)
-                self.state["insufficient_buy"] = True
+                self._set(m, "insufficient_buy", False)
             else:
                 log.info("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))
+                self._set(m, "insufficient_buy", True)

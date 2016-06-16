@@ -1,6 +1,7 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
 from pprint import pprint
 import logging
+import math
 log = logging.getLogger(__name__)
 
 
@@ -79,6 +80,11 @@ class FeedTracker(BaseStrategy):
         ticker = self.dex.returnTicker()
 
         self.settings["delay"] = self.settings.get("delay", 3)
+        self.settings["spread"] = self.settings.get("spread", 5)
+        self.settings["threshold"] = self.settings.get("threshold", self.settings["spread"] / 4)
+
+        if self.settings["threshold"] * 2 >= self.settings["spread"]:
+            raise ValueError("'threshold' has to be smaller than half the 'spread'!")
 
         for m in self.settings.get("markets"):
             if ("settlement_price" not in ticker[m]):
@@ -130,16 +136,27 @@ class FeedTracker(BaseStrategy):
                 quote, base = market.split(self.config.market_separator)
 
                 # Update if one of the orders has been fully filled
-                if len(myOrders[market]) != 2:
+                numOrders = 2
+                if self._get(market, "insufficient_sell"):
+                    numOrders -= 1
+                if self._get(market, "insufficient_buy"):
+                    numOrders -= 1
+                if numOrders and len(myOrders[market]) != numOrders:
+                    log.info("Expected %d orders, found %d." % (numOrders, len(myOrders[market])) +
+                             " Goging to refresh market %s" % market)
                     self.refreshMarkets.append(market)
-                    continue
 
                 # Update if the price change is bigger than the threshold
                 for oId in myOrders[market]:
                     for o in openOrders[market]:
                         if o["orderNumber"] == oId:
-                            change = 1.0 - (o["rate"] / ticker[market]["settlement_price"])
-                            if change > self.settings["threshold"] / 100.0:
+                            distance = math.fabs(
+                                1.0 -
+                                # correct by offset
+                                (o["rate"] * (1.0 + self.settings["offset"] / 100.0)
+                                / ticker[market]["settlement_price"])
+                            )
+                            if distance < self.settings["threshold"] / 100.0:
                                 log.info(
                                     "Price feed %f %s/%s is closer than %f%% to my order %f %s/%s" % (
                                         ticker[market]["settlement_price"],
@@ -209,10 +226,14 @@ class FeedTracker(BaseStrategy):
 
             if sell_amount and sell_amount < balances.get(quote, 0):
                 self.sell(m, sell_price, sell_amount)
+                self._set(m, "insufficient_sell", False)
             else:
-                log.debug("[%s] You don't have %f %s!" % (m, sell_amount, quote))
+                log.info("[%s] You don't have %f %s!" % (m, sell_amount, quote))
+                self._set(m, "insufficient_sell", True)
 
             if buy_amount and buy_amount * buy_price < balances.get(base, 0):
                 self.buy(m, buy_price, buy_amount)
+                self._set(m, "insufficient_buy", False)
             else:
-                log.debug("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))
+                log.info("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))
+                self._set(m, "insufficient_buy", True)

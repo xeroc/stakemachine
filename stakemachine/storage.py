@@ -45,8 +45,7 @@ class Storage(object):
             r = self.db.config.find_one({"name": self.name})
         if not r:
             r = {}
-        if "orders" not in r:
-            r["orders"] = {}
+        r["orders"] = r.get("orders", {})
         return r
 
     def store(self, state):

@@ -50,6 +50,17 @@ class BaseStrategy():
         self.fsm = "waiting"
         self.fsm_cnt = 0
 
+    def _set(self, market, key, value):
+        if market not in self.state:
+            self.state[market] = {}
+        self.state[market][key] = value
+
+    def _get(self, market, key):
+        if market not in self.state:
+            self.state[market] = {}
+            return None
+        return self.state[market].get(key)
+
     def _cancel_set(self, toCancel):
         numCanceled = 0
         for orderId in toCancel:
