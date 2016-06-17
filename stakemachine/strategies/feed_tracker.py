@@ -148,24 +148,28 @@ class FeedTracker(BaseStrategy):
 
                 # Update if the price change is bigger than the threshold
                 for oId in myOrders[market]:
-                    for o in openOrders[market]:
-                        if o["orderNumber"] == oId:
-                            distance = math.fabs(
-                                1.0 -
-                                # correct by offset
-                                (o["rate"] * (1.0 + self.settings["offset"] / 100.0) / 
-                                    ticker[market]["settlement_price"])
-                            )
-                            if distance < self.settings["threshold"] / 100.0:
-                                log.info(
-                                    "Price feed %f %s/%s is closer than %f%% to my order %f %s/%s" % (
-                                        ticker[market]["settlement_price"],
-                                        base, quote,
-                                        self.settings["threshold"],
-                                        o["rate"],
-                                        base, quote))
-                                self.refreshMarkets.append(market)
-                                continue
+                    if oId not in openOrders[market]:
+                        self.orderCancled(oId)
+                        continue
+
+                    base_price = ticker[market]["settlement_price"]
+                    base_price = base_price * (1.0 + self.settings["offset"] / 100)
+
+                    o = openOrders[market][oId]
+                    distance = math.fabs(o["rate"] - base_price) / base_price * 100.0
+
+                    if distance < self.settings["threshold"] / 100.0:
+                        log.info(
+                            "Price feed %f %s/%s is closer than %f%% to my order %f %s/%s" % (
+                                ticker[market]["settlement_price"],
+                                base, quote,
+                                self.settings["threshold"],
+                                o["rate"],
+                                base, quote))
+                        self.refreshMarkets.append(market)
+                    else:
+                        print("All good")
+                        continue
 
             # unique list
             self.refreshMarkets = list(set(self.refreshMarkets))
@@ -224,16 +228,20 @@ class FeedTracker(BaseStrategy):
                     sell_amount = amounts.get(base, 0) / sell_price
                     buy_amount = amounts.get(base, 0) / buy_price
 
+            placed_sell = False
+            placed_buy = False
             if sell_amount and sell_amount < balances.get(quote, 0):
-                self.sell(m, sell_price, sell_amount)
-                self._set(m, "insufficient_sell", False)
-            else:
-                log.info("[%s] You don't have %f %s!" % (m, sell_amount, quote))
-                self._set(m, "insufficient_sell", True)
+                if self.sell(m, sell_price, sell_amount):
+                    placed_sell = True
 
             if buy_amount and buy_amount * buy_price < balances.get(base, 0):
-                self.buy(m, buy_price, buy_amount)
-                self._set(m, "insufficient_buy", False)
-            else:
-                log.info("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))
+                if self.buy(m, buy_price, buy_amount):
+                    placed_buy = True
+
+            if not placed_sell:
+                log.info("[%s] Not selling %f %s (insufficient balance or not amount provided)!" % (m, sell_amount, quote))
+                self._set(m, "insufficient_sell", True)
+
+            if not placed_buy:
+                log.info("[%s] Not buying %f %s (insufficient balance or not amount provided)!" % (m, buy_amount * buy_price, base))
                 self._set(m, "insufficient_buy", True)

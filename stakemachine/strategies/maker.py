@@ -1,7 +1,7 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
+import math
 import logging
 log = logging.getLogger(__name__)
-# import math
 # from numpy import linspace
 
 
@@ -12,8 +12,6 @@ class MakerSellBuyWalls(BaseStrategy):
 
         * **target_price**: target_price to place Ramps around (floating number or "feed")
         * **spread_percentage**: Another "offset". Allows a spread. The lowest orders will be placed here
-        * **only_buy**: Serve only on of both sides
-        * **only_sell**: Serve only on of both sides
         * **expiration**: Expiration time of the order in seconds
         * **amount**: Definition of the amounts to be used
 
@@ -26,8 +24,6 @@ class MakerSellBuyWalls(BaseStrategy):
                    - "TEMPA:LIVE"
                   target_price: 10.0
                   spread_percentage: 15
-                  only_buy: False
-                  only_sell: False
                   amount:
                     [...]
 
@@ -128,61 +124,91 @@ class MakerSellBuyWalls(BaseStrategy):
             not, place them!
         """
         if self.getFSM() == "waiting":
+            ticker = self.dex.returnTicker()
+            openOrders = self.dex.returnOpenOrdersStruct()
             myOrders = self.getMyOrders()
             for market in self.settings["markets"]:
+                quote, base = market.split(self.config.market_separator)
+
                 # Update if one of the orders has been fully filled
                 numOrders = 2
-                if self.settings.get("only_buy", False):
-                    numOrders -= 1
-                if self.settings.get("only_sell", False):
-                    numOrders -= 1
                 if self._get(market, "insufficient_sell"):
                     numOrders -= 1
                 if self._get(market, "insufficient_buy"):
                     numOrders -= 1
+
                 if numOrders and len(myOrders[market]) != numOrders:
                     log.info("Expected %d orders, found %d." % (numOrders, len(myOrders[market])) +
                              " Goging to refresh market %s" % market)
                     self.refreshMarkets.append(market)
+
+                # If we haven't had enough funds to place to orders,
+                # then cancel the other order if it leaves 2*spread
+                if numOrders == 1:
+                    for oId in myOrders[market]:
+
+                        if oId not in openOrders[market]:
+                            self.orderCancled(oId)
+                            continue
+
+                        base_price = self.basePrice(market)
+                        if not base_price:
+                            continue
+
+                        o = openOrders[market][oId]
+                        distance = math.fabs(o["rate"] - base_price) / base_price * 100.0
+
+                        if distance > self.settings["spread_percentage"]:
+                            log.info(
+                                "We only had one order placed and market is not moving in our favor. "
+                                "Base Price (%f %s/%s) has %.2f%%>%.2f%% to my order %f %s/%s" % (
+                                    ticker[market]["last"],
+                                    base, quote,
+                                    distance,
+                                    self.settings["spread_percentage"],
+                                    o["rate"],
+                                    base, quote))
+                            self.refreshMarkets.append(market)
 
             # unique list
             self.refreshMarkets = list(set(self.refreshMarkets))
             if len(self.refreshMarkets):
                 self.changeFSM("counting")
 
+    def basePrice(self, market):
+        ticker = self.dex.returnTicker()
+        target_price = self.settings["target_price"]
+        base_price = False
+        # Get price relation (base price)
+        if isinstance(target_price, float) or isinstance(target_price, int):
+            base_price = float(target_price)
+        elif isinstance(target_price, str):
+            if (target_price is "settlement_price" or
+                    target_price is "feed" or
+                    target_price is "price_feed"):
+                if "settlement_price" in ticker[market] :
+                    base_price = ticker[market]["settlement_price"]
+                else :
+                    log.critical("Pair %s does not have a settlement price!" % market)
+            elif target_price == "last":
+                base_price = ticker[market]["last"]
+            else:
+                log.critical("Invalid option for 'target_price'")
+        return base_price
+
     def place(self, markets=None) :
         """ Place all orders according to the settings.
         """
         if not markets:
             markets = self.settings["markets"]
-        target_price = self.settings["target_price"]
 
-        only_sell = self.settings.get("only_sell", False)
-        only_buy = self.settings.get("only_buy", False)
-
-        ticker = self.dex.returnTicker()
         for m in markets:
             balances = self.dex.returnBalances()
             quote, base = m.split(self.config.market_separator)
 
-            # Get price relation (base price)
-            if isinstance(target_price, float) or isinstance(target_price, int):
-                base_price = float(target_price)
-            elif isinstance(target_price, str):
-                if (target_price is "settlement_price" or
-                        target_price is "feed" or
-                        target_price is "price_feed"):
-                    if "settlement_price" in ticker[m] :
-                        base_price = ticker[m]["settlement_price"]
-                    else :
-                        log.critical("Pair %s does not have a settlement price!" % m)
-                        continue
-                elif target_price == "last":
-                    base_price = ticker[m]["last"]
-                else:
-                    log.critical("Invalid option for 'target_price'")
-                    continue
-
+            base_price = self.basePrice(m)
+            if not base_price:
+                continue
             # offset
             base_price = base_price * (1.0 + self.settings["offset"] / 100)
             # spread
@@ -223,16 +249,22 @@ class MakerSellBuyWalls(BaseStrategy):
                     sell_amount = amounts.get(base, 0) / sell_price
                     buy_amount = amounts.get(base, 0) / buy_price
 
-            if not only_buy and sell_amount < balances.get(quote, 0):
-                self.sell(m, sell_price, sell_amount, returnID=True)
-                self._set(m, "insufficient_sell", False)
-            else:
-                log.info("[%s] You don't have %f %s!" % (m, sell_amount, quote))
+            placed_sell = False
+            placed_buy = False
+            if sell_amount and sell_amount < balances.get(quote, 0):
+                if self.sell(m, sell_price, sell_amount, returnID=True):
+                    placed_sell = True
+            if buy_amount and buy_amount * buy_price < balances.get(base, 0):
+                if self.buy(m, buy_price, buy_amount, returnID=True):
+                    placed_buy = True
+
+            self._set(m, "insufficient_buy", not placed_buy)
+            self._set(m, "insufficient_sell", not placed_sell)
+
+            if not placed_sell:
+                log.info("[%s] Not selling %f %s (insufficient balance or not amount provided)!" % (m, sell_amount, quote))
                 self._set(m, "insufficient_sell", True)
 
-            if not only_sell and buy_amount * buy_price < balances.get(base, 0):
-                self.buy(m, buy_price, buy_amount, returnID=True)
-                self._set(m, "insufficient_buy", False)
-            else:
-                log.info("[%s] You don't have %f %s!" % (m, buy_amount * buy_price, base))
+            if not placed_buy:
+                log.info("[%s] Not buying %f %s (insufficient balance or not amount provided)!" % (m, buy_amount * buy_price, base))
                 self._set(m, "insufficient_buy", True)
