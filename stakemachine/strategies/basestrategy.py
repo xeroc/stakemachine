@@ -65,7 +65,10 @@ class BaseStrategy():
         numCanceled = 0
         for orderId in toCancel:
             log.info("Canceling %s" % orderId)
-            self.dex.cancel(orderId)
+            try:
+                self.dex.cancel(orderId)
+            except Exception as e:
+                log.critical("An error occured while trying to sell: %s" % str(e))
             self.orderCanceled(orderId)
             for m in self.state["orders"]:
                 if orderId in self.state["orders"][m]:
@@ -178,7 +181,11 @@ class BaseStrategy():
         """ Cancel the order with id ``orderid``
         """
         log.info("Canceling %s" % orderid)
-        return self.dex.cancel(orderid)
+        try:
+            cancel = self.dex.cancel(orderid)
+        except Exception as e:
+            log.critical("An error occured while trying to sell: %s" % str(e))
+        return cancel
 
     def getState(self):
         """ Return the stored state of the bot. This includes the
@@ -317,7 +324,12 @@ class BaseStrategy():
         """
         quote, base = market.split(self.config.market_separator)
         log.info(" - Selling %f %s for %f %s @%f %s/%s" % (amount, quote, amount * price, base, price, base, quote))
-        self.dex.sell(market, price, amount, expiration, **kwargs)
+        try:
+            self.dex.sell(market, price, amount, expiration, **kwargs)
+        except Exception as e:
+            log.critical("An error occured while trying to sell: %s" % str(e))
+            return False
+        return True
 
     def buy(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
         """ Places a buy order in a given market (buy ``quote``, sell
@@ -343,7 +355,12 @@ class BaseStrategy():
         """
         quote, base = market.split(self.config.market_separator)
         log.info(" - Buying %f %s with %f %s @%f %s/%s" % (amount, quote, amount * price, base, price, base, quote))
-        self.dex.buy(market, price, amount, expiration, **kwargs)
+        try:
+            self.dex.buy(market, price, amount, expiration, **kwargs)
+        except Exception as e:
+            log.critical("An error occured while trying to sell: %s" % str(e))
+            return False
+        return True
 
     def init(self):
         """ Initialize the bot's individual settings
