@@ -252,19 +252,15 @@ class MakerSellBuyWalls(BaseStrategy):
             placed_sell = False
             placed_buy = False
             if sell_amount and sell_amount < balances.get(quote, 0):
-                if self.sell(m, sell_price, sell_amount, returnID=True):
-                    placed_sell = True
+                placed_sell = self.sell(m, sell_price, sell_amount, returnID=True):
             if buy_amount and buy_amount * buy_price < balances.get(base, 0):
-                if self.buy(m, buy_price, buy_amount, returnID=True):
-                    placed_buy = True
+                placed_buy = self.buy(m, buy_price, buy_amount, returnID=True)
 
             self._set(m, "insufficient_buy", not placed_buy)
             self._set(m, "insufficient_sell", not placed_sell)
 
             if not placed_sell:
                 log.info("[%s] Not selling %f %s (insufficient balance or not amount provided)!" % (m, sell_amount, quote))
-                self._set(m, "insufficient_sell", True)
 
             if not placed_buy:
                 log.info("[%s] Not buying %f %s (insufficient balance or not amount provided)!" % (m, buy_amount * buy_price, base))
-                self._set(m, "insufficient_buy", True)
