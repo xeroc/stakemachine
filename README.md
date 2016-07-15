@@ -15,12 +15,6 @@ Configuration happens in `config.yml`
 * `stakemachine once`
 * `stakemachine cancel_all`
 
-## Deploy on Heroku
-
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-
-Remark: Please understand the risks of exposing private keys to heroku!
-
 # IMPORTANT NOTE
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
