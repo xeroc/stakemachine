@@ -1,5 +1,6 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
-from pprint import pprint
+import logging
+log = logging.getLogger(__name__)
 
 
 class RefundFeePool(BaseStrategy):
@@ -21,7 +22,7 @@ class RefundFeePool(BaseStrategy):
         * **target_fill_rate**: target balance of the fee pool (in BTS). The bot will not put more than this into the pool
         * **lower_threshold**: lower threshold of the core asset (e.g.  BTS). If this is reached, the bot will try to refill the pool
 
-        Only used if run in continuous mode (e.g. with ``run_conf.py``):
+        Only used if run in continuous mode (e.g. with ``stakemachine run``):
 
         * **skip_blocks**: Checks the CER only every x blocks
 
@@ -39,10 +40,9 @@ class RefundFeePool(BaseStrategy):
 
     """
 
-    block_counter = 0
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.block_counter = 0
 
     def init(self):
         """ Verify that the markets are against the core asset
@@ -61,16 +61,18 @@ class RefundFeePool(BaseStrategy):
     def refill_fee_pool(self, quote_symbol, amount):
         """ Actually refill the fee pool
         """
-        if not self.dex.rpc:
-            raise Exception(
-                "This bot still requires a cli-wallet connection"
-            )
-        pprint(self.dex.rpc.fund_asset_fee_pool(
-            self.config.account,
-            quote_symbol,
-            amount,
-            False)
+        log.info(
+            "Refunding Feed pool for %s with %f core tokens" %
+            (quote_symbol, amount)
         )
+        if self.dex.rpc:
+            self.dex.rpc.fund_asset_fee_pool(
+                self.config.account,
+                quote_symbol,
+                amount,
+                False)
+        else:
+            self.dex.rpc.fund_fee_pool(quote_symbol, amount)
 
     def tick(self):
         """ We can check every block if the fee pool goes belos the
@@ -80,7 +82,7 @@ class RefundFeePool(BaseStrategy):
         if (self.block_counter % self.settings["skip_blocks"]) == 0:
             for m in self.settings["markets"]:
                 quote_symbol = m.split(self.dex.market_separator)[0]
-                print("Checking fee pool of %s" % quote_symbol)
+                log.info("Checking fee pool of %s" % quote_symbol)
                 asset = self.dex.ws.get_asset(quote_symbol)
                 core_asset = self.dex.getObject("1.3.0")
                 asset_data = self.dex.getObject(asset["dynamic_asset_data_id"])

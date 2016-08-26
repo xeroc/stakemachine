@@ -1,5 +1,6 @@
 from .basestrategy import BaseStrategy, MissingSettingsException
-from pprint import pprint
+import logging
+log = logging.getLogger(__name__)
 
 
 class MaintainCollateralRatio(BaseStrategy):
@@ -78,7 +79,10 @@ class MaintainCollateralRatio(BaseStrategy):
     def adjust_collateral(self, symbol):
         """ Actually adjust the collateral ratio
         """
-        self.dex.adjust_debt(0, symbol, self.settings["target_ratio"])
+        try:
+            self.dex.adjust_debt(0, symbol, self.settings["target_ratio"])
+        except ValueError as e:
+            log.critical("Couldn't adjust collateral: %s" % str(e))
 
     def tick(self):
         """ We can check every block if the collateral ratio goes belos
@@ -90,11 +94,11 @@ class MaintainCollateralRatio(BaseStrategy):
             debts = self.dex.list_debt_positions()
             for m in self.settings["markets"]:
                 quote_symbol = m.split(self.dex.market_separator)[0]
-                print("Checking %s collateral of %s" % (
+                log.debug("Checking %s collateral of %s" % (
                     quote_symbol, self.config.account)
                 )
                 if quote_symbol not in debts:
-                    print("[Warning] You don't have any %s debt" % quote_symbol)
+                    log.warn("[Warning] You don't have any %s debt" % quote_symbol)
                     continue
                 debt = debts[quote_symbol]
                 if (debt["ratio"] < self.settings["lower_threshold"] or

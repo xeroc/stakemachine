@@ -1,6 +1,9 @@
-from grapheneexchange import GrapheneExchange
 import json
 import os
+import logging
+from grapheneexchange import GrapheneExchange
+from stakemachine.storage import Storage
+log = logging.getLogger(__name__)
 
 
 class MissingSettingsException(Exception):
@@ -35,13 +38,43 @@ class BaseStrategy():
         if "name" not in kwargs:
             raise MissingSettingsException("Missing parameter 'name'!")
 
-        self.filename = "data_%s.json" % self.name
         self.settings = self.config.bots[self.name]
         self.opened_orders = []
+        self.storage = Storage(self.name, self.config)
         self.restore()
 
         if "markets" not in self.settings:
             raise MissingSettingsException("markets")
+
+        # Finite State machinge for tracking
+        self.fsm = "waiting"
+        self.fsm_cnt = 0
+
+    def _set(self, market, key, value):
+        if market not in self.state:
+            self.state[market] = {}
+        self.state[market][key] = value
+
+    def _get(self, market, key):
+        if market not in self.state:
+            self.state[market] = {}
+            return None
+        return self.state[market].get(key)
+
+    def _cancel_set(self, toCancel):
+        numCanceled = 0
+        for orderId in toCancel:
+            log.info("Canceling %s" % orderId)
+            try:
+                self.dex.cancel(orderId)
+            except Exception as e:
+                log.critical("An error occured while trying to sell: %s" % str(e))
+            self.orderCanceled(orderId)
+            for m in self.state["orders"]:
+                if orderId in self.state["orders"][m]:
+                    self.state["orders"][m].remove(orderId)
+            numCanceled += 1
+        return numCanceled
 
     def cancel_all(self, markets=None, side="both") :
         """ Cancel all the account's orders **of all market** including
@@ -54,18 +87,14 @@ class BaseStrategy():
         """
         if not markets:
             markets = self.settings["markets"]
-        numCanceled = 0
         curOrders = self.dex.returnOpenOrders()
+        toCancel = set()
         for m in markets:
             if m in curOrders:
                 for o in curOrders[m]:
                     if o["type"] is side or side is "both":
-                        print("Canceling %s" % o["orderNumber"])
-                        self.dex.cancel(o["orderNumber"])
-                        if o["orderNumber"] in self.state["orders"][m]:
-                            self.state["orders"][m].remove(o["orderNumber"])
-                        numCanceled += 1
-        return numCanceled
+                        toCancel.add(o["orderNumber"])
+        return self._cancel_set(toCancel)
 
     def cancel_mine(self, markets=None, side="both") :
         """ Cancel only the orders of this particular bot in all markets
@@ -79,7 +108,7 @@ class BaseStrategy():
             markets = self.settings["markets"]
         curOrders = self.dex.returnOpenOrders()
         state = self.getState()
-        numCanceled = 0
+        toCancel = set()
         for m in markets:
             for currentOrderStates in curOrders[m]:
                 stateOrderId = currentOrderStates["orderNumber"]
@@ -87,12 +116,8 @@ class BaseStrategy():
                     continue
                 if stateOrderId in state["orders"][m]:
                     if currentOrderStates["type"] is side or side is "both":
-                        print("Canceling %s" % currentOrderStates["orderNumber"])
-                        self.dex.cancel(currentOrderStates["orderNumber"])
-                        if currentOrderStates["orderNumber"] in self.state["orders"][m]:
-                            self.state["orders"][m].remove(currentOrderStates["orderNumber"])
-                        numCanceled += 1
-        return numCanceled
+                        toCancel.add(currentOrderStates["orderNumber"])
+        return self._cancel_set(toCancel)
 
     def cancel_this_markets(self, markets=None, side="both") :
         """ Cancel all orders in all markets of that are served by this
@@ -105,16 +130,12 @@ class BaseStrategy():
         if not markets:
             markets = self.settings["markets"]
         orders = self.dex.returnOpenOrders()
-        numCanceled = 0
+        toCancel = set()
         for m in markets:
             for o in orders[m]:
                 if o["type"] is side or side is "both":
-                    print("Canceling %s" % o["orderNumber"])
-                    self.dex.cancel(o["orderNumber"])
-                    if o["orderNumber"] in self.state["orders"][m]:
-                        self.state["orders"][m].remove(o["orderNumber"])
-                    numCanceled += 1
-        return numCanceled
+                    toCancel.add(o["orderNumber"])
+        return self._cancel_set(toCancel)
 
     def cancel_all_sell_orders(self):
         """ alias for ``self.cancel_all("sell")``
@@ -156,6 +177,16 @@ class BaseStrategy():
         """
         return self.cancel_my_sells()
 
+    def cancel(self, orderid):
+        """ Cancel the order with id ``orderid``
+        """
+        log.info("Canceling %s" % orderid)
+        try:
+            cancel = self.dex.cancel(orderid)
+        except Exception as e:
+            log.critical("An error occured while trying to sell: %s" % str(e))
+        return cancel
+
     def getState(self):
         """ Return the stored state of the bot. This includes the
             ``orders`` that have been placed by this bot
@@ -169,13 +200,6 @@ class BaseStrategy():
             :param Object value: Value
         """
         self.state[key] = value
-
-    def setFullState(self, state):
-        """ Set the full state
-
-            :param json state: the new state that overwrites the current state
-        """
-        self.state = state
 
     def store(self):
         """ Evaluate the changes (orders) made by the bot and store the
@@ -195,16 +219,13 @@ class BaseStrategy():
                         self.orderPlaced(orderid)
 
         state["orders"] = myorders
-        with open(self.filename, 'w') as fp:
-            json.dump(state, fp)
+        if not self.config.safe_mode:
+            self.storage.store(state)
 
     def restore(self):
         """ Restore the data stored on the disk
         """
-        if os.path.isfile(self.filename) :
-            with open(self.filename, 'r') as fp:
-                state = json.load(fp)
-                self.setFullState(state)
+        self.state = self.storage.restore()
 
     def loadMarket(self, notify=True):
         """ Load the markets and compare the stored orders with the
@@ -228,6 +249,23 @@ class BaseStrategy():
                         if notify :
                             self.orderFilled(orderid)
 
+    def changeFSM(self, state):
+        log.debug("Changing State to: %s" % state)
+        self.fsm = state
+        self.resetFSMCounter()
+
+    def getFSM(self):
+        return self.fsm
+
+    def incrementFSMCounter(self):
+        self.fsm_cnt += 1
+
+    def resetFSMCounter(self):
+        self.fsm_cnt = 0
+
+    def getFSMCounter(self):
+        return self.fsm_cnt
+
     def getMyOrders(self):
         """ Return open orders for this bot
         """
@@ -239,7 +277,30 @@ class BaseStrategy():
                 myOrders[market] = []
         return myOrders
 
-    def sell(self, market, price, amount, expiration=60 * 60 * 24):
+    def returnBalances(self):
+        """ This is a wrapper for self.dex.returnBalances()
+            that limits the amounts such that the reserves are always
+            available in the account. The reserves are defined in the
+            configuration with:
+
+            ```
+            reserves:
+             - BTS: 1000
+             - USD: 10
+            ```
+        """
+        balances = self.dex.returnBalances()
+        if not hasattr(self.config, "reserves"):
+            return balances
+
+        reserves = getattr(self.config, "reserves")
+        for a in balances:
+            balances[a] -= reserves.get(a, 0)
+            if balances[a] < 0:
+                balances[a] = 0.0
+        return balances
+
+    def sell(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
         """ Places a sell order in a given market (sell ``quote``, buy
             ``base`` in market ``quote_base``). Required POST parameters
             are "currencyPair", "rate", and "amount". If successful, the
@@ -262,10 +323,15 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        print(" - Selling %f %s for %s @%f %s/%s" % (amount, quote, base, price, base, quote))
-        self.dex.sell(market, price, amount, expiration)
+        log.info(" - Selling %f %s for %f %s @%f %s/%s" % (amount, quote, amount * price, base, price, base, quote))
+        try:
+            self.dex.sell(market, price, amount, expiration, **kwargs)
+        except Exception as e:
+            log.critical("An error occured while trying to sell: %s" % str(e))
+            return False
+        return True
 
-    def buy(self, market, price, amount, expiration=60 * 60 * 24):
+    def buy(self, market, price, amount, expiration=60 * 60 * 24, **kwargs):
         """ Places a buy order in a given market (buy ``quote``, sell
             ``base`` in market ``quote_base``). Required POST parameters
             are "currencyPair", "rate", and "amount". If successful, the
@@ -288,41 +354,58 @@ class BaseStrategy():
                 That way you can multiply prices with `1.05` to get a +5%.
         """
         quote, base = market.split(self.config.market_separator)
-        print(" - Buying %f %s with %s @%f %s/%s" % (amount, quote, base, price, base, quote))
-        self.dex.buy(market, price, amount, expiration)
+        log.info(" - Buying %f %s with %f %s @%f %s/%s" % (amount, quote, amount * price, base, price, base, quote))
+        try:
+            self.dex.buy(market, price, amount, expiration, **kwargs)
+        except Exception as e:
+            log.critical("An error occured while trying to sell: %s" % str(e))
+            return False
+        return True
 
-    def init(self) :
+    def init(self):
         """ Initialize the bot's individual settings
         """
-        print("Init. Please define `%s.init()`" % self.name)
+        log.debug("Init. Please define `%s.init()`" % self.name)
 
-    def place(self) :
+    def place(self):
         """ Place orders
         """
-        print("Place order. Please define `%s.place()`" % self.name)
+        log.debug("Place order. Please define `%s.place()`" % self.name)
 
-    def tick(self) :
+    def tick(self):
         """ Tick every block
         """
-        print("New block. Please define `%s.tick()`" % self.name)
+        log.debug("New block. Please define `%s.tick()`" % self.name)
+
+    def asset_tick(self):
+        """ Tick every block
+        """
+        log.debug("Asset Updated. Please define `%s.asset_tick()`" % self.name)
 
     def orderFilled(self, oid):
         """ An order has been fully filled
 
             :param str oid: The order object id
         """
-        print("Order Filled. Please define `%s.orderFilled(%s)`" % (self.name, oid))
+        log.debug("Order Filled. Please define `%s.orderFilled(%s)`" % (self.name, oid))
 
 #    def orderMatched(self, oid):
 #        """ An order has been machted / partially filled
 #
 #            :param str oid: The order object id
 #        """
-#        print("An order has been matched: %s" % oid)
+#        log.debug("An order has been matched: %s" % oid)
 
     def orderPlaced(self, oid):
         """ An order has been placed
 
             :param str oid: The order object id
         """
-        print("New Order. Please define `%s.orderPlaced(%s)`" % (self.name, oid))
+        log.debug("New Order. Please define `%s.orderPlaced(%s)`" % (self.name, oid))
+
+    def orderCanceled(self, oid):
+        """ An order has been canceld
+
+            :param str oid: The order object id
+        """
+        log.debug("Order Canceld. Please define `%s.orderCanceled(%s)`" % (self.name, oid))

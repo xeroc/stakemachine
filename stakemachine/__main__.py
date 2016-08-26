@@ -4,9 +4,12 @@ import sys
 import os
 import argparse
 import time
-from pprint import pprint
 import yaml
+
+import logging
+from logging.handlers import SMTPHandler, RotatingFileHandler
 from stakemachine import bot
+log = logging.getLogger(__name__)
 
 
 def replaceEnvironmentalVariables(config):
@@ -41,6 +44,12 @@ def main() :
         default="config.yml",
         help='Configuration python file'
     )
+    parser.add_argument(
+        '--verbose', '-v',
+        type=int,
+        default=3,
+        help='Verbosity'
+    )
     subparsers = parser.add_subparsers(help='sub-command help')
 
     once = subparsers.add_parser('once', help='Run the bot once')
@@ -49,10 +58,56 @@ def main() :
     cont = subparsers.add_parser('run', help='Run the bot continuously')
     cont.set_defaults(command="run")
 
-    cont = subparsers.add_parser('cancelall', help='Run the bot continuously')
-    cont.set_defaults(command="cancelall")
+    cancel = subparsers.add_parser('cancelall', help='Run the bot continuously')
+    cancel.set_defaults(command="cancelall")
+
+    placed = subparsers.add_parser('orderplaced', help='')
+    placed.set_defaults(command="orderplaced")
+    placed.add_argument(
+        'orderid',
+        type=str,
+        help=''
+    )
 
     args = parser.parse_args()
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
+
+    # Logging
+    log = logging.getLogger("stakemachine")
+    verbosity = ["critical",
+                 "error",
+                 "warn",
+                 "info",
+                 "debug"][int(min(args.verbose, 4))]
+    log.setLevel(getattr(logging, verbosity.upper()))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch = logging.StreamHandler()
+    ch.setLevel(getattr(logging, verbosity.upper()))
+    ch.setFormatter(formatter)
+    log.addHandler(ch)
+
+    # GrapheneAPI logging
+    if args.verbose > 4:
+        verbosity = ["critical",
+                     "error",
+                     "warn",
+                     "info",
+                     "debug"][int(min((args.verbose - 4), 4))]
+        gphlog = logging.getLogger("graphenebase")
+        gphlog.setLevel(getattr(logging, verbosity.upper()))
+        gphlog.addHandler(ch)
+    if args.verbose > 8:
+        verbosity = ["critical",
+                     "error",
+                     "warn",
+                     "info",
+                     "debug"][int(min((args.verbose - 8), 4))]
+        gphlog = logging.getLogger("grapheneapi")
+        gphlog.setLevel(getattr(logging, verbosity.upper()))
+        gphlog.addHandler(ch)
 
     with open(args.config, 'r') as ymlfile:
         config = yaml.load(ymlfile)
@@ -74,7 +129,9 @@ def main() :
             "Need either a wif key or connection details for to the cli wallet."
         )
 
-    pprint(config)
+    clean_config = config.copy()
+    clean_config.pop("wif", None)
+    log.info("Configuration: %s" % json.dumps(clean_config, indent=4))
 
     # initialize the bot infrastructure with our settings
     bot.init(config)
@@ -85,7 +142,10 @@ def main() :
         bot.once()
     elif args.command == "cancelall":
         bot.cancel_all()
+    elif args.command == "orderplaced":
+        bot.orderplaced(args.orderid)
 
 args = None
+
 if __name__ == '__main__':
     main()

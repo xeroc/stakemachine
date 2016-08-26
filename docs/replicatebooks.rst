@@ -1,6 +1,6 @@
 ***********************************
-Example: Core Exchange Rate Tracker
+Example: Replciate Order books
 ***********************************
 
-.. automodule:: exchangebots.strategies.cer_tracker
+.. automodule:: stakemachine.strategies.replicatebooks
       :members:
