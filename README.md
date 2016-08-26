@@ -5,6 +5,14 @@ Trading Bot Infrastructure for the BitShares Decentralized Exchange
 
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
+## Installation
+
+    git clone https://github.com/xeroc/stakemachine
+    cd stakemachine
+    python3 setup.py install
+    # or
+    python3 setup.py install --user
+
 ## Configuration
 
 Configuration happens in `config.yml`
