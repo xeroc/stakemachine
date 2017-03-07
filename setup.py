@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 
 setup(name='stakemachine',
       version=VERSION,
@@ -29,8 +29,9 @@ setup(name='stakemachine',
               'stakemachine = stakemachine.__main__:main',
           ],
       },
-      install_requires=["graphenelib>=0.4.4",
+      install_requires=["graphenelib==0.4.4",
                         "pyyaml",
+                        "autobahn"
                         ],
       include_package_data=True,
       )
