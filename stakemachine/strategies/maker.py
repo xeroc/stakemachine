@@ -252,7 +252,7 @@ class MakerSellBuyWalls(BaseStrategy):
             placed_sell = False
             placed_buy = False
             if sell_amount and sell_amount < balances.get(quote, 0):
-                placed_sell = self.sell(m, sell_price, sell_amount, returnID=True):
+                placed_sell = self.sell(m, sell_price, sell_amount, returnID=True)
             if buy_amount and buy_amount * buy_price < balances.get(base, 0):
                 placed_buy = self.buy(m, buy_price, buy_amount, returnID=True)
 
