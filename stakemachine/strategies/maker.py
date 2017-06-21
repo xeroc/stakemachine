@@ -1,4 +1,5 @@
-from .basestrategy import BaseStrategy, MissingSettingsException
+from stakemachine.basestrategy import BaseStrategy
+from stakemachine.exceptions import MissingSettingsException
 import math
 import logging
 log = logging.getLogger(__name__)

@@ -1,60 +1,88 @@
-from pymongo import MongoClient
-import os
-import json
-import logging
-log = logging.getLogger(__name__)
+import sqlalchemy
+from sqlalchemy import create_engine, Table, Column, String, Integer, MetaData
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+Base = declarative_base()
 
 
-class InvalidStorageType(Exception):
-    pass
+class Config(Base):
+    __tablename__ = 'config'
+
+    id = Column(Integer, primary_key=True)
+    category = Column(String)
+    key = Column(String)
+    value = Column(String)
+
+    def __init__(self, c, k, v):
+        self.category = c
+        self.key = k
+        self.value = v
 
 
-class Storage(object):
-    """ This class simplifies the Storage of bots' states in a JSON-file
-        or a mongo database
-    """
-    def __init__(self, name, config, *args, **kwargs):
-        self.name = name
-        self.filename = "data_%s.json" % self.name
-        if not hasattr(config, "storage"):
-            setattr(config, "storage", "json")
-        self.config = config
+class Storage(dict):
+    def __init__(self, category):
+        """ Storage class
 
-        if self.config.storage == "json":
-            pass
-        elif self.config.storage == "mongo":
-            if not hasattr(config, "mongo_server"):
-                raise ValueError("Need configuration 'mongo_server'!")
+            :param string category: The category to distinguish
+                                    different storage namespaces
+        """
+        self.category = category
 
-            self.client = MongoClient(config.mongo_server)
-            collection = config.mongo_server.split("/")[-1]
-            self.db = self.client[collection]
+    def __setitem__(self, key, value):
+        e = session.query(Config).filter_by(
+            category=self.category,
+            key=key
+        ).first()
+        if e:
+            e.value = value
         else:
-            raise InvalidStorageType
+            e = Config(self.category, key, value)
+            session.add(e)
+        session.commit()
 
-    def restore(self):
-        r = None
-        if self.config.storage == "json":
-            if os.path.isfile(self.filename) :
-                with open(self.filename, 'r') as fp:
-                    try:
-                        r = json.load(fp)
-                    except:
-                        r = {}
-        elif self.config.storage == "mongo":
-            r = self.db.config.find_one({"name": self.name})
-        if not r:
-            r = {}
-        r["orders"] = r.get("orders", {})
-        return r
+    def __getitem__(self, key):
+        e = session.query(Config).filter_by(
+            category=self.category,
+            key=key
+        ).first()
+        if not e:
+            return None
+        else:
+            return e.value
 
-    def store(self, state):
-        if self.config.storage == "json":
-            with open(self.filename, 'w') as fp:
-                json.dump(state, fp)
-        elif self.config.storage == "mongo":
-            result = self.db.states.update_one(
-                {"name": self.name},
-                {"$set": state,
-                 }, True)
-            return result.matched_count
+    def __delitem__(self, key):
+        e = session.query(Config).filter_by(
+            category=self.category,
+            key=key
+        ).first()
+        session.delete(e)
+        session.commit()
+
+    def __contains__(self, key):
+        e = session.query(Config).filter_by(
+            category=self.category,
+            key=key
+        ).first()
+        return bool(e)
+
+    def items(self):
+        es = session.query(Config).filter_by(
+            category=self.category
+        ).all()
+        return [(e.key, e.value) for e in es]
+
+
+engine = create_engine('sqlite:///stakemachine.sqlite', echo=False)
+Session = sessionmaker(bind=engine)
+session = Session()
+Base.metadata.create_all(engine)
+session.commit()
+
+if __name__ == "__main__":
+    storage = Storage("test")
+    storage["foo"] = "bar"
+    storage["foo1"] = "bar"
+    storage["foo3"] = "bar"
+    print(storage.items())
+    print("foo" in storage)
+    print("bar" in storage)
