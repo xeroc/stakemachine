@@ -1,3 +1,4 @@
+import json
 import sqlalchemy
 from sqlalchemy import create_engine, Table, Column, String, Integer, MetaData
 from sqlalchemy.ext.declarative import declarative_base
@@ -29,6 +30,7 @@ class Storage(dict):
         self.category = category
 
     def __setitem__(self, key, value):
+        value = json.dumps(value)
         e = session.query(Config).filter_by(
             category=self.category,
             key=key
@@ -48,7 +50,7 @@ class Storage(dict):
         if not e:
             return None
         else:
-            return e.value
+            return json.loads(e.value)
 
     def __delitem__(self, key):
         e = session.query(Config).filter_by(

@@ -1,3 +1,4 @@
+import traceback
 import importlib
 import time
 import logging
@@ -26,10 +27,11 @@ class BotInfrastructure():
         for botname, bot in config["bots"].items():
             if "account" not in bot:
                 raise ValueError("Bot %s has no account" % botname)
-            if "markets" not in bot:
-                raise ValueError("Bot %s has no markets" % botname)
+            if "market" not in bot:
+                raise ValueError("Bot %s has no market" % botname)
+
             accounts.add(bot["account"])
-            markets.update(set(bot["markets"]))
+            markets.add(bot["market"])
 
         # Create notification instance
         # Technically, this will multiplex markets and accounts and
@@ -58,14 +60,30 @@ class BotInfrastructure():
     # Events
     def on_block(self, data):
         for botname, bot in self.config["bots"].items():
-            for market in bot["markets"]:
+            try:
                 self.bots[botname].ontick(data)
+            except Exception as e:
+                log.error(
+                    "Error while processing {botname}.tick(): {exception}\n{stack}".format(
+                        botname=botname,
+                        exception=str(e),
+                        stack=traceback.format_exc()
+                    ))
 
     def on_market(self, data):
+        if data.get("deleted", False):  # no info available on deleted orders
+            return
         for botname, bot in self.config["bots"].items():
-            for market in bot["markets"]:
-                if market == data.market:
+            if bot["market"] == data.market:
+                try:
                     self.bots[botname].onMarketUpdate(data)
+                except Exception as e:
+                    log.error(
+                        "Error while processing {botname}.onMarketUpdate(): {exception}\n{stack}".format(
+                            botname=botname,
+                            exception=str(e),
+                            stack=traceback.format_exc()
+                        ))
 
     def on_account(self, data):
         pass
