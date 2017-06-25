@@ -26,10 +26,11 @@ class BotInfrastructure():
         for botname, bot in config["bots"].items():
             if "account" not in bot:
                 raise ValueError("Bot %s has no account" % botname)
-            if "markets" not in bot:
-                raise ValueError("Bot %s has no markets" % botname)
+            if "market" not in bot:
+                raise ValueError("Bot %s has no market" % botname)
+
             accounts.add(bot["account"])
-            markets.update(set(bot["markets"]))
+            markets.add(bot["market"])
 
         # Create notification instance
         # Technically, this will multiplex markets and accounts and
@@ -58,14 +59,12 @@ class BotInfrastructure():
     # Events
     def on_block(self, data):
         for botname, bot in self.config["bots"].items():
-            for market in bot["markets"]:
-                self.bots[botname].ontick(data)
+            self.bots[botname].ontick(data)
 
     def on_market(self, data):
         for botname, bot in self.config["bots"].items():
-            for market in bot["markets"]:
-                if market == data.market:
-                    self.bots[botname].onMarketUpdate(data)
+            if bot["market"] == data.market:
+                self.bots[botname].onMarketUpdate(data)
 
     def on_account(self, data):
         pass

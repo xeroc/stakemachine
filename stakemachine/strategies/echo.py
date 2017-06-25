@@ -4,16 +4,20 @@ log = logging.getLogger(__name__)
 
 
 def print1(i):
-    print("1: %s" % i)
+    print("order matched: %s" % i)
+
 
 def print2(i):
-    print("2: %s" % i)
+    print("order placed:  %s" % i)
+
 
 def print3(i):
-    print("3: %s" % i)
+    print("marketupdate:  %s" % i)
+
 
 def print4(i):
-    print("4: %s" % i)
+    print("new block:     %s" % i)
+
 
 class Echo(BaseStrategy):
     def __init__(self, *args, **kwargs):
@@ -23,5 +27,5 @@ class Echo(BaseStrategy):
         """
         self.onOrderMatched += print1
         self.onOrderPlaced += print2
-        #self.onMarketUpdate += print3
+        self.onMarketUpdate += print3
         self.ontick += print4
