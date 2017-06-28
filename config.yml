@@ -10,7 +10,7 @@ bots:
         Walls:
              module: "stakemachine.strategies.walls"
              bot: "Walls"
-             market: GOLD:TEST
+             market: HERO:TEST
              account: xeroc
              ###################
              bundle: True
@@ -18,7 +18,10 @@ bots:
                      blocks: 1
              target:
                      reference: feed
-                     spread: 5.0
+                     offsets:
+                         buy: 2.5
+                         sell: 0
                      amount:
                              buy: 5.0
                              sell: 5.0
+             threshold: 2

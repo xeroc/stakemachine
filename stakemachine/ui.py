@@ -50,7 +50,6 @@ def chain(f):
     def new_func(ctx, *args, **kwargs):
         ctx.bitshares = BitShares(
             ctx.config["node"],
-            bundle=True,   # We bundle many feeds into a single tx
             **ctx.obj
         )
         set_shared_bitshares_instance(ctx.bitshares)

@@ -13,6 +13,12 @@ from .ui import (
     alert,
 )
 from stakemachine.bot import BotInfrastructure
+log = logging.getLogger(__name__)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s'
+)
 
 
 @click.group()

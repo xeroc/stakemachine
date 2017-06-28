@@ -34,7 +34,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             inherit this BaseStrategy.
 
             BaseStrategy inherits:
-            
+
             * :class:`stakemachine.storage.Storage`
             * :class:`stakemachine.statemachine.StateMachine`
             * ``Events``
@@ -45,7 +45,7 @@ class BaseStrategy(Storage, StateMachine, Events):
              * ``basestrategy.add_state``: Add a specific state
              * ``basestrategy.set_state``: Set finite state machine
              * ``basestrategy.get_state``: Change state of state machine
-             * ``basestrategy.account``: The Account object of this bot 
+             * ``basestrategy.account``: The Account object of this bot
              * ``basestrategy.market``: The market used by this bot
              * ``basestrategy.orders``: List of open orders of the bot's account in the bot's market
              * ``basestrategy.balance``: List of assets and amounts available in the bot's account
@@ -118,17 +118,16 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         return self._account
 
-    @property
-    def balance(self):
-        """ Return the balances of your bot's account
+    def balance(self, asset):
+        """ Return the balance of your bot's account for a specific asset
         """
-        return self.account.balances
+        return self._account.balance(asset)
 
     @property
     def balances(self):
         """ Return the balances of your bot's account
         """
-        return self.balance
+        return self._account.balances
 
     def _callbackPlaceFillOrders(self, d):
         """ This method distringuishes notifications caused by Matched orders
@@ -144,4 +143,7 @@ class BaseStrategy(Storage, StateMachine, Events):
     def execute(self):
         """ Execute a bundle of operations
         """
-        return self.bitshares.txbuffer.broadcast()
+        self.bitshares.blocking = "head"
+        r = self.bitshares.txbuffer.broadcast()
+        self.bitshares.blocking = False
+        return r
