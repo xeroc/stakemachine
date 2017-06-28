@@ -33,6 +33,12 @@ class BaseStrategy(Storage, StateMachine, Events):
         """ Base Strategy and methods available in all Sub Classes that
             inherit this BaseStrategy.
 
+            BaseStrategy inherits:
+            
+            * :class:`stakemachine.storage.Storage`
+            * :class:`stakemachine.statemachine.StateMachine`
+            * ``Events``
+
             Available attributes:
 
              * ``basestrategy.bitshares``: instance of ´`bitshares.BitShares()``
@@ -42,7 +48,7 @@ class BaseStrategy(Storage, StateMachine, Events):
              * ``basestrategy.account``: The Account object of this bot 
              * ``basestrategy.market``: The market used by this bot
              * ``basestrategy.orders``: List of open orders of the bot's account in the bot's market
-             * ``basestrategy.balanc``: List of assets and amounts available in the bot's account
+             * ``basestrategy.balance``: List of assets and amounts available in the bot's account
 
             Also, Base Strategy inherits :class:`stakemachine.storage.Storage`
             which allows to permanently store data in a sqlite database
@@ -62,6 +68,8 @@ class BaseStrategy(Storage, StateMachine, Events):
         StateMachine.__init__(self, name)
 
         # Events
+        Events.__init__(self)
+
         if onOrderMatched:
             self.onOrderMatched += onOrderMatched
         if onOrderPlaced:
@@ -76,34 +84,64 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         self.config = config
         self.bot = config["bots"][name]
-        self.account = Account(
+        self._account = Account(
             self.bot["account"],
+            full=True,
+            bitshares_instance=self.bitshares
+        )
+        self._market = Market(
+            config["bots"][name]["market"],
             bitshares_instance=self.bitshares
         )
 
-    @property
-    def market(self):
-        return Market(
-            self.bot["market"],
-            bitshares_instance=self.bitshares
-        )
+        # Settings for bitshares instance
+        self.bitshares.bundle = bool(self.bot["bundle"])
 
     @property
     def orders(self):
-        return [o for o in self.account.openorders if self.bot["market"] == o.market]
+        """ Return the bot's open accounts in the current market
+        """
+        self.account.refresh()
+        return [o for o in self.account.openorders if self.bot["market"] == o.market and self.account.openorders]
+
+    @property
+    def market(self):
+        """ Return the market object as :class:`bitshares.market.Market`
+        """
+        return self._market
+
+    @property
+    def account(self):
+        """ Return the full account as :class:`bitshares.account.Account` object!
+
+            Can be refreshed by using ``x.refresh()``
+        """
+        return self._account
 
     @property
     def balance(self):
+        """ Return the balances of your bot's account
+        """
         return self.account.balances
 
     @property
     def balances(self):
+        """ Return the balances of your bot's account
+        """
         return self.balance
 
     def _callbackPlaceFillOrders(self, d):
+        """ This method distringuishes notifications caused by Matched orders
+            from those caused by placed orders
+        """
         if isinstance(d, FilledOrder):
             self.onOrderMatched(d)
         elif isinstance(d, Order):
             self.onOrderPlaced(d)
         else:
             pass
+
+    def execute(self):
+        """ Execute a bundle of operations
+        """
+        return self.bitshares.txbuffer.broadcast()
