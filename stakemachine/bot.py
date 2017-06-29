@@ -1,153 +1,92 @@
-import time
+import traceback
 import importlib
+import time
 import logging
-from grapheneapi.graphenewsprotocol import GrapheneWebsocketProtocol
-from grapheneexchange import GrapheneExchange
+from bitshares.notify import Notify
+from bitshares.instance import shared_bitshares_instance
 log = logging.getLogger(__name__)
 
-config = None
-bots = {}
-dex = None
 
+class BotInfrastructure():
 
-class BotProtocol(GrapheneWebsocketProtocol):
-    """ Bot Protocol to interface with websocket notifications and
-        forward notices to the bots
-    """
+    bots = dict()
 
-    def onAccountUpdate(self, data):
-        """ If the account updates, reload every market
-        """
-        log.debug("onAccountUpdate")
-        for name in bots:
-            bots[name].loadMarket(notify=True)
-            bots[name].store()
+    def __init__(
+        self,
+        config,
+        bitshares_instance=None,
+    ):
+        # BitShares instance
+        self.bitshares = bitshares_instance or shared_bitshares_instance()
 
-    def onMarketUpdate(self, data):
-        """ If a Market updates upgrades, reload every market
-        """
-        log.debug("onMarketUpdate")
-        for name in bots:
-            bots[name].loadMarket(notify=True)
-            bots[name].store()
+        self.config = config
 
-    def onAssetUpdate(self, data):
-        """ This method is called only once after the websocket
-            connection has successfully registered with the blockchain
-            database
-        """
-        log.debug("onAssetUpdate")
-        for name in bots:
-            bots[name].loadMarket(notify=True)
-            bots[name].asset_tick()
-            bots[name].store()
+        # Load all accounts and markets in use to subscribe to them
+        accounts = set()
+        markets = set()
+        for botname, bot in config["bots"].items():
+            if "account" not in bot:
+                raise ValueError("Bot %s has no account" % botname)
+            if "market" not in bot:
+                raise ValueError("Bot %s has no market" % botname)
 
-    def onBlock(self, data) :
-        """ Every block let the bots know via ``tick()``
-        """
-        log.debug("onBlock")
-        for name in bots:
-            bots[name].loadMarket(notify=True)
-            bots[name].tick()
-            bots[name].store()
+            accounts.add(bot["account"])
+            markets.add(bot["market"])
 
-    def onRegisterDatabase(self):
-        """ This method is called only once after the websocket
-            connection has successfully registered with the blockchain
-            database
-        """
-        log.debug("onRegisterDatabase")
-        for name in bots:
-            bots[name].loadMarket(notify=True)
-            bots[name].tick()
-            bots[name].store()
-
-
-def init(conf, **kwargs):
-    """ Initialize the Bot Infrastructure and setup connection to the
-        network
-    """
-    global dex, bots, config
-
-    config = BotProtocol
-
-    # Take the configuration variables and put them in the current
-    # instance of BotProtocol. This step is required to let
-    # GrapheneExchange know most of our variables as well!
-    # We will also be able to hook into websocket messages from
-    # within the configuration file!
-    [setattr(config, key, conf[key]) for key in conf.keys()]
-
-    if not hasattr(config, "prefix") or not config.prefix:
-        log.debug("Setting default network (BTS)")
-        config.prefix = "BTS"
-
-    # Construct watch_markets attribute from all bots:
-    watch_markets = set()
-    for name in config.bots:
-        watch_markets = watch_markets.union(config.bots[name].get("markets", []))
-    setattr(config, "watch_markets", watch_markets)
-
-    # Construct watch_assets attribute from all bots:
-    watch_assets = set()
-    for name in config.bots:
-        watch_assets = watch_assets.union(config.bots[name].get("assets", []))
-    setattr(config, "watch_assets", watch_assets)
-
-    # Connect to the DEX
-    dex    = GrapheneExchange(config,
-                              safe_mode=config.safe_mode,
-                              prefix=config.prefix)
-
-    # Initialize all bots
-    for index, name in enumerate(config.bots, 1):
-        log.debug("Initializing bot %s" % name)
-        if "module" not in config.bots[name]:
-            raise ValueError("No 'module' defined for bot %s" % name)
-        klass = getattr(
-            importlib.import_module(config.bots[name]["module"]),
-            config.bots[name]["bot"]
+        # Create notification instance
+        # Technically, this will multiplex markets and accounts and
+        # we need to demultiplex the events after we have received them
+        self.notify = Notify(
+            markets=markets,
+            accounts=accounts,
+            on_market=self.on_market,
+            on_account=self.on_account,
+            on_block=self.on_block,
+            bitshares_instance=self.bitshares
         )
-        bots[name] = klass(config=config, name=name,
-                           dex=dex, index=index)
-        # Maybe the strategy/bot has some additional customized
-        # initialized besides the basestrategy's __init__()
-        log.debug("Calling %s.init()" % name)
-        bots[name].loadMarket(notify=False)
-        bots[name].init()
-        bots[name].store()
 
+        # Initialize bots:
+        for botname, bot in config["bots"].items():
+            klass = getattr(
+                importlib.import_module(bot["module"]),
+                bot["bot"]
+            )
+            self.bots[botname] = klass(
+                config=config,
+                name=botname,
+                bitshares_instance=self.bitshares
+            )
 
-def cancel_all():
-    """ Cancel all orders of all markets that are served by the bots
-    """
-    for name in bots:
-        log.info("Cancel-all %s" % name)
-        bots[name].loadMarket(notify=False)
-        bots[name].cancel_this_markets()
-        bots[name].store()
+    # Events
+    def on_block(self, data):
+        for botname, bot in self.config["bots"].items():
+            try:
+                self.bots[botname].ontick(data)
+            except Exception as e:
+                log.error(
+                    "Error while processing {botname}.tick(): {exception}\n{stack}".format(
+                        botname=botname,
+                        exception=str(e),
+                        stack=traceback.format_exc()
+                    ))
 
+    def on_market(self, data):
+        if data.get("deleted", False):  # no info available on deleted orders
+            return
+        for botname, bot in self.config["bots"].items():
+            if bot["market"] == data.market:
+                try:
+                    self.bots[botname].onMarketUpdate(data)
+                except Exception as e:
+                    log.error(
+                        "Error while processing {botname}.onMarketUpdate(): {exception}\n{stack}".format(
+                            botname=botname,
+                            exception=str(e),
+                            stack=traceback.format_exc()
+                        ))
 
-def once():
-    """ Execute the core unit of the bot
-    """
-    for name in bots:
-        log.info("Executing bot %s" % name)
-        bots[name].loadMarket(notify=True)
-        bots[name].place()
-        bots[name].store()
+    def on_account(self, data):
+        pass
 
-
-def orderplaced(orderid):
-    """ Execute the core unit of the bot
-    """
-    for name in bots:
-        log.info("Executing bot %s" % name)
-        bots[name].orderPlaced(orderid)
-
-
-def run():
-    """ This call will run the bot in **continous mode** and make it
-        receive notification from the network
-    """
-    dex.run()
+    def run(self):
+        self.notify.listen()

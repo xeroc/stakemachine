@@ -1,0 +1,27 @@
+node: "wss://node.testnet.bitshares.eu"
+
+bots:
+        #Echo:
+        #     module: "stakemachine.strategies.echo"
+        #     bot: "Echo"
+        #     market: GOLD:TEST
+        #     account: xeroc
+
+        Walls:
+             module: "stakemachine.strategies.walls"
+             bot: "Walls"
+             market: HERO:TEST
+             account: xeroc
+             ###################
+             bundle: True
+             test:
+                     blocks: 1
+             target:
+                     reference: feed
+                     offsets:
+                         buy: 2.5
+                         sell: 0
+                     amount:
+                             buy: 5.0
+                             sell: 5.0
+             threshold: 2

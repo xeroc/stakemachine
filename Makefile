@@ -1,9 +1,5 @@
 .PHONY: clean-pyc clean-build docs
 
-TAG := $(shell git describe master --abbrev=0)
-TAGSTEEM := $(shell git describe master --abbrev=0 | tr "." "-")
-
-# 
 clean: clean-build clean-pyc
 
 clean-build:
@@ -38,13 +34,6 @@ check:
 
 dist:
 	python3 setup.py sdist upload -r pypi
-	python3 setup.py bdist --format=zip upload
 	python3 setup.py bdist_wheel upload
 
-release: clean check dist steem-readme steem-changelog git
-
-steem-readme:
-	piston edit "@xeroc/stakemachine-readme" --file README.md
-
-steem-changelog:
-	git tag -l -n100 $(TAG) | piston post --author xeroc --permlink "stakemachine-changelog-$(TAGSTEEM)" --category steem --title "[Changelog] StakeMachine $(TAG)" \
+release: clean check dist git

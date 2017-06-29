@@ -64,3 +64,11 @@ target/
 # script data
 data_*.json
 .env
+
+bitshares
+bitsharesapi
+uptick
+deprecated
+*.sqlite
+*.yaml
+*.yml
