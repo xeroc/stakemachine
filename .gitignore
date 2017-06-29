@@ -70,3 +70,5 @@ bitsharesapi
 uptick
 deprecated
 *.sqlite
+*.yaml
+*.yml

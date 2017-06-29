@@ -17,11 +17,15 @@ Trading Bot Infrastructure for the BitShares Decentralized Exchange
 
 Configuration happens in `config.yml`
 
+## Requirements
+
+Add your account's private key to the pybitshares wallet using `uptick`
+
+    uptick addkey
+
 ## Execution
 
-* `stakemachine run`
-* `stakemachine once`
-* `stakemachine cancel_all`
+    stakemachine run
 
 # IMPORTANT NOTE
 

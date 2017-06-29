@@ -1,2 +1,0 @@
-bitshares
-sqlalchemy

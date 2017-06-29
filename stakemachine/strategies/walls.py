@@ -42,7 +42,9 @@ class Walls(BaseStrategy):
         # Buy Side
         if float(self.balance(self.market["base"])) < buy_price * target["amount"]["buy"]:
             InsufficientFundsError(Amount(target["amount"]["buy"], self.market["quote"]))
+            self["insufficient_buy"] = True
         else:
+            self["insufficient_buy"] = False
             self.market.buy(
                 buy_price,
                 Amount(target["amount"]["buy"], self.market["quote"]),
@@ -52,7 +54,9 @@ class Walls(BaseStrategy):
         # Sell Side
         if float(self.balance(self.market["quote"])) < target["amount"]["sell"]:
             InsufficientFundsError(Amount(target["amount"]["sell"], self.market["quote"]))
+            self["insufficient_sell"] = True
         else:
+            self["insufficient_sell"] = False
             self.market.sell(
                 sell_price,
                 Amount(target["amount"]["sell"], self.market["quote"]),
@@ -74,9 +78,9 @@ class Walls(BaseStrategy):
         """ ticks come in on every block
         """
         if self.test_blocks:
-            self.counter["blocks"] += 1
-            if not self.counter["blocks"] % self.test_blocks:
+            if not (self.counter["blocks"] or 0) % self.test_blocks:
                 self.test()
+            self.counter["blocks"] += 1
 
     def test(self, *args, **kwargs):
         """ Tests if the orders need updating
@@ -84,8 +88,14 @@ class Walls(BaseStrategy):
         orders = self.orders
 
         # Test if still 2 orders in the market (the walls)
-        if len(orders) < 2:
-            log.info("No 2 orders available. Updating orders!")
+        if len(orders) < 2 and len(orders) > 0:
+            if (
+                not self["insufficient_buy"] and
+                not self["insufficient_sell"]
+            ):
+                log.info("No 2 orders available. Updating orders!")
+                self.updateorders()
+        elif len(orders) == 0:
             self.updateorders()
 
         # Test if price feed has moved more than the threshold
