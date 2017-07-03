@@ -2,7 +2,7 @@ import logging
 from events import Events
 from bitshares.market import Market
 from bitshares.account import Account
-from bitshares.price import FilledOrder, Order
+from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.instance import shared_bitshares_instance
 from .storage import Storage
 from .statemachine import StateMachine
@@ -12,9 +12,11 @@ log = logging.getLogger(__name__)
 class BaseStrategy(Storage, StateMachine, Events):
 
     __events__ = [
+        'onAccount',
         'onOrderMatched',
         'onOrderPlaced',
         'onMarketUpdate',
+        'onUpdateCallOrder',
         'ontick',
     ]
 
@@ -22,9 +24,11 @@ class BaseStrategy(Storage, StateMachine, Events):
         self,
         config,
         name,
+        onAccount=None,
         onOrderMatched=None,
         onOrderPlaced=None,
         onMarketUpdate=None,
+        onUpdateCallOrder=None,
         ontick=None,
         bitshares_instance=None,
         *args,
@@ -70,10 +74,14 @@ class BaseStrategy(Storage, StateMachine, Events):
         # Events
         Events.__init__(self)
 
+        if onAccount:
+            self.onAccount += onAccount
         if onOrderMatched:
             self.onOrderMatched += onOrderMatched
         if onOrderPlaced:
             self.onOrderPlaced += onOrderPlaced
+        if onUpdateCallOrder:
+            self.onUpdateCallOrder += onUpdateCallOrder
         if onMarketUpdate:
             self.onMarketUpdate += onMarketUpdate
         if ontick:
@@ -95,7 +103,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         )
 
         # Settings for bitshares instance
-        self.bitshares.bundle = bool(self.bot["bundle"])
+        self.bitshares.bundle = bool(self.bot.get("bundle", False))
 
     @property
     def orders(self):
@@ -137,6 +145,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.onOrderMatched(d)
         elif isinstance(d, Order):
             self.onOrderPlaced(d)
+        elif isinstance(d, UpdateCallOrder):
+            self.onUpdateCallOrder(d)
         else:
             pass
 

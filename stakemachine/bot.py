@@ -37,8 +37,8 @@ class BotInfrastructure():
         # Technically, this will multiplex markets and accounts and
         # we need to demultiplex the events after we have received them
         self.notify = Notify(
-            markets=markets,
-            accounts=accounts,
+            markets=list(markets),
+            accounts=list(accounts),
             on_market=self.on_market,
             on_account=self.on_account,
             on_block=self.on_block,
@@ -85,8 +85,21 @@ class BotInfrastructure():
                             stack=traceback.format_exc()
                         ))
 
-    def on_account(self, data):
-        pass
+    def on_account(self, accountupdate):
+        print(accountupdate)
+        account = accountupdate.account
+        print(account["name"])
+        for botname, bot in self.config["bots"].items():
+            if bot["account"] == account["name"]:
+                try:
+                    self.bots[botname].onAccount(accountupdate)
+                except Exception as e:
+                    log.error(
+                        "Error while processing {botname}.onAccount(): {exception}\n{stack}".format(
+                            botname=botname,
+                            exception=str(e),
+                            stack=traceback.format_exc()
+                        ))
 
     def run(self):
         self.notify.listen()

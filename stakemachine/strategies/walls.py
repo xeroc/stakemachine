@@ -15,6 +15,7 @@ class Walls(BaseStrategy):
         # Define Callbacks
         self.onMarketUpdate += self.test
         self.ontick += self.tick
+        self.onAccount += print
 
         # Counter for blocks
         self.counter = Counter()
@@ -26,8 +27,13 @@ class Walls(BaseStrategy):
         """ Update the orders
         """
         log.info("Replacing orders")
+
+        # Canceling orders
         if self.orders:
             self.bitshares.cancel([o["id"] for o in self.orders], account=self.account)
+        # FIXME: optimize so we can add the funds in canceled orders to
+        # the balance already
+        # pprint(self.execute())  # Execute so we have sufficient funds to replace
 
         target = self.bot.get("target", {})
         price = self.getprice()
@@ -71,7 +77,7 @@ class Walls(BaseStrategy):
             assert self.market == self.market.core_quote_market(), "Wrong market for 'feed' reference!"
             ticker = self.market.ticker()
             price = ticker.get("quoteSettlement_price")
-            assert abs(price["price"]) != float("inf"), "Check price feed of asset!"
+            assert abs(price["price"]) != float("inf"), "Check price feed of asset! (%s)" % str(price)
         return price
 
     def tick(self, d):
