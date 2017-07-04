@@ -86,9 +86,7 @@ class BotInfrastructure():
                         ))
 
     def on_account(self, accountupdate):
-        print(accountupdate)
         account = accountupdate.account
-        print(account["name"])
         for botname, bot in self.config["bots"].items():
             if bot["account"] == account["name"]:
                 try:

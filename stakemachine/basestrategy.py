@@ -10,6 +10,34 @@ log = logging.getLogger(__name__)
 
 
 class BaseStrategy(Storage, StateMachine, Events):
+    """ Base Strategy and methods available in all Sub Classes that
+        inherit this BaseStrategy.
+
+        BaseStrategy inherits:
+
+        * :class:`stakemachine.storage.Storage`
+        * :class:`stakemachine.statemachine.StateMachine`
+        * ``Events``
+
+        Available attributes:
+
+         * ``basestrategy.bitshares``: instance of ´`bitshares.BitShares()``
+         * ``basestrategy.add_state``: Add a specific state
+         * ``basestrategy.set_state``: Set finite state machine
+         * ``basestrategy.get_state``: Change state of state machine
+         * ``basestrategy.account``: The Account object of this bot
+         * ``basestrategy.market``: The market used by this bot
+         * ``basestrategy.orders``: List of open orders of the bot's account in the bot's market
+         * ``basestrategy.balance``: List of assets and amounts available in the bot's account
+
+        Also, Base Strategy inherits :class:`stakemachine.storage.Storage`
+        which allows to permanently store data in a sqlite database
+        using:
+
+        ``basestrategy["key"] = "value"``
+
+        .. note:: This applies a ``json.loads(json.dumps(value))``!
+    """
 
     __events__ = [
         'onAccount',
@@ -34,34 +62,6 @@ class BaseStrategy(Storage, StateMachine, Events):
         *args,
         **kwargs
     ):
-        """ Base Strategy and methods available in all Sub Classes that
-            inherit this BaseStrategy.
-
-            BaseStrategy inherits:
-
-            * :class:`stakemachine.storage.Storage`
-            * :class:`stakemachine.statemachine.StateMachine`
-            * ``Events``
-
-            Available attributes:
-
-             * ``basestrategy.bitshares``: instance of ´`bitshares.BitShares()``
-             * ``basestrategy.add_state``: Add a specific state
-             * ``basestrategy.set_state``: Set finite state machine
-             * ``basestrategy.get_state``: Change state of state machine
-             * ``basestrategy.account``: The Account object of this bot
-             * ``basestrategy.market``: The market used by this bot
-             * ``basestrategy.orders``: List of open orders of the bot's account in the bot's market
-             * ``basestrategy.balance``: List of assets and amounts available in the bot's account
-
-            Also, Base Strategy inherits :class:`stakemachine.storage.Storage`
-            which allows to permanently store data in a sqlite database
-            using:
-
-            ``basestrategy["key"] = "value"``
-
-            ... note:: This applies a ``json.loads(json.dumps(value))``!
-        """
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 

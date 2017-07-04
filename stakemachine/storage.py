@@ -1,9 +1,28 @@
+import os
 import json
 import sqlalchemy
 from sqlalchemy import create_engine, Table, Column, String, Integer, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from appdirs import user_data_dir
 Base = declarative_base()
+
+# For stakemachine.sqlite file
+appname = "stakemachine"
+appauthor = "ChainSquad GmbH"
+storageDatabase = "stakemachine.sqlite"
+
+
+def mkdir_p(d):
+    if os.path.isdir(d):
+        return
+    else:
+        try:
+            os.makedirs(d)
+        except FileExistsError:
+            return
+        except OSError:
+            raise
 
 
 class Config(Base):
@@ -21,12 +40,12 @@ class Config(Base):
 
 
 class Storage(dict):
-    def __init__(self, category):
-        """ Storage class
+    """ Storage class
 
-            :param string category: The category to distinguish
-                                    different storage namespaces
-        """
+        :param string category: The category to distinguish
+                                different storage namespaces
+    """
+    def __init__(self, category):
         self.category = category
 
     def __setitem__(self, key, value):
@@ -74,7 +93,15 @@ class Storage(dict):
         return [(e.key, e.value) for e in es]
 
 
-engine = create_engine('sqlite:///stakemachine.sqlite', echo=False)
+# Derive sqlite file directory
+data_dir = user_data_dir(appname, appauthor)
+sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
+
+# Create directory for sqlite file
+mkdir_p(data_dir)
+
+# Obtain engine and session
+engine = create_engine('sqlite:///%s' % sqlDataBaseFile, echo=False)
 Session = sessionmaker(bind=engine)
 session = Session()
 Base.metadata.create_all(engine)
