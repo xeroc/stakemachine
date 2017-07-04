@@ -16,7 +16,10 @@ setup(
     maintainer_email='Fabian@chainsquad.com',
     url='http://www.github.com/xeroc/stakemachine',
     keywords=['stake', 'bot', 'trading', 'api', 'blog', 'blockchain'],
-    packages=["stakemachine"],
+    packages=[
+        "stakemachine",
+        "stakemachine.strategies",
+    ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
