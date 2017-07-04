@@ -16,6 +16,27 @@ The value is persistently stored and can be access later on using:
 
 .. note:: This applies a ``json.loads(json.dumps(value))``!
 
+SQLite database
+---------------
+The user's data is stored in its OS protected user directory:
+
+**OSX:**
+
+ * `~/Library/Application Support/<AppName>`
+
+**Windows:**
+
+ * `C:\Documents and Settings\<User>\Application Data\Local Settings\<AppAuthor>\<AppName>`
+ * `C:\Documents and Settings\<User>\Application Data\<AppAuthor>\<AppName>`
+
+**Linux:**
+
+ * `~/.local/share/<AppName>`
+
+Where ``<AppName>`` is ``stakemachine`` and ``<AppAuthor>`` is
+``ChainSquad GmbH``.
+
+
 Simple example
 --------------
 
