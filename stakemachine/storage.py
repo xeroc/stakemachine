@@ -21,12 +21,12 @@ class Config(Base):
 
 
 class Storage(dict):
-    def __init__(self, category):
-        """ Storage class
+    """ Storage class
 
-            :param string category: The category to distinguish
-                                    different storage namespaces
-        """
+        :param string category: The category to distinguish
+                                different storage namespaces
+    """
+    def __init__(self, category):
         self.category = category
 
     def __setitem__(self, key, value):

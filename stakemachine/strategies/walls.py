@@ -15,7 +15,7 @@ class Walls(BaseStrategy):
         # Define Callbacks
         self.onMarketUpdate += self.test
         self.ontick += self.tick
-        self.onAccount += print
+        self.onAccount += self.test
 
         # Counter for blocks
         self.counter = Counter()
@@ -72,6 +72,9 @@ class Walls(BaseStrategy):
         pprint(self.execute())
 
     def getprice(self):
+        """ Here we obtain the price for the quote and make sure it has
+            a feed price
+        """
         target = self.bot.get("target", {})
         if target.get("reference") == "feed":
             assert self.market == self.market.core_quote_market(), "Wrong market for 'feed' reference!"
