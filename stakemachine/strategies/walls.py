@@ -47,7 +47,7 @@ class Walls(BaseStrategy):
 
         # Buy Side
         if float(self.balance(self.market["base"])) < buy_price * target["amount"]["buy"]:
-            InsufficientFundsError(Amount(target["amount"]["buy"], self.market["quote"]))
+            InsufficientFundsError(Amount(target["amount"]["buy"] * float(buy_price), self.market["base"]))
             self["insufficient_buy"] = True
         else:
             self["insufficient_buy"] = False
