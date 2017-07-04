@@ -7,6 +7,7 @@ Basics
 .. toctree::
    :maxdepth: 1
 
+   setup
    configuration
 
 Strategies

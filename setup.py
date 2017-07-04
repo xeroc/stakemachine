@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 VERSION = '0.0.2'
 
@@ -16,10 +16,7 @@ setup(
     maintainer_email='Fabian@chainsquad.com',
     url='http://www.github.com/xeroc/stakemachine',
     keywords=['stake', 'bot', 'trading', 'api', 'blog', 'blockchain'],
-    packages=[
-        "stakemachine",
-        "stakemachine.strategies",
-    ],
+    packages=["stakemachine"],
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
@@ -33,7 +30,8 @@ setup(
         ],
     },
     install_requires=[
-        "bitshares>=0.1.5",
+        "bitshares>=0.1.7",
+        "uptick>=0.1.4",
         "prettytable",
         "click",
         "click-datetime",
@@ -41,7 +39,7 @@ setup(
         "tqdm",
         "pyyaml",
         "sqlalchemy",
-        "uptick",
+        "appdirs"
     ],
     include_package_data=True,
 )
