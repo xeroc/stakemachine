@@ -37,3 +37,7 @@ The bot can be run by::
 
 It will ask for your wallet passphrase (that you have provide when
 adding your private key to pybitshares using ``uptick addkey``).
+
+If you want to prevent the password dialog, you can predefine an
+environmental variable ``UNLOCK``, if you understand the security
+implications.
