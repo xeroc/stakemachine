@@ -102,8 +102,6 @@ class Walls(BaseStrategy):
         """
         orders = self.orders
 
-        raise
-
         # Test if still 2 orders in the market (the walls)
         if len(orders) < 2 and len(orders) > 0:
             if (
