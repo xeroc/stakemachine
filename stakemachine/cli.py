@@ -26,6 +26,12 @@ logging.basicConfig(
     "--configfile",
     default="config.yml",
 )
+@click.option(
+    '--verbose',
+    '-v',
+    type=int,
+    default=3,
+    help='Verbosity (0-15)')
 @click.pass_context
 def main(ctx, **kwargs):
     ctx.obj = {}
@@ -38,6 +44,7 @@ def main(ctx, **kwargs):
 @configfile
 @chain
 @unlock
+@verbose
 def run(ctx):
     """ Continuously run the bot
     """

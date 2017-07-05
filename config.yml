@@ -1,11 +1,11 @@
 node: "wss://node.testnet.bitshares.eu"
 
 bots:
- #        Echo:
- #            module: "stakemachine.strategies.echo"
- #            bot: "Echo"
- #            market: GOLD:TEST
- #            account: xeroc
+ Echo:
+  module: "stakemachine.strategies.echo"
+  bot: "Echo"
+  market: GOLD:TEST
+  account: xeroc
  Demo:
   module: "stakemachine.strategies.storagedemo"
   bot: "StorageDemo"

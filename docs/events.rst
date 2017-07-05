@@ -13,6 +13,9 @@ strategies and depend on the configuration of your bot/strategy:
 * ``onMarketUpdate``: Called whenever something happens in your market (includes matched orders, placed orders and call order updates!)
 * ``ontick``: Called when a new block is received
 * ``onAccount``: Called when your account's statistics is updated (changes to ``2.6.xxxx`` with ``xxxx`` being your account id number)
+* ``error_ontick``: Is called when an error happend when processing ``ontick``
+* ``error_onMarketUpdate``: Is called when an error happend when processing ``onMarketUpdate``
+* ``error_onAccount``: Is called when an error happend when processing ``onAccount``
 
 Simple Example
 --------------

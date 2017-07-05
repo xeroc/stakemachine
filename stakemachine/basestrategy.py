@@ -40,12 +40,15 @@ class BaseStrategy(Storage, StateMachine, Events):
     """
 
     __events__ = [
+        'ontick',
+        'onMarketUpdate',
         'onAccount',
+        'error_ontick',
+        'error_onMarketUpdate',
+        'error_onAccount',
         'onOrderMatched',
         'onOrderPlaced',
-        'onMarketUpdate',
         'onUpdateCallOrder',
-        'ontick',
     ]
 
     def __init__(
@@ -74,6 +77,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         # Events
         Events.__init__(self)
 
+        if ontick:
+            self.ontick += ontick
+        if onMarketUpdate:
+            self.onMarketUpdate += onMarketUpdate
         if onAccount:
             self.onAccount += onAccount
         if onOrderMatched:
@@ -82,10 +89,6 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.onOrderPlaced += onOrderPlaced
         if onUpdateCallOrder:
             self.onUpdateCallOrder += onUpdateCallOrder
-        if onMarketUpdate:
-            self.onMarketUpdate += onMarketUpdate
-        if ontick:
-            self.ontick += ontick
 
         # Redirect this event to also call order placed and order matched
         self.onMarketUpdate += self._callbackPlaceFillOrders
@@ -104,6 +107,10 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.bot.get("bundle", False))
+
+        # disabled flag - this flag can be flipped to True by a bot and
+        # will be reset to False after reset only
+        self.disabled = False
 
     @property
     def orders(self):
@@ -157,3 +164,12 @@ class BaseStrategy(Storage, StateMachine, Events):
         r = self.bitshares.txbuffer.broadcast()
         self.bitshares.blocking = False
         return r
+
+    def cancelall(self):
+        """ Cancel all orders of this bot
+        """
+        if self.orders:
+            return self.bitshares.cancel(
+                [o["id"] for o in self.orders],
+                account=self.account
+            )
