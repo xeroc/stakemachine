@@ -60,9 +60,12 @@ class BotInfrastructure():
     # Events
     def on_block(self, data):
         for botname, bot in self.config["bots"].items():
+            if self.bots[botname].disabled:
+                continue
             try:
                 self.bots[botname].ontick(data)
             except Exception as e:
+                self.bots[botname].error_ontick(e)
                 log.error(
                     "Error while processing {botname}.tick(): {exception}\n{stack}".format(
                         botname=botname,
@@ -74,10 +77,14 @@ class BotInfrastructure():
         if data.get("deleted", False):  # no info available on deleted orders
             return
         for botname, bot in self.config["bots"].items():
+            if self.bots[botname].disabled:
+                log.info("The bot %s has been disabled" % botname)
+                continue
             if bot["market"] == data.market:
                 try:
                     self.bots[botname].onMarketUpdate(data)
                 except Exception as e:
+                    self.bots[botname].error_onMarketUpdate(e)
                     log.error(
                         "Error while processing {botname}.onMarketUpdate(): {exception}\n{stack}".format(
                             botname=botname,
@@ -88,10 +95,14 @@ class BotInfrastructure():
     def on_account(self, accountupdate):
         account = accountupdate.account
         for botname, bot in self.config["bots"].items():
+            if self.bots[botname].disabled:
+                log.info("The bot %s has been disabled" % botname)
+                continue
             if bot["account"] == account["name"]:
                 try:
                     self.bots[botname].onAccount(accountupdate)
                 except Exception as e:
+                    self.bots[botname].error_onAccount(e)
                     log.error(
                         "Error while processing {botname}.onAccount(): {exception}\n{stack}".format(
                             botname=botname,

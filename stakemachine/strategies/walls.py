@@ -17,11 +17,20 @@ class Walls(BaseStrategy):
         self.ontick += self.tick
         self.onAccount += self.test
 
+        self.error_ontick = self.error
+        self.error_onMarketUpdate = self.error
+        self.error_onAccount = self.error
+
         # Counter for blocks
         self.counter = Counter()
 
         # Tests for actions
         self.test_blocks = self.bot.get("test", {}).get("blocks", 0)
+
+    def error(self, *args, **kwargs):
+        self.disabled = True
+        self.cancelall()
+        pprint(self.execute())
 
     def updateorders(self):
         """ Update the orders
@@ -29,12 +38,9 @@ class Walls(BaseStrategy):
         log.info("Replacing orders")
 
         # Canceling orders
-        if self.orders:
-            self.bitshares.cancel([o["id"] for o in self.orders], account=self.account)
-        # FIXME: optimize so we can add the funds in canceled orders to
-        # the balance already
-        # pprint(self.execute())  # Execute so we have sufficient funds to replace
+        self.cancelall()
 
+        # Target
         target = self.bot.get("target", {})
         price = self.getprice()
 
@@ -47,7 +53,7 @@ class Walls(BaseStrategy):
 
         # Buy Side
         if float(self.balance(self.market["base"])) < buy_price * target["amount"]["buy"]:
-            InsufficientFundsError(Amount(target["amount"]["buy"], self.market["quote"]))
+            InsufficientFundsError(Amount(target["amount"]["buy"] * float(buy_price), self.market["base"]))
             self["insufficient_buy"] = True
         else:
             self["insufficient_buy"] = False
@@ -95,6 +101,8 @@ class Walls(BaseStrategy):
         """ Tests if the orders need updating
         """
         orders = self.orders
+
+        raise
 
         # Test if still 2 orders in the market (the walls)
         if len(orders) < 2 and len(orders) > 0:

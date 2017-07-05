@@ -15,6 +15,15 @@ class Echo(BaseStrategy):
         self.onMarketUpdate += self.print_marketUpdate
         self.ontick += self.print_newBlock
         self.onAccount += self.print_accountUpdate
+        self.error_ontick = self.error
+        self.error_onMarketUpdate = self.error
+        self.error_onAccount = self.error
+
+    def error(self, *args, **kwargs):
+        """ What to do on an error
+        """
+        # Cancel all future execution
+        self.disabled = True
 
     def print_orderMatched(self, i):
         """ Is called when an order in the market is matched
@@ -68,6 +77,7 @@ class Echo(BaseStrategy):
                       need to use ``bitshares.blockchain.Blockchain``
         """
         print("new block:     %s" % i)
+        # raise ValueError("Testing disabling")
 
     def print_accountUpdate(self, i):
         """ This method is called when the bot's account name receives
