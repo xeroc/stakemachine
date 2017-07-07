@@ -173,3 +173,15 @@ class BaseStrategy(Storage, StateMachine, Events):
                 [o["id"] for o in self.orders],
                 account=self.account
             )
+
+    def disable(self):
+        """ This method can be called to disable a bot
+        """
+        self.disable = True
+        log.info("The bot %s has been disabled" % self.name)
+
+    def enable(self):
+        """ This method can be called to re-enable a bot
+        """
+        self.disable = False
+        log.info("The bot %s has been re-enabled" % self.name)

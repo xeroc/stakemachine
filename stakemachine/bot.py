@@ -61,6 +61,7 @@ class BotInfrastructure():
     def on_block(self, data):
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
+                log.debug("The bot %s has been disabled" % botname)
                 continue
             try:
                 self.bots[botname].ontick(data)
@@ -78,7 +79,7 @@ class BotInfrastructure():
             return
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
-                log.info("The bot %s has been disabled" % botname)
+                log.debug("The bot %s has been disabled" % botname)
                 continue
             if bot["market"] == data.market:
                 try:
@@ -96,7 +97,7 @@ class BotInfrastructure():
         account = accountupdate.account
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
-                log.info("The bot %s has been disabled" % botname)
+                log.debug("The bot %s has been disabled" % botname)
                 continue
             if bot["account"] == account["name"]:
                 try:

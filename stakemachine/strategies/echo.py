@@ -23,7 +23,7 @@ class Echo(BaseStrategy):
         """ What to do on an error
         """
         # Cancel all future execution
-        self.disabled = True
+        self.disable()
 
     def print_orderMatched(self, i):
         """ Is called when an order in the market is matched

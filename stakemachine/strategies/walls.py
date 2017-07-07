@@ -28,7 +28,7 @@ class Walls(BaseStrategy):
         self.test_blocks = self.bot.get("test", {}).get("blocks", 0)
 
     def error(self, *args, **kwargs):
-        self.disabled = True
+        self.disable()
         self.cancelall()
         pprint(self.execute())
 
