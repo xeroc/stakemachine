@@ -1,3 +1,4 @@
+import traceback
 from math import fabs
 from pprint import pprint
 from collections import Counter
@@ -27,7 +28,12 @@ class Walls(BaseStrategy):
         # Tests for actions
         self.test_blocks = self.bot.get("test", {}).get("blocks", 0)
 
-    def error(self, *args, **kwargs):
+    def error(self, e):
+        log.error(
+            "Error running the bot: %s\n\n%s\n\n" % (
+                str(e), traceback.format_exc(e)
+            )
+        )
         self.disable()
         self.cancelall()
         pprint(self.execute())
