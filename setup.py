@@ -14,7 +14,7 @@ setup(
     maintainer='Codaone Oy',
     maintainer_email='support@codaone.com',
     url='http://www.github.com/codaone/dexbot',
-    keywords=['bot', 'trading', 'api', 'blockchain'],
+    keywords=['DEX', 'bot', 'trading', 'api', 'blockchain'],
     packages=[
         "dexbot",
         "dexbot.strategies",
@@ -41,7 +41,8 @@ setup(
         "tqdm",
         "pyyaml",
         "sqlalchemy",
-        "appdirs"
+        "appdirs",
+        "pyqt5"
     ],
     include_package_data=True,
 )
