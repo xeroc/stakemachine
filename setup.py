@@ -42,7 +42,9 @@ setup(
         "pyyaml",
         "sqlalchemy",
         "appdirs",
-        "pyqt5"
+        "pyqt5",
+	"pythonconfig",
+	"sdnotify"
     ],
     include_package_data=True,
 )
