@@ -26,7 +26,7 @@ Installation
 
 ::
 
-   pip3 install git+https://github.com/ihaywood3/DEXBot.git [--user]
+   pip3 install git+https://github.com/Codaone/DEXBot.git [--user]
 
 If you install using the ``--user`` flag, the binaries of
 ``dexbot`` and ``uptick`` are located in ``~/.local/bin``.
