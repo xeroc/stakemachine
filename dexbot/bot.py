@@ -6,6 +6,10 @@ from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 log = logging.getLogger(__name__)
 
+# FIXME: currently static list of bot strategies: ? how to enumerate bots available and deploy new bot strategies.
+STRATEGIES={'Echo':('dexbot.strategies.echo','Echo'),
+            'Liquidity Walls':('dexbot.strategies.walls','Walls')}
+
 
 class BotInfrastructure():
 

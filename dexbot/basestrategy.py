@@ -1,4 +1,4 @@
-import logging
+import logging, collections
 from events import Events
 from bitshares.market import Market
 from bitshares.account import Account
@@ -7,6 +7,23 @@ from bitshares.instance import shared_bitshares_instance
 from .storage import Storage
 from .statemachine import StateMachine
 log = logging.getLogger(__name__)
+
+
+ConfigElement = collections.namedtuple('ConfigElement','key type default description extra')
+# bots need to specify their own configuration values
+# I want this to be UI-agnostic so a future web or GUI interface can use it too
+# so each bot can have a class method 'configure' which returns a list of ConfigElement
+# named tuples. tuple fields as follows.
+# key: the key in the bot config dictionary that gets saved back to config.yml
+# type: one of "int", "float", "bool", "string", "choice"
+# default: the default value. must be right type.
+# description: comments to user, full sentences encouraged 
+# extra: 
+#       for int & float: a (min, max) tuple
+#       for string: a regular expression, entries must match it, can be None which equivalent to .*
+#       for bool, ignored
+#       for choice: a list of choices, choices are in turn (tag, label) tuples. labels get presented to user, and tag is used
+#       as the value saved back to the config dict
 
 
 class BaseStrategy(Storage, StateMachine, Events):
@@ -51,6 +68,23 @@ class BaseStrategy(Storage, StateMachine, Events):
         'onUpdateCallOrder',
     ]
 
+    @classmethod
+    def configure(kls):
+        """
+        Return a list of ConfigElement objects defining the configuration values for 
+        this class
+        User interfaces should then generate widgets based on this values, gather
+        data and save back to the config dictionary for the bot.
+
+        NOTE: when overriding you almost certainly will want to call the ancestor
+        and then add your config values to the list.
+        """
+        # these configs are common to all bots
+        return [
+            ConfigElement("account","string","","BitShares account name for the bot to operate with",""),
+            ConfigElement("market","string","USD:BTS","BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"","[A-Z]+:[A-Z]+")
+        ]
+    
     def __init__(
         self,
         config,
