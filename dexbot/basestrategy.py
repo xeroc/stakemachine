@@ -15,8 +15,8 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         BaseStrategy inherits:
 
-        * :class:`stakemachine.storage.Storage`
-        * :class:`stakemachine.statemachine.StateMachine`
+        * :class:`dexbot.storage.Storage`
+        * :class:`dexbot.statemachine.StateMachine`
         * ``Events``
 
         Available attributes:
@@ -30,7 +30,7 @@ class BaseStrategy(Storage, StateMachine, Events):
          * ``basestrategy.orders``: List of open orders of the bot's account in the bot's market
          * ``basestrategy.balance``: List of assets and amounts available in the bot's account
 
-        Also, Base Strategy inherits :class:`stakemachine.storage.Storage`
+        Also, Base Strategy inherits :class:`dexbot.storage.Storage`
         which allows to permanently store data in a sqlite database
         using:
 
