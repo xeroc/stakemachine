@@ -12,7 +12,7 @@ from .ui import (
     warning,
     alert,
 )
-from stakemachine.bot import BotInfrastructure
+from dexbot.bot import BotInfrastructure
 log = logging.getLogger(__name__)
 
 logging.basicConfig(
