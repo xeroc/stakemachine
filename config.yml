@@ -2,12 +2,7 @@ node: "wss://node.testnet.bitshares.eu"
 
 bots:
  Echo:
-  module: "stakemachine.strategies.echo"
+  module: "dexbot.strategies.echo"
   bot: "Echo"
-  market: GOLD:TEST
-  account: codaonetest-1
- Demo:
-  module: "stakemachine.strategies.storagedemo"
-  bot: "StorageDemo"
-  market: GOLD:TEST
-  account: codaonetest-1
+  market: "TEST:PEG.FAKEUSD"
+  account: "dexbot-test"
