@@ -2,6 +2,7 @@ import traceback
 import importlib
 import time
 import logging
+import os.path
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 log = logging.getLogger(__name__)
@@ -44,6 +45,11 @@ class BotInfrastructure():
             on_block=self.on_block,
             bitshares_instance=self.bitshares
         )
+
+        # set the module search path
+        userbotpath = os.path.expanduser("~/bots")
+        if os.path.exists(userbotpath):
+            sys.path.append(userbotpath)
 
         # Initialize bots:
         for botname, bot in config["bots"].items():
