@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets
-import yaml
+from ruamel.yaml import YAML
 
 class MainController(object):
 
@@ -11,4 +11,5 @@ class MainController(object):
         Returns dict of all the bots data
         """
         with open('config.yml', 'r') as f:
+            yaml = YAML()
             return yaml.load(f)['bots']

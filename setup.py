@@ -42,7 +42,8 @@ setup(
         "pyyaml",
         "sqlalchemy",
         "appdirs",
-        "pyqt5"
+        "pyqt5",
+        "ruamel.yaml"
     ],
     include_package_data=True,
 )
