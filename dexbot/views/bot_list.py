@@ -7,8 +7,7 @@ from dexbot.views.create_bot import CreateBotView
 
 class MainView(QtWidgets.QMainWindow):
 
-    def __init__(self, model, main_ctrl):
-        self.model = model
+    def __init__(self, main_ctrl):
         self.main_ctrl = main_ctrl
         super(MainView, self).__init__()
         self.ui = Ui_MainWindow()
@@ -27,8 +26,8 @@ class MainView(QtWidgets.QMainWindow):
         widget.setFixedSize(widget.frameSize())
 
     def handle_add_bot(self):
-        self.create_bot_dialog = CreateBotView(self.model, self.main_ctrl)
-        return_value = self.create_bot_dialog.exec_()
+        create_bot_dialog = CreateBotView(self.main_ctrl)
+        return_value = create_bot_dialog.exec_()
 
         if return_value == 1:
             self.add_bot_widget()

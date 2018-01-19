@@ -1,10 +1,14 @@
-from PyQt5 import QtWidgets
+from dexbot.views.bot_list import MainView
+from dexbot.bot import BotInfrastructure
+
 from ruamel.yaml import YAML
 
 class MainController(object):
 
-    def __init__(self, model):
-        pass
+    def __init__(self):
+        self.model = BotInfrastructure
+        self.view = MainView(self)
+        self.view.show()
 
     def get_bots_data(self):
         """
