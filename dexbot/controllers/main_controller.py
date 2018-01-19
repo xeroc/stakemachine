@@ -40,15 +40,14 @@ class MainController(object):
         """
         Returns unique bot name "Bot %n", where %n is the next available index
         """
-        bots = MainController.get_bots_data().keys()
-        bot = ''
         index = 1
-        while not bot:
-            if "Bot {0}".format(index) not in bots:
-                bot = "Bot {0}".format(index)
+        bots = MainController.get_bots_data().keys()
+        botname = "Bot {0}".format(index)
+        while botname in bots:
+            botname = "Bot {0}".format(index)
             index += 1
 
-        return bot
+        return botname
 
     @staticmethod
     def get_bots_data():
