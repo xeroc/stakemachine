@@ -1,5 +1,6 @@
 from PyQt5 import QtGui, QtWidgets, QtCore
 
+from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.views.gen.bot_list_window import Ui_MainWindow
 from dexbot.views.gen.bot_item_widget import Ui_widget
 from dexbot.views.create_bot import CreateBotView
@@ -23,6 +24,9 @@ class MainView(QtWidgets.QMainWindow):
     def add_bot_widget(self):
         widget = BotItemWidget()
         self.bot_container.addWidget(widget)
+        # Dispatcher polls for events from the bots that are used to change the ui
+        self.dispatcher = ThreadDispatcher(self)
+        self.dispatcher.start()
         widget.setFixedSize(widget.frameSize())
 
     def handle_add_bot(self):
