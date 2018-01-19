@@ -6,8 +6,8 @@ from dexbot.basestrategy import BaseStrategy
 from dexbot.errors import InsufficientFundsError
 
 
-
 class Walls(BaseStrategy):
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

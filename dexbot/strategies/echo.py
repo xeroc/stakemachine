@@ -1,7 +1,7 @@
 from dexbot.basestrategy import BaseStrategy
 
-class Echo(BaseStrategy):
 
+class Echo(BaseStrategy):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

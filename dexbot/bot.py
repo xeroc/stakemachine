@@ -16,6 +16,7 @@ log_bots = logging.getLogger('dexbot.per_bot')
 
 class BotInfrastructure():
 
+
     bots = dict()
 
     def __init__(
@@ -112,4 +113,3 @@ class BotInfrastructure():
 
     def run(self):
         self.notify.listen()
-
