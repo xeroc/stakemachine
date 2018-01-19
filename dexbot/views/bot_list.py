@@ -36,25 +36,6 @@ class MainView(QtWidgets.QMainWindow):
         pass
 
 
-class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
-    def __init__(self):
-        super(BotItemWidget, self).__init__()
 
-        self.setupUi(self)
-        self.pause_button.hide()
 
-        self.pause_button.clicked.connect(self.pause_bot)
-        self.play_button.clicked.connect(self.start_bot)
-        self.remove_button.clicked.connect(self.remove_widget)
-
-    def start_bot(self):
-        self.pause_button.show()
-        self.play_button.hide()
-
-    def pause_bot(self):
-        self.pause_button.hide()
-        self.play_button.show()
-
-    def remove_widget(self):
-        self.deleteLater()
