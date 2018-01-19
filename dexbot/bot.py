@@ -102,7 +102,7 @@ class BotInfrastructure():
         account = accountupdate.account
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
-                self.bot[botname].log.info("The bot %s has been disabled" % botname)
+                self.bots[botname].log.info("The bot %s has been disabled" % botname)
                 continue
             if bot["account"] == account["name"]:
                 try:
