@@ -3,20 +3,30 @@ from dexbot.bot import BotInfrastructure
 
 from ruamel.yaml import YAML
 from bitshares import BitShares
+from bitshares.instance import set_shared_bitshares_instance
 
 
 class MainController(object):
+
+    bots = dict()
 
     def __init__(self):
         self.model = BotInfrastructure
         self.view = MainView(self)
         self.view.show()
 
-    def get_bots_data(self):
     def create_bot(self, botname, config):
         bitshares = BitShares(
             node=config['node']
         )
+        set_shared_bitshares_instance(bitshares)
+        bitshares.wallet.unlock('test')  # Temporal code until password input is implemented
+
+        gui_data = {'id': botname, 'controller': self}
+        bot = self.model(config, bitshares, gui_data)
+        bot.daemon = True
+        bot.start()
+        self.bots[botname] = bot
 
     def stop_bot(self, bot_id):
         self.bots[bot_id].terminate()

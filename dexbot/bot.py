@@ -2,6 +2,8 @@ import importlib
 import sys
 import logging
 import os.path
+from multiprocessing import Process
+
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
@@ -13,16 +15,18 @@ log_bots = logging.getLogger('dexbot.per_bot')
 # is_disabled is a callable returning True if the bot is currently disabled.
 # GUIs can add a handler to this logger to get a stream of events re the running bots.
 
-class BotInfrastructure():
 
+class BotInfrastructure(Process):
 
     bots = dict()
 
     def __init__(
         self,
         config,
-        bitshares_instance=None
+        bitshares_instance=None,
+        gui_data=None
     ):
+        super().__init__()
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
@@ -48,7 +52,8 @@ class BotInfrastructure():
                 self.bots[botname] = klass(
                     config=config,
                     name=botname,
-                    bitshares_instance=self.bitshares
+                    bitshares_instance=self.bitshares,
+                    gui_data=gui_data
                 )
                 markets.add(bot['market'])
                 accounts.add(bot['account'])
