@@ -24,9 +24,9 @@ class CreateBotView(QtWidgets.QDialog):
         if not self.validate_form():
             # Todo: add validation error notice for user
             return
-        self.botname = self.ui.botname_input.getText()
+        self.botname = self.ui.botname_input.text()
         bot_data = {
-            'account': self.ui.account_input,
+            'account': self.ui.account_input.text(),
             'market': '',
             'module': '',
             'bot': ''

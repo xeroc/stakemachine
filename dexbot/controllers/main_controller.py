@@ -36,6 +36,17 @@ class MainController(object):
         self.bots[botname].terminate()
 
     @staticmethod
+    def add_bot_config(botname, bot_data):
+        yaml = YAML()
+        with open('config.yml', 'r') as f:
+            config = yaml.load(f)
+
+        config['bots'][botname] = bot_data
+
+        with open("config.yml", "w") as f:
+            yaml.dump(config, f)
+
+    @staticmethod
     def get_unique_bot_name():
         """
         Returns unique bot name "Bot %n", where %n is the next available index
