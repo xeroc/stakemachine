@@ -2,28 +2,21 @@ from dexbot.views.bot_list import MainView
 from dexbot.bot import BotInfrastructure
 
 from ruamel.yaml import YAML
-from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
 
 
-class MainController(object):
+class MainController:
 
     bots = dict()
 
-    def __init__(self):
-        self.model = BotInfrastructure
-        self.view = MainView(self)
-        self.view.show()
+    def __init__(self, bitshares_instance):
+        self.bitshares_instance = bitshares_instance
+        set_shared_bitshares_instance(bitshares_instance)
+        self.bot_template = BotInfrastructure
 
     def create_bot(self, botname, config):
-        bitshares = BitShares(
-            node=config['node']
-        )
-        set_shared_bitshares_instance(bitshares)
-        bitshares.wallet.unlock('test')  # Temporal code until password input is implemented
-
         gui_data = {'id': botname, 'controller': self}
-        bot = self.model(config, bitshares, gui_data)
+        bot = self.bot_template(config, self.bitshares_instance, gui_data)
         bot.daemon = True
         bot.start()
         self.bots[botname] = bot
@@ -34,6 +27,12 @@ class MainController(object):
     def remove_bot(self, botname):
         # Todo: cancell all orders on removal
         self.bots[botname].terminate()
+
+    @staticmethod
+    def load_config():
+        yaml = YAML()
+        with open('config.yml', 'r') as f:
+            return yaml.load(f)
 
     @staticmethod
     def add_bot_config(botname, bot_data):
