@@ -32,6 +32,11 @@ class BotInfrastructure(Process):
 
         self.config = config
 
+        # set the module search path
+        user_bot_path = os.path.expanduser("~/bots")
+        if os.path.exists(user_bot_path):
+            sys.path.append(user_bot_path)
+
         # Load all accounts and markets in use to subscribe to them
         accounts = set()
         markets = set()
@@ -71,11 +76,6 @@ class BotInfrastructure(Process):
             on_block=self.on_block,
             bitshares_instance=self.bitshares
         )
-
-        # set the module search path
-        userbotpath = os.path.expanduser("~/bots")
-        if os.path.exists(userbotpath):
-            sys.path.append(userbotpath)
 
     # Events
     def on_block(self, data):
