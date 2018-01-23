@@ -1,4 +1,3 @@
-from dexbot.views.bot_list import MainView
 from dexbot.bot import BotInfrastructure
 
 from ruamel.yaml import YAML

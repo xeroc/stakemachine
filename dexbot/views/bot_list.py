@@ -26,15 +26,23 @@ class MainView(QtWidgets.QMainWindow):
             config = self.main_ctrl.get_bot_config(botname)
             self.add_bot_widget(botname, config)
 
+            # Artificially limit the number of bots to 1 until it's officially supported
+            # Todo: Remove the 2 lines below this after multi-bot support is added
+            self.ui.add_bot_button.setEnabled(False)
+            break
+
         # Dispatcher polls for events from the bots that are used to change the ui
         self.dispatcher = ThreadDispatcher(self)
         self.dispatcher.start()
 
     def add_bot_widget(self, botname, config):
-        widget = BotItemWidget(botname, config, self.main_ctrl)
+        widget = BotItemWidget(botname, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
         self.bot_container.addWidget(widget)
         self.bot_widgets['botname'] = widget
+
+        # Todo: Remove the line below this after multi-bot support is added
+        self.ui.add_bot_button.setEnabled(False)
 
     def handle_add_bot(self):
         create_bot_dialog = CreateBotView(self.main_ctrl)

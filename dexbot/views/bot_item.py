@@ -5,13 +5,14 @@ from dexbot.views.gen.bot_item_widget import Ui_widget
 
 class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
-    def __init__(self, botname, config, controller):
+    def __init__(self, botname, config, controller, view):
         super(BotItemWidget, self).__init__()
 
         self.running = False
         self.botname = botname
         self.config = config
         self.controller = controller
+        self.view = view
 
         self.setupUi(self)
         self.pause_button.hide()
@@ -59,3 +60,6 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         if self.running:
             self.controller.remove_bot(self.botname)
         self.deleteLater()
+
+        # Todo: Remove the line below this after multi-bot support is added
+        self.view.ui.add_bot_button.setEnabled(True)
