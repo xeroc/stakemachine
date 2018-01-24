@@ -1,12 +1,15 @@
 from math import fabs
-from pprint import pprint
 from collections import Counter
 from bitshares.amount import Amount
 from dexbot.basestrategy import BaseStrategy
 from dexbot.errors import InsufficientFundsError
 
 
-class Walls(BaseStrategy):
+class Strategy(BaseStrategy):
+    """
+    Walls strategy
+    This strategy simply places a buy and a sell wall
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

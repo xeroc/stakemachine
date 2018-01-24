@@ -1,7 +1,11 @@
 from dexbot.basestrategy import BaseStrategy
 
 
-class Echo(BaseStrategy):
+class Strategy(BaseStrategy):
+    """
+    Echo strategy
+    Strategy that logs all events within the blockchain
+    """
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

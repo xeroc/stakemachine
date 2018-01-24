@@ -52,7 +52,7 @@ class BotInfrastructure(Process):
             try:
                 klass = getattr(
                     importlib.import_module(bot["module"]),
-                    bot["bot"]
+                    'Strategy'
                 )
                 self.bots[botname] = klass(
                     config=config,

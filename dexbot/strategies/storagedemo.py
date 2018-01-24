@@ -1,7 +1,11 @@
 from dexbot.basestrategy import BaseStrategy
 
 
-class StorageDemo(BaseStrategy):
+class Strategy(BaseStrategy):
+    """
+    Storage demo strategy
+    Strategy that prints all new blocks in the blockchain
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
