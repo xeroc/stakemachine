@@ -32,7 +32,7 @@ setup(
         ],
     },
     install_requires=[
-        "bitshares>=0.1.7",
+        "bitshares>=0.1.10",
         "uptick>=0.1.4",
         "prettytable",
         "click",
