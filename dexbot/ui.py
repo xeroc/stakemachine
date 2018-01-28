@@ -40,6 +40,7 @@ def verbose(f):
         ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter1)
         logging.getLogger("dexbot").addHandler(ch)
+        logging.getLogger("").handlers = []
         
         # GrapheneAPI logging
         if ctx.obj["verbose"] > 4:
