@@ -7,6 +7,8 @@ from multiprocessing import Process
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
+import dexbot.errors as errors
+
 log = logging.getLogger(__name__)
 
 log_bots = logging.getLogger('dexbot.per_bot')
@@ -67,7 +69,7 @@ class BotInfrastructure(Process):
 
         if len(markets) == 0:
             log.critical("No bots to launch, exiting")
-            sys.exit(70) # 70= "Software error" in /usr/include/sysexts.h
+            raise errors.NoBotsAvailable()
         # Create notification instance
         # Technically, this will multiplex markets and accounts and
         # we need to demultiplex the events after we have received them
