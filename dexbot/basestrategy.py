@@ -130,6 +130,12 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.account.refresh()
         return [o for o in self.account.openorders if self.bot["market"] == o.market and self.account.openorders]
 
+    def get_order(self, order_id):
+        for order in self.orders:
+            if order['id'] == order_id:
+                return order
+        return False
+
     @property
     def market(self):
         """ Return the market object as :class:`bitshares.market.Market`
