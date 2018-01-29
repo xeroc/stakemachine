@@ -92,6 +92,14 @@ class Storage(dict):
         ).all()
         return [(e.key, e.value) for e in es]
 
+    def clear(self):
+        rows = session.query(Config).filter_by(
+            category=self.category
+        )
+        for row in rows:
+            session.delete(row)
+            session.commit()
+
 
 # Derive sqlite file directory
 data_dir = user_data_dir(appname, appauthor)
