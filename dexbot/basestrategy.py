@@ -182,7 +182,15 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.bitshares.blocking = False
         return r
 
-    def cancelall(self):
+    def cancel(self, order_id):
+        """ Cancel specific order
+        """
+        return self.bitshares.cancel(
+            order_id,
+            account=self.account
+        )
+
+    def cancel_all(self):
         """ Cancel all orders of this bot
         """
         if self.orders:
