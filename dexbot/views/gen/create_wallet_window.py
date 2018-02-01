@@ -94,7 +94,7 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Create wallet"))
         self.helper_text.setText(_translate("Dialog", "Before you can start using DEXBot, you need to create a wallet."))
-        self.label.setText(_translate("Dialog", "Wallet password is used to encrypt your BitShares account passwords."))
+        self.label.setText(_translate("Dialog", "Wallet password is used to encrypt your BitShares account private keys."))
         self.password_label.setText(_translate("Dialog", "Wallet password"))
         self.ok_button.setText(_translate("Dialog", "OK"))
         self.confirm_password_label.setText(_translate("Dialog", "Confirm password"))

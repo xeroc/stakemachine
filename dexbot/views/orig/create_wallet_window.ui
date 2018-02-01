@@ -42,7 +42,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Wallet password is used to encrypt your BitShares account passwords.</string>
+      <string>Wallet password is used to encrypt your BitShares account private keys.</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
