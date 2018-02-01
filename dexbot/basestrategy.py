@@ -182,11 +182,13 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.bitshares.blocking = False
         return r
 
-    def cancel(self, order_id):
-        """ Cancel specific order
+    def cancel(self, orders):
+        """ Cancel specific orders
         """
+        if not isinstance(orders, list):
+            orders = [orders]
         return self.bitshares.cancel(
-            order_id,
+            [o["id"] for o in orders if "id" in o],
             account=self.account
         )
 
