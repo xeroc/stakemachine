@@ -3,7 +3,7 @@ from PyQt5 import QtGui, QtWidgets, QtCore
 from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.views.gen.bot_list_window import Ui_MainWindow
 from dexbot.views.create_bot import CreateBotView
-
+from dexbot.controllers.create_bot_controller import CreateBotController
 from dexbot.views.bot_item import BotItemWidget
 
 
@@ -45,12 +45,13 @@ class MainView(QtWidgets.QMainWindow):
         self.ui.add_bot_button.setEnabled(False)
 
     def handle_add_bot(self):
-        create_bot_dialog = CreateBotView(self.main_ctrl)
+        controller = CreateBotController(self.main_ctrl.bitshares_instance)
+        create_bot_dialog = CreateBotView(controller)
         return_value = create_bot_dialog.exec_()
 
         # User clicked save
         if return_value == 1:
-            botname = create_bot_dialog.botname
+            botname = create_bot_dialog.bot_name
             config = self.main_ctrl.get_bot_config(botname)
             self.add_bot_widget(botname, config)
 
