@@ -233,6 +233,16 @@ class Ui_Dialog(object):
         self.retranslateUi(Dialog)
         self.strategy_input.setCurrentIndex(-1)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
+        Dialog.setTabOrder(self.strategy_input, self.bot_name_input)
+        Dialog.setTabOrder(self.bot_name_input, self.base_asset_input)
+        Dialog.setTabOrder(self.base_asset_input, self.quote_asset_input)
+        Dialog.setTabOrder(self.quote_asset_input, self.account_input)
+        Dialog.setTabOrder(self.account_input, self.private_key_input)
+        Dialog.setTabOrder(self.private_key_input, self.amount_input)
+        Dialog.setTabOrder(self.amount_input, self.center_price_input)
+        Dialog.setTabOrder(self.center_price_input, self.spread_input)
+        Dialog.setTabOrder(self.spread_input, self.save_button)
+        Dialog.setTabOrder(self.save_button, self.cancel_button)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
