@@ -268,7 +268,7 @@
                 <number>1</number>
                </property>
                <property name="text">
-                <string>+1.234%</string>
+                <string>+0.000%</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>

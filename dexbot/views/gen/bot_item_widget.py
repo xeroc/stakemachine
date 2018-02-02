@@ -205,8 +205,8 @@ class Ui_widget(object):
 "")
         self.pause_button.setText("")
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("dexbot/img/pause.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         icon2.addPixmap(QtGui.QPixmap("dexbot/img/play.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        icon2.addPixmap(QtGui.QPixmap("dexbot/img/pause.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.pause_button.setIcon(icon2)
         self.pause_button.setIconSize(QtCore.QSize(30, 30))
         self.pause_button.setObjectName("pause_button")
@@ -242,5 +242,5 @@ class Ui_widget(object):
         self.botname_label.setText(_translate("widget", "Botname"))
         self.strategy_label.setText(_translate("widget", "SIMPLE STRATEGY"))
         self.currency_label.setText(_translate("widget", "BTS/USD"))
-        self.profit_label.setText(_translate("widget", "+1.234%"))
+        self.profit_label.setText(_translate("widget", "+0.000%"))
 
