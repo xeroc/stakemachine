@@ -249,3 +249,10 @@ class BaseStrategy(Storage, StateMachine, Events):
                 [o["id"] for o in self.orders],
                 account=self.account
             )
+
+    def purge(self):
+        """
+        Clear all the bot data from the database and cancel all orders
+        """
+        self.cancel_all()
+        self.clear()

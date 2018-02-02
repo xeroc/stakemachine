@@ -20,12 +20,18 @@ class MainController:
         bot.start()
         self.bots[botname] = bot
 
-    def stop_bot(self, bot_id):
-        self.bots[bot_id].terminate()
+    def stop_bot(self, bot_name):
+        self.bots[bot_name].terminate()
+        self.bots.pop(bot_name, None)
 
-    def remove_bot(self, botname):
-        # Todo: cancell all orders on removal
-        self.bots[botname].terminate()
+    def remove_bot(self, bot_name):
+        if bot_name in self.bots:
+            self.bots[bot_name].terminate()
+
+        # Todo: Add some threading here so that the GUI doesn't freeze
+        config = self.get_bot_config(bot_name)
+        self.bot_template.remove_bot(config, bot_name)
+        self.remove_bot_config(bot_name)
 
     @staticmethod
     def load_config():
@@ -64,3 +70,14 @@ class MainController:
             config = yaml.load(f)
             config['bots'] = {botname: config['bots'][botname]}
             return config
+
+    @staticmethod
+    def remove_bot_config(bot_name):
+        yaml = YAML()
+        with open('config.yml', 'r') as f:
+            config = yaml.load(f)
+
+        config['bots'].pop(bot_name, None)
+
+        with open("config.yml", "w") as f:
+            yaml.dump(config, f)

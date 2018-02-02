@@ -4,6 +4,8 @@ import logging
 import os.path
 from multiprocessing import Process
 
+from dexbot.basestrategy import BaseStrategy
+
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
@@ -117,3 +119,9 @@ class BotInfrastructure(Process):
 
     def run(self):
         self.notify.listen()
+
+    @staticmethod
+    def remove_bot(config, bot_name):
+        # Initialize the base strategy to get control over the data
+        strategy = BaseStrategy(config, bot_name)
+        strategy.purge()

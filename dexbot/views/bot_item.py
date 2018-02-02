@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 
 from dexbot.views.gen.bot_item_widget import Ui_widget
+from dexbot.views.confirmation import ConfirmationDialog
 
 
 class BotItemWidget(QtWidgets.QWidget, Ui_widget):
@@ -57,9 +58,11 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         self.bot_profit.setText(value)
 
     def remove_widget(self):
-        if self.running:
+        dialog = ConfirmationDialog('Are you sure you want to remove bot "{}"?'.format(self.botname))
+        return_value = dialog.exec_()
+        if return_value:
             self.controller.remove_bot(self.botname)
-        self.deleteLater()
+            self.deleteLater()
 
-        # Todo: Remove the line below this after multi-bot support is added
-        self.view.ui.add_bot_button.setEnabled(True)
+            # Todo: Remove the line below this after multi-bot support is added
+            self.view.ui.add_bot_button.setEnabled(True)
