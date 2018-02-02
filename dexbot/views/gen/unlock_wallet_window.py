@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(473, 141)
+        Dialog.resize(473, 126)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -50,6 +50,7 @@ class Ui_Dialog(object):
         self.formLayout = QtWidgets.QFormLayout(self.form_wrap)
         self.formLayout.setLabelAlignment(QtCore.Qt.AlignCenter)
         self.formLayout.setFormAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
+        self.formLayout.setContentsMargins(-1, -1, -1, 0)
         self.formLayout.setObjectName("formLayout")
         self.password_label = QtWidgets.QLabel(self.form_wrap)
         self.password_label.setObjectName("password_label")
@@ -70,8 +71,6 @@ class Ui_Dialog(object):
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.ok_button)
         self.horizontalLayout_3.addWidget(self.form_wrap)
         self.verticalLayout.addWidget(self.widget)
-        spacerItem = QtWidgets.QSpacerItem(20, 25, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout.addItem(spacerItem)
         self.password_label.setBuddy(self.password_input)
 
         self.retranslateUi(Dialog)
@@ -79,7 +78,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Unlock wallet"))
+        Dialog.setWindowTitle(_translate("Dialog", "DEXBot - Unlock wallet"))
         self.helper_text.setText(_translate("Dialog", "Please enter your wallet password before continuing."))
         self.password_label.setText(_translate("Dialog", "Wallet password"))
         self.ok_button.setText(_translate("Dialog", "OK"))
