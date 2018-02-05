@@ -90,7 +90,7 @@ class CreateBotView(QtWidgets.QDialog):
         bot_module = self.controller.get_strategy_module(strategy)
         bot_data = {
             'account': ui.account_input.text(),
-            'market': '{}/{}'.format(base_asset, quote_asset),
+            'market': '{}/{}'.format(quote_asset, base_asset),
             'module': bot_module,
             'strategy': strategy,
             'target': target
