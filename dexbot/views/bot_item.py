@@ -36,7 +36,7 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         self.pause_button.show()
         self.play_button.hide()
 
-        self.controller.create_bot(self.botname, self.config)
+        self.controller.create_bot(self.botname, self.config, self.view)
 
     def pause_bot(self):
         self.running = False
@@ -55,7 +55,12 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         self.currency_label.setText(value)
 
     def set_bot_profit(self, value):
-        self.bot_profit.setText(value)
+        if value >= 0:
+            value = '+' + str(value)
+        else:
+            value = '-' + str(value)
+        value = str(value) + '%'
+        self.profit_label.setText(value)
 
     def remove_widget(self):
         dialog = ConfirmationDialog('Are you sure you want to remove bot "{}"?'.format(self.botname))

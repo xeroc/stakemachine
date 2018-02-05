@@ -2,7 +2,7 @@ import importlib
 import sys
 import logging
 import os.path
-from multiprocessing import Process
+from threading import Thread
 
 from dexbot.basestrategy import BaseStrategy
 
@@ -18,7 +18,7 @@ log_bots = logging.getLogger('dexbot.per_bot')
 # GUIs can add a handler to this logger to get a stream of events re the running bots.
 
 
-class BotInfrastructure(Process):
+class BotInfrastructure(Thread):
 
     bots = dict()
 
@@ -26,7 +26,7 @@ class BotInfrastructure(Process):
         self,
         config,
         bitshares_instance=None,
-        gui_data=None
+        view=None
     ):
         super().__init__()
         # BitShares instance
@@ -60,7 +60,7 @@ class BotInfrastructure(Process):
                     config=config,
                     name=botname,
                     bitshares_instance=self.bitshares,
-                    gui_data=gui_data
+                    view=view
                 )
                 markets.add(bot['market'])
                 accounts.add(bot['account'])

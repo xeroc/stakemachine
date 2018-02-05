@@ -4,7 +4,7 @@ from bitshares.amount import Amount
 from bitshares.price import Price
 
 from dexbot.basestrategy import BaseStrategy
-from dexbot.errors import InsufficientFundsError
+from dexbot.queue.idle_queue import idle_add
 
 
 class Strategy(BaseStrategy):
@@ -29,8 +29,9 @@ class Strategy(BaseStrategy):
 
         # Tests for actions
         self.price = self.bot.get("target", {}).get("center_price", 0)
-        self.cancel_all()
-        self.clear()
+
+        self.bot_name = kwargs.get('name')
+        self.view = kwargs.get('view')
 
     def error(self, *args, **kwargs):
         self.disabled = True
@@ -50,7 +51,10 @@ class Strategy(BaseStrategy):
 
         # Buy Side
         if float(self.balance(self.market["base"])) < buy_price * amount:
-            InsufficientFundsError(Amount(amount=amount * float(buy_price), asset=self.market["base"]))
+            self.log.critical(
+                'Insufficient buy balance, needed {} {}'.format(buy_price * amount, self.market['base']['symbol'])
+            )
+            self.disabled = True
         else:
             buy_transaction = self.market.buy(
                 buy_price,
@@ -63,8 +67,11 @@ class Strategy(BaseStrategy):
                 self['buy_order'] = buy_order
 
         # Sell Side
-        if float(self.balance(self.market["quote"])) < sell_price * amount:
-            InsufficientFundsError(Amount(amount=amount * float(sell_price), asset=self.market["quote"]))
+        if float(self.balance(self.market["quote"])) < amount:
+            self.log.critical(
+                "Insufficient sell balance, needed {} {}".format(amount, self.market['quote']['symbol'])
+            )
+            self.disabled = True
         else:
             sell_transaction = self.market.sell(
                 sell_price,
@@ -117,7 +124,11 @@ class Strategy(BaseStrategy):
                 buy_order_amount = 0
             new_buy_amount = buy_order_amount - bought_amount + sold_amount
             if float(self.balance(self.market["base"])) < new_buy_amount:
-                InsufficientFundsError(Amount(amount=new_buy_amount, asset=self.market["base"]))
+                self.log.critical(
+                    'Insufficient buy balance, needed {} {}'.format(buy_price * new_buy_amount,
+                                                                    self.market['base']['symbol'])
+                )
+                self.disabled = True
             else:
                 if buy_order:
                     # Cancel the old order
@@ -144,7 +155,10 @@ class Strategy(BaseStrategy):
                 sell_order_amount = 0
             new_sell_amount = sell_order_amount + bought_amount - sold_amount
             if float(self.balance(self.market["quote"])) < new_sell_amount:
-                InsufficientFundsError(Amount(amount=new_sell_amount, asset=self.market["quote"]))
+                self.log.critical(
+                    "Insufficient sell balance, needed {} {}".format(new_sell_amount, self.market["quote"]['symbol'])
+                )
+                self.disabled = True
             else:
                 if sell_order:
                     # Cancel the old order
@@ -204,10 +218,16 @@ class Strategy(BaseStrategy):
                 # Either buy or sell order was changed, update both orders
                 self.update_orders(current_sell_order, current_buy_order)
 
-            self.update_gui_profit()
+            if self.view:
+                self.update_gui_profit()
 
     # GUI updaters
     def update_gui_profit(self):
-        # Todo: update gui profit
-        profit = (self.orders_balance() - self['initial_balance']) / self['initial_balance']
-        print(profit)
+        profit = round((self.orders_balance() - self['initial_balance']) / self['initial_balance'], 3)
+        idle_add(self.view.set_bot_profit, self.bot_name, profit)
+        self['profit'] = profit
+
+    def update_gui_slider(self):
+        # WIP
+        percentage = ''
+        idle_add(self.view.update_slider, percentage)

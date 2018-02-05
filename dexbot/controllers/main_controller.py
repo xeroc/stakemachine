@@ -13,10 +13,8 @@ class MainController:
         set_shared_bitshares_instance(bitshares_instance)
         self.bot_template = BotInfrastructure
 
-    def create_bot(self, botname, config):
-        gui_data = {'id': botname, 'controller': self}
-        bot = self.bot_template(config, self.bitshares_instance, gui_data)
-        bot.daemon = True
+    def create_bot(self, botname, config, view):
+        bot = self.bot_template(config, self.bitshares_instance, view)
         bot.start()
         self.bots[botname] = bot
 
