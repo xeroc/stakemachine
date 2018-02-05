@@ -4,6 +4,7 @@ import bitshares
 from bitshares.instance import shared_bitshares_instance
 from bitshares.asset import Asset
 from bitshares.account import Account
+from bitsharesbase.account import PrivateKey
 from ruamel.yaml import YAML
 
 
@@ -44,8 +45,27 @@ class CreateBotController:
             return False
 
     def is_account_valid(self, account, private_key):
-        # Todo: finish this
-        return True
+        wallet = self.bitshares.wallet
+        try:
+            pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
+        except ValueError:
+            return False
+
+        accounts = wallet.getAllAccounts(pubkey)
+        account_names = [account['name'] for account in accounts]
+
+        if account in account_names:
+            return True
+        else:
+            return False
+
+    def add_private_key(self, private_key):
+        wallet = self.bitshares.wallet
+        try:
+            wallet.addPrivateKey(private_key)
+        except ValueError:
+            # Private key already added
+            pass
 
     @staticmethod
     def get_unique_bot_name():
