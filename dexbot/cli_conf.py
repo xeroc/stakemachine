@@ -15,14 +15,9 @@ for each strategy class.
 
 
 import importlib, os, os.path, sys, collections, re, tempfile, shutil
-import click, whiptail
 from dexbot.bot import STRATEGIES
-
-
-NODES=[("wss://openledger.hk/ws", "OpenLedger"),
-       ("wss://dexnode.net/ws", "DEXNode"),
-       ("wss://node.bitshares.eu/ws", "BitShares.EU")]
-
+from dexbot.whiptail import get_whiptail
+from dexbot.find_node import start_pings, best_node
 
 SYSTEMD_SERVICE_NAME=os.path.expanduser("~/.local/share/systemd/user/dexbot.service")
 
@@ -41,66 +36,6 @@ Environment=UNLOCK={passwd}
 WantedBy=default.target
 """
 
-class QuitException(Exception): pass
-
-class LocalWhiptail(whiptail.Whiptail):
-
-    def __init__(self):
-        super().__init__(backtitle='dexbot configuration')
-    
-    def view_text(self, text):
-        """Whiptail wants a file but we want to provide a text string"""
-        fd, nam = tempfile.mkstemp()
-        f = os.fdopen(fd)
-        f.write(text)
-        f.close()
-        self.view_file(nam)
-        os.unlink(nam)
-
-class NoWhiptail:
-    """
-    Imitates the interface of whiptail but uses click only
-
-    This is very basic CLI: real state-of-the-1970s stuff, 
-    but it works *everywhere*
-    """
-    
-    def prompt(self, msg, default='', password=False):
-        return click.prompt(msg,default=default,hide_input=password)
-
-    def confirm(self, msg, default='yes'):
-        return click.confirm(msg,default=(default=='yes'))
-    
-    def alert(self, msg):
-        click.echo(
-            "[" +
-            click.style("alert", fg="yellow") +
-            "] " + msg
-        )
-        
-    def view_text(self, text):
-        click.echo_via_pager(text)
-        
-    def menu(self, msg='', items=(), prefix=' - ', default=0):
-        click.echo(msg+'\n')
-        if type(items) is dict: items = list(items.items())
-        i = 1
-        for k, v in items:
-            click.echo("{:>2}) {}".format(i, v))
-            i += 1
-        click.echo("\n")
-        ret = click.prompt("Your choice:",type=int,default=default+1)
-        ret = items[ret-1]
-        return ret[0]
-        
-    def radiolist(self, msg='', items=(), prefix=' - '):
-        d = 0
-        default = 0
-        for k, v, s in items:
-            if s == "ON":
-                default = d
-            d += 1
-        self.menu(msg,items,default=default)
     
 def select_choice(current,choices):
     """for the radiolist, get us a list with the current value selected"""
@@ -168,8 +103,7 @@ def setup_systemd(d,config):
 
 def configure_bot(d,bot):
     strategy = bot.get('module','dexbot.strategies.echo')
-    bot['module'] = d.radiolist("Choose a bot strategy",
-                      choices=select_choice(strategy,STRATEGIES))
+    bot['module'] = d.radiolist("Choose a bot strategy",select_choice(strategy,STRATEGIES))
     bot['bot'] = 'Strategy' # its always Strategy now, for backwards compatibilty only
     # import the bot class but we don't __init__ it here
     klass = getattr(
@@ -188,24 +122,30 @@ def configure_bot(d,bot):
                             
     
 def configure_dexbot(config):
-    if shutil.which("whiptail"):
-        d = LocalWhiptail()
-    else:
-        d = NoWhiptail() # use our own fake whiptail
-    config['node'] = d.radiolist("Choose a Witness node to use",choices=select_choice(config.get("node"),NODES))
+    d = get_whiptail()
+    if not 'node' in config:
+        # start our best node search in the background
+        ping_results = start_pings()
     bots = config.get('bots',{})
     if len(bots) == 0:
-        txt = d.prompt("Your name for the bot")
+        txt = d.prompt("Your name for the first bot")
         config['bots'] = {txt:configure_bot(d,{})}
     else:
-        botname = d.menu("Select bot to edit",
-               choices=[(i,i) for i in bots]+[('NEW','New bot')])
+        botname = d.menu("Select bot to edit",[(i,i) for i in bots]+[('NEW','New bot')])
         if botname == 'NEW':
-            txt = d.prompt("Your name for the bot")
+            txt = d.prompt("Your name for the new bot")
             config['bots'][txt] = configure_bot(d,{})
         else:
             config['bots'][botname] = configure_bot(d,config['bots'][botname])
+    if not 'node' in config:
+        node = best_node(ping_results)
+        if node:
+            config['node'] = node
+        else:
+            # search failed, ask the user
+            config['node'] = d.prompt("Search for best BitShares node failed.\n\nPlease enter wss:// url of chosen node.")
     setup_systemd(d,config)
+    d.clear()
     return config
 
 if __name__=='__main__':

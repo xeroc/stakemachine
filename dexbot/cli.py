@@ -17,7 +17,7 @@ from .ui import (
 
 
 from dexbot.bot import BotInfrastructure
-from dexbot.cli_conf import configure_dexbot, QuitException
+from dexbot.cli_conf import configure_dexbot
 
 
 log = logging.getLogger(__name__)
@@ -81,26 +81,22 @@ def configure(ctx):
         with open(ctx.obj["configfile"]) as fd:
             config = yaml.load(fd)
     else:
-        config = {}
-    try:
-        configure_dexbot(config)
-        click.clear()
-        cfg_file = ctx.obj["configfile"]
-        if not "/" in cfg_file: # use hoke directory by default.
-            cfg_file = os.path.expanduser("~/"+cfg_file)
-        with open(cfg_file,"w") as fd:
-            yaml.dump(config,fd,default_flow_style=False)
-        click.echo("new configuration saved")
-        if config['systemd_status'] == 'installed':
-            # we are already installed
-            click.echo("restarting dexbot daemon")
-            os.system("systemctl --user restart dexbot")
-        if config['systemd_status'] == 'install':
-            os.system("systemctl --user enable dexbot")
-            click.echo("starting dexbot daemon")
-            os.system("systemctl --user start dexbot")
-    except QuitException:
-        click.echo("configuration exited: nothing changed")
-        
+        config = {}        
+    configure_dexbot(config)
+    cfg_file = ctx.obj["configfile"]
+    if not "/" in cfg_file: # save to home directory unless user wants something else
+        cfg_file = os.path.expanduser("~/"+cfg_file)
+    with open(cfg_file,"w") as fd:
+        yaml.dump(config,fd,default_flow_style=False)
+    click.echo("new configuration saved")
+    if config['systemd_status'] == 'installed':
+        # we are already installed
+        click.echo("restarting dexbot daemon")
+        os.system("systemctl --user restart dexbot")
+    if config['systemd_status'] == 'install':
+        os.system("systemctl --user enable dexbot")
+        click.echo("starting dexbot daemon")
+        os.system("systemctl --user start dexbot")
+
 if __name__ == '__main__':
     main()

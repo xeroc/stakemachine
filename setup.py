@@ -43,7 +43,6 @@ setup(
         "sqlalchemy",
         "appdirs",
         "pyqt5",
-	"whiptail",
 	"sdnotify"
     ],
     include_package_data=True,
