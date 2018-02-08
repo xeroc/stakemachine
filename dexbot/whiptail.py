@@ -60,7 +60,7 @@ class Whiptail:
         return [str(self.height - height_offset)]
     
     def menu(self, msg='', items=(), prefix=' - '):
-        if isinstance(items[0], string_types):
+        if isinstance(items[0], str):
             items = [(i, '') for i in items]
         else:
             items = [(k, prefix + v) for k, v in items]
@@ -145,7 +145,7 @@ class NoWhiptail:
         pass # dont tidy the screen
     
 def get_whiptail():
-    if shutil.which("whyptail"):
+    if shutil.which("whiptail"):
         d = Whiptail()
     else:
         d = NoWhiptail() # use our own fake whiptail
