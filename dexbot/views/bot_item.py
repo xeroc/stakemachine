@@ -62,6 +62,9 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         value = str(value) + '%'
         self.profit_label.setText(value)
 
+    def set_bot_slider(self, value):
+        self.order_slider.setSliderPosition(50)
+
     def remove_widget(self):
         dialog = ConfirmationDialog('Are you sure you want to remove bot "{}"?'.format(self.botname))
         return_value = dialog.exec_()

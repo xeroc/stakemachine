@@ -27,11 +27,15 @@ class Strategy(BaseStrategy):
         # Counter for blocks
         self.counter = Counter()
 
-        # Tests for actions
         self.price = self.bot.get("target", {}).get("center_price", 0)
-
+        self.initial_balance = self['initial_balance'] or 0
         self.bot_name = kwargs.get('name')
         self.view = kwargs.get('view')
+
+        # Update GUI
+        if self.view:
+            self.update_gui_profit()
+            self.update_gui_slider()
 
     def error(self, *args, **kwargs):
         self.disabled = True
@@ -83,7 +87,9 @@ class Strategy(BaseStrategy):
             if sell_order:
                 self['sell_order'] = sell_order
 
-        self['initial_balance'] = self.orders_balance()
+        order_balance = self.orders_balance()
+        self['initial_balance'] = order_balance  # Save to database
+        self.initial_balance = order_balance
 
     def update_orders(self, new_sell_order, new_buy_order):
         """
@@ -220,14 +226,32 @@ class Strategy(BaseStrategy):
 
             if self.view:
                 self.update_gui_profit()
+                self.update_gui_slider()
 
     # GUI updaters
     def update_gui_profit(self):
-        profit = round((self.orders_balance() - self['initial_balance']) / self['initial_balance'], 3)
-        idle_add(self.view.set_bot_profit, self.bot_name, profit)
+        if self.initial_balance:
+            profit = round((self.orders_balance() - self.initial_balance) / self.initial_balance, 3)
+        else:
+            profit = 0
+        idle_add(self.view.set_bot_profit, self.bot_name, float(profit))
         self['profit'] = profit
 
     def update_gui_slider(self):
-        # WIP
-        percentage = ''
-        idle_add(self.view.update_slider, percentage)
+        buy_order = self['buy_order']
+        if buy_order:
+            buy_amount = buy_order['quote']['amount']
+        else:
+            buy_amount = 0
+        sell_order = self['sell_order']
+        if sell_order:
+            sell_amount = sell_order['base']['amount']
+        else:
+            sell_amount = 0
+
+        total = buy_amount + sell_amount
+        if not total:  # Prevent division by zero
+            percentage = 0
+        else:
+            percentage = (buy_amount / total) * 100
+        idle_add(self.view.set_bot_slider, self.bot_name, percentage)

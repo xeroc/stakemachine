@@ -70,6 +70,9 @@ class MainView(QtWidgets.QMainWindow):
     def set_bot_market(self, bot_name, value):
         self.bot_widgets[bot_name].set_bot_market(value)
 
+    def set_bot_slider(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_slider(value)
+
     def customEvent(self, event):
         # Process idle_queue_dispatcher events
         event.callback()
