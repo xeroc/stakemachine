@@ -2,7 +2,7 @@ import importlib
 import sys
 import logging
 import os.path
-from threading import Thread
+import threading
 
 from dexbot.basestrategy import BaseStrategy
 
@@ -18,7 +18,7 @@ log_bots = logging.getLogger('dexbot.per_bot')
 # GUIs can add a handler to this logger to get a stream of events re the running bots.
 
 
-class BotInfrastructure(Thread):
+class BotInfrastructure(threading.Thread):
 
     bots = dict()
 
@@ -29,6 +29,7 @@ class BotInfrastructure(Thread):
         view=None
     ):
         super().__init__()
+
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
@@ -120,8 +121,15 @@ class BotInfrastructure(Thread):
     def run(self):
         self.notify.listen()
 
+    def stop(self):
+        self.notify.websocket.close()
+
+    def remove_bot(self):
+        for bot in self.bots:
+            self.bots[bot].purge()
+
     @staticmethod
-    def remove_bot(config, bot_name):
+    def remove_offline_bot(config, bot_name):
         # Initialize the base strategy to get control over the data
         strategy = BaseStrategy(config, bot_name)
         strategy.purge()
