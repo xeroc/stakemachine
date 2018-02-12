@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets
 
 from dexbot.views.gen.bot_item_widget import Ui_widget
 from dexbot.views.confirmation import ConfirmationDialog
+from dexbot.storage import worker
 
 
 class BotItemWidget(QtWidgets.QWidget, Ui_widget):
@@ -30,6 +31,14 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
         market = config['bots'][botname]['market']
         self.set_bot_market(market)
+
+        profit = worker.execute(worker.get_item, botname, 'profit')
+        if profit:
+            self.set_bot_profit(profit)
+
+        percentage = worker.execute(worker.get_item, botname, 'slider')
+        if percentage:
+            self.set_bot_slider(percentage)
 
     def start_bot(self):
         self.running = True
@@ -63,7 +72,7 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         self.profit_label.setText(value)
 
     def set_bot_slider(self, value):
-        self.order_slider.setSliderPosition(50)
+        self.order_slider.setSliderPosition(value)
 
     def remove_widget(self):
         dialog = ConfirmationDialog('Are you sure you want to remove bot "{}"?'.format(self.botname))

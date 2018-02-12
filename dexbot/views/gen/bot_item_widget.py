@@ -265,7 +265,7 @@ class Ui_widget(object):
         self.botname_label.setText(_translate("widget", "Botname"))
         self.strategy_label.setText(_translate("widget", "SIMPLE STRATEGY"))
         self.currency_label.setText(_translate("widget", "BTS/USD"))
-        self.profit_label.setText(_translate("widget", "+0.000%"))
+        self.profit_label.setText(_translate("widget", "+0.0%"))
         self.buy_label.setText(_translate("widget", "Buy"))
         self.sell_label.setText(_translate("widget", "Sell"))
 
