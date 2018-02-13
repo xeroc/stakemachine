@@ -2,6 +2,7 @@ from collections import Counter
 
 from bitshares.amount import Amount
 from bitshares.price import Price
+from bitshares.price import Order
 
 from dexbot.basestrategy import BaseStrategy
 from dexbot.queue.idle_queue import idle_add
@@ -28,40 +29,32 @@ class Strategy(BaseStrategy):
         self.counter = Counter()
 
         self.price = self.bot.get("target", {}).get("center_price", 0)
+        target = self.bot.get("target", {})
+        self.buy_price = self.price * (1 - (target["spread"] / 2) / 100)
+        self.sell_price = self.price * (1 + (target["spread"] / 2) / 100)
         self.initial_balance = self['initial_balance'] or 0
         self.bot_name = kwargs.get('name')
         self.view = kwargs.get('view')
 
-        # Update GUI
-        if self.view:
-            self.update_gui_profit()
-            self.update_gui_slider()
-
     def error(self, *args, **kwargs):
         self.disabled = True
-        self.cancel_all()
-        self.clear()
         self.log.info(self.execute())
 
     def init_strategy(self):
         # Target
         target = self.bot.get("target", {})
 
-        # prices
-        buy_price = self.price * (1 - (target["spread"] / 2) / 100)
-        sell_price = self.price * (1 + (target["spread"] / 2) / 100)
-
         amount = target['amount'] / 2
 
         # Buy Side
-        if float(self.balance(self.market["base"])) < buy_price * amount:
+        if float(self.balance(self.market["base"])) < self.buy_price * amount:
             self.log.critical(
-                'Insufficient buy balance, needed {} {}'.format(buy_price * amount, self.market['base']['symbol'])
+                'Insufficient buy balance, needed {} {}'.format(self.buy_price * amount, self.market['base']['symbol'])
             )
             self.disabled = True
         else:
             buy_transaction = self.market.buy(
-                buy_price,
+                self.buy_price,
                 Amount(amount=amount, asset=self.market["quote"]),
                 account=self.account,
                 returnOrderId="head"
@@ -78,7 +71,7 @@ class Strategy(BaseStrategy):
             self.disabled = True
         else:
             sell_transaction = self.market.sell(
-                sell_price,
+                self.sell_price,
                 Amount(amount=amount, asset=self.market["quote"]),
                 account=self.account,
                 returnOrderId="head"
@@ -96,15 +89,10 @@ class Strategy(BaseStrategy):
         Update the orders
         """
         print('Updating orders!')
-        target = self.bot.get("target", {})
 
         # Stored orders
         sell_order = self['sell_order']
         buy_order = self['buy_order']
-
-        # prices
-        buy_price = self.price * (1 - (target["spread"] / 2) / 100)
-        sell_price = self.price * (1 + (target["spread"] / 2) / 100)
 
         sold_amount = 0
         if new_sell_order and new_sell_order['base']['amount'] < sell_order['base']['amount']:
@@ -131,17 +119,17 @@ class Strategy(BaseStrategy):
             new_buy_amount = buy_order_amount - bought_amount + sold_amount
             if float(self.balance(self.market["base"])) < new_buy_amount:
                 self.log.critical(
-                    'Insufficient buy balance, needed {} {}'.format(buy_price * new_buy_amount,
+                    'Insufficient buy balance, needed {} {}'.format(self.buy_price * new_buy_amount,
                                                                     self.market['base']['symbol'])
                 )
                 self.disabled = True
             else:
-                if buy_order:
+                if buy_order and Order(buy_order['id']):
                     # Cancel the old order
                     self.cancel(buy_order)
 
                 buy_transaction = self.market.buy(
-                    buy_price,
+                    self.buy_price,
                     Amount(amount=new_buy_amount, asset=self.market["quote"]),
                     account=self.account,
                     returnOrderId="head"
@@ -166,12 +154,12 @@ class Strategy(BaseStrategy):
                 )
                 self.disabled = True
             else:
-                if sell_order:
+                if sell_order and Order(sell_order['id']):
                     # Cancel the old order
                     self.cancel(sell_order)
 
                 sell_transaction = self.market.sell(
-                    sell_price,
+                    self.sell_price,
                     Amount(amount=new_sell_amount, asset=self.market["quote"]),
                     account=self.account,
                     returnOrderId="head"
@@ -185,14 +173,15 @@ class Strategy(BaseStrategy):
 
     def orders_balance(self):
         balance = 0
-        for order in [self['buy_order'], self['sell_order']]:
-            if order:
-                if order['base']['symbol'] != self.market['base']['symbol']:
-                    # Invert the market for easier calculation
-                    if not isinstance(order, Price):
-                        order = self.get_order(order['id'])
-                    order.invert()
-                balance += self.get_converted_asset_amount(order['quote'])
+        orders = [o for o in [self['buy_order'], self['sell_order']] if o]  # Strip empty orders
+        for order in orders:
+            if order['base']['symbol'] != self.market['base']['symbol']:
+                # Invert the market for easier calculation
+                if not isinstance(order, Price):
+                    # Fixme: get_order returns false if the order doesn't exists, failing the invert method below
+                    order = self.get_order(order['id'])
+                order.invert()
+            balance += order['base']['amount']
 
         return balance
 
@@ -255,3 +244,4 @@ class Strategy(BaseStrategy):
         else:
             percentage = (buy_amount / total) * 100
         idle_add(self.view.set_bot_slider, self.bot_name, percentage)
+        self['slider'] = percentage
