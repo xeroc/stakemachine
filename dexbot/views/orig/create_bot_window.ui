@@ -424,28 +424,6 @@
         <property name="text">
          <string>Base Asset</string>
         </property>
-        <property name="buddy">
-         <cstring>base_asset_input</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="base_asset_input">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>80</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="inputMethodHints">
-         <set>Qt::ImhPreferUppercase</set>
-        </property>
        </widget>
       </item>
       <item row="3" column="0">
@@ -486,16 +464,26 @@
         </property>
        </widget>
       </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="base_asset_input">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>105</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
      </layout>
-     <zorder></zorder>
-     <zorder>strategy_label</zorder>
-     <zorder>strategy_input</zorder>
-     <zorder>bot_name_label</zorder>
-     <zorder>bot_name_input</zorder>
-     <zorder>base_asset_label</zorder>
-     <zorder>base_asset_input</zorder>
-     <zorder>quote_asset_label</zorder>
-     <zorder>quote_asset_input</zorder>
     </widget>
    </item>
    <item row="3" column="0">
@@ -516,7 +504,6 @@
  <tabstops>
   <tabstop>strategy_input</tabstop>
   <tabstop>bot_name_input</tabstop>
-  <tabstop>base_asset_input</tabstop>
   <tabstop>quote_asset_input</tabstop>
   <tabstop>account_input</tabstop>
   <tabstop>private_key_input</tabstop>

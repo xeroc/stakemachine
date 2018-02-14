@@ -15,6 +15,7 @@ class CreateBotView(QtWidgets.QDialog):
 
         # Todo: Using a model here would be more Qt like
         self.ui.strategy_input.addItems(self.controller.strategies)
+        self.ui.base_asset_input.addItems(self.controller.base_assets)
 
         self.bot_name = controller.get_unique_bot_name()
         self.ui.bot_name_input.setText(self.bot_name)
@@ -45,7 +46,7 @@ class CreateBotView(QtWidgets.QDialog):
 
     def validate_form(self):
         error_text = ''
-        base_asset = self.ui.base_asset_input.text()
+        base_asset = self.ui.base_asset_input.currentText()
         quote_asset = self.ui.quote_asset_input.text()
         if not self.validate_bot_name():
             bot_name = self.ui.bot_name_input.text()
@@ -53,7 +54,7 @@ class CreateBotView(QtWidgets.QDialog):
         elif not self.validate_asset(base_asset):
             error_text = 'Field "Base Asset" does not have a valid asset.'
         elif not self.validate_asset(quote_asset):
-            error_text = 'Field "Base Quote" does not have a valid asset.'
+            error_text = 'Field "Quote Asset" does not have a valid asset.'
         elif not self.validate_market():
             error_text = "Market {}/{} doesn't exist.".format(base_asset, quote_asset)
         elif not self.validate_account_name():
@@ -84,7 +85,7 @@ class CreateBotView(QtWidgets.QDialog):
             'spread': spread
         }
 
-        base_asset = ui.base_asset_input.text()
+        base_asset = ui.base_asset_input.currentText()
         quote_asset = ui.quote_asset_input.text()
         strategy = ui.strategy_input.currentText()
         bot_module = self.controller.get_strategy_module(strategy)

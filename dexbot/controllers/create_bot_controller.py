@@ -23,6 +23,13 @@ class CreateBotController:
     def get_strategy_module(self, strategy):
         return self.strategies[strategy]
 
+    @property
+    def base_assets(self):
+        assets = [
+            'USD', 'OPEN.BTC', 'CNY', 'BTS', 'BTC'
+        ]
+        return assets
+
     @staticmethod
     def is_bot_name_valid(bot_name):
         bot_names = MainController.get_bots_data().keys()
