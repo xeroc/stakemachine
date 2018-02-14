@@ -504,6 +504,7 @@
  <tabstops>
   <tabstop>strategy_input</tabstop>
   <tabstop>bot_name_input</tabstop>
+  <tabstop>base_asset_input</tabstop>
   <tabstop>quote_asset_input</tabstop>
   <tabstop>account_input</tabstop>
   <tabstop>private_key_input</tabstop>
