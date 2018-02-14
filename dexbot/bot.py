@@ -73,6 +73,7 @@ class BotInfrastructure(threading.Thread):
         if len(markets) == 0:
             log.critical("No bots to launch, exiting")
             raise errors.NoBotsAvailable()
+
         # Create notification instance
         # Technically, this will multiplex markets and accounts and
         # we need to demultiplex the events after we have received them
@@ -88,7 +89,7 @@ class BotInfrastructure(threading.Thread):
     # Events
     def on_block(self, data):
         for botname, bot in self.config["bots"].items():
-            if (not botname in self.bots) or self.bots[botname].disabled:
+            if botname not in self.bots or self.bots[botname].disabled:
                 continue
             try:
                 self.bots[botname].ontick(data)
