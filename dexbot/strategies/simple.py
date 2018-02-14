@@ -89,19 +89,20 @@ class Strategy(BaseStrategy):
         """
         Update the orders
         """
-        print('Updating orders!')
-
         # Stored orders
         sell_order = self['sell_order']
         buy_order = self['buy_order']
 
+        sell_price = self.sell_price
+        buy_price = self.buy_price
+
         sold_amount = 0
         if new_sell_order and new_sell_order['base']['amount'] < sell_order['base']['amount']:
             # Some of the sell order was sold
-            sold_amount = sell_order['quote']['amount'] - new_sell_order['quote']['amount']
+            sold_amount = sell_order['base']['amount'] - new_sell_order['base']['amount']
         elif not new_sell_order and sell_order:
             # All of the sell order was sold
-            sold_amount = sell_order['quote']['amount']
+            sold_amount = sell_order['base']['amount']
 
         bought_amount = 0
         if new_buy_order and new_buy_order['quote']['amount'] < buy_order['quote']['amount']:
@@ -120,17 +121,17 @@ class Strategy(BaseStrategy):
             new_buy_amount = buy_order_amount - bought_amount + sold_amount
             if float(self.balance(self.market["base"])) < new_buy_amount:
                 self.log.critical(
-                    'Insufficient buy balance, needed {} {}'.format(self.buy_price * new_buy_amount,
+                    'Insufficient buy balance, needed {} {}'.format(buy_price * new_buy_amount,
                                                                     self.market['base']['symbol'])
                 )
                 self.disabled = True
             else:
-                if buy_order and Order(buy_order['id']):
+                if buy_order and not Order(buy_order['id'])['deleted']:
                     # Cancel the old order
                     self.cancel(buy_order)
 
                 buy_transaction = self.market.buy(
-                    self.buy_price,
+                    buy_price,
                     Amount(amount=new_buy_amount, asset=self.market["quote"]),
                     account=self.account,
                     returnOrderId="head"
@@ -158,12 +159,12 @@ class Strategy(BaseStrategy):
                 )
                 self.disabled = True
             else:
-                if sell_order and Order(sell_order['id']):
+                if sell_order and not Order(sell_order['id'])['deleted']:
                     # Cancel the old order
                     self.cancel(sell_order)
 
                 sell_transaction = self.market.sell(
-                    self.sell_price,
+                    sell_price,
                     Amount(amount=new_sell_amount, asset=self.market["quote"]),
                     account=self.account,
                     returnOrderId="head"
@@ -185,10 +186,11 @@ class Strategy(BaseStrategy):
             if order['base']['symbol'] != self.market['base']['symbol']:
                 # Invert the market for easier calculation
                 if not isinstance(order, Price):
-                    # Fixme: get_order returns false if the order doesn't exists, failing the invert method below
                     order = self.get_order(order['id'])
-                order.invert()
-            balance += order['base']['amount']
+                if order:
+                    order.invert()
+            if order:
+                balance += order['base']['amount']
 
         return balance
 
