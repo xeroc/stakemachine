@@ -9,6 +9,8 @@ from dexbot.basestrategy import BaseStrategy
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
+import dexbot.errors as errors
+
 log = logging.getLogger(__name__)
 
 log_bots = logging.getLogger('dexbot.per_bot')
@@ -68,6 +70,9 @@ class BotInfrastructure(threading.Thread):
             except:
                 log_bots.exception("Bot initialisation",extra={'botname':botname,'account':bot['account'],'market':'unknown','is_disabled':(lambda: True)})
 
+        if len(markets) == 0:
+            log.critical("No bots to launch, exiting")
+            raise errors.NoBotsAvailable()
         # Create notification instance
         # Technically, this will multiplex markets and accounts and
         # we need to demultiplex the events after we have received them
@@ -83,7 +88,7 @@ class BotInfrastructure(threading.Thread):
     # Events
     def on_block(self, data):
         for botname, bot in self.config["bots"].items():
-            if self.bots[botname].disabled:
+            if (not botname in self.bots) or self.bots[botname].disabled:
                 continue
             try:
                 self.bots[botname].ontick(data)
