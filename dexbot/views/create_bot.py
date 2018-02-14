@@ -31,7 +31,7 @@ class CreateBotView(QtWidgets.QDialog):
         return self.controller.is_asset_valid(asset)
 
     def validate_market(self):
-        base_asset = self.ui.base_asset_input.text()
+        base_asset = self.ui.base_asset_input.currentText()
         quote_asset = self.ui.quote_asset_input.text()
         return base_asset.lower() != quote_asset.lower()
 
