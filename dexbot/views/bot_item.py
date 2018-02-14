@@ -66,8 +66,7 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
     def set_bot_profit(self, value):
         if value >= 0:
             value = '+' + str(value)
-        else:
-            value = '-' + str(value)
+
         value = str(value) + '%'
         self.profit_label.setText(value)
 
