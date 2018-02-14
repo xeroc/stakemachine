@@ -119,10 +119,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.disabled = False
 
         # a private logger that adds bot identify data to the LogRecord
-        self.log = logging.LoggerAdapter(logging.getLogger('dexbot.per_bot'),{'botname':name,
-                                                                                 'account':self.bot['account'],
-                                                                                 'market':self.bot['market'],
-                                                                                 'is_disabled':(lambda: self.disabled)})
+        self.log = logging.LoggerAdapter(logging.getLogger('dexbot.per_bot'), {'botname': name,
+                                                                               'account': self.bot['account'],
+                                                                               'market': self.bot['market'],
+                                                                               'is_disabled': lambda: self.disabled})
     
     @property
     def orders(self):
