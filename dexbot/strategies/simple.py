@@ -43,7 +43,6 @@ class Strategy(BaseStrategy):
     def init_strategy(self):
         # Target
         target = self.bot.get("target", {})
-
         amount = target['amount'] / 2
 
         # Buy Side
@@ -60,6 +59,7 @@ class Strategy(BaseStrategy):
                 returnOrderId="head"
             )
             buy_order = self.get_order(buy_transaction['orderid'])
+            self.log.info('Placed a buy order for {} {} @ {}'.format(amount, self.market["quote"], self.buy_price))
             if buy_order:
                 self['buy_order'] = buy_order
 
@@ -77,6 +77,7 @@ class Strategy(BaseStrategy):
                 returnOrderId="head"
             )
             sell_order = self.get_order(sell_transaction['orderid'])
+            self.log.info('Placed a sell order for {} {} @ {}'.format(amount, self.market["quote"], self.buy_price))
             if sell_order:
                 self['sell_order'] = sell_order
 
@@ -135,6 +136,9 @@ class Strategy(BaseStrategy):
                     returnOrderId="head"
                 )
                 buy_order = self.get_order(buy_transaction['orderid'])
+                self.log.info(
+                    'Placed a buy order for {} {} @ {}'.format(new_buy_amount, self.market["quote"], buy_price)
+                )
                 if buy_order:
                     self['buy_order'] = buy_order
         else:
@@ -165,6 +169,9 @@ class Strategy(BaseStrategy):
                     returnOrderId="head"
                 )
                 sell_order = self.get_order(sell_transaction['orderid'])
+                self.log.info(
+                    'Placed a sell order for {} {} @ {}'.format(new_sell_amount, self.market["quote"], buy_price)
+                )
                 if sell_order:
                     self['sell_order'] = sell_order
         else:
