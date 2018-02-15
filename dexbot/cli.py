@@ -2,6 +2,7 @@
 import yaml
 import logging
 import click
+import sys
 from .ui import (
     verbose,
     chain,
@@ -13,6 +14,8 @@ from .ui import (
     alert,
 )
 from dexbot.bot import BotInfrastructure
+import dexbot.errors as errors
+
 log = logging.getLogger(__name__)
 
 logging.basicConfig(
@@ -48,9 +51,11 @@ def main(ctx, **kwargs):
 def run(ctx):
     """ Continuously run the bot
     """
-    bot = BotInfrastructure(ctx.config)
-    bot.run()
-
+    try:
+        bot = BotInfrastructure(ctx.config)
+        bot.run()
+    except errors.NoBotsAvailable:
+        sys.exit(70) # 70= "Software error" in /usr/include/sysexts.h
 
 if __name__ == '__main__':
     main()

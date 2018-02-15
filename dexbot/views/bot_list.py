@@ -39,7 +39,7 @@ class MainView(QtWidgets.QMainWindow):
         widget = BotItemWidget(botname, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
         self.bot_container.addWidget(widget)
-        self.bot_widgets['botname'] = widget
+        self.bot_widgets[botname] = widget
 
         # Todo: Remove the line below this after multi-bot support is added
         self.ui.add_bot_button.setEnabled(False)
@@ -58,17 +58,20 @@ class MainView(QtWidgets.QMainWindow):
     def refresh_bot_list(self):
         pass
 
-    def set_bot_name(self, bot_id, value):
-        self.bot_widgets[bot_id].set_bot_name(value)
+    def set_bot_name(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_name(value)
 
-    def set_bot_account(self, bot_id, value):
-        self.bot_widgets[bot_id].set_bot_account(value)
+    def set_bot_account(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_account(value)
 
-    def set_bot_profit(self, bot_id, value):
-        self.bot_widgets[bot_id].set_bot_profit(value)
+    def set_bot_profit(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_profit(value)
 
-    def set_bot_market(self, bot_id, value):
-        self.bot_widgets[bot_id].set_bot_market(value)
+    def set_bot_market(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_market(value)
+
+    def set_bot_slider(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_slider(value)
 
     def customEvent(self, event):
         # Process idle_queue_dispatcher events
