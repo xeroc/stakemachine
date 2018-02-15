@@ -98,3 +98,24 @@ class CreateBotController:
 
         with open("config.yml", "w") as f:
             yaml.dump(config, f)
+
+    @staticmethod
+    def get_bot_current_strategy(bot_data):
+        strategies = {
+            bot_data['strategy']: bot_data['module']
+        }
+        return strategies
+
+    @staticmethod
+    def get_assets(bot_data):
+        return bot_data['market'].split('/')
+
+    def get_base_asset(self, bot_data):
+        return self.get_assets(bot_data)[1]
+
+    def get_quote_asset(self, bot_data):
+        return self.get_assets(bot_data)[0]
+
+    @staticmethod
+    def get_account(bot_data):
+        return bot_data['account']

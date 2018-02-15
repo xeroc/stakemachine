@@ -3,17 +3,20 @@ from PyQt5 import QtWidgets
 from dexbot.views.gen.bot_item_widget import Ui_widget
 from dexbot.views.confirmation import ConfirmationDialog
 from dexbot.storage import worker
+from dexbot.controllers.create_bot_controller import CreateBotController
+from dexbot.views.edit_bot import EditBotView
 
 
 class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
-    def __init__(self, botname, config, controller, view):
+    def __init__(self, botname, config, main_ctrl, view):
         super(BotItemWidget, self).__init__()
 
+        self.main_ctrl = main_ctrl
         self.running = False
         self.botname = botname
         self.config = config
-        self.controller = controller
+        self.controller = main_ctrl
         self.view = view
 
         self.setupUi(self)
@@ -22,6 +25,7 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         self.pause_button.clicked.connect(self.pause_bot)
         self.play_button.clicked.connect(self.start_bot)
         self.remove_button.clicked.connect(self.remove_widget)
+        self.edit_button.clicked.connect(self.handle_edit_bot)
 
         self.setup_ui_data(config)
 
@@ -82,3 +86,14 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
             # Todo: Remove the line below this after multi-bot support is added
             self.view.ui.add_bot_button.setEnabled(True)
+
+    def handle_edit_bot(self):
+        controller = CreateBotController(self.main_ctrl.bitshares_instance)
+        edit_bot_dialog = EditBotView(controller, self.botname, self.config)
+        return_value = edit_bot_dialog.exec_()
+
+        # User clicked save
+        if return_value == 1:
+            botname = edit_bot_dialog.bot_name
+            config = self.main_ctrl.get_bot_config(botname)
+            self.add_bot_widget(botname, config)

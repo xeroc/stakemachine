@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dexbot/views/orig/bot_item_widget.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.2
+# Created by: PyQt5 UI code generator 5.10
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -73,14 +73,24 @@ class Ui_widget(object):
         self.strategy_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
         self.strategy_label.setObjectName("strategy_label")
         self.horizontalLayout_4.addWidget(self.strategy_label)
+        self.edit_button = QtWidgets.QPushButton(self.widget_3)
+        self.edit_button.setMaximumSize(QtCore.QSize(28, 16777215))
+        self.edit_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.edit_button.setStyleSheet("border: 0;")
+        self.edit_button.setText("")
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("dexbot/img/pen.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.edit_button.setIcon(icon)
+        self.edit_button.setObjectName("edit_button")
+        self.horizontalLayout_4.addWidget(self.edit_button)
         self.remove_button = QtWidgets.QPushButton(self.widget_3)
         self.remove_button.setMaximumSize(QtCore.QSize(28, 16777215))
         self.remove_button.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.remove_button.setStyleSheet("border: 0;")
         self.remove_button.setText("")
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("dexbot/img/bin.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.remove_button.setIcon(icon)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap("dexbot/img/bin.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.remove_button.setIcon(icon1)
         self.remove_button.setIconSize(QtCore.QSize(20, 20))
         self.remove_button.setObjectName("remove_button")
         self.horizontalLayout_4.addWidget(self.remove_button)
@@ -218,9 +228,9 @@ class Ui_widget(object):
         self.pause_button.setStyleSheet("border: 0;\n"
 "")
         self.pause_button.setText("")
-        icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("dexbot/img/pause.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.pause_button.setIcon(icon1)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap("dexbot/img/pause.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.pause_button.setIcon(icon2)
         self.pause_button.setIconSize(QtCore.QSize(30, 30))
         self.pause_button.setObjectName("pause_button")
         self.horizontalLayout_2.addWidget(self.pause_button)
@@ -234,9 +244,9 @@ class Ui_widget(object):
         self.play_button.setStatusTip("")
         self.play_button.setStyleSheet("border: 0;")
         self.play_button.setText("")
-        icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("dexbot/img/play.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.play_button.setIcon(icon2)
+        icon3 = QtGui.QIcon()
+        icon3.addPixmap(QtGui.QPixmap("dexbot/img/play.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.play_button.setIcon(icon3)
         self.play_button.setIconSize(QtCore.QSize(30, 30))
         self.play_button.setObjectName("play_button")
         self.horizontalLayout_2.addWidget(self.play_button)

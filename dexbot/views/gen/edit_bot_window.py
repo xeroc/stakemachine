@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'edit_bot_window.ui'
+# Form implementation generated from reading ui file 'dexbot/views/orig/edit_bot_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.10
 #
@@ -39,16 +39,6 @@ class Ui_Dialog(object):
         self.base_asset_label.setMaximumSize(QtCore.QSize(110, 16777215))
         self.base_asset_label.setObjectName("base_asset_label")
         self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.base_asset_label)
-        self.base_asset_input = QtWidgets.QLineEdit(self.groupBox)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.base_asset_input.sizePolicy().hasHeightForWidth())
-        self.base_asset_input.setSizePolicy(sizePolicy)
-        self.base_asset_input.setMaximumSize(QtCore.QSize(80, 16777215))
-        self.base_asset_input.setInputMethodHints(QtCore.Qt.ImhPreferUppercase)
-        self.base_asset_input.setObjectName("base_asset_input")
-        self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.base_asset_input)
         self.quote_asset_label = QtWidgets.QLabel(self.groupBox)
         self.quote_asset_label.setMinimumSize(QtCore.QSize(110, 0))
         self.quote_asset_label.setMaximumSize(QtCore.QSize(110, 16777215))
@@ -63,6 +53,16 @@ class Ui_Dialog(object):
         self.quote_asset_input.setMaximumSize(QtCore.QSize(80, 16777215))
         self.quote_asset_input.setObjectName("quote_asset_input")
         self.formLayout_3.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.quote_asset_input)
+        self.base_asset_input = QtWidgets.QComboBox(self.groupBox)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.base_asset_input.sizePolicy().hasHeightForWidth())
+        self.base_asset_input.setSizePolicy(sizePolicy)
+        self.base_asset_input.setMinimumSize(QtCore.QSize(105, 0))
+        self.base_asset_input.setEditable(True)
+        self.base_asset_input.setObjectName("base_asset_input")
+        self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.base_asset_input)
         self.verticalLayout.addWidget(self.groupBox)
         self.groupBox_2 = QtWidgets.QGroupBox(Dialog)
         self.groupBox_2.setObjectName("groupBox_2")
@@ -192,7 +192,6 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.widget)
         self.strategy_label.setBuddy(self.strategy_input)
         self.bot_name_label.setBuddy(self.bot_name_input)
-        self.base_asset_label.setBuddy(self.base_asset_input)
         self.quote_asset_label.setBuddy(self.quote_asset_input)
         self.amount_label.setBuddy(self.amount_input)
         self.center_price_label.setBuddy(self.center_price_input)
