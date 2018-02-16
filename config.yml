@@ -1,4 +1,6 @@
 node: wss://node.testnet.bitshares.eu
 
-bots: {Bot 1: {target: {spread: 5.0, center_price: 42.025, amount: 0.01}, strategy: Simple
-      Strategy, module: dexbot.strategies.simple, market: TESTUSD/TEST, account: nikolay-codaone}}
+bots: {
+  Bot 1: {
+  market: TESTUSD/TEST, account: nikolay-codaone, module: dexbot.strategies.simple,
+    target: {center_price: 42.025, amount: 0.01, spread: 5.0}, strategy: Simple Strategy}}

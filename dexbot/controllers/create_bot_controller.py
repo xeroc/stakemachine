@@ -10,8 +10,9 @@ from ruamel.yaml import YAML
 
 class CreateBotController:
 
-    def __init__(self, bitshares_instance):
-        self.bitshares = bitshares_instance or shared_bitshares_instance()
+    def __init__(self, main_ctrl):
+        self.main_ctrl = main_ctrl
+        self.bitshares = main_ctrl.bitshares_instance or shared_bitshares_instance()
 
     @property
     def strategies(self):
@@ -30,12 +31,17 @@ class CreateBotController:
         ]
         return assets
 
-    @staticmethod
-    def is_bot_name_valid(bot_name):
-        bot_names = MainController.get_bots_data().keys()
+    def remove_bot(self, bot_name):
+        self.main_ctrl.remove_bot(bot_name)
+
+    def is_bot_name_valid(self, bot_name, old_bot_name=None):
+        bot_names = self.main_ctrl.get_bots_data().keys()
+        # and old_bot_name not in bot_names
         if bot_name in bot_names:
-            return False
-        return True
+            is_name_changed = False
+        else:
+            is_name_changed = True
+        return is_name_changed
 
     def is_asset_valid(self, asset):
         try:
@@ -119,3 +125,15 @@ class CreateBotController:
     @staticmethod
     def get_account(bot_data):
         return bot_data['account']
+
+    @staticmethod
+    def get_target_amount(bot_data):
+        return bot_data['target']['amount']
+
+    @staticmethod
+    def get_target_center_price(bot_data):
+        return bot_data['target']['center_price']
+
+    @staticmethod
+    def get_target_spread(bot_data):
+        return bot_data['target']['spread']

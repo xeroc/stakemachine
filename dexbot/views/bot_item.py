@@ -24,7 +24,7 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
         self.pause_button.clicked.connect(self.pause_bot)
         self.play_button.clicked.connect(self.start_bot)
-        self.remove_button.clicked.connect(self.remove_widget)
+        self.remove_button.clicked.connect(self.remove_widget_dialog)
         self.edit_button.clicked.connect(self.handle_edit_bot)
 
         self.setup_ui_data(config)
@@ -77,23 +77,29 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
     def set_bot_slider(self, value):
         self.order_slider.setSliderPosition(value)
 
-    def remove_widget(self):
+    def remove_widget_dialog(self):
         dialog = ConfirmationDialog('Are you sure you want to remove bot "{}"?'.format(self.botname))
         return_value = dialog.exec_()
         if return_value:
-            self.controller.remove_bot(self.botname)
-            self.deleteLater()
+            self.remove_widget()
 
-            # Todo: Remove the line below this after multi-bot support is added
-            self.view.ui.add_bot_button.setEnabled(True)
+    def remove_widget(self):
+        self.controller.remove_bot(self.botname)
+        self.deleteLater()
+
+        # Todo: Remove the line below this after multi-bot support is added
+        self.view.ui.add_bot_button.setEnabled(True)
+
 
     def handle_edit_bot(self):
-        controller = CreateBotController(self.main_ctrl.bitshares_instance)
+        controller = CreateBotController(self.main_ctrl)
         edit_bot_dialog = EditBotView(controller, self.botname, self.config)
         return_value = edit_bot_dialog.exec_()
 
         # User clicked save
         if return_value == 1:
-            botname = edit_bot_dialog.bot_name
-            config = self.main_ctrl.get_bot_config(botname)
-            self.add_bot_widget(botname, config)
+            self.remove_widget()
+            bot_name = edit_bot_dialog.bot_name
+            config = self.main_ctrl.get_bot_config(bot_name)
+            #self.(bot_name, config, self.view)
+            self.view.add_bot_widget(bot_name, config)

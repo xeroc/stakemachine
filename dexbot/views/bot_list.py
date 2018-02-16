@@ -45,7 +45,7 @@ class MainView(QtWidgets.QMainWindow):
         self.ui.add_bot_button.setEnabled(False)
 
     def handle_add_bot(self):
-        controller = CreateBotController(self.main_ctrl.bitshares_instance)
+        controller = CreateBotController(self.main_ctrl)
         create_bot_dialog = CreateBotView(controller)
         return_value = create_bot_dialog.exec_()
 
