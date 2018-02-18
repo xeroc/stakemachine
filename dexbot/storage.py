@@ -1,3 +1,4 @@
+import sqlalchemy
 import os
 import json
 import threading
@@ -52,13 +53,13 @@ class Storage(dict):
         self.category = category
 
     def __setitem__(self, key, value):
-        worker.execute(worker.set_item, self.category, key, value)
+        worker.execute_noreturn(worker.set_item, self.category, key, value)
 
     def __getitem__(self, key):
         return worker.execute(worker.get_item, self.category, key)
 
     def __delitem__(self, key):
-        worker.execute(worker.del_item, self.category, key)
+        worker.execute_noreturn(worker.del_item, self.category, key)
 
     def __contains__(self, key):
         return worker.execute(worker.contains, self.category, key)
@@ -67,7 +68,7 @@ class Storage(dict):
         return worker.execute(worker.get_items, self.category)
 
     def clear(self):
-        worker.execute(worker.clear, self.category)
+        worker.execute_noreturn(worker.clear, self.category)
 
 
 class DatabaseWorker(threading.Thread):
@@ -93,7 +94,8 @@ class DatabaseWorker(threading.Thread):
 
     def run(self):
         for func, args, token in iter(self.task_queue.get, None):
-            func(*args, token)
+            args = args+(token,)
+            func(*args)
 
     def get_result(self, token):
         delay = 0.001
@@ -112,6 +114,9 @@ class DatabaseWorker(threading.Thread):
         self.task_queue.put((func, args, token))
         return self.get_result(token)
 
+    def execute_noreturn(self, func, *args):
+        self.task_queue.put((func, args, None))
+        
     def set_item(self, category, key, value, token):
         value = json.dumps(value)
         e = self.session.query(Config).filter_by(
@@ -124,7 +129,6 @@ class DatabaseWorker(threading.Thread):
             e = Config(category, key, value)
             self.session.add(e)
         self.session.commit()
-        self.results[token] = None
 
     def get_item(self, category, key, token):
         e = self.session.query(Config).filter_by(
@@ -144,7 +148,6 @@ class DatabaseWorker(threading.Thread):
         ).first()
         self.session.delete(e)
         self.session.commit()
-        self.results[token] = None
 
     def contains(self, category, key, token):
         e = self.session.query(Config).filter_by(
@@ -167,7 +170,6 @@ class DatabaseWorker(threading.Thread):
         for row in rows:
             self.session.delete(row)
             self.session.commit()
-        self.results[token] = None
 
 
 # Derive sqlite file directory
