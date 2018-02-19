@@ -52,7 +52,7 @@ class BotInfrastructure(threading.Thread):
         markets = set()
         
         # Initialize bots:
-        for botname, bot in config["bots"].items():
+        for botname, bot in self.config["bots"].items():
             if "account" not in bot:
                 log_bots.critical("Bot has no account",extra={'botname':botname,'account':'unknown','market':'unknown','is_dsabled':(lambda: True)})
                 continue
