@@ -37,11 +37,11 @@ class CreateBotController:
     def is_bot_name_valid(self, bot_name, old_bot_name=None):
         bot_names = self.main_ctrl.get_bots_data().keys()
         # and old_bot_name not in bot_names
-        if bot_name in bot_names:
-            is_name_changed = False
+        if bot_name in bot_names and old_bot_name not in bot_names:
+            is_name_valid = False
         else:
-            is_name_changed = True
-        return is_name_changed
+            is_name_valid = True
+        return is_name_valid
 
     def is_asset_valid(self, asset):
         try:

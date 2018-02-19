@@ -29,43 +29,29 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         old_bot_name = self.bot_name
         bot_name = self.bot_name_input.text()
         return self.controller.is_bot_name_valid(bot_name, old_bot_name)
-    #
-    # def validate_asset(self, asset):
-    #     return self.controller.is_asset_valid(asset)
-    #
-    # def validate_market(self):
-    #     base_asset = self.ui.base_asset_input.currentText()
-    #     quote_asset = self.ui.quote_asset_input.text()
-    #     return base_asset.lower() != quote_asset.lower()
-    #
-    # def validate_account_name(self):
-    #     account = self.ui.account_input.text()
-    #     return self.controller.account_exists(account)
-    #
-    # def validate_account(self):
-    #     account = self.ui.account_input.text()
-    #     private_key = self.ui.private_key_input.text()
-    #     return self.controller.is_account_valid(account, private_key)
-    #
+
+    def validate_asset(self, asset):
+        return self.controller.is_asset_valid(asset)
+
+    def validate_market(self):
+        base_asset = self.base_asset_input.currentText()
+        quote_asset = self.quote_asset_input.text()
+        return base_asset.lower() != quote_asset.lower()
 
     def validate_form(self):
         error_text = ''
-        # base_asset = self.ui.base_asset_input.currentText()
-        # quote_asset = self.ui.quote_asset_input.text()
+        base_asset = self.base_asset_input.currentText()
+        quote_asset = self.quote_asset_input.text()
         if not self.validate_bot_name():
-            bot_name = self.ui.bot_name_input.text()
-            error_text = 'Bot name needs to be unique. "{}" is already in use.'.format(bot_name)
-    #     elif not self.validate_asset(base_asset):
-    #         error_text = 'Field "Base Asset" does not have a valid asset.'
-    #     elif not self.validate_asset(quote_asset):
-    #         error_text = 'Field "Quote Asset" does not have a valid asset.'
-    #     elif not self.validate_market():
-    #         error_text = "Market {}/{} doesn't exist.".format(base_asset, quote_asset)
-    #     elif not self.validate_account_name():
-    #         error_text = "Account doesn't exist."
-    #     elif not self.validate_account():
-    #         error_text = 'Private key is invalid.'
-    #
+            bot_name = self.bot_name_input.text()
+            error_text += 'Bot name needs to be unique. "{}" is already in use.'.format(bot_name) + '\n'
+        if not self.validate_asset(base_asset):
+            error_text += 'Field "Base Asset" does not have a valid asset.' + '\n'
+        if not self.validate_asset(quote_asset):
+            error_text += 'Field "Quote Asset" does not have a valid asset.' + '\n'
+        if not self.validate_market():
+            error_text += "Market {}/{} doesn't exist.".format(base_asset, quote_asset) + '\n'
+
         if error_text:
             dialog = NoticeDialog(error_text)
             dialog.exec_()
@@ -77,25 +63,24 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         if not self.validate_form():
             return
 
-        ui = self
-        spread = float(ui.spread_input.text()[:-1])  # Remove the percentage character from the end
+        spread = float(self.spread_input.text()[:-1])  # Remove the percentage character from the end
         target = {
-            'amount': float(ui.amount_input.text()),
-            'center_price': float(ui.center_price_input.text()),
+            'amount': float(self.amount_input.text()),
+            'center_price': float(self.center_price_input.text()),
             'spread': spread
         }
 
-        base_asset = ui.base_asset_input.currentText()
-        quote_asset = ui.quote_asset_input.text()
-        strategy = ui.strategy_input.currentText()
+        base_asset = self.base_asset_input.currentText()
+        quote_asset = self.quote_asset_input.text()
+        strategy = self.strategy_input.currentText()
         bot_module = self.controller.get_strategy_module(strategy)
         bot_data = {
-            'account': ui.account_name.text(),
+            'account': self.account_name.text(),
             'market': '{}/{}'.format(quote_asset, base_asset),
             'module': bot_module,
             'strategy': strategy,
             'target': target
         }
-        self.bot_name = ui.bot_name_input.text()
+        self.bot_name = self.bot_name_input.text()
         self.controller.add_bot_config(self.bot_name, bot_data)
         self.accept()

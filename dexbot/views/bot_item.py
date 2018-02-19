@@ -90,7 +90,6 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
         # Todo: Remove the line below this after multi-bot support is added
         self.view.ui.add_bot_button.setEnabled(True)
 
-
     def handle_edit_bot(self):
         controller = CreateBotController(self.main_ctrl)
         edit_bot_dialog = EditBotView(controller, self.botname, self.config)
@@ -98,8 +97,7 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
         # User clicked save
         if return_value == 1:
-            self.remove_widget()
             bot_name = edit_bot_dialog.bot_name
             config = self.main_ctrl.get_bot_config(bot_name)
-            #self.(bot_name, config, self.view)
+            self.remove_widget()
             self.view.add_bot_widget(bot_name, config)
