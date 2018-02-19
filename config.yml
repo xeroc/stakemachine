@@ -1,6 +1,3 @@
-node: wss://node.testnet.bitshares.eu
+node: wss://bitshares.openledger.info/ws
 
-bots: {
-  Bot 1: {
-  market: TESTUSD/TEST, account: nikolay-codaone, module: dexbot.strategies.simple,
-    target: {center_price: 42.025, amount: 0.01, spread: 5.0}, strategy: Simple Strategy}}
+bots: {}
