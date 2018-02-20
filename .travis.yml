@@ -1,0 +1,35 @@
+sudo: true
+matrix:
+  include:
+  - os: linux
+    language: python
+    python: '3.6'
+  - os: osx
+    language: generic
+    before_install:
+    - brew update
+    - brew install python3
+    - virtualenv venv -p python3
+    - source venv/bin/activate
+install:
+  - python --version
+  - pip install click-datetime PyQt5 pyinstaller
+  - python setup.py install
+script:
+  - echo "@TODO - Running tests..."
+  - pyinstaller --distpath dist/$TRAVIS_OS_NAME app.spec
+  - pyinstaller --distpath dist/$TRAVIS_OS_NAME cli.spec
+before_deploy:
+  - git config --local user.name "Travis"
+  - git config --local user.email "travis@travis-ci.org"
+  - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
+  - tar -czvf dist/DEXBot-$TRAVIS_OS_NAME.tar.gz dist/$TRAVIS_OS_NAME
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: railzqElBKAEt0f1o1Z0sqaD4FZ3WkwhCxMJYTo1TmwkmS0r3f57n5LHOGd43MY/ZYbQhyoxZ0DE5Q+16+gSLVn2j5pLTMjBbBn4iqntgFFf4L6hHPsv67yFHSUz9l/T/2TKRCMbQzWTnvE8wQVFVnoSVc7yWgNIBoEVhA1vcPd17OUeCgZQcNN3YvGpJQhEOhoW+wByiskweV6tTTxtOmX3aQdJQPD6Tt/pbKdN4hHInJmrZjvUnH/qpQEgcgsOFiZE7er+zFIXxPdFV/XV2GqlUMob0rAmun6sGDpqZwTqSOmxZunquQCpmzMLqlW9lB3UUDsZs18amwDniq2rBEBUL6MEsgxEfYbmxMungNd7v3CV5zeq6QZen50Cwmhs8nhr3UIxUJzk5FfQCekFS4pxWvl+/QPW+oxKPTNa3oe4egzuDTTqY2XocuAVEeSHs72OFWqD0LYnHkV7APGQTDaJhcGvLSe0YcBX1R1KVz1JlTapdlZIJ4Ba3MOqgBaAybptkJ0CzaX0mcDh1R8CwcM2NHaFr4w2HFhgJSLtb3AbguOj5O+tdXvOlPq9n8ColH7Cuzch3t+ZnpSg3Q5qR5WqcVSP0AyfqKoNmSEA1exiqJp295vJnWeLkzlAcT0cMTsLAlQ6rSrR9IlUfmamuZuY+ypCxUQuunGdE0/s4J4=
+  file: dist/*.tar.gz
+  file_glob: true
+  on:
+    tags: true

@@ -3,6 +3,14 @@
 Trading Bot for the BitShares Decentralized Exchange
 (DEX).
 
+## Build status
+
+master:  
+[![Build Status](https://travis-ci.org/svdev/DEXBot.svg?branch=master)](https://travis-ci.org/svdev/DEXBot)
+
+develop:  
+[![Build Status](https://travis-ci.org/svdev/DEXBot.svg?branch=develop)](https://travis-ci.org/svdev/DEXBot)
+
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
 ## Installation
