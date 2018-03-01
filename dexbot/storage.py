@@ -123,7 +123,7 @@ class DatabaseWorker(threading.Thread):
     def execute_noreturn(self, func, *args):
         self.task_queue.put((func, args, None))
         
-    def set_item(self, category, key, value, token):
+    def set_item(self, category, key, value):
         value = json.dumps(value)
         e = self.session.query(Config).filter_by(
             category=category,
@@ -145,9 +145,9 @@ class DatabaseWorker(threading.Thread):
             result = None
         else:
             result = json.loads(e.value)
-        self.set_result(token,result)
+        self.set_result(token, result)
 
-    def del_item(self, category, key, token):
+    def del_item(self, category, key):
         e = self.session.query(Config).filter_by(
             category=category,
             key=key
@@ -160,16 +160,16 @@ class DatabaseWorker(threading.Thread):
             category=category,
             key=key
         ).first()
-        self.set_result(token,bool(e))
+        self.set_result(token, bool(e))
 
     def get_items(self, category, token):
         es = self.session.query(Config).filter_by(
             category=category
         ).all()
         result = [(e.key, e.value) for e in es]
-        self.set_result(token,result)
+        self.set_result(token, result)
 
-    def clear(self, category, token):
+    def clear(self, category):
         rows = self.session.query(Config).filter_by(
             category=category
         )
