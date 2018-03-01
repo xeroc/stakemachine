@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets
 
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.gen.edit_bot_window import Ui_Dialog
-
+from dexbot.views.confirmation import ConfirmationDialog
 
 class EditBotView(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, controller, botname, config):
@@ -59,8 +59,19 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         else:
             return True
 
+    def handle_save_dialog(self):
+        dialog = ConfirmationDialog('Saving bot will recreate it: cancel all current orders, stop it, start again'
+                                    ' and create new orders based on new settings. '
+                                    '\n Are you sure you want to save bot?')
+        return dialog.exec_()
+
+
+
     def handle_save(self):
         if not self.validate_form():
+            return
+
+        if not self.handle_save_dialog():
             return
 
         spread = float(self.spread_input.text()[:-1])  # Remove the percentage character from the end

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'dexbot/views/orig/edit_bot_window.ui'
+# Form implementation generated from reading ui file 'orig/edit_bot_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.10
 #
@@ -106,7 +106,7 @@ class Ui_Dialog(object):
         self.amount_input.setSizePolicy(sizePolicy)
         self.amount_input.setMinimumSize(QtCore.QSize(140, 0))
         self.amount_input.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
-        self.amount_input.setDecimals(5)
+        self.amount_input.setDecimals(8)
         self.amount_input.setMaximum(999999999.999)
         self.amount_input.setObjectName("amount_input")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.amount_input)
@@ -130,7 +130,7 @@ class Ui_Dialog(object):
         self.center_price_input.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
         self.center_price_input.setAccelerated(False)
         self.center_price_input.setProperty("showGroupSeparator", False)
-        self.center_price_input.setDecimals(5)
+        self.center_price_input.setDecimals(8)
         self.center_price_input.setMinimum(-999999999.999)
         self.center_price_input.setMaximum(999999999.999)
         self.center_price_input.setObjectName("center_price_input")

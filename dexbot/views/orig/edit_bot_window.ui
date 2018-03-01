@@ -249,7 +249,7 @@
          <locale language="English" country="UnitedStates"/>
         </property>
         <property name="decimals">
-         <number>5</number>
+         <number>8</number>
         </property>
         <property name="maximum">
          <double>999999999.998999953269958</double>
@@ -308,7 +308,7 @@
          <bool>false</bool>
         </property>
         <property name="decimals">
-         <number>5</number>
+         <number>8</number>
         </property>
         <property name="minimum">
          <double>-999999999.998999953269958</double>
