@@ -1,3 +1,4 @@
+import sqlalchemy
 import os
 import json
 import threading
@@ -52,13 +53,13 @@ class Storage(dict):
         self.category = category
 
     def __setitem__(self, key, value):
-        worker.execute(worker.set_item, self.category, key, value)
+        worker.execute_noreturn(worker.set_item, self.category, key, value)
 
     def __getitem__(self, key):
         return worker.execute(worker.get_item, self.category, key)
 
     def __delitem__(self, key):
-        worker.execute(worker.del_item, self.category, key)
+        worker.execute_noreturn(worker.del_item, self.category, key)
 
     def __contains__(self, key):
         return worker.execute(worker.contains, self.category, key)
@@ -67,7 +68,7 @@ class Storage(dict):
         return worker.execute(worker.get_items, self.category)
 
     def clear(self):
-        worker.execute(worker.clear, self.category)
+        worker.execute_noreturn(worker.clear, self.category)
 
 
 class DatabaseWorker(threading.Thread):
@@ -88,31 +89,41 @@ class DatabaseWorker(threading.Thread):
         self.task_queue = queue.Queue()
         self.results = {}
 
+        self.lock = threading.Lock()
+        self.event = threading.Event()
         self.daemon = True
         self.start()
 
     def run(self):
         for func, args, token in iter(self.task_queue.get, None):
-            func(*args, token)
+            args = args+(token,)
+            func(*args)
 
     def get_result(self, token):
-        delay = 0.001
         while True:
-            if token in self.results:
-                return_value = self.results[token]
-                del self.results[token]
-                return return_value
+            with self.lock:
+                if token in self.results:
+                    return_value = self.results[token]
+                    del self.results[token]
+                    return return_value
+                else:
+                    self.event.clear()
+            self.event.wait()
 
-            time.sleep(delay)
-            if delay < 5:
-                delay += delay
+    def set_result(self, token, result):
+        with self.lock:
+            self.results[token] = result
+            self.event.set()
 
     def execute(self, func, *args):
         token = str(uuid.uuid4)
         self.task_queue.put((func, args, token))
         return self.get_result(token)
 
-    def set_item(self, category, key, value, token):
+    def execute_noreturn(self, func, *args):
+        self.task_queue.put((func, args, None))
+        
+    def set_item(self, category, key, value):
         value = json.dumps(value)
         e = self.session.query(Config).filter_by(
             category=category,
@@ -124,7 +135,6 @@ class DatabaseWorker(threading.Thread):
             e = Config(category, key, value)
             self.session.add(e)
         self.session.commit()
-        self.results[token] = None
 
     def get_item(self, category, key, token):
         e = self.session.query(Config).filter_by(
@@ -135,39 +145,37 @@ class DatabaseWorker(threading.Thread):
             result = None
         else:
             result = json.loads(e.value)
-        self.results[token] = result
+        self.set_result(token, result)
 
-    def del_item(self, category, key, token):
+    def del_item(self, category, key):
         e = self.session.query(Config).filter_by(
             category=category,
             key=key
         ).first()
         self.session.delete(e)
         self.session.commit()
-        self.results[token] = None
 
     def contains(self, category, key, token):
         e = self.session.query(Config).filter_by(
             category=category,
             key=key
         ).first()
-        self.results[token] = bool(e)
+        self.set_result(token, bool(e))
 
     def get_items(self, category, token):
         es = self.session.query(Config).filter_by(
             category=category
         ).all()
         result = [(e.key, e.value) for e in es]
-        self.results[token] = result
+        self.set_result(token, result)
 
-    def clear(self, category, token):
+    def clear(self, category):
         rows = self.session.query(Config).filter_by(
             category=category
         )
         for row in rows:
             self.session.delete(row)
             self.session.commit()
-        self.results[token] = None
 
 
 # Derive sqlite file directory
