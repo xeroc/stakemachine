@@ -60,6 +60,7 @@ deploy:
 #---------------------------------#
 
 notifications:
-  # Slack
-  #- provider: Slack
-  #  incoming_webhook: http://dexbotdevelop.slack.com
+  - provider: Slack
+    auth_token:
+      secure: Vm+uFzL141tuVvoyqN9lBZ6gKXqtascImAycAcsfgoFd1nG7JyxkHjax01TMn0IMyu28qdfOpEiqpfMsxKcmLkrbZAVatGKDFHN3FbU5sZw=
+    channel: '#ci'
