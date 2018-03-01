@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'dexbot/views/orig/bot_item_widget.ui'
+# Form implementation generated from reading ui file 'bot_item_widget.ui'
 #
-# Created by: PyQt5 UI code generator 5.10
+# Created by: PyQt5 UI code generator 5.9.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -79,7 +79,7 @@ class Ui_widget(object):
         self.edit_button.setStyleSheet("border: 0;")
         self.edit_button.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("dexbot/img/pen.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/bot_widget/img/pen.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.edit_button.setIcon(icon)
         self.edit_button.setObjectName("edit_button")
         self.horizontalLayout_4.addWidget(self.edit_button)
@@ -89,7 +89,7 @@ class Ui_widget(object):
         self.remove_button.setStyleSheet("border: 0;")
         self.remove_button.setText("")
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("dexbot/img/bin.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap(":/bot_widget/img/bin.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.remove_button.setIcon(icon1)
         self.remove_button.setIconSize(QtCore.QSize(20, 20))
         self.remove_button.setObjectName("remove_button")
@@ -229,7 +229,7 @@ class Ui_widget(object):
 "")
         self.pause_button.setText("")
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("dexbot/img/pause.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap(":/bot_widget/img/pause.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.pause_button.setIcon(icon2)
         self.pause_button.setIconSize(QtCore.QSize(30, 30))
         self.pause_button.setObjectName("pause_button")
@@ -245,7 +245,7 @@ class Ui_widget(object):
         self.play_button.setStyleSheet("border: 0;")
         self.play_button.setText("")
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap("dexbot/img/play.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon3.addPixmap(QtGui.QPixmap(":/bot_widget/img/play.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.play_button.setIcon(icon3)
         self.play_button.setIconSize(QtCore.QSize(30, 30))
         self.play_button.setObjectName("play_button")
@@ -269,3 +269,4 @@ class Ui_widget(object):
         self.buy_label.setText(_translate("widget", "Buy"))
         self.sell_label.setText(_translate("widget", "Sell"))
 
+from dexbot.resources import icons_rc

@@ -164,8 +164,8 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
-             <normaloff>dexbot/img/pen.png</normaloff>dexbot/img/pen.png</iconset>
+            <iconset resource="../../resources/icons.qrc">
+             <normaloff>:/bot_widget/img/pen.png</normaloff>:/bot_widget/img/pen.png</iconset>
            </property>
           </widget>
          </item>
@@ -187,8 +187,8 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
-             <normaloff>dexbot/img/bin.png</normaloff>dexbot/img/bin.png</iconset>
+            <iconset resource="../../resources/icons.qrc">
+             <normaloff>:/bot_widget/img/bin.png</normaloff>:/bot_widget/img/bin.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -487,8 +487,8 @@ border-right: 2px solid  #005B78;
               <string/>
              </property>
              <property name="icon">
-              <iconset>
-               <normaloff>dexbot/img/pause.png</normaloff>dexbot/img/pause.png</iconset>
+              <iconset resource="../../resources/icons.qrc">
+               <normaloff>:/bot_widget/img/pause.png</normaloff>:/bot_widget/img/pause.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -519,8 +519,8 @@ border-right: 2px solid  #005B78;
               <string/>
              </property>
              <property name="icon">
-              <iconset>
-               <normaloff>dexbot/img/play.png</normaloff>dexbot/img/play.png</iconset>
+              <iconset resource="../../resources/icons.qrc">
+               <normaloff>:/bot_widget/img/play.png</normaloff>:/bot_widget/img/play.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -553,6 +553,8 @@ border-right: 2px solid  #005B78;
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../resources/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>
