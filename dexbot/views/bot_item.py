@@ -49,6 +49,7 @@ class BotItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def pause_bot(self):
         self.running = False
+        self.main_ctrl.pause_bot(self.botname)
         self.pause_button.hide()
         self.play_button.show()
 
