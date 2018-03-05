@@ -2,8 +2,6 @@ from dexbot.bot import BotInfrastructure
 
 from ruamel.yaml import YAML
 from bitshares.instance import set_shared_bitshares_instance
-from dexbot.basestrategy import BaseStrategy
-
 
 
 class MainController:
@@ -88,10 +86,3 @@ class MainController:
 
         with open("config.yml", "w") as f:
             yaml.dump(config, f)
-
-    def pause_bot(self, bot_name):
-        config = self.get_bot_config(bot_name)
-        strategy = BaseStrategy(config, bot_name)
-        strategy.purge()
-
-
