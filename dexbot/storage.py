@@ -96,7 +96,8 @@ class DatabaseWorker(threading.Thread):
 
     def run(self):
         for func, args, token in iter(self.task_queue.get, None):
-            args = args+(token,)
+            if token is not None:
+                args = args+(token,)
             func(*args)
 
     def get_result(self, token):
