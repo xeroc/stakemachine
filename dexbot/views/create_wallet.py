@@ -1,5 +1,5 @@
-from dexbot.views.gen.create_wallet_window import Ui_Dialog
-from dexbot.views.notice import NoticeDialog
+from .ui.create_wallet_window_ui import Ui_Dialog
+from .notice import NoticeDialog
 
 from PyQt5 import QtWidgets
 

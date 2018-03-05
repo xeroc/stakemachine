@@ -1,10 +1,7 @@
 import os
 import click
 import logging
-import yaml
-from datetime import datetime
-from bitshares.price import Price
-from prettytable import PrettyTable
+from ruamel import yaml
 from functools import update_wrapper
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
@@ -96,7 +93,7 @@ def unlock(f):
 def configfile(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        ctx.config = yaml.load(open(ctx.obj["configfile"]))
+        ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 

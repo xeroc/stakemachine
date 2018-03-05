@@ -1,7 +1,7 @@
-from PyQt5 import QtWidgets
+from .notice import NoticeDialog
+from .ui.create_bot_window_ui import Ui_Dialog
 
-from dexbot.views.notice import NoticeDialog
-from dexbot.views.gen.create_bot_window import Ui_Dialog
+from PyQt5 import QtWidgets
 
 
 class CreateBotView(QtWidgets.QDialog):
@@ -50,17 +50,17 @@ class CreateBotView(QtWidgets.QDialog):
         quote_asset = self.ui.quote_asset_input.text()
         if not self.validate_bot_name():
             bot_name = self.ui.bot_name_input.text()
-            error_text = 'Bot name needs to be unique. "{}" is already in use.'.format(bot_name)
-        elif not self.validate_asset(base_asset):
-            error_text = 'Field "Base Asset" does not have a valid asset.'
-        elif not self.validate_asset(quote_asset):
-            error_text = 'Field "Quote Asset" does not have a valid asset.'
-        elif not self.validate_market():
-            error_text = "Market {}/{} doesn't exist.".format(base_asset, quote_asset)
-        elif not self.validate_account_name():
-            error_text = "Account doesn't exist."
-        elif not self.validate_account():
-            error_text = 'Private key is invalid.'
+            error_text += 'Bot name needs to be unique. "{}" is already in use.'.format(bot_name) + '\n'
+        if not self.validate_asset(base_asset):
+            error_text += 'Field "Base Asset" does not have a valid asset.' + '\n'
+        if not self.validate_asset(quote_asset):
+            error_text += 'Field "Quote Asset" does not have a valid asset.' + '\n'
+        if not self.validate_market():
+            error_text += "Market {}/{} doesn't exist.".format(base_asset, quote_asset) + '\n'
+        if not self.validate_account_name():
+            error_text += "Account doesn't exist." + '\n'
+        if not self.validate_account():
+            error_text += 'Private key is invalid.' + '\n'
 
         if error_text:
             dialog = NoticeDialog(error_text)

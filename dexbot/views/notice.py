@@ -1,6 +1,6 @@
-from PyQt5 import QtWidgets
+from .ui.notice_window_ui import Ui_Dialog
 
-from dexbot.views.gen.notice_window import Ui_Dialog
+from PyQt5 import QtWidgets
 
 
 class NoticeDialog(QtWidgets.QDialog):

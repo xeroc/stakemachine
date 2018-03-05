@@ -1,8 +1,21 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+from setuptools import setup
+from setuptools.command.install import install
+
+from pyqt_distutils.build_ui import build_ui
 
 VERSION = '0.1.0'
+
+
+class InstallCommand(install):
+    """Customized setuptools install command - converts .ui and .qrc files to .py files
+    """
+    def run(self):
+        # Workaround for https://github.com/pypa/setuptools/issues/456
+        self.do_egg_install()
+        self.run_command('build_ui')
+
 
 setup(
     name='dexbot',
@@ -26,6 +39,10 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
     ],
+    cmdclass={
+        'build_ui': build_ui,
+        'install': InstallCommand,
+    },
     entry_points={
         'console_scripts': [
             'dexbot = dexbot.cli:main',
@@ -34,15 +51,12 @@ setup(
     install_requires=[
         "bitshares==0.1.11.beta",
         "uptick>=0.1.4",
-        "prettytable",
         "click",
         "click-datetime",
-        "colorama",
-        "tqdm",
-        "pyyaml",
         "sqlalchemy",
         "appdirs",
         "pyqt5",
+        'pyqt-distutils',
         "ruamel.yaml"
     ],
     dependency_links=[

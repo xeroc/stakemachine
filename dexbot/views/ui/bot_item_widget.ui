@@ -147,6 +147,29 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="edit_button">
+           <property name="maximumSize">
+            <size>
+             <width>28</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>PointingHandCursor</cursorShape>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">border: 0;</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../../resources/icons.qrc">
+             <normaloff>:/bot_widget/img/pen.png</normaloff>:/bot_widget/img/pen.png</iconset>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="remove_button">
            <property name="maximumSize">
             <size>
@@ -164,8 +187,8 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset>
-             <normaloff>dexbot/img/bin.png</normaloff>dexbot/img/bin.png</iconset>
+            <iconset resource="../../resources/icons.qrc">
+             <normaloff>:/bot_widget/img/bin.png</normaloff>:/bot_widget/img/bin.png</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -464,8 +487,8 @@ border-right: 2px solid  #005B78;
               <string/>
              </property>
              <property name="icon">
-              <iconset>
-               <normaloff>dexbot/img/pause.png</normaloff>dexbot/img/pause.png</iconset>
+              <iconset resource="../../resources/icons.qrc">
+               <normaloff>:/bot_widget/img/pause.png</normaloff>:/bot_widget/img/pause.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -496,8 +519,8 @@ border-right: 2px solid  #005B78;
               <string/>
              </property>
              <property name="icon">
-              <iconset>
-               <normaloff>dexbot/img/play.png</normaloff>dexbot/img/play.png</iconset>
+              <iconset resource="../../resources/icons.qrc">
+               <normaloff>:/bot_widget/img/play.png</normaloff>:/bot_widget/img/play.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -530,6 +553,8 @@ border-right: 2px solid  #005B78;
    </item>
   </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../resources/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

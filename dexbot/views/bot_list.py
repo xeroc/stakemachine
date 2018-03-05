@@ -1,10 +1,10 @@
-from PyQt5 import QtGui, QtWidgets, QtCore
-
-from dexbot.queue.queue_dispatcher import ThreadDispatcher
-from dexbot.views.gen.bot_list_window import Ui_MainWindow
-from dexbot.views.create_bot import CreateBotView
+from .ui.bot_list_window_ui import Ui_MainWindow
+from .create_bot import CreateBotView
+from .bot_item import BotItemWidget
 from dexbot.controllers.create_bot_controller import CreateBotController
-from dexbot.views.bot_item import BotItemWidget
+from dexbot.queue.queue_dispatcher import ThreadDispatcher
+
+from PyQt5 import QtWidgets
 
 
 class MainView(QtWidgets.QMainWindow):
@@ -45,7 +45,7 @@ class MainView(QtWidgets.QMainWindow):
         self.ui.add_bot_button.setEnabled(False)
 
     def handle_add_bot(self):
-        controller = CreateBotController(self.main_ctrl.bitshares_instance)
+        controller = CreateBotController(self.main_ctrl)
         create_bot_dialog = CreateBotView(controller)
         return_value = create_bot_dialog.exec_()
 

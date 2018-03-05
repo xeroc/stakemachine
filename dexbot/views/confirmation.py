@@ -1,6 +1,6 @@
-from PyQt5 import QtWidgets
+from .ui.confirmation_window_ui import Ui_Dialog
 
-from dexbot.views.gen.confirmation_window import Ui_Dialog
+from PyQt5 import QtWidgets
 
 
 class ConfirmationDialog(QtWidgets.QDialog):
