@@ -34,12 +34,8 @@ setup(
     install_requires=[
         "bitshares==0.1.11.beta",
         "uptick>=0.1.4",
-        "prettytable",
         "click",
         "click-datetime",
-        "colorama",
-        "tqdm",
-        "pyyaml",
         "sqlalchemy",
         "appdirs",
         "pyqt5",
