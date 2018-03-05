@@ -1,10 +1,10 @@
-from PyQt5 import QtGui, QtWidgets, QtCore
-
-from dexbot.queue.queue_dispatcher import ThreadDispatcher
-from dexbot.views.gen.bot_list_window import Ui_MainWindow
-from dexbot.views.create_bot import CreateBotView
+from .ui.bot_list_window_ui import Ui_MainWindow
+from .create_bot import CreateBotView
+from .bot_item import BotItemWidget
 from dexbot.controllers.create_bot_controller import CreateBotController
-from dexbot.views.bot_item import BotItemWidget
+from dexbot.queue.queue_dispatcher import ThreadDispatcher
+
+from PyQt5 import QtWidgets
 
 
 class MainView(QtWidgets.QMainWindow):

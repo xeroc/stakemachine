@@ -1,7 +1,7 @@
-from PyQt5 import QtWidgets
+from .ui.unlock_wallet_window_ui import Ui_Dialog
+from .notice import NoticeDialog
 
-from dexbot.views.gen.unlock_wallet_window import Ui_Dialog
-from dexbot.views.notice import NoticeDialog
+from PyQt5 import QtWidgets
 
 
 class UnlockWalletView(QtWidgets.QDialog):

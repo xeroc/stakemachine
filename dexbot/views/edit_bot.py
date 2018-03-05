@@ -1,8 +1,9 @@
+from .ui.edit_bot_window_ui import Ui_Dialog
+from .confirmation import ConfirmationDialog
+from .notice import NoticeDialog
+
 from PyQt5 import QtWidgets
 
-from dexbot.views.notice import NoticeDialog
-from dexbot.views.gen.edit_bot_window import Ui_Dialog
-from dexbot.views.confirmation import ConfirmationDialog
 
 class EditBotView(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, controller, botname, config):

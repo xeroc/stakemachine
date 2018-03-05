@@ -1,10 +1,10 @@
-from PyQt5 import QtWidgets
-
-from dexbot.views.gen.bot_item_widget import Ui_widget
-from dexbot.views.confirmation import ConfirmationDialog
+from .ui.bot_item_widget_ui import Ui_widget
+from .confirmation import ConfirmationDialog
+from .edit_bot import EditBotView
 from dexbot.storage import worker
 from dexbot.controllers.create_bot_controller import CreateBotController
-from dexbot.views.edit_bot import EditBotView
+
+from PyQt5 import QtWidgets
 
 
 class BotItemWidget(QtWidgets.QWidget, Ui_widget):

@@ -1,7 +1,7 @@
-from PyQt5 import QtWidgets
+from .notice import NoticeDialog
+from .ui.create_bot_window_ui import Ui_Dialog
 
-from dexbot.views.notice import NoticeDialog
-from dexbot.views.gen.create_bot_window import Ui_Dialog
+from PyQt5 import QtWidgets
 
 
 class CreateBotView(QtWidgets.QDialog):

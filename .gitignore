@@ -75,3 +75,5 @@ deprecated
 *.yml
 venv/
 .idea/
+dexbot/views/ui/*_ui.py
+dexbot/resources/*_rc.py
