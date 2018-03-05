@@ -43,15 +43,16 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         error_text = ''
         base_asset = self.base_asset_input.currentText()
         quote_asset = self.quote_asset_input.text()
+
         if not self.validate_bot_name():
             bot_name = self.bot_name_input.text()
-            error_text += 'Bot name needs to be unique. "{}" is already in use.'.format(bot_name) + '\n'
+            error_text += 'Bot name needs to be unique. "{}" is already in use.\n'.format(bot_name)
         if not self.validate_asset(base_asset):
-            error_text += 'Field "Base Asset" does not have a valid asset.' + '\n'
+            error_text += 'Field "Base Asset" does not have a valid asset.\n'
         if not self.validate_asset(quote_asset):
-            error_text += 'Field "Quote Asset" does not have a valid asset.' + '\n'
+            error_text += 'Field "Quote Asset" does not have a valid asset.\n'
         if not self.validate_market():
-            error_text += "Market {}/{} doesn't exist.".format(base_asset, quote_asset) + '\n'
+            error_text += "Market {}/{} doesn't exist.\n".format(base_asset, quote_asset)
 
         if error_text:
             dialog = NoticeDialog(error_text)
@@ -60,13 +61,12 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         else:
             return True
 
-    def handle_save_dialog(self):
-        dialog = ConfirmationDialog('Saving bot will recreate it: cancel all current orders, stop it, start again'
-                                    ' and create new orders based on new settings. '
-                                    '\n Are you sure you want to save bot?')
+    @staticmethod
+    def handle_save_dialog():
+        dialog = ConfirmationDialog('Saving bot will recreate it: cancel all current orders '
+                                    'and create new orders based on new settings.\n'
+                                    'Are you sure you want to save the bot?')
         return dialog.exec_()
-
-
 
     def handle_save(self):
         if not self.validate_form():
