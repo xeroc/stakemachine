@@ -63,8 +63,7 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
 
     @staticmethod
     def handle_save_dialog():
-        dialog = ConfirmationDialog('Saving bot will recreate it: cancel all current orders '
-                                    'and create new orders based on new settings.\n'
+        dialog = ConfirmationDialog('Saving the bot will cancel all the current orders.\n'
                                     'Are you sure you want to save the bot?')
         return dialog.exec_()
 
