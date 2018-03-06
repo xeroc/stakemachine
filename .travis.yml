@@ -7,10 +7,10 @@ matrix:
   - os: osx
     language: generic
     before_install:
-    - brew update
+    - python --version
     - brew install python3
-    - virtualenv venv -p python3
-    - source venv/bin/activate
+    - alias python=python3
+    - python --version
 install:
   - python --version
   - pip install click-datetime PyQt5 pyinstaller
