@@ -7,8 +7,8 @@ from bitshares.instance import shared_bitshares_instance
 log = logging.getLogger(__name__)
 
 # FIXME: currently static list of bot strategies: ? how to enumerate bots available and deploy new bot strategies.
-STRATEGIES=[('dexbot.strategies.echo','Echo Test'),
-            ('dexbot.strategies.follow_orders',"Haywood's Follow Orders")]
+STRATEGIES = [('dexbot.strategies.echo', 'Echo Test'),
+              ('dexbot.strategies.follow_orders', "Haywood's Follow Orders")]
 
 
 class BotInfrastructure():

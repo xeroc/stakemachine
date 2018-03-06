@@ -10,20 +10,20 @@ log = logging.getLogger(__name__)
 
 
 ConfigElement = collections.namedtuple('ConfigElement','key type default description extra')
-# bots need to specify their own configuration values
+# Bots need to specify their own configuration values
 # I want this to be UI-agnostic so a future web or GUI interface can use it too
 # so each bot can have a class method 'configure' which returns a list of ConfigElement
-# named tuples. tuple fields as follows.
-# key: the key in the bot config dictionary that gets saved back to config.yml
-# type: one of "int", "float", "bool", "string", "choice"
-# default: the default value. must be right type.
-# description: comments to user, full sentences encouraged 
-# extra: 
-#       for int & float: a (min, max) tuple
-#       for string: a regular expression, entries must match it, can be None which equivalent to .*
-#       for bool, ignored
-#       for choice: a list of choices, choices are in turn (tag, label) tuples. labels get presented to user, and tag is used
-#       as the value saved back to the config dict
+# named tuples. Tuple fields as follows.
+# Key: the key in the bot config dictionary that gets saved back to config.yml
+# Type: one of "int", "float", "bool", "string", "choice"
+# Default: the default value. must be right type.
+# Description: comments to user, full sentences encouraged
+# Extra:
+#       For int & float: a (min, max) tuple
+#       For string: a regular expression, entries must match it, can be None which equivalent to .*
+#       For bool, ignored
+#       For choice: a list of choices, choices are in turn (tag, label) tuples.
+#       labels get presented to user, and tag is used as the value saved back to the config dict
 
 
 class BaseStrategy(Storage, StateMachine, Events):

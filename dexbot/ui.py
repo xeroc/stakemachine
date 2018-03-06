@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 import click
 import logging
 import yaml
@@ -17,30 +18,38 @@ def verbose(f):
         verbosity = [
             "critical", "error", "warn", "info", "debug"
         ][int(min(ctx.obj.get("verbose", 0), 4))]
-        if ctx.obj.get("systemd",False):
-            # dont print the timestamps: systemd will log it for us
+        if ctx.obj.get("systemd", False):
+            # Don't print the timestamps: systemd will log it for us
             formatter1 = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter(
+                'bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s'
+            )
         elif verbosity == "debug":
-            # when debugging log where the log call came from
-            formatter1 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - bot %(botname)s - %(levelname)s - %(message)s')     
+            # When debugging log where the log call came from
+            formatter1 = logging.Formatter(
+                '%(asctime)s (%(module)s:%(lineno)d) - %(levelname)s - %(message)s'
+            )
+            formatter2 = logging.Formatter(
+                '%(asctime)s (%(module)s:%(lineno)d) - bot %(botname)s - %(levelname)s - %(message)s'
+            )
         else:
             formatter1 = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('%(asctime)s - bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter(
+                '%(asctime)s - bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s'
+            )
         level = getattr(logging, verbosity.upper())
-        # use special format for special bots logger
+        # Use special format for special bots logger
         ch = logging.StreamHandler()
         ch.setFormatter(formatter2)
         logging.getLogger("dexbot.per_bot").addHandler(ch)
         logging.getLogger("dexbot.per_bot").setLevel(level)
-        logging.getLogger("dexbot.per_bot").propagate = False # don't double up with root logger
-        # set the root logger with basic format
+        logging.getLogger("dexbot.per_bot").propagate = False  # Don't double up with root logger
+        # Set the root logger with basic format
         ch = logging.StreamHandler()
         ch.setFormatter(formatter1)
         logging.getLogger("dexbot").setLevel(level)
         logging.getLogger("dexbot").addHandler(ch)
-        # and don't double up on the root logger
+        # And don't double up on the root logger
         logging.getLogger("").handlers = []
         
         # GrapheneAPI logging
@@ -86,14 +95,14 @@ def unlock(f):
                     pwd = os.environ["UNLOCK"]
                 else:
                     if systemd:
-                        # no user available to interact with
+                        # No user available to interact with
                         log.critical("Passphrase not available, exiting")
-                        sys.exit(78) # 'configuation error' in systexits.h
+                        sys.exit(78)  # 'configuration error' in systexits.h
                     pwd = click.prompt("Current Wallet Passphrase", hide_input=True)
                 ctx.bitshares.wallet.unlock(pwd)
             else:
                 if systemd:
-                    # no user available to interact with
+                    # No user available to interact with
                     log.critical("Wallet not installed, cannot run")
                     sys.exit(78)
                 click.echo("No wallet installed yet. Creating ...")

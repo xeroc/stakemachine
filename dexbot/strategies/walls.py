@@ -13,12 +13,14 @@ class Walls(BaseStrategy):
     @classmethod
     def configure(cls):
         return BaseStrategy.configure()+[
-            ConfigElement("spread","int",5,"the spread between sell and buy as percentage",(0,100)),
-            ConfigElement("threshold","int",5,"percentage the feed has to move before we change orders",(0,100)),
-            ConfigElement("buy","float",0.0,"the default amount to buy",(0.0,None)),
-            ConfigElement("sell","float",0.0,"the default amount to sell",(0.0,None)),
-            ConfigElement("blocks","int",20,"number of blocks to wait before re-calculating",(0,10000)),
-            ConfigElement("dry_run","bool",False,"Dry Run Mode\nIf Yes the bot won't buy or sell anything, just log what it would do.\nIf No, the bot will buy and sell for real.",None)
+            ConfigElement("spread", "int", 5, "the spread between sell and buy as percentage", (0, 100)),
+            ConfigElement("threshold", "int", 5, "percentage the feed has to move before we change orders", (0, 100)),
+            ConfigElement("buy", "float", 0.0, "the default amount to buy", (0.0, None)),
+            ConfigElement("sell", "float", 0.0, "the default amount to sell", (0.0, None)),
+            ConfigElement("blocks", "int", 20, "number of blocks to wait before re-calculating", (0, 10000)),
+            ConfigElement("dry_run", "bool", False,
+                          "Dry Run Mode\nIf Yes the bot won't buy or sell anything, just log what it would do.\n"
+                          "If No, the bot will buy and sell for real.", None)
         ]
 
     def __init__(self, *args, **kwargs):
