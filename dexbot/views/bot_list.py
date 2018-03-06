@@ -1,14 +1,17 @@
-from PyQt5 import QtGui, QtWidgets, QtCore
+from .ui.bot_list_window_ui import Ui_MainWindow
+from .create_bot import CreateBotView
+from .bot_item import BotItemWidget
+from dexbot.controllers.create_bot_controller import CreateBotController
+from dexbot.queue.queue_dispatcher import ThreadDispatcher
 
-from dexbot.views.gen.bot_list_window import Ui_MainWindow
-from dexbot.views.gen.bot_item_widget import Ui_widget
-from dexbot.views.create_bot import CreateBotView
+from PyQt5 import QtWidgets
 
 
 class MainView(QtWidgets.QMainWindow):
 
-    def __init__(self, model, main_ctrl):
-        self.model = model
+    bot_widgets = dict()
+
+    def __init__(self, main_ctrl):
         self.main_ctrl = main_ctrl
         super(MainView, self).__init__()
         self.ui = Ui_MainWindow()
@@ -17,45 +20,59 @@ class MainView(QtWidgets.QMainWindow):
 
         self.ui.add_bot_button.clicked.connect(self.handle_add_bot)
 
+        # Load bot widgets from config file
         bots = main_ctrl.get_bots_data()
-        for bot in bots:
-            self.add_bot_widget()
+        for botname in bots:
+            config = self.main_ctrl.get_bot_config(botname)
+            self.add_bot_widget(botname, config)
 
-    def add_bot_widget(self):
-        widget = BotItemWidget()
-        self.bot_container.addWidget(widget)
+            # Artificially limit the number of bots to 1 until it's officially supported
+            # Todo: Remove the 2 lines below this after multi-bot support is added
+            self.ui.add_bot_button.setEnabled(False)
+            break
+
+        # Dispatcher polls for events from the bots that are used to change the ui
+        self.dispatcher = ThreadDispatcher(self)
+        self.dispatcher.start()
+
+    def add_bot_widget(self, botname, config):
+        widget = BotItemWidget(botname, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
+        self.bot_container.addWidget(widget)
+        self.bot_widgets[botname] = widget
+
+        # Todo: Remove the line below this after multi-bot support is added
+        self.ui.add_bot_button.setEnabled(False)
 
     def handle_add_bot(self):
-        self.create_bot_dialog = CreateBotView(self.model, self.main_ctrl)
-        return_value = self.create_bot_dialog.exec_()
+        controller = CreateBotController(self.main_ctrl)
+        create_bot_dialog = CreateBotView(controller)
+        return_value = create_bot_dialog.exec_()
 
+        # User clicked save
         if return_value == 1:
-            self.add_bot_widget()
+            botname = create_bot_dialog.bot_name
+            config = self.main_ctrl.get_bot_config(botname)
+            self.add_bot_widget(botname, config)
 
     def refresh_bot_list(self):
         pass
 
+    def set_bot_name(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_name(value)
 
-class BotItemWidget(QtWidgets.QWidget, Ui_widget):
+    def set_bot_account(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_account(value)
 
-    def __init__(self):
-        super(BotItemWidget, self).__init__()
+    def set_bot_profit(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_profit(value)
 
-        self.setupUi(self)
-        self.pause_button.hide()
+    def set_bot_market(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_market(value)
 
-        self.pause_button.clicked.connect(self.pause_bot)
-        self.play_button.clicked.connect(self.start_bot)
-        self.remove_button.clicked.connect(self.remove_widget)
+    def set_bot_slider(self, bot_name, value):
+        self.bot_widgets[bot_name].set_bot_slider(value)
 
-    def start_bot(self):
-        self.pause_button.show()
-        self.play_button.hide()
-
-    def pause_bot(self):
-        self.pause_button.hide()
-        self.play_button.show()
-
-    def remove_widget(self):
-        self.deleteLater()
+    def customEvent(self, event):
+        # Process idle_queue_dispatcher events
+        event.callback()

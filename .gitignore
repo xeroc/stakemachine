@@ -28,6 +28,7 @@ var/
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+!app.spec
 
 # Installer logs
 pip-log.txt
@@ -74,3 +75,5 @@ deprecated
 *.yml
 venv/
 .idea/
+dexbot/views/ui/*_ui.py
+dexbot/resources/*_rc.py

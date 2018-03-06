@@ -1,14 +1,14 @@
 from math import fabs
-from pprint import pprint
 from collections import Counter
 from bitshares.amount import Amount
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.errors import InsufficientFundsError
-import logging
-log = logging.getLogger(__name__)
 
 
-class Walls(BaseStrategy):
+class Strategy(BaseStrategy):
+    """
+    Walls strategy
+    """
 
     @classmethod
     def configure(cls):
@@ -44,12 +44,12 @@ class Walls(BaseStrategy):
     def error(self, *args, **kwargs):
         self.disabled = True
         self.cancelall()
-        pprint(self.execute())
+        self.log.info(self.execute())
 
     def updateorders(self):
         """ Update the orders
         """
-        log.info("Replacing orders")
+        self.log.info("Replacing orders")
 
         # Canceling orders
         self.cancelall()
@@ -89,7 +89,7 @@ class Walls(BaseStrategy):
                 account=self.account
             )
 
-        pprint(self.execute())
+        self.log.info(self.execute())
 
     def getprice(self):
         """ Here we obtain the price for the quote and make sure it has
@@ -122,7 +122,7 @@ class Walls(BaseStrategy):
                 not self["insufficient_buy"] and
                 not self["insufficient_sell"]
             ):
-                log.info("No 2 orders available. Updating orders!")
+                self.log.info("No 2 orders available. Updating orders!")
                 self.updateorders()
         elif len(orders) == 0:
             self.updateorders()
@@ -132,5 +132,5 @@ class Walls(BaseStrategy):
             self["feed_price"] and
             fabs(1 - float(self.getprice()) / self["feed_price"]) > self.bot["threshold"] / 100.0
         ):
-            log.info("Price feed moved by more than the threshold. Updating orders!")
+            self.log.info("Price feed moved by more than the threshold. Updating orders!")
             self.updateorders()

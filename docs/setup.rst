@@ -38,7 +38,7 @@ Installation
 
 ::
 
-   pip3 install <Codaone download>
+   pip3 install dexbot     [--user]
 
 If you add the ``--user`` flag to this command, the binaries of
 ``dexbot`` and ``uptick`` are located in ``~/.local/bin``.

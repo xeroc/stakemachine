@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import yaml
 import logging
 import click
-import os.path, os, sys
+import os.path
+import os
+import sys
 from .ui import (
     verbose,
     chain,
@@ -18,6 +19,8 @@ from .ui import (
 from dexbot.bot import BotInfrastructure
 from dexbot.cli_conf import configure_dexbot
 import dexbot.errors as errors
+
+import ruamel.yaml as yaml
 
 
 log = logging.getLogger(__name__)

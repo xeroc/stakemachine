@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# StakeMachine documentation build configuration file, created by
+# DEXBot documentation build configuration file, created by
 # sphinx-quickstart on Fri May 27 11:21:25 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -48,7 +48,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'StakeMachine'
+project = 'DEXBot'
 copyright = '2017, ChainSquad GmbH'
 author = 'Fabian Schuh'
 
@@ -202,7 +202,7 @@ html_theme = 'alabaster'
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'StakeMachinedoc'
+htmlhelp_basename = 'DEXBotdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -224,7 +224,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'StakeMachine.tex', 'StakeMachine Documentation',
+  (master_doc, 'DEXBot.tex', 'DEXBot Documentation',
    'Fabian Schuh', 'manual'),
 ]
 
@@ -254,7 +254,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'stakemachine', 'StakeMachine Documentation',
+    (master_doc, 'dexbot', 'DEXBot Documentation',
      [author], 1)
 ]
 
@@ -268,8 +268,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'StakeMachine', 'StakeMachine Documentation',
-   author, 'StakeMachine', 'One line description of project.',
+  (master_doc, 'DEXBot', 'DEXBot Documentation',
+   author, 'DEXBot', 'One line description of project.',
    'Miscellaneous'),
 ]
 
