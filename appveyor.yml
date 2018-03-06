@@ -20,7 +20,7 @@ configuration: Release
 install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   - "python --version"
-  - "pip install pyinstaller click-datetime PyQt5"
+  - "pip install pyinstaller click-datetime PyQt5 pyqt-distutils"
   - "python setup.py install"
 
 after_test:

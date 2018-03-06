@@ -52,11 +52,8 @@ setup(
         "bitshares==0.1.11.beta",
         "uptick>=0.1.4",
         "click",
-        "click-datetime",
         "sqlalchemy",
         "appdirs",
-        "pyqt5",
-        'pyqt-distutils',
         "ruamel.yaml"
     ],
     dependency_links=[

@@ -6,20 +6,22 @@ Trading Bot for the BitShares Decentralized Exchange
 ## Build status
 
 master:  
-[![Build Status](https://travis-ci.org/svdev/DEXBot.svg?branch=master)](https://travis-ci.org/svdev/DEXBot)
+[![Build Status](https://travis-ci.org/Codaone/DEXBot.svg?branch=master)](https://travis-ci.org/Codaone/DEXBot)
 
-develop:  
-[![Build Status](https://travis-ci.org/svdev/DEXBot.svg?branch=develop)](https://travis-ci.org/svdev/DEXBot)
 
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
 ## Installation
 
-    git clone https://github.com/codaone/dexbot
-    cd dexbot
-    python3 setup.py install
-    # or
-    python3 setup.py install --user
+Python 3.4+ + pip are required.
+
+    $ git clone https://github.com/codaone/dexbot
+    $ cd dexbot    
+    $ make install    
+
+or
+    
+    $ make install-user
 
 ## Configuration
 

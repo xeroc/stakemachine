@@ -8,13 +8,9 @@ matrix:
     language: generic
     before_install:
     - python --version
-    - brew install python3
-    - alias python=python3
-    - python --version
+    - brew upgrade python
 install:
-  - python --version
-  - pip install click-datetime PyQt5 pyinstaller
-  - python setup.py install
+  - make install
 script:
   - echo "@TODO - Running tests..."
   - pyinstaller --distpath dist/$TRAVIS_OS_NAME app.spec
