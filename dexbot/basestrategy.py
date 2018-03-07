@@ -75,7 +75,7 @@ class BaseStrategy(Storage, StateMachine, Events):
     ]
 
     @classmethod
-    def configure(kls):
+    def configure(cls):
         """
         Return a list of ConfigElement objects defining the configuration values for 
         this class
@@ -87,8 +87,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         # these configs are common to all bots
         return [
-            ConfigElement("account","string","","BitShares account name for the bot to operate with",""),
-            ConfigElement("market","string","USD:BTS","BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"","[A-Z]+:[A-Z]+")
+            ConfigElement("account", "string", "", "BitShares account name for the bot to operate with", ""),
+            ConfigElement("market", "string", "USD:BTS",
+                          "BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"",
+                          "[A-Z]+:[A-Z]+")
         ]
     
     def __init__(
