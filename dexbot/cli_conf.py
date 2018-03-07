@@ -86,12 +86,12 @@ def process_config_element(elem, d, config):
 
 def setup_systemd(d, config):
     if config.get("systemd_status", "install") == "reject":
-        return # don't nag user if previously said no
+        return  # Don't nag user if previously said no
     if not os.path.exists("/etc/systemd"):
-        return # no working systemd
+        return  # No working systemd
     if os.path.exists(SYSTEMD_SERVICE_NAME):
-        # dexbot already installed
-        # so just tell cli.py to quietly restart the daemon
+        # Dexbot already installed
+        # So just tell cli.py to quietly restart the daemon
         config["systemd_status"] = "installed"
         return
     if d.confirm("Do you want to install dexbot as a background (daemon) process?"):
@@ -106,7 +106,7 @@ def setup_systemd(d, config):
         fd = os.open(SYSTEMD_SERVICE_NAME, os.O_WRONLY|os.O_CREAT, 0o600) # because we hold password be restrictive
         with open(fd, "w") as fp:
             fp.write(SYSTEMD_SERVICE_FILE.format(exe=sys.argv[0],passwd=passwd,homedir=os.path.expanduser("~")))
-        config['systemd_status'] = 'install' # signal cli.py to set the unit up after writing config file
+        config['systemd_status'] = 'install'  # Signal cli.py to set the unit up after writing config file
     else:
         config['systemd_status'] = 'reject'
 
@@ -147,7 +147,7 @@ def configure_dexbot(config):
             config['bots'][txt] = configure_bot(d, {})
         else:
             config['bots'][botname] = configure_bot(d, config['bots'][botname])
-    if not 'node' in config:
+    if 'node' not in config:
         node = best_node(ping_results)
         if node:
             config['node'] = node
