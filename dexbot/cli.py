@@ -10,6 +10,7 @@ import os.path
 import os
 import sys
 import appdirs
+from ruamel import yaml
 
 from .ui import (
     verbose,
@@ -113,7 +114,7 @@ def configure(ctx):
     cfg_file = ctx.obj["configfile"]
     if os.path.exists(ctx.obj['configfile']):
         with open(ctx.obj["configfile"]) as fd:
-            config = yaml.load(fd)
+            config = yaml.safe_load(fd)
     else:
         config = {}
         storage.mkdir_p(os.path.dirname(ctx.obj['configfile']))

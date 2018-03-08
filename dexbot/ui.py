@@ -11,8 +11,6 @@ from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
 log = logging.getLogger(__name__)
 
-from dexbot.storage import SQLiteHandler
-
 def verbose(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
@@ -162,7 +160,6 @@ def alert(msg):
         click.style("Alert", fg="red") +
         "] " + msg
     )
-5B
 
 def confirmalert(msg):
     return click.confirm(
