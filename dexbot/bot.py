@@ -1,17 +1,31 @@
-import traceback
 import importlib
-import time
+import sys
 import logging
+import os.path
+import threading
+
+from dexbot.basestrategy import BaseStrategy
+
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
+
+import dexbot.errors as errors
+
 log = logging.getLogger(__name__)
+
 
 # FIXME: currently static list of bot strategies: ? how to enumerate bots available and deploy new bot strategies.
 STRATEGIES=[('dexbot.strategies.echo','Echo Test'),
             ('dexbot.strategies.follow_orders',"Haywood's Follow Orders")]
 
+log_bots = logging.getLogger('dexbot.per_bot')
+# NOTE this is the  special logger for per-bot events
+# it  returns LogRecords with extra fields: botname, account, market and is_disabled
+# is_disabled is a callable returning True if the bot is currently disabled.
+# GUIs can add a handler to this logger to get a stream of events re the running bots.
 
-class BotInfrastructure():
+
+class BotInfrastructure(threading.Thread):
 
     bots = dict()
 
@@ -19,23 +33,56 @@ class BotInfrastructure():
         self,
         config,
         bitshares_instance=None,
+        view=None
     ):
+        super().__init__()
+
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
-
         self.config = config
+        self.view = view
+        
+    def init_bots(self):
+        """Do the actual initialisation of bots
+        Potentially quite slow (tens of seconds)
+        So called as part of run()
+        """
+        # set the module search path
+        user_bot_path = os.path.expanduser("~/bots")
+        if os.path.exists(user_bot_path):
+            sys.path.append(user_bot_path)
 
         # Load all accounts and markets in use to subscribe to them
         accounts = set()
         markets = set()
-        for botname, bot in config["bots"].items():
+        
+        # Initialize bots:
+        for botname, bot in self.config["bots"].items():
             if "account" not in bot:
-                raise ValueError("Bot %s has no account" % botname)
+                log_bots.critical("Bot has no account",extra={'botname':botname,'account':'unknown','market':'unknown','is_dsabled':(lambda: True)})
+                continue
             if "market" not in bot:
-                raise ValueError("Bot %s has no market" % botname)
+                log_bots.critical("Bot has no market",extra={'botname':botname,'account':bot['account'],'market':'unknown','is_disabled':(lambda: True)})
+                continue
+            try:
+                klass = getattr(
+                    importlib.import_module(bot["module"]),
+                    'Strategy'
+                )
+                self.bots[botname] = klass(
+                    config=self.config,
+                    name=botname,
+                    bitshares_instance=self.bitshares,
+                    view=self.view
+                )
+                markets.add(bot['market'])
+                accounts.add(bot['account'])
+            except:
+                log_bots.exception("Bot initialisation",extra={'botname':botname,'account':bot['account'],'market':'unknown','is_disabled':(lambda: True)})
 
-            accounts.add(bot["account"])
-            markets.add(bot["market"])
+        if len(markets) == 0:
+            log.critical("No bots to launch, exiting")
+            raise errors.NoBotsAvailable()
 
         # Create notification instance
         # Technically, this will multiplex markets and accounts and
@@ -49,70 +96,59 @@ class BotInfrastructure():
             bitshares_instance=self.bitshares
         )
 
-        # Initialize bots:
-        for botname, bot in config["bots"].items():
-            klass = getattr(
-                importlib.import_module(bot["module"]),
-                bot["bot"]
-            )
-            self.bots[botname] = klass(
-                config=config,
-                name=botname,
-                bitshares_instance=self.bitshares
-            )
-
     # Events
     def on_block(self, data):
         for botname, bot in self.config["bots"].items():
-            if self.bots[botname].disabled:
+            if botname not in self.bots or self.bots[botname].disabled:
                 continue
             try:
                 self.bots[botname].ontick(data)
             except Exception as e:
                 self.bots[botname].error_ontick(e)
-                log.error(
-                    "Error while processing {botname}.tick(): {exception}\n{stack}".format(
-                        botname=botname,
-                        exception=str(e),
-                        stack=traceback.format_exc()
-                    ))
+                self.bots[botname].log.exception("in .tick()")
 
     def on_market(self, data):
         if data.get("deleted", False):  # no info available on deleted orders
             return
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
-                log.info("The bot %s has been disabled" % botname)
+                self.bots[botname].log.warning("disabled")
                 continue
             if bot["market"] == data.market:
                 try:
                     self.bots[botname].onMarketUpdate(data)
                 except Exception as e:
                     self.bots[botname].error_onMarketUpdate(e)
-                    log.error(
-                        "Error while processing {botname}.onMarketUpdate(): {exception}\n{stack}".format(
-                            botname=botname,
-                            exception=str(e),
-                            stack=traceback.format_exc()
-                        ))
+                    self.bots[botname].log.exception(".onMarketUpdate()")
 
     def on_account(self, accountupdate):
         account = accountupdate.account
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
-                log.info("The bot %s has been disabled" % botname)
+                self.bots[botname].log.info("The bot %s has been disabled" % botname)
                 continue
             if bot["account"] == account["name"]:
                 try:
                     self.bots[botname].onAccount(accountupdate)
                 except Exception as e:
                     self.bots[botname].error_onAccount(e)
-                    log.error(
-                        "Error while processing {botname}.onAccount(): {exception}\n{stack}".format(
-                            botname=botname,
-                            exception=str(e),
-                            stack=traceback.format_exc()
-                        ))
+                    self.bots[botname].log.exception(".onAccountUpdate()")
 
     def run(self):
+        self.init_bots()
         self.notify.listen()
+
+    def stop(self):
+        for bot in self.bots:
+            self.bots[bot].cancel_all()
+        self.notify.websocket.close()
+
+    def remove_bot(self):
+        for bot in self.bots:
+            self.bots[bot].purge()
+
+    @staticmethod
+    def remove_offline_bot(config, bot_name):
+        # Initialize the base strategy to get control over the data
+        strategy = BaseStrategy(config, bot_name)
+        strategy.purge()

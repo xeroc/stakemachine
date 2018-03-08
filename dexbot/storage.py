@@ -1,16 +1,20 @@
+import sqlalchemy
 import os
 import json
-import sqlalchemy
+import threading
+import queue
+import uuid
+import time
 from sqlalchemy import create_engine, Table, Column, String, Integer, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from appdirs import user_data_dir
 Base = declarative_base()
 
-# For stakemachine.sqlite file
-appname = "stakemachine"
+# For dexbot.sqlite file
+appname = "dexbot"
 appauthor = "ChainSquad GmbH"
-storageDatabase = "stakemachine.sqlite"
+storageDatabase = "dexbot.sqlite"
 
 
 def mkdir_p(d):
@@ -49,48 +53,130 @@ class Storage(dict):
         self.category = category
 
     def __setitem__(self, key, value):
+        worker.execute_noreturn(worker.set_item, self.category, key, value)
+
+    def __getitem__(self, key):
+        return worker.execute(worker.get_item, self.category, key)
+
+    def __delitem__(self, key):
+        worker.execute_noreturn(worker.del_item, self.category, key)
+
+    def __contains__(self, key):
+        return worker.execute(worker.contains, self.category, key)
+
+    def items(self):
+        return worker.execute(worker.get_items, self.category)
+
+    def clear(self):
+        worker.execute_noreturn(worker.clear, self.category)
+
+
+class DatabaseWorker(threading.Thread):
+    """
+    Thread safe database worker
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        # Obtain engine and session
+        engine = create_engine('sqlite:///%s' % sqlDataBaseFile, echo=False)
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
+        Base.metadata.create_all(engine)
+        self.session.commit()
+
+        self.task_queue = queue.Queue()
+        self.results = {}
+
+        self.lock = threading.Lock()
+        self.event = threading.Event()
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        for func, args, token in iter(self.task_queue.get, None):
+            if token is not None:
+                args = args+(token,)
+            func(*args)
+
+    def get_result(self, token):
+        while True:
+            with self.lock:
+                if token in self.results:
+                    return_value = self.results[token]
+                    del self.results[token]
+                    return return_value
+                else:
+                    self.event.clear()
+            self.event.wait()
+
+    def set_result(self, token, result):
+        with self.lock:
+            self.results[token] = result
+            self.event.set()
+
+    def execute(self, func, *args):
+        token = str(uuid.uuid4)
+        self.task_queue.put((func, args, token))
+        return self.get_result(token)
+
+    def execute_noreturn(self, func, *args):
+        self.task_queue.put((func, args, None))
+        
+    def set_item(self, category, key, value):
         value = json.dumps(value)
-        e = session.query(Config).filter_by(
-            category=self.category,
+        e = self.session.query(Config).filter_by(
+            category=category,
             key=key
         ).first()
         if e:
             e.value = value
         else:
-            e = Config(self.category, key, value)
-            session.add(e)
-        session.commit()
+            e = Config(category, key, value)
+            self.session.add(e)
+        self.session.commit()
 
-    def __getitem__(self, key):
-        e = session.query(Config).filter_by(
-            category=self.category,
+    def get_item(self, category, key, token):
+        e = self.session.query(Config).filter_by(
+            category=category,
             key=key
         ).first()
         if not e:
-            return None
+            result = None
         else:
-            return json.loads(e.value)
+            result = json.loads(e.value)
+        self.set_result(token, result)
 
-    def __delitem__(self, key):
-        e = session.query(Config).filter_by(
-            category=self.category,
+    def del_item(self, category, key):
+        e = self.session.query(Config).filter_by(
+            category=category,
             key=key
         ).first()
-        session.delete(e)
-        session.commit()
+        self.session.delete(e)
+        self.session.commit()
 
-    def __contains__(self, key):
-        e = session.query(Config).filter_by(
-            category=self.category,
+    def contains(self, category, key, token):
+        e = self.session.query(Config).filter_by(
+            category=category,
             key=key
         ).first()
-        return bool(e)
+        self.set_result(token, bool(e))
 
-    def items(self):
-        es = session.query(Config).filter_by(
-            category=self.category
+    def get_items(self, category, token):
+        es = self.session.query(Config).filter_by(
+            category=category
         ).all()
-        return [(e.key, e.value) for e in es]
+        result = [(e.key, e.value) for e in es]
+        self.set_result(token, result)
+
+    def clear(self, category):
+        rows = self.session.query(Config).filter_by(
+            category=category
+        )
+        for row in rows:
+            self.session.delete(row)
+            self.session.commit()
 
 
 # Derive sqlite file directory
@@ -100,18 +186,4 @@ sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
 # Create directory for sqlite file
 mkdir_p(data_dir)
 
-# Obtain engine and session
-engine = create_engine('sqlite:///%s' % sqlDataBaseFile, echo=False)
-Session = sessionmaker(bind=engine)
-session = Session()
-Base.metadata.create_all(engine)
-session.commit()
-
-if __name__ == "__main__":
-    storage = Storage("test")
-    storage["foo"] = "bar"
-    storage["foo1"] = "bar"
-    storage["foo3"] = "bar"
-    print(storage.items())
-    print("foo" in storage)
-    print("bar" in storage)
+worker = DatabaseWorker()

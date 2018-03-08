@@ -22,7 +22,6 @@ from .ui import (
     alert,
 )
 
-
 from .bot import BotInfrastructure
 from .cli_conf import configure_dexbot
 from . import errors
@@ -130,7 +129,6 @@ def configure(ctx):
         os.system("systemctl --user enable dexbot")
         click.echo("starting dexbot daemon")
         os.system("systemctl --user start dexbot")
-
 
 if __name__ == '__main__':
     main()

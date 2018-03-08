@@ -14,7 +14,7 @@ clean-pyc:
 	find . -name '*~' -exec rm -f {} +
 
 lint:
-	flake8 stakemachine/
+	flake8 dexbot/
 
 build:
 	python3 setup.py build

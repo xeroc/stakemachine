@@ -38,9 +38,9 @@ Installation
 
 ::
 
-   pip3 install <Codaone download>
+   pip3 install dexbot     [--user]
 
-If you add the ``--user`` flag to this command, the binaries of
+If you install using the ``--user`` flag, the binaries of
 ``dexbot`` and ``uptick`` are located in ``~/.local/bin``.
 Otherwise they should be globally reachable.
 
@@ -48,7 +48,8 @@ Adding Keys
 -----------
 
 It is important to *install* the private key of your
-bot's account into a local wallet. This can be done using
+
+bot's account into the pybitshares wallet. This can be done using
 ``uptick`` which is installed as a dependency of ``dexbot``::
 
    uptick addkey
