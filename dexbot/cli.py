@@ -86,7 +86,7 @@ def configure(ctx):
     """
     if os.path.exists(ctx.obj['configfile']):
         with open(ctx.obj["configfile"]) as fd:
-            config = yaml.load(fd)
+            config = yaml.safe_load(fd)
     else:
         config = {}
     configure_dexbot(config)
