@@ -123,7 +123,28 @@ class BaseStrategy(Storage, StateMachine, Events):
                                                                                'account': self.bot['account'],
                                                                                'market': self.bot['market'],
                                                                                'is_disabled': lambda: self.disabled})
-    
+
+    @property
+    def calculate_center_price(self):
+        ticker = self.market.ticker()
+        highest_bid = ticker.get("highestBid")
+        lowest_ask = ticker.get("lowestAsk")
+        if highest_bid is None or highest_bid == 0.0:
+            self.log.critical(
+                "Cannot estimate center price, there is no highest bid."
+            )
+            self.disabled = True
+            return None
+        if lowest_ask is None or lowest_ask == 0.0:
+            self.log.critical(
+                "Cannot estimate center price, there is no highest bid."
+            )
+            self.disabled = True
+            return None
+        else:
+            center_price = (highest_bid['price'] + lowest_ask['price']) / 2
+            return center_price
+
     @property
     def orders(self):
         """ Return the bot's open accounts in the current market

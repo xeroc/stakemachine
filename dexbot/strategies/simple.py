@@ -28,13 +28,20 @@ class Strategy(BaseStrategy):
         # Counter for blocks
         self.counter = Counter()
 
-        self.price = self.bot.get("target", {}).get("center_price", 0)
-        target = self.bot.get("target", {})
-        self.buy_price = self.price * (1 - (target["spread"] / 2) / 100)
-        self.sell_price = self.price * (1 + (target["spread"] / 2) / 100)
+        self.target = self.bot.get("target", {})
+        self.center_price = None
+        self.buy_price = None
+        self.sell_price = None
+        self.calculate_order_prices()
+
         self.initial_balance = self['initial_balance'] or 0
         self.bot_name = kwargs.get('name')
         self.view = kwargs.get('view')
+
+    def calculate_order_prices(self):
+        self.center_price = self.calculate_center_price
+        self.buy_price = self.center_price * (1 - (self.target["spread"] / 2) / 100)
+        self.sell_price = self.center_price * (1 + (self.target["spread"] / 2) / 100)
 
     def error(self, *args, **kwargs):
         self.disabled = True
@@ -42,8 +49,10 @@ class Strategy(BaseStrategy):
 
     def init_strategy(self):
         # Target
-        target = self.bot.get("target", {})
-        amount = target['amount'] / 2
+        amount = self.target['amount'] / 2
+
+        # Recalculate buy and sell order prices
+        self.calculate_order_prices()
 
         # Buy Side
         if float(self.balance(self.market["base"])) < self.buy_price * amount:
@@ -93,7 +102,9 @@ class Strategy(BaseStrategy):
         sell_order = self['sell_order']
         buy_order = self['buy_order']
 
-        sell_price = self.sell_price
+        # Recalculate buy and sell order prices
+        self.calculate_order_prices()
+
         buy_price = self.buy_price
 
         sold_amount = 0
