@@ -21,10 +21,26 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         self.account_name.setText(self.controller.get_account(bot_data))
         self.amount_input.setValue(self.controller.get_target_amount(bot_data))
         self.center_price_input.setValue(self.controller.get_target_center_price(bot_data))
-        self.spread_input.setValue(self.controller.get_target_spread(bot_data))
 
+        center_price_automatic = self.controller.get_target_center_price_automatic(bot_data)
+        if center_price_automatic:
+            self.center_price_input.setEnabled(False)
+            self.center_price_automatic_checkbox.setChecked(True)
+        else:
+            self.center_price_input.setEnabled(True)
+            self.center_price_automatic_checkbox.setChecked(False)
+
+        self.spread_input.setValue(self.controller.get_target_spread(bot_data))
         self.save_button.clicked.connect(self.handle_save)
         self.cancel_button.clicked.connect(self.reject)
+        self.center_price_automatic_checkbox.stateChanged.connect(self.onchange_center_price_automatic_checkbox)
+
+    def onchange_center_price_automatic_checkbox(self):
+        checkbox = self.center_price_automatic_checkbox
+        if checkbox.isChecked():
+            self.center_price_input.setDisabled(True)
+        else:
+            self.center_price_input.setDisabled(False)
 
     def validate_bot_name(self):
         old_bot_name = self.bot_name
@@ -78,6 +94,7 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         target = {
             'amount': float(self.amount_input.text()),
             'center_price': float(self.center_price_input.text()),
+            'center_price_automatic': bool(self.center_price_automatic_checkbox.isChecked()),
             'spread': spread
         }
 

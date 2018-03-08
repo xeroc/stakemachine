@@ -29,7 +29,11 @@ class Strategy(BaseStrategy):
         self.counter = Counter()
 
         self.target = self.bot.get("target", {})
-        self.center_price = None
+        self.is_center_price_automatic = self.target["center_price_automatic"]
+        if self.is_center_price_automatic:
+            self.center_price = None
+        else:
+            self.center_price = self.target["center_price"]
         self.buy_price = None
         self.sell_price = None
         self.calculate_order_prices()
@@ -39,7 +43,8 @@ class Strategy(BaseStrategy):
         self.view = kwargs.get('view')
 
     def calculate_order_prices(self):
-        self.center_price = self.calculate_center_price
+        if self.is_center_price_automatic:
+            self.center_price = self.calculate_center_price
         self.buy_price = self.center_price * (1 - (self.target["spread"] / 2) / 100)
         self.sell_price = self.center_price * (1 + (self.target["spread"] / 2) / 100)
 

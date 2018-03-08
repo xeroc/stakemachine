@@ -135,5 +135,9 @@ class CreateBotController:
         return bot_data['target']['center_price']
 
     @staticmethod
+    def get_target_center_price_automatic(bot_data):
+        return bot_data['target']['center_price_automatic']
+
+    @staticmethod
     def get_target_spread(bot_data):
         return bot_data['target']['spread']
