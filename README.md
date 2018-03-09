@@ -13,15 +13,27 @@ master:
 
 ## Installation
 
-Python 3.4+ + pip are required.
+Python 3.4+ + pip are required. With make:
 
     $ git clone https://github.com/codaone/dexbot
     $ cd dexbot    
     $ make install    
 
 or
-    
+
     $ make install-user
+
+Without make:
+
+    $ git clone https://github.com/codaone/dexbot
+    $ cd dexbot
+    $ pip install -r requirements.txt
+    $ python setup.py install
+
+or
+
+    $ pip install -r --user requirements.txt
+    $ python setup.py install --user
 
 ## Configuration
 
