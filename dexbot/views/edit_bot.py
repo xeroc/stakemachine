@@ -22,21 +22,21 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         self.amount_input.setValue(self.controller.get_target_amount(bot_data))
         self.center_price_input.setValue(self.controller.get_target_center_price(bot_data))
 
-        center_price_automatic = self.controller.get_target_center_price_automatic(bot_data)
-        if center_price_automatic:
+        center_price_dynamic = self.controller.get_target_center_price_dynamic(bot_data)
+        if center_price_dynamic:
             self.center_price_input.setEnabled(False)
-            self.center_price_automatic_checkbox.setChecked(True)
+            self.center_price_dynamic_checkbox.setChecked(True)
         else:
             self.center_price_input.setEnabled(True)
-            self.center_price_automatic_checkbox.setChecked(False)
+            self.center_price_dynamic_checkbox.setChecked(False)
 
         self.spread_input.setValue(self.controller.get_target_spread(bot_data))
         self.save_button.clicked.connect(self.handle_save)
         self.cancel_button.clicked.connect(self.reject)
-        self.center_price_automatic_checkbox.stateChanged.connect(self.onchange_center_price_automatic_checkbox)
+        self.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
 
-    def onchange_center_price_automatic_checkbox(self):
-        checkbox = self.center_price_automatic_checkbox
+    def onchange_center_price_dynamic_checkbox(self):
+        checkbox = self.center_price_dynamic_checkbox
         if checkbox.isChecked():
             self.center_price_input.setDisabled(True)
         else:
@@ -94,7 +94,7 @@ class EditBotView(QtWidgets.QDialog, Ui_Dialog):
         target = {
             'amount': float(self.amount_input.text()),
             'center_price': float(self.center_price_input.text()),
-            'center_price_automatic': bool(self.center_price_automatic_checkbox.isChecked()),
+            'center_price_dynamic': bool(self.center_price_dynamic_checkbox.isChecked()),
             'spread': spread
         }
 

@@ -137,7 +137,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             return None
         if lowest_ask is None or lowest_ask == 0.0:
             self.log.critical(
-                "Cannot estimate center price, there is no highest bid."
+                "Cannot estimate center price, there is no lowest ask."
             )
             self.disabled = True
             return None

@@ -378,9 +378,9 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QCheckBox" name="center_price_automatic_checkbox">
+       <widget class="QCheckBox" name="center_price_dynamic_checkbox">
         <property name="text">
-         <string>Calculate center price automatically</string>
+         <string>Calculate center price dynamically</string>
         </property>
        </widget>
       </item>

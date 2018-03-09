@@ -22,10 +22,10 @@ class CreateBotView(QtWidgets.QDialog):
 
         self.ui.save_button.clicked.connect(self.handle_save)
         self.ui.cancel_button.clicked.connect(self.reject)
-        self.ui.center_price_automatic_checkbox.stateChanged.connect(self.onchange_center_price_automatic_checkbox)
+        self.ui.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
 
-    def onchange_center_price_automatic_checkbox(self):
-        checkbox = self.ui.center_price_automatic_checkbox
+    def onchange_center_price_dynamic_checkbox(self):
+        checkbox = self.ui.center_price_dynamic_checkbox
         if checkbox.isChecked():
             self.ui.center_price_input.setDisabled(True)
         else:
@@ -90,7 +90,7 @@ class CreateBotView(QtWidgets.QDialog):
         target = {
             'amount': float(ui.amount_input.text()),
             'center_price': float(ui.center_price_input.text()),
-            'center_price_automatic': bool(ui.center_price_automatic_checkbox.isChecked()),
+            'center_price_dynamic': bool(ui.center_price_dynamic_checkbox.isChecked()),
             'spread': spread
         }
 
