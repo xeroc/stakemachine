@@ -6,7 +6,6 @@ matrix:
     python: '3.6'
     before_install:
     - python --version
-    - brew upgrade python
 install:
   - make install
 script:
