@@ -1,7 +1,6 @@
 # DEXBot
 
-Trading Bot for the BitShares Decentralized Exchange
-(DEX).
+Trading Bot for the BitShares Decentralized Exchange (DEX).
 
 ## Build status
 
@@ -13,7 +12,7 @@ master:
 
 ## Installation
 
-Python 3.4+ + pip are required. With make:
+Python 3.4+ & pip are required. With make:
 
     $ git clone https://github.com/codaone/dexbot
     $ cd dexbot    
