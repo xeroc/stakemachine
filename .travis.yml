@@ -4,9 +4,6 @@ matrix:
   - os: linux
     language: python
     python: '3.6'
-  - os: osx
-    language: python
-    python: '3.6'
     before_install:
     - python --version
     - brew upgrade python
