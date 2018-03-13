@@ -54,16 +54,6 @@ deploy:
       secure: 9qvwlVUHFBV4GwMz1Gu2HSnqU8Ex2nv5dsY4mVNCurrb+6ULIoHPgbvJPWTo3qV6
     on:
       appveyor_repo_tag: true     # deploy on tag push only
-  - provider: GitHub
-    name: latest
-    artifact: DEXBot-win64.zip
-    draft: false
-    prerelease: true
-    force_update: true
-    auth_token:
-      secure: 9qvwlVUHFBV4GwMz1Gu2HSnqU8Ex2nv5dsY4mVNCurrb+6ULIoHPgbvJPWTo3qV6
-    on:
-      branch: master              # deploy on master only
 
 #---------------------------------#
 #         notifications           #
