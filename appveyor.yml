@@ -18,14 +18,14 @@ build: off
 configuration: Release
 
 install:
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-  - "python --version"
-  - "pip install pyinstaller click-datetime PyQt5 pyqt-distutils"
-  - "python setup.py install"
+  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;C:\MinGW\bin
+  - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
+  - copy c:\Python36-x64\python.exe c:\Python36-x64\python3.exe
+  - python --version
+  - make install
 
 after_test:
-  - "pyinstaller app.spec"
-  - "pyinstaller cli.spec"
+  - make package
   - '7z a DEXBot-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-cli.exe'
 
 # @TODO: Run tests..
@@ -54,6 +54,16 @@ deploy:
       secure: 9qvwlVUHFBV4GwMz1Gu2HSnqU8Ex2nv5dsY4mVNCurrb+6ULIoHPgbvJPWTo3qV6
     on:
       appveyor_repo_tag: true     # deploy on tag push only
+  - provider: GitHub
+    name: latest
+    artifact: DEXBot-win64.zip
+    draft: false
+    prerelease: true
+    force_update: true
+    auth_token:
+      secure: 9qvwlVUHFBV4GwMz1Gu2HSnqU8Ex2nv5dsY4mVNCurrb+6ULIoHPgbvJPWTo3qV6
+    on:
+      branch: master              # deploy on master only
 
 #---------------------------------#
 #         notifications           #
