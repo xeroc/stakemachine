@@ -49,16 +49,12 @@ setup(
         ],
     },
     install_requires=[
-        "bitshares==0.1.11.beta",
+        "bitshares",
         "uptick>=0.1.4",
         "click",
         "sqlalchemy",
         "appdirs",
         "ruamel.yaml"
-    ],
-    dependency_links=[
-        # Temporally force downloads from a different repo, change this once the websocket fix has been merged
-        "https://github.com/mikakoi/python-bitshares/tarball/websocket-fix#egg=bitshares-0.1.11.beta"
     ],
     include_package_data=True,
 )
