@@ -23,6 +23,7 @@ class Strategy(BaseStrategy):
                           "If No, the bot will buy and sell for real.", None)
         ]
 
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -31,7 +31,7 @@ class Whiptail:
         self.height = height
         self.width = width
         self.auto_exit = auto_exit
-        
+
     def run(self, control, msg, extra=(), exit_on=(1, 255)):
         cmd = [
             'whiptail', '--title', self.title, '--backtitle', self.backtitle,
@@ -103,10 +103,10 @@ class NoWhiptail:
     """
     Imitates the interface of whiptail but uses click only
 
-    This is very basic CLI: real state-of-the-1970s stuff, 
+    This is very basic CLI: real state-of-the-1970s stuff,
     but it works *everywhere*
     """
-    
+
     def prompt(self, msg, default='', password=False):
         return click.prompt(msg, default=default, hide_input=password)
 
@@ -124,16 +124,16 @@ class NoWhiptail:
         click.echo_via_pager(text)
         
     def menu(self, msg='', items=(), default=0):
-        click.echo(msg+'\n')
-        if type(items) is dict:
+        click.echo(msg + '\n')
+        if isinstance(items, dict):
             items = list(items.items())
         i = 1
         for k, v in items:
             click.echo("{:>2}) {}".format(i, v))
             i += 1
         click.echo("\n")
-        ret = click.prompt("Your choice:", type=int, default=default+1)
-        ret = items[ret-1]
+        ret = click.prompt("Your choice:", type=int, default=default + 1)
+        ret = items[ret - 1]
         return ret[0]
 
     def radiolist(self, msg='', items=()):

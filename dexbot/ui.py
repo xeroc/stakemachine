@@ -2,6 +2,7 @@ import os
 import sys
 import click
 import logging
+import logging.config
 from ruamel import yaml
 from functools import update_wrapper
 from bitshares import BitShares
@@ -34,19 +35,18 @@ def verbose(f):
             formatter2 = logging.Formatter(
                 '%(asctime)s - bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s'
             )
-        level = getattr(logging, verbosity.upper())
+
         # Use special format for special bots logger
         ch = logging.StreamHandler()
+        ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter2)
         logging.getLogger("dexbot.per_bot").addHandler(ch)
-        logging.getLogger("dexbot.per_bot").setLevel(level)
         logging.getLogger("dexbot.per_bot").propagate = False  # Don't double up with root logger
         # Set the root logger with basic format
         ch = logging.StreamHandler()
+        ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter1)
-        logging.getLogger("dexbot").setLevel(level)
         logging.getLogger("dexbot").addHandler(ch)
-        # And don't double up on the root logger
         logging.getLogger("").handlers = []
         
         # GrapheneAPI logging
@@ -57,7 +57,6 @@ def verbose(f):
             log = logging.getLogger("grapheneapi")
             log.setLevel(getattr(logging, verbosity.upper()))
             log.addHandler(ch)
-
         if ctx.obj["verbose"] > 8:
             verbosity = [
                 "critical", "error", "warn", "info", "debug"
@@ -65,7 +64,10 @@ def verbose(f):
             log = logging.getLogger("graphenebase")
             log.setLevel(getattr(logging, verbosity.upper()))
             log.addHandler(ch)
-
+        # has the user set logging in the config
+        if "logging" in ctx.config:
+            # this is defined in https://docs.python.org/3.4/library/logging.config.html#logging-config-dictschema
+            logging.config.dictConfig(ctx.config['logging'])
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 
@@ -86,7 +88,7 @@ def unlock(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
         if not ctx.obj.get("unsigned", False):
-            systemd = ctx.obj.get('systemd',False)
+            systemd = ctx.obj.get('systemd', False)
             if ctx.bitshares.wallet.created():
                 if "UNLOCK" in os.environ:
                     pwd = os.environ["UNLOCK"]
@@ -94,8 +96,9 @@ def unlock(f):
                     if systemd:
                         # No user available to interact with
                         log.critical("Passphrase not available, exiting")
-                        sys.exit(78)  # 'configuration error' in systexits.h
-                    pwd = click.prompt("Current Wallet Passphrase", hide_input=True)
+                        sys.exit(78)  # 'configuration error' in sysexits.h
+                    pwd = click.prompt(
+                        "Current Wallet Passphrase", hide_input=True)
                 ctx.bitshares.wallet.unlock(pwd)
             else:
                 if systemd:
@@ -103,7 +106,10 @@ def unlock(f):
                     log.critical("Wallet not installed, cannot run")
                     sys.exit(78)
                 click.echo("No wallet installed yet. Creating ...")
-                pwd = click.prompt("Wallet Encryption Passphrase", hide_input=True, confirmation_prompt=True)
+                pwd = click.prompt(
+                    "Wallet Encryption Passphrase",
+                    hide_input=True,
+                    confirmation_prompt=True)
                 ctx.bitshares.wallet.create(pwd)
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
@@ -112,7 +118,12 @@ def unlock(f):
 def configfile(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
+        try:
+            ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
+        except FileNotFoundError:
+            alert("Looking for the config file in %s\nNot found!\n"
+                  "Try running 'dexbot configure' to generate\n" % ctx.obj['configfile'])
+            sys.exit(78)  # 'configuration error' in sysexits.h
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 
@@ -155,7 +166,7 @@ def confirmwarning(msg):
 def alert(msg):
     click.echo(
         "[" +
-        click.style("alert", fg="yellow") +
+        click.style("Alert", fg="red") +
         "] " + msg
     )
 
