@@ -20,8 +20,7 @@ log_bots = logging.getLogger('dexbot.per_bot')
 # GUIs can add a handler to this logger to get a stream of events re the running bots.
 
 # FIXME: currently static list of bot strategies: ? how to enumerate bots available and deploy new bot strategies.
-STRATEGIES = [('dexbot.strategies.echo', 'Echo Test'),
-              ('dexbot.strategies.follow_orders', "Haywood's Follow Orders")]
+STRATEGIES = [('dexbot.strategies.echo', 'Echo Test')]
 
 
 class BotInfrastructure(threading.Thread):
