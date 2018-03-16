@@ -25,6 +25,8 @@ ALL_NODES = ["wss://eu.openledger.info/ws",
              "wss://bts.ai.la/ws",
              "wss://ws.gdex.top"]
 
+FAILED_PING_AMOUNT = 1000000
+
 if system() == 'Windows':
     ping_re = re.compile(r'Average = ([\d.]+)ms')
 else:
@@ -48,14 +50,14 @@ def process_ping_result(host, proc):
     try:
         return float(ping_re.search(out).group(1)), host
     except AttributeError:
-        return 1000000, host  # hosts that fail are last
+        return FAILED_PING_AMOUNT, host  # Hosts that fail are last
 
 
 def start_pings():
     return [(i, make_ping_proc(i)) for i in ALL_NODES]
 
 
-def best_node(results):
+def best_node(results=start_pings()):
     try:
         r = sorted([process_ping_result(*i) for i in results])
         return r[0][1]
@@ -63,5 +65,13 @@ def best_node(results):
         return None
 
 
+def is_host_online(host):
+    result = make_ping_proc(host)
+    ping = process_ping_result(host, result)[0]
+    if ping >= FAILED_PING_AMOUNT:
+        return False
+    return True
+
+
 if __name__ == '__main__':
-    print(best_node(start_pings()))
+    print(best_node())

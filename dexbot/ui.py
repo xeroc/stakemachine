@@ -7,6 +7,9 @@ from ruamel import yaml
 from functools import update_wrapper
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
+
+from . import find_node
+
 log = logging.getLogger(__name__)
 
 
@@ -68,6 +71,16 @@ def verbose(f):
         if "logging" in ctx.config:
             # this is defined in https://docs.python.org/3.4/library/logging.config.html#logging-config-dictschema
             logging.config.dictConfig(ctx.config['logging'])
+        return ctx.invoke(f, *args, **kwargs)
+    return update_wrapper(new_func, f)
+
+
+def check_connection(f):
+    @click.pass_context
+    def new_func(ctx, *args, **kwargs):
+        if not find_node.is_host_online(ctx.config['node']):
+            node = find_node.best_node()
+            ctx.config['node'] = node
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 

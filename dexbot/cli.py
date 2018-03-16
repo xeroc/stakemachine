@@ -13,13 +13,10 @@ from ruamel import yaml
 
 from .ui import (
     verbose,
+    check_connection,
     chain,
     unlock,
-    configfile,
-    confirmwarning,
-    confirmalert,
-    warning,
-    alert,
+    configfile
 )
 
 from .bot import BotInfrastructure
@@ -68,6 +65,7 @@ def main(ctx, **kwargs):
 @main.command()
 @click.pass_context
 @configfile
+@check_connection
 @chain
 @unlock
 @verbose
