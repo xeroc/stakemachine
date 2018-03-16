@@ -16,7 +16,6 @@ ALL_NODES = ["wss://eu.openledger.info/ws",
              "wss://bitshares-api.wancloud.io/ws",
              "wss://openledger.hk/ws",
              "wss://bitshares.apasia.tech/ws",
-             "wss://uptick.rocks"
              "wss://bitshares.crypto.fans/ws",
              "wss://kc-us-dex.xeldal.com/ws",
              "wss://api.bts.blckchnd.com",
@@ -24,10 +23,7 @@ ALL_NODES = ["wss://eu.openledger.info/ws",
              "wss://bitshares.dacplay.org/ws",
              "wss://bit.btsabc.org/ws",
              "wss://bts.ai.la/ws",
-             "wss://ws.gdex.top",
-             "wss://us.nodes.bitshares.works",
-             "wss://eu.nodes.bitshares.works",
-             "wss://sg.nodes.bitshares.works"]
+             "wss://ws.gdex.top"]
 
 if system() == 'Windows':
     ping_re = re.compile(r'Average = ([\d.]+)ms')
