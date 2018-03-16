@@ -2,7 +2,7 @@
 import logging
 import os
 # we need to do this before importing click
-if not "LANG" in os.environ:
+if "LANG" not in os.environ:
     os.environ['LANG'] = 'C.UTF-8'
 import click
 import os.path
