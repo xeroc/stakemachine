@@ -12,11 +12,13 @@ clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
+pip:
+	python3 -m pip install -r requirements.txt
 
 lint:
 	flake8 dexbot/
 
-build:
+build: pip
 	python3 setup.py build
 
 install: build
@@ -29,10 +31,14 @@ git:
 	git push --all
 	git push --tags
 
-check:
+check: pip
 	python3 setup.py check
 
-dist:
+package: build
+	pyinstaller app.spec
+	pyinstaller cli.spec
+
+dist: pip
 	python3 setup.py sdist upload -r pypi
 	python3 setup.py bdist_wheel upload
 
