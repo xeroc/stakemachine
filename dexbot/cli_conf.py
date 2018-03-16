@@ -18,10 +18,7 @@ import importlib
 import os
 import os.path
 import sys
-import collections
 import re
-import tempfile
-import shutil
 from dexbot.bot import STRATEGIES
 from dexbot.whiptail import get_whiptail
 from dexbot.find_node import start_pings, best_node
@@ -154,6 +151,7 @@ def configure_bot(d, bot):
                 "You will have to check the bot code and add configuration values to config.yml if required")
     return bot
 
+
 def configure_dexbot(config):
     d = get_whiptail()
     bots = config.get('bots', {})
@@ -162,7 +160,7 @@ def configure_dexbot(config):
         while True:
             txt = d.prompt("Your name for the bot")
             config['bots'] = {txt: configure_bot(d, {})}
-            if not d.confirm("Set up another bot?\n(DEXBOt can run multiple bots in one instance)"):
+            if not d.confirm("Set up another bot?\n(DEXBot can run multiple bots in one instance)"):
                 break
         setup_systemd(d, config)
         node = best_node(ping_results)
@@ -188,7 +186,7 @@ def configure_dexbot(config):
             txt = d.prompt("Your name for the new bot")
             config['bots'][txt] = configure_bot(d, {})
         else:
-            config['node'] = d.prompt("BitShares node to use",default=config['node'])
+            config['node'] = d.prompt("BitShares node to use", default=config['node'])
     d.clear()
     return config
 

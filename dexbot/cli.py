@@ -39,7 +39,7 @@ logging.basicConfig(
 @click.group()
 @click.option(
     "--configfile",
-    default=os.path.join(appdirs.user_config_dir("dexbot"),"config.yml"),
+    default=os.path.join(appdirs.user_config_dir("dexbot"), "config.yml"),
 )
 @click.option(
     '--verbose',
@@ -75,7 +75,7 @@ def run(ctx):
     """ Continuously run the bot
     """
     if ctx.obj['pidfile']:
-        with open(ctx.obj['pidfile'],'w') as fd:
+        with open(ctx.obj['pidfile'], 'w') as fd:
             fd.write(str(os.getpid()))
     try:
         bot = BotInfrastructure(ctx.config)

@@ -63,7 +63,7 @@ def best_node(results):
     try:
         r = sorted([process_ping_result(*i) for i in results])
         return r[0][1]
-    except:
+    except BaseException:
         return None
 
 
