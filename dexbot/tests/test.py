@@ -31,14 +31,16 @@ TEST_CONFIG = {
             'spread': 5,
             'reset': True,
             'staggers': 2,
-            'wall': 5,
+            'wall_percent': 5,
             'staggerspread': 5,
             'min': 0,
             'max': 100000,
-            'start': 50
+            'start': 50,
+            'bias': 1
         }}}
 
-KEYS = ['5JV32w3BgPgHV1VoELuDQxvt1gdfuXHo2Rm8TrEn6SQwSsLjnH8']
+# user need sto put a key in
+KEYS = ['']
 
 
 class TestDexbot(unittest.TestCase):
@@ -50,7 +52,7 @@ class TestDexbot(unittest.TestCase):
 
         def wait_then_stop():
             time.sleep(20)
-            bitshares_instance.do_next_tick(bitshares_instance.stop)
+            bot_infrastructure.do_next_tick(bot_infrastructure.stop)
 
         stopper = threading.Thread(target=wait_then_stop)
         stopper.start()
