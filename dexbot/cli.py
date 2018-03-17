@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import os
 import click
 import sys
 from .ui import (
@@ -34,6 +35,12 @@ logging.basicConfig(
     type=int,
     default=3,
     help='Verbosity (0-15)')
+@click.option(
+    '--pidfile',
+    '-p',
+    type=str,
+    default='',
+    help='File to write PID')
 @click.pass_context
 def main(ctx, **kwargs):
     ctx.obj = {}
@@ -50,6 +57,9 @@ def main(ctx, **kwargs):
 def run(ctx):
     """ Continuously run the bot
     """
+    if ctx.obj['pidfile']:
+        with open(ctx.obj['pidfile'],'w') as fd:
+            fd.write(str(os.getpid()))
     try:
         bot = BotInfrastructure(ctx.config)
         bot.run()
