@@ -6,7 +6,6 @@ if "LANG" not in os.environ:
     os.environ['LANG'] = 'C.UTF-8'
 import click
 import os.path
-import os
 import sys
 import appdirs
 from ruamel import yaml
@@ -49,12 +48,6 @@ logging.basicConfig(
     '-d',
     default=False,
     help='Run as a daemon from systemd')
-@click.option(
-    '--pidfile',
-    '-p',
-    type=str,
-    default='',
-    help='File to write PID')
 @click.pass_context
 def main(ctx, **kwargs):
     ctx.obj = {}
@@ -72,9 +65,6 @@ def main(ctx, **kwargs):
 def run(ctx):
     """ Continuously run the bot
     """
-    if ctx.obj['pidfile']:
-        with open(ctx.obj['pidfile'], 'w') as fd:
-            fd.write(str(os.getpid()))
     try:
         bot = BotInfrastructure(ctx.config)
         bot.init_bots()
