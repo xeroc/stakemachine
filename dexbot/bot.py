@@ -36,6 +36,7 @@ class BotInfrastructure(threading.Thread):
         self.bitshares = bitshares_instance or shared_bitshares_instance()
         self.config = config
         self.view = view
+        self.jobs = set()
         
     def init_bots(self):
         """Do the actual initialisation of bots
@@ -93,6 +94,12 @@ class BotInfrastructure(threading.Thread):
 
     # Events
     def on_block(self, data):
+        if self.jobs:
+            try: 
+                for job in self.jobs:
+                    job()
+            finally:
+                self.jobs = set()
         for botname, bot in self.config["bots"].items():
             if botname not in self.bots or self.bots[botname].disabled:
                 continue
@@ -147,3 +154,7 @@ class BotInfrastructure(threading.Thread):
         # Initialize the base strategy to get control over the data
         strategy = BaseStrategy(config, bot_name)
         strategy.purge()
+
+    def do_next_tick(self, job):
+        """Add a callable to be executed on the next tick"""
+        self.jobs.add(job)
