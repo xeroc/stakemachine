@@ -96,8 +96,8 @@ class BotInfrastructure(threading.Thread):
     def on_block(self, data):
         if self.jobs:
             try: 
-                for i in self.jobs:
-                    i ()
+                for job in self.jobs:
+                    job()
             finally:
                 self.jobs = set()
         for botname, bot in self.config["bots"].items():
