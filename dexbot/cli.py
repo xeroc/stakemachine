@@ -61,8 +61,12 @@ def run(ctx):
         with open(ctx.obj['pidfile'], 'w') as fd:
             fd.write(str(os.getpid()))
     try:
-        bot = BotInfrastructure(ctx.config)
-        bot.run()
+        try:
+            bot = BotInfrastructure(ctx.config)
+            bot.run()
+        finally:
+            if ctx.obj['pidfile']:
+                os.unlink(ctx.obj['pidfile'])
     except errors.NoBotsAvailable:
         sys.exit(70)  # 70= "Software error" in /usr/include/sysexts.h
 
