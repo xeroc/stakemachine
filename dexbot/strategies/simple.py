@@ -28,22 +28,37 @@ class Strategy(BaseStrategy):
         # Counter for blocks
         self.counter = Counter()
 
-        self.price = self.bot.get("target", {}).get("center_price", 0)
-        target = self.bot.get("target", {})
-        self.buy_price = self.price * (1 - (target["spread"] / 2) / 100)
-        self.sell_price = self.price * (1 + (target["spread"] / 2) / 100)
+        self.target = self.bot.get("target", {})
+        self.is_center_price_dynamic = self.target["center_price_dynamic"]
+        if self.is_center_price_dynamic:
+            self.center_price = None
+        else:
+            self.center_price = self.target["center_price"]
+
+        self.buy_price = None
+        self.sell_price = None
+        self.calculate_order_prices()
+
         self.initial_balance = self['initial_balance'] or 0
         self.bot_name = kwargs.get('name')
         self.view = kwargs.get('view')
+
+    def calculate_order_prices(self):
+        if self.is_center_price_dynamic:
+            self.center_price = self.calculate_center_price
+
+        self.buy_price = self.center_price * (1 - (self.target["spread"] / 2) / 100)
+        self.sell_price = self.center_price * (1 + (self.target["spread"] / 2) / 100)
 
     def error(self, *args, **kwargs):
         self.disabled = True
         self.log.info(self.execute())
 
     def init_strategy(self):
-        # Target
-        target = self.bot.get("target", {})
-        amount = target['amount'] / 2
+        amount = self.target['amount'] / 2
+
+        # Recalculate buy and sell order prices
+        self.calculate_order_prices()
 
         # Buy Side
         if float(self.balance(self.market["base"])) < self.buy_price * amount:
@@ -93,8 +108,8 @@ class Strategy(BaseStrategy):
         sell_order = self['sell_order']
         buy_order = self['buy_order']
 
-        sell_price = self.sell_price
-        buy_price = self.buy_price
+        # Recalculate buy and sell order prices
+        self.calculate_order_prices()
 
         sold_amount = 0
         if new_sell_order and new_sell_order['base']['amount'] < sell_order['base']['amount']:
@@ -121,7 +136,7 @@ class Strategy(BaseStrategy):
             new_buy_amount = buy_order_amount - bought_amount + sold_amount
             if float(self.balance(self.market["base"])) < new_buy_amount:
                 self.log.critical(
-                    'Insufficient buy balance, needed {} {}'.format(buy_price * new_buy_amount,
+                    'Insufficient buy balance, needed {} {}'.format(self.buy_price * new_buy_amount,
                                                                     self.market['base']['symbol'])
                 )
                 self.disabled = True
@@ -131,14 +146,14 @@ class Strategy(BaseStrategy):
                     self.cancel(buy_order)
 
                 buy_transaction = self.market.buy(
-                    buy_price,
+                    self.buy_price,
                     Amount(amount=new_buy_amount, asset=self.market["quote"]),
                     account=self.account,
                     returnOrderId="head"
                 )
                 buy_order = self.get_order(buy_transaction['orderid'])
                 self.log.info(
-                    'Placed a buy order for {} {} @ {}'.format(new_buy_amount, self.market["quote"], buy_price)
+                    'Placed a buy order for {} {} @ {}'.format(new_buy_amount, self.market["quote"], self.buy_price)
                 )
                 if buy_order:
                     self['buy_order'] = buy_order
@@ -164,14 +179,14 @@ class Strategy(BaseStrategy):
                     self.cancel(sell_order)
 
                 sell_transaction = self.market.sell(
-                    sell_price,
+                    self.sell_price,
                     Amount(amount=new_sell_amount, asset=self.market["quote"]),
                     account=self.account,
                     returnOrderId="head"
                 )
                 sell_order = self.get_order(sell_transaction['orderid'])
                 self.log.info(
-                    'Placed a sell order for {} {} @ {}'.format(new_sell_amount, self.market["quote"], buy_price)
+                    'Placed a sell order for {} {} @ {}'.format(new_sell_amount, self.market["quote"], self.buy_price)
                 )
                 if sell_order:
                     self['sell_order'] = sell_order

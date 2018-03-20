@@ -5,7 +5,7 @@ from setuptools.command.install import install
 
 from pyqt_distutils.build_ui import build_ui
 
-VERSION = '0.1.0'
+VERSION = '0.1.2'
 
 
 class InstallCommand(install):
@@ -49,19 +49,12 @@ setup(
         ],
     },
     install_requires=[
-        "bitshares==0.1.11.beta",
+        "bitshares",
         "uptick>=0.1.4",
         "click",
-        "click-datetime",
         "sqlalchemy",
         "appdirs",
-        "pyqt5",
-        'pyqt-distutils',
         "ruamel.yaml"
-    ],
-    dependency_links=[
-        # Temporally force downloads from a different repo, change this once the websocket fix has been merged
-        "https://github.com/mikakoi/python-bitshares/tarball/websocket-fix#egg=bitshares-0.1.11.beta"
     ],
     include_package_data=True,
 )
