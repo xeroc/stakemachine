@@ -3,6 +3,7 @@
 from bitshares.bitshares import BitShares
 import unittest
 import time
+import os
 import threading
 import logging
 from dexbot.bot import BotInfrastructure
@@ -40,7 +41,7 @@ TEST_CONFIG = {
         }}}
 
 # user need sto put a key in
-KEYS = ['']
+KEYS = [os.environ['DEXBOT_TEST_WIF']]
 
 
 class TestDexbot(unittest.TestCase):
