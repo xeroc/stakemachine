@@ -58,13 +58,14 @@ def run(ctx):
     """ Continuously run the bot
     """
     if ctx.obj['pidfile']:
-        with open(ctx.obj['pidfile'],'w') as fd:
+        with open(ctx.obj['pidfile'], 'w') as fd:
             fd.write(str(os.getpid()))
     try:
         bot = BotInfrastructure(ctx.config)
         bot.run()
     except errors.NoBotsAvailable:
-        sys.exit(70) # 70= "Software error" in /usr/include/sysexts.h
+        sys.exit(70)  # 70= "Software error" in /usr/include/sysexts.h
+
 
 if __name__ == '__main__':
     main()
