@@ -37,6 +37,7 @@ class BotInfrastructure(threading.Thread):
         self.config = config
         self.view = view
         self.jobs = set()
+        self.notify = None
         
     def init_bots(self):
         """Do the actual initialisation of bots
@@ -55,10 +56,14 @@ class BotInfrastructure(threading.Thread):
         # Initialize bots:
         for botname, bot in self.config["bots"].items():
             if "account" not in bot:
-                log_bots.critical("Bot has no account",extra={'botname':botname,'account':'unknown','market':'unknown','is_dsabled':(lambda: True)})
+                log_bots.critical("Bot has no account", extra={
+                    'botname': botname, 'account': 'unknown', 'market': 'unknown', 'is_disabled': (lambda: True)
+                })
                 continue
             if "market" not in bot:
-                log_bots.critical("Bot has no market",extra={'botname':botname,'account':bot['account'],'market':'unknown','is_disabled':(lambda: True)})
+                log_bots.critical("Bot has no market", extra={
+                    'botname': botname, 'account': bot['account'], 'market': 'unknown', 'is_disabled': (lambda: True)
+                })
                 continue
             try:
                 klass = getattr(
@@ -73,8 +78,10 @@ class BotInfrastructure(threading.Thread):
                 )
                 markets.add(bot['market'])
                 accounts.add(bot['account'])
-            except:
-                log_bots.exception("Bot initialisation",extra={'botname':botname,'account':bot['account'],'market':'unknown','is_disabled':(lambda: True)})
+            except BaseException:
+                log_bots.exception("Bot initialisation", extra={
+                    'botname': botname, 'account': bot['account'], 'market': 'unknown', 'is_disabled': (lambda: True)
+                })
 
         if len(markets) == 0:
             log.critical("No bots to launch, exiting")
@@ -110,11 +117,11 @@ class BotInfrastructure(threading.Thread):
                 self.bots[botname].log.exception("in .tick()")
 
     def on_market(self, data):
-        if data.get("deleted", False):  # no info available on deleted orders
+        if data.get("deleted", False):  # No info available on deleted orders
             return
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
-                self.bots[botname].log.warning("disabled")
+                self.bots[botname].log.debug('Worker "{}" is disabled'.format(botname))
                 continue
             if bot["market"] == data.market:
                 try:
@@ -127,7 +134,7 @@ class BotInfrastructure(threading.Thread):
         account = accountupdate.account
         for botname, bot in self.config["bots"].items():
             if self.bots[botname].disabled:
-                self.bots[botname].log.info("The bot %s has been disabled" % botname)
+                self.bots[botname].log.info('Worker "{}" is disabled'.format(botname))
                 continue
             if bot["account"] == account["name"]:
                 try:
