@@ -129,12 +129,9 @@ class Strategy(BaseStrategy):
 
         if sold_amount:
             # We sold something, place updated buy order
-            try:
-                buy_order_amount = buy_order['quote']['amount']
-            except KeyError:
-                buy_order_amount = 0
+            buy_order_amount = self.get_order_amount(buy_order, 'quote')
             new_buy_amount = buy_order_amount - bought_amount + sold_amount
-            if float(self.balance(self.market["base"])) < new_buy_amount:
+            if float(self.balance(self.market["base"])) < self.buy_price * new_buy_amount:
                 self.log.critical(
                     'Insufficient buy balance, needed {} {}'.format(self.buy_price * new_buy_amount,
                                                                     self.market['base']['symbol'])
@@ -163,10 +160,7 @@ class Strategy(BaseStrategy):
 
         if bought_amount:
             # We bought something, place updated sell order
-            try:
-                sell_order_amount = sell_order['base']['amount']
-            except KeyError:
-                sell_order_amount = 0
+            sell_order_amount = self.get_order_amount(sell_order, 'quote')
             new_sell_amount = sell_order_amount + bought_amount - sold_amount
             if float(self.balance(self.market["quote"])) < new_sell_amount:
                 self.log.critical(
@@ -243,6 +237,7 @@ class Strategy(BaseStrategy):
 
     # GUI updaters
     def update_gui_profit(self):
+        # Fixme: profit calculation doesn't work this way, figure out a better way to do this.
         if self.initial_balance:
             profit = round((self.orders_balance() - self.initial_balance) / self.initial_balance, 3)
         else:

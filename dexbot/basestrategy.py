@@ -277,3 +277,11 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         self.cancel_all()
         self.clear()
+
+    @staticmethod
+    def get_order_amount(order, asset_type):
+        try:
+            order_amount = order[asset_type]['amount']
+        except KeyError:
+            order_amount = 0
+        return order_amount
