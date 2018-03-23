@@ -73,6 +73,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
             error_text += 'Field "Quote Asset" does not have a valid asset.\n'
         if not self.validate_market():
             error_text += "Market {}/{} doesn't exist.\n".format(base_asset, quote_asset)
+        error_text = error_text.rstrip()  # Remove the extra line-ending
 
         if error_text:
             dialog = NoticeDialog(error_text)

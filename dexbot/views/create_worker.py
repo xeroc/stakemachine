@@ -59,17 +59,18 @@ class CreateWorkerView(QtWidgets.QDialog):
         quote_asset = self.ui.quote_asset_input.text()
         if not self.validate_worker_name():
             worker_name = self.ui.worker_name_input.text()
-            error_text += 'Worker name needs to be unique. "{}" is already in use.'.format(worker_name) + '\n'
+            error_text += 'Worker name needs to be unique. "{}" is already in use.\n'.format(worker_name)
         if not self.validate_asset(base_asset):
-            error_text += 'Field "Base Asset" does not have a valid asset.' + '\n'
+            error_text += 'Field "Base Asset" does not have a valid asset.\n'
         if not self.validate_asset(quote_asset):
-            error_text += 'Field "Quote Asset" does not have a valid asset.' + '\n'
+            error_text += 'Field "Quote Asset" does not have a valid asset.\n'
         if not self.validate_market():
-            error_text += "Market {}/{} doesn't exist.".format(base_asset, quote_asset) + '\n'
+            error_text += "Market {}/{} doesn't exist.\n".format(base_asset, quote_asset)
         if not self.validate_account_name():
-            error_text += "Account doesn't exist." + '\n'
+            error_text += "Account doesn't exist.\n"
         if not self.validate_account():
-            error_text += 'Private key is invalid.' + '\n'
+            error_text += 'Private key is invalid.\n'
+        error_text = error_text.rstrip()  # Remove the extra line-ending
 
         if error_text:
             dialog = NoticeDialog(error_text)
