@@ -92,7 +92,7 @@
           <number>1</number>
          </property>
          <item>
-          <widget class="QLabel" name="botname_label">
+          <widget class="QLabel" name="worker_name_label">
            <property name="font">
             <font>
              <pointsize>12</pointsize>
@@ -104,7 +104,7 @@
             <string notr="true">color: #005B78;</string>
            </property>
            <property name="text">
-            <string>Botname</string>
+            <string>Worker name</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>

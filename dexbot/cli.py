@@ -14,7 +14,7 @@ from .ui import (
     warning,
     alert,
 )
-from dexbot.bot import BotInfrastructure
+from dexbot.worker import WorkerInfrastructure
 import dexbot.errors as errors
 
 log = logging.getLogger(__name__)
@@ -56,36 +56,36 @@ def main(ctx, **kwargs):
 @unlock
 @verbose
 def run(ctx):
-    """ Continuously run the bot
+    """ Continuously run the worker
     """
     if ctx.obj['pidfile']:
         with open(ctx.obj['pidfile'], 'w') as fd:
             fd.write(str(os.getpid()))
     try:
         try:
-            bot = BotInfrastructure(ctx.config)
+            worker = WorkerInfrastructure(ctx.config)
             # Set up signalling. do it here as of no relevance to GUI
-            kill_bots = bot_job(bot, bot.stop)
+            kill_workers = worker_job(worker, worker.stop)
             # These first two UNIX & Windows
-            signal.signal(signal.SIGTERM, kill_bots)
-            signal.signal(signal.SIGINT, kill_bots)
+            signal.signal(signal.SIGTERM, kill_workers)
+            signal.signal(signal.SIGINT, kill_workers)
             try:
                 # These signals are UNIX-only territory, will ValueError here on Windows
-                signal.signal(signal.SIGHUP, kill_bots)
+                signal.signal(signal.SIGHUP, kill_workers)
                 # TODO: reload config on SIGUSR1
-                # signal.signal(signal.SIGUSR1, lambda x, y: bot.do_next_tick(bot.reread_config))
+                # signal.signal(signal.SIGUSR1, lambda x, y: worker.do_next_tick(worker.reread_config))
             except ValueError:
                 log.debug("Cannot set all signals -- not available on this platform")
-            bot.run()
+            worker.run()
         finally:
             if ctx.obj['pidfile']:
                 os.unlink(ctx.obj['pidfile'])
-    except errors.NoBotsAvailable:
+    except errors.NoWorkersAvailable:
         sys.exit(70)  # 70= "Software error" in /usr/include/sysexts.h
 
 
-def bot_job(bot, job):
-    return lambda x, y: bot.do_next_tick(job)
+def worker_job(worker, job):
+    return lambda x, y: worker.do_next_tick(job)
 
 
 if __name__ == '__main__':

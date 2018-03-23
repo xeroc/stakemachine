@@ -71,7 +71,7 @@
        <property name="toolTipDuration">
         <number>-7</number>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch=""/>
+       <layout class="QVBoxLayout" name="verticalLayout"/>
       </widget>
      </widget>
     </item>
@@ -107,7 +107,7 @@
        <item row="1" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
-          <widget class="QPushButton" name="add_bot_button">
+          <widget class="QPushButton" name="add_worker_button">
            <property name="cursor">
             <cursorShape>PointingHandCursor</cursorShape>
            </property>
@@ -115,7 +115,7 @@
             <number>-1</number>
            </property>
            <property name="text">
-            <string>Add bot</string>
+            <string>Add worker</string>
            </property>
           </widget>
          </item>
@@ -145,10 +145,6 @@
      </widget>
     </item>
    </layout>
-   <zorder></zorder>
-   <zorder>scrollArea</zorder>
-   <zorder>widget</zorder>
-   <zorder>line</zorder>
   </widget>
  </widget>
  <resources/>

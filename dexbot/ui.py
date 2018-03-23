@@ -17,21 +17,21 @@ def verbose(f):
         if ctx.obj.get("systemd",False):
             # dont print the timestamps: systemd will log it for us
             formatter1 = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter('Worker %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
         elif verbosity == "debug":
             # when debugging log where the log call came from
             formatter1 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - bot %(botname)s - %(levelname)s - %(message)s')           
+            formatter2 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - worker %(worker_name)s - %(levelname)s - %(message)s')
         else:
             formatter1 = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('%(asctime)s - bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter('%(asctime)s - worker %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
 
-        # use special format for special bots logger
+        # use special format for special workers logger
         ch = logging.StreamHandler()
         ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter2)
-        logging.getLogger("dexbot.per_bot").addHandler(ch)
-        logging.getLogger("dexbot.per_bot").propagate = False # don't double up with root logger
+        logging.getLogger("dexbot.per_worker").addHandler(ch)
+        logging.getLogger("dexbot.per_worker").propagate = False # don't double up with root logger
         # set the root logger with basic format
         ch = logging.StreamHandler()
         ch.setLevel(getattr(logging, verbosity.upper()))
