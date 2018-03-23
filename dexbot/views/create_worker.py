@@ -53,6 +53,10 @@ class CreateWorkerView(QtWidgets.QDialog):
         private_key = self.ui.private_key_input.text()
         return self.controller.is_account_valid(account, private_key)
 
+    def validate_account_not_in_use(self):
+        account = self.ui.account_input.text()
+        return not self.controller.is_account_in_use(account)
+
     def validate_form(self):
         error_text = ''
         base_asset = self.ui.base_asset_input.currentText()
@@ -70,6 +74,9 @@ class CreateWorkerView(QtWidgets.QDialog):
             error_text += "Account doesn't exist.\n"
         if not self.validate_account():
             error_text += 'Private key is invalid.\n'
+        if not self.validate_account_not_in_use():
+            account = self.ui.account_input.text()
+            error_text += 'Use a different account. "{}" is already in use.\n'.format(account)
         error_text = error_text.rstrip()  # Remove the extra line-ending
 
         if error_text:
