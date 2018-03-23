@@ -1,10 +1,10 @@
 from .notice import NoticeDialog
-from .ui.create_bot_window_ui import Ui_Dialog
+from .ui.create_worker_window_ui import Ui_Dialog
 
 from PyQt5 import QtWidgets
 
 
-class CreateBotView(QtWidgets.QDialog):
+class CreateWorkerView(QtWidgets.QDialog):
 
     def __init__(self, controller):
         super().__init__()
@@ -17,12 +17,13 @@ class CreateBotView(QtWidgets.QDialog):
         self.ui.strategy_input.addItems(self.controller.strategies)
         self.ui.base_asset_input.addItems(self.controller.base_assets)
 
-        self.bot_name = controller.get_unique_bot_name()
-        self.ui.bot_name_input.setText(self.bot_name)
+        self.worker_name = controller.get_unique_worker_name()
+        self.ui.worker_name_input.setText(self.worker_name)
 
         self.ui.save_button.clicked.connect(self.handle_save)
         self.ui.cancel_button.clicked.connect(self.reject)
         self.ui.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
+        self.worker_data = {}
 
     def onchange_center_price_dynamic_checkbox(self):
         checkbox = self.ui.center_price_dynamic_checkbox
@@ -31,9 +32,9 @@ class CreateBotView(QtWidgets.QDialog):
         else:
             self.ui.center_price_input.setDisabled(False)
 
-    def validate_bot_name(self):
-        bot_name = self.ui.bot_name_input.text()
-        return self.controller.is_bot_name_valid(bot_name)
+    def validate_worker_name(self):
+        worker_name = self.ui.worker_name_input.text()
+        return self.controller.is_worker_name_valid(worker_name)
 
     def validate_asset(self, asset):
         return self.controller.is_asset_valid(asset)
@@ -56,9 +57,9 @@ class CreateBotView(QtWidgets.QDialog):
         error_text = ''
         base_asset = self.ui.base_asset_input.currentText()
         quote_asset = self.ui.quote_asset_input.text()
-        if not self.validate_bot_name():
-            bot_name = self.ui.bot_name_input.text()
-            error_text += 'Bot name needs to be unique. "{}" is already in use.'.format(bot_name) + '\n'
+        if not self.validate_worker_name():
+            worker_name = self.ui.worker_name_input.text()
+            error_text += 'Worker name needs to be unique. "{}" is already in use.'.format(worker_name) + '\n'
         if not self.validate_asset(base_asset):
             error_text += 'Field "Base Asset" does not have a valid asset.' + '\n'
         if not self.validate_asset(quote_asset):
@@ -97,14 +98,13 @@ class CreateBotView(QtWidgets.QDialog):
         base_asset = ui.base_asset_input.currentText()
         quote_asset = ui.quote_asset_input.text()
         strategy = ui.strategy_input.currentText()
-        bot_module = self.controller.get_strategy_module(strategy)
-        bot_data = {
+        worker_module = self.controller.get_strategy_module(strategy)
+        self.worker_data = {
             'account': ui.account_input.text(),
             'market': '{}/{}'.format(quote_asset, base_asset),
-            'module': bot_module,
+            'module': worker_module,
             'strategy': strategy,
             'target': target
         }
-        self.bot_name = ui.bot_name_input.text()
-        self.controller.add_bot_config(self.bot_name, bot_data)
+        self.worker_name = ui.worker_name_input.text()
         self.accept()

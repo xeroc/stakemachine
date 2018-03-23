@@ -8,7 +8,7 @@ from bitsharesbase.account import PrivateKey
 from ruamel.yaml import YAML
 
 
-class CreateBotController:
+class CreateWorkerController:
 
     def __init__(self, main_ctrl):
         self.main_ctrl = main_ctrl
@@ -31,17 +31,15 @@ class CreateBotController:
         ]
         return assets
 
-    def remove_bot(self, bot_name):
-        self.main_ctrl.remove_bot(bot_name)
+    def remove_worker(self, worker_name):
+        self.main_ctrl.remove_worker(worker_name)
 
-    def is_bot_name_valid(self, bot_name, old_bot_name=None):
-        bot_names = self.main_ctrl.get_bots_data().keys()
-        # and old_bot_name not in bot_names
-        if bot_name in bot_names and old_bot_name not in bot_names:
-            is_name_valid = False
-        else:
-            is_name_valid = True
-        return is_name_valid
+    def is_worker_name_valid(self, worker_name):
+        worker_names = self.main_ctrl.get_workers_data().keys()
+        # Check that the name is unique
+        if worker_name in worker_names:
+            return False
+        return True
 
     def is_asset_valid(self, asset):
         try:
@@ -81,63 +79,52 @@ class CreateBotController:
             pass
 
     @staticmethod
-    def get_unique_bot_name():
+    def get_unique_worker_name():
         """
-        Returns unique bot name "Bot %n", where %n is the next available index
+        Returns unique worker name "Worker %n", where %n is the next available index
         """
         index = 1
-        bots = MainController.get_bots_data().keys()
-        botname = "Bot {0}".format(index)
-        while botname in bots:
-            botname = "Bot {0}".format(index)
+        workers = MainController.get_workers_data().keys()
+        worker_name = "Worker {0}".format(index)
+        while worker_name in workers:
+            worker_name = "worker {0}".format(index)
             index += 1
 
-        return botname
+        return worker_name
 
     @staticmethod
-    def add_bot_config(botname, bot_data):
-        yaml = YAML()
-        with open('config.yml', 'r') as f:
-            config = yaml.load(f)
-
-        config['bots'][botname] = bot_data
-
-        with open("config.yml", "w") as f:
-            yaml.dump(config, f)
-
-    @staticmethod
-    def get_bot_current_strategy(bot_data):
+    def get_worker_current_strategy(worker_data):
         strategies = {
-            bot_data['strategy']: bot_data['module']
+            worker_data['strategy']: worker_data['module']
         }
         return strategies
 
     @staticmethod
-    def get_assets(bot_data):
-        return bot_data['market'].split('/')
+    def get_assets(worker_data):
+        return worker_data['market'].split('/')
 
-    def get_base_asset(self, bot_data):
-        return self.get_assets(bot_data)[1]
+    def get_base_asset(self, worker_data):
+        return self.get_assets(worker_data)[1]
 
-    def get_quote_asset(self, bot_data):
-        return self.get_assets(bot_data)[0]
-
-    @staticmethod
-    def get_account(bot_data):
-        return bot_data['account']
+    def get_quote_asset(self, worker_data):
+        return self.get_assets(worker_data)[0]
 
     @staticmethod
-    def get_target_amount(bot_data):
-        return bot_data['target']['amount']
+    def get_account(worker_data):
+        return worker_data['account']
 
     @staticmethod
-    def get_target_center_price(bot_data):
-        return bot_data['target']['center_price']
+    def get_target_amount(worker_data):
+        return worker_data['target']['amount']
 
     @staticmethod
-    def get_target_center_price_automatic(bot_data):
-        return bot_data['target']['center_price_automatic']
+    def get_target_center_price(worker_data):
+        return worker_data['target']['center_price']
 
     @staticmethod
-    def get_target_spread(bot_data):
-        return bot_data['target']['spread']
+    def get_target_center_price_dynamic(worker_data):
+        return worker_data['target']['center_price_dynamic']
+
+    @staticmethod
+    def get_target_spread(worker_data):
+        return worker_data['target']['spread']

@@ -28,7 +28,7 @@ class Strategy(BaseStrategy):
         # Counter for blocks
         self.counter = Counter()
 
-        self.target = self.bot.get("target", {})
+        self.target = self.worker.get("target", {})
         self.is_center_price_dynamic = self.target["center_price_dynamic"]
         if self.is_center_price_dynamic:
             self.center_price = None
@@ -40,7 +40,7 @@ class Strategy(BaseStrategy):
         self.calculate_order_prices()
 
         self.initial_balance = self['initial_balance'] or 0
-        self.bot_name = kwargs.get('name')
+        self.worker_name = kwargs.get('name')
         self.view = kwargs.get('view')
 
     def calculate_order_prices(self):
@@ -242,7 +242,7 @@ class Strategy(BaseStrategy):
             profit = round((self.orders_balance() - self.initial_balance) / self.initial_balance, 3)
         else:
             profit = 0
-        idle_add(self.view.set_bot_profit, self.bot_name, float(profit))
+        idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
         self['profit'] = profit
 
     def update_gui_slider(self):
@@ -262,5 +262,5 @@ class Strategy(BaseStrategy):
             percentage = 0
         else:
             percentage = (buy_amount / total) * 100
-        idle_add(self.view.set_bot_slider, self.bot_name, percentage)
+        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
         self['slider'] = percentage
