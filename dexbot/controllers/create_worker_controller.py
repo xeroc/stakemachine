@@ -87,7 +87,7 @@ class CreateWorkerController:
         workers = MainController.get_workers_data().keys()
         worker_name = "Worker {0}".format(index)
         while worker_name in workers:
-            worker_name = "worker {0}".format(index)
+            worker_name = "Worker {0}".format(index)
             index += 1
 
         return worker_name
