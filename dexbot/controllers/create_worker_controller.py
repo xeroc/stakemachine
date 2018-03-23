@@ -56,6 +56,9 @@ class CreateWorkerController:
             return False
 
     def is_account_valid(self, account, private_key):
+        if not private_key or not account:
+            return False
+
         wallet = self.bitshares.wallet
         try:
             pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
