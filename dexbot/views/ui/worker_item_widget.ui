@@ -136,7 +136,7 @@
             <string notr="true">color: #005B78;</string>
            </property>
            <property name="text">
-            <string>SIMPLE STRATEGY</string>
+            <string>RELATIVE ORDERS</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>

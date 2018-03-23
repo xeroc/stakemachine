@@ -10,7 +10,7 @@ from dexbot.queue.idle_queue import idle_add
 
 class Strategy(BaseStrategy):
     """
-    Simple strategy
+    Relative Orders strategy
     This strategy places a buy and a sell wall that change height over time
     """
 
