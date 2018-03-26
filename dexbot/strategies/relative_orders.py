@@ -51,6 +51,7 @@ class Strategy(BaseStrategy):
         self.sell_price = self.center_price * (1 + (self.target["spread"] / 2) / 100)
 
     def error(self, *args, **kwargs):
+        self.cancell_all()
         self.disabled = True
         self.log.info(self.execute())
 
@@ -247,15 +248,9 @@ class Strategy(BaseStrategy):
 
     def update_gui_slider(self):
         buy_order = self['buy_order']
-        if buy_order:
-            buy_amount = buy_order['quote']['amount']
-        else:
-            buy_amount = 0
+        buy_amount = self.get_order_amount(buy_order, 'quote')
         sell_order = self['sell_order']
-        if sell_order:
-            sell_amount = sell_order['base']['amount']
-        else:
-            sell_amount = 0
+        sell_amount = self.get_order_amount(sell_order, 'base')
 
         total = buy_amount + sell_amount
         if not total:  # Prevent division by zero
