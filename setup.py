@@ -54,7 +54,7 @@ setup(
         "click",
         "sqlalchemy",
         "appdirs",
-        "ruamel.yaml"
+        "ruamel.yaml>=0.15.37"
     ],
     include_package_data=True,
 )
