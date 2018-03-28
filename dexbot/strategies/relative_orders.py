@@ -51,7 +51,7 @@ class Strategy(BaseStrategy):
         self.sell_price = self.center_price * (1 + (self.target["spread"] / 2) / 100)
 
     def error(self, *args, **kwargs):
-        self.cancell_all()
+        self.cancel_all()
         self.disabled = True
         self.log.info(self.execute())
 
