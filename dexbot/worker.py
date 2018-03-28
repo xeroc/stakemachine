@@ -4,15 +4,13 @@ import logging
 import os.path
 import threading
 
+import dexbot.errors as errors
 from dexbot.basestrategy import BaseStrategy
 
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
-import dexbot.errors as errors
-
 log = logging.getLogger(__name__)
-
 log_workers = logging.getLogger('dexbot.per_worker')
 # NOTE this is the  special logger for per-worker events
 # it returns LogRecords with extra fields: worker_name, account, market and is_disabled
@@ -21,8 +19,6 @@ log_workers = logging.getLogger('dexbot.per_worker')
 
 
 class WorkerInfrastructure(threading.Thread):
-
-    workers = dict()
 
     def __init__(
         self,
@@ -38,23 +34,21 @@ class WorkerInfrastructure(threading.Thread):
         self.view = view
         self.jobs = set()
         self.notify = None
-        
-    def init_workers(self):
-        """Do the actual initialisation of workers
-        Potentially quite slow (tens of seconds)
-        So called as part of run()
-        """
-        # set the module search path
+        self.config_lock = threading.RLock()
+        self.workers = {}
+
+        self.accounts = set()
+        self.markets = set()
+
+        # Set the module search path
         user_worker_path = os.path.expanduser("~/bots")
         if os.path.exists(user_worker_path):
             sys.path.append(user_worker_path)
-
-        # Load all accounts and markets in use to subscribe to them
-        accounts = set()
-        markets = set()
         
-        # Initialize workers:
-        for worker_name, worker in self.config["workers"].items():
+    def init_workers(self, config):
+        """ Initialize the workers
+        """
+        for worker_name, worker in config["workers"].items():
             if "account" not in worker:
                 log_workers.critical("Worker has no account", extra={
                     'worker_name': worker_name, 'account': 'unknown',
@@ -73,34 +67,37 @@ class WorkerInfrastructure(threading.Thread):
                     'Strategy'
                 )
                 self.workers[worker_name] = strategy_class(
-                    config=self.config,
+                    config=config,
                     name=worker_name,
                     bitshares_instance=self.bitshares,
                     view=self.view
                 )
-                markets.add(worker['market'])
-                accounts.add(worker['account'])
+                self.markets.add(worker['market'])
+                self.accounts.add(worker['account'])
             except BaseException:
                 log_workers.exception("Worker initialisation", extra={
                     'worker_name': worker_name, 'account': worker['account'],
                     'market': 'unknown', 'is_disabled': (lambda: True)
                 })
 
-        if len(markets) == 0:
+    def update_notify(self):
+        if not self.config['workers']:
             log.critical("No workers to launch, exiting")
             raise errors.NoWorkersAvailable()
 
-        # Create notification instance
-        # Technically, this will multiplex markets and accounts and
-        # we need to demultiplex the events after we have received them
-        self.notify = Notify(
-            markets=list(markets),
-            accounts=list(accounts),
-            on_market=self.on_market,
-            on_account=self.on_account,
-            on_block=self.on_block,
-            bitshares_instance=self.bitshares
-        )
+        if self.notify:
+            # Update the notification instance
+            self.notify.reset_subscriptions(list(self.accounts), list(self.markets))
+        else:
+            # Initialize the notification instance
+            self.notify = Notify(
+                markets=list(self.markets),
+                accounts=list(self.accounts),
+                on_market=self.on_market,
+                on_account=self.on_account,
+                on_block=self.on_block,
+                bitshares_instance=self.bitshares
+            )
 
     # Events
     def on_block(self, data):
@@ -110,6 +107,8 @@ class WorkerInfrastructure(threading.Thread):
                     job()
             finally:
                 self.jobs = set()
+
+        self.config_lock.acquire()
         for worker_name, worker in self.config["workers"].items():
             if worker_name not in self.workers or self.workers[worker_name].disabled:
                 continue
@@ -118,10 +117,13 @@ class WorkerInfrastructure(threading.Thread):
             except Exception as e:
                 self.workers[worker_name].error_ontick(e)
                 self.workers[worker_name].log.exception("in .tick()")
+        self.config_lock.release()
 
     def on_market(self, data):
         if data.get("deleted", False):  # No info available on deleted orders
             return
+
+        self.config_lock.acquire()
         for worker_name, worker in self.config["workers"].items():
             if self.workers[worker_name].disabled:
                 self.workers[worker_name].log.debug('Worker "{}" is disabled'.format(worker_name))
@@ -132,8 +134,10 @@ class WorkerInfrastructure(threading.Thread):
                 except Exception as e:
                     self.workers[worker_name].error_onMarketUpdate(e)
                     self.workers[worker_name].log.exception(".onMarketUpdate()")
+        self.config_lock.release()
 
     def on_account(self, account_update):
+        self.config_lock.acquire()
         account = account_update.account
         for worker_name, worker in self.config["workers"].items():
             if self.workers[worker_name].disabled:
@@ -145,19 +149,56 @@ class WorkerInfrastructure(threading.Thread):
                 except Exception as e:
                     self.workers[worker_name].error_onAccount(e)
                     self.workers[worker_name].log.exception(".onAccountUpdate()")
+        self.config_lock.release()
+
+    def add_worker(self, worker_name, config):
+        with self.config_lock:
+            self.config['workers'][worker_name] = config['workers'][worker_name]
+            self.init_workers(config)
+        self.update_notify()
 
     def run(self):
-        self.init_workers()
+        self.init_workers(self.config)
+        self.update_notify()
         self.notify.listen()
 
-    def stop(self):
-        for worker in self.workers:
-            self.workers[worker].cancel_all()
-        self.notify.websocket.close()
+    def stop(self, worker_name=None):
+        if worker_name and len(self.workers) > 1:
+            # Kill only the specified worker
+            self.remove_market(worker_name)
+            with self.config_lock:
+                account = self.config['workers'][worker_name]['account']
+                self.config['workers'].pop(worker_name)
 
-    def remove_worker(self):
-        for worker in self.workers:
-            self.workers[worker].purge()
+            self.accounts.remove(account)
+            self.workers[worker_name].cancel_all()
+            self.workers.pop(worker_name, None)
+            self.update_notify()
+        else:
+            # Kill all of the workers
+            for worker in self.workers:
+                self.workers[worker].cancel_all()
+            self.workers = None
+            self.notify.websocket.close()
+
+    def remove_worker(self, worker_name=None):
+        if worker_name:
+            self.workers[worker_name].purge()
+        else:
+            for worker in self.workers:
+                self.workers[worker].purge()
+
+    def remove_market(self, worker_name):
+        """ Remove the market only if the worker is the only one using it
+        """
+        with self.config_lock:
+            market = self.config['workers'][worker_name]['market']
+            for name, worker in self.config['workers'].items():
+                if market == worker['market']:
+                    break  # Found the same market, do nothing
+            else:
+                # No markets found, safe to remove
+                self.markets.remove(market)
 
     @staticmethod
     def remove_offline_worker(config, worker_name):
