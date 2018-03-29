@@ -6,35 +6,38 @@ from bitshares.instance import set_shared_bitshares_instance
 
 class MainController:
 
-    workers = dict()
-
     def __init__(self, bitshares_instance):
         self.bitshares_instance = bitshares_instance
         set_shared_bitshares_instance(bitshares_instance)
-        self.worker_template = WorkerInfrastructure
+        self.worker_manager = None
 
     def create_worker(self, worker_name, config, view):
         # Todo: Add some threading here so that the GUI doesn't freeze
-        worker = self.worker_template(config, self.bitshares_instance, view)
-        worker.daemon = True
-        worker.start()
-        self.workers[worker_name] = worker
+        if self.worker_manager and self.worker_manager.is_alive():
+            self.worker_manager.add_worker(worker_name, config)
+        else:
+            self.worker_manager = WorkerInfrastructure(config, self.bitshares_instance, view)
+            self.worker_manager.daemon = True
+            self.worker_manager.start()
 
     def stop_worker(self, worker_name):
-        self.workers[worker_name].stop()
-        self.workers.pop(worker_name, None)
+        self.worker_manager.stop(worker_name)
 
     def remove_worker(self, worker_name):
         # Todo: Add some threading here so that the GUI doesn't freeze
-        if worker_name in self.workers:
-            # Worker currently running
-            self.workers[worker_name].remove_worker()
-            self.workers[worker_name].stop()
-            self.workers.pop(worker_name, None)
+        if self.worker_manager and self.worker_manager.is_alive():
+            # Worker manager currently running
+            if worker_name in self.worker_manager.workers:
+                self.worker_manager.remove_worker(worker_name)
+                self.worker_manager.stop(worker_name)
+            else:
+                # Worker not running
+                config = self.get_worker_config(worker_name)
+                WorkerInfrastructure.remove_offline_worker(config, worker_name)
         else:
-            # Worker not running
+            # Worker manager not running
             config = self.get_worker_config(worker_name)
-            self.worker_template.remove_offline_worker(config, worker_name)
+            WorkerInfrastructure.remove_offline_worker(config, worker_name)
 
     @staticmethod
     def load_config():
@@ -80,6 +83,24 @@ class MainController:
             config = yaml.load(f)
 
         config['workers'][worker_name] = worker_data
+
+        with open("config.yml", "w") as f:
+            yaml.dump(config, f)
+
+    @staticmethod
+    def replace_worker_config(worker_name, new_worker_name, worker_data):
+        yaml = YAML()
+        with open('config.yml', 'r') as f:
+            config = yaml.load(f)
+
+        workers = config['workers']
+        # Rotate the dict keys to keep order
+        for _ in range(len(workers)):
+            key, value = workers.popitem(False)
+            if worker_name == key:
+                workers[new_worker_name] = worker_data
+            else:
+                workers[key] = value
 
         with open("config.yml", "w") as f:
             yaml.dump(config, f)

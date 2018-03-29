@@ -15,7 +15,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.main_ctrl = main_ctrl
         self.running = False
         self.worker_name = worker_name
-        self.config = config
+        self.worker_config = config
         self.view = view
 
         self.setupUi(self)
@@ -38,24 +38,32 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         profit = db_worker.execute(db_worker.get_item, worker_name, 'profit')
         if profit:
             self.set_worker_profit(profit)
+        else:
+            self.set_worker_profit(0)
 
         percentage = db_worker.execute(db_worker.get_item, worker_name, 'slider')
         if percentage:
             self.set_worker_slider(percentage)
+        else:
+            self.set_worker_slider(50)
 
     def start_worker(self):
+        self._start_worker()
+        self.main_ctrl.create_worker(self.worker_name, self.worker_config, self.view)
+
+    def _start_worker(self):
         self.running = True
         self.pause_button.show()
         self.play_button.hide()
 
-        self.main_ctrl.create_worker(self.worker_name, self.config, self.view)
-
     def pause_worker(self):
+        self._pause_worker()
+        self.main_ctrl.stop_worker(self.worker_name)
+
+    def _pause_worker(self):
         self.running = False
         self.pause_button.hide()
         self.play_button.show()
-
-        self.main_ctrl.stop_worker(self.worker_name)
 
     def set_worker_name(self, value):
         self.worker_name_label.setText(value)
@@ -87,26 +95,24 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.main_ctrl.remove_worker(self.worker_name)
         self.deleteLater()
         self.view.remove_worker_widget(self.worker_name)
-
-        # Todo: Remove the line below this after multi-worker support is added
         self.view.ui.add_worker_button.setEnabled(True)
 
-    def reload_widget(self, worker_name):
+    def reload_widget(self, worker_name, new_worker_name):
         """ Cancels orders of the widget's worker and then reloads the data of the widget
         """
-        self.remove_widget()
-        self.view.add_worker_widget(worker_name)
-        self.config = self.main_ctrl.get_worker_config(worker_name)
+        self.main_ctrl.remove_worker(worker_name)
+        self.worker_config = self.main_ctrl.get_worker_config(new_worker_name)
+        self.setup_ui_data(self.worker_config)
+        self._pause_worker()
 
     def handle_edit_worker(self):
         controller = CreateWorkerController(self.main_ctrl)
-        edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.config)
+        edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.worker_config)
         return_value = edit_worker_dialog.exec_()
 
         # User clicked save
         if return_value:
-            self.main_ctrl.remove_worker_config(self.worker_name)
             new_worker_name = edit_worker_dialog.worker_name
+            self.main_ctrl.replace_worker_config(self.worker_name, new_worker_name, edit_worker_dialog.worker_data)
+            self.reload_widget(self.worker_name, new_worker_name)
             self.worker_name = new_worker_name
-            self.main_ctrl.add_worker_config(self.worker_name, edit_worker_dialog.worker_data)
-            self.reload_widget(self.worker_name)

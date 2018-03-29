@@ -5,7 +5,6 @@ from bitshares.instance import shared_bitshares_instance
 from bitshares.asset import Asset
 from bitshares.account import Account
 from bitsharesbase.account import PrivateKey
-from ruamel.yaml import YAML
 
 
 class CreateWorkerController:
@@ -56,6 +55,9 @@ class CreateWorkerController:
             return False
 
     def is_account_valid(self, account, private_key):
+        if not private_key or not account:
+            return False
+
         wallet = self.bitshares.wallet
         try:
             pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
@@ -69,6 +71,14 @@ class CreateWorkerController:
             return True
         else:
             return False
+
+    @staticmethod
+    def is_account_in_use(account):
+        workers = MainController.get_workers_data()
+        for worker_name, worker in workers.items():
+            if worker['account'] == account:
+                return True
+        return False
 
     def add_private_key(self, private_key):
         wallet = self.bitshares.wallet
@@ -87,7 +97,7 @@ class CreateWorkerController:
         workers = MainController.get_workers_data().keys()
         worker_name = "Worker {0}".format(index)
         while worker_name in workers:
-            worker_name = "worker {0}".format(index)
+            worker_name = "Worker {0}".format(index)
             index += 1
 
         return worker_name

@@ -5,7 +5,7 @@ from setuptools.command.install import install
 
 from pyqt_distutils.build_ui import build_ui
 
-VERSION = '0.1.2'
+VERSION = '0.1.5'
 
 
 class InstallCommand(install):
@@ -54,7 +54,7 @@ setup(
         "click",
         "sqlalchemy",
         "appdirs",
-        "ruamel.yaml"
+        "ruamel.yaml>=0.15.37"
     ],
     include_package_data=True,
 )
