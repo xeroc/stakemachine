@@ -15,7 +15,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.main_ctrl = main_ctrl
         self.running = False
         self.worker_name = worker_name
-        self.config = config
+        self.worker_config = config
         self.view = view
 
         self.setupUi(self)
@@ -49,7 +49,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def start_worker(self):
         self._start_worker()
-        self.main_ctrl.create_worker(self.worker_name, self.config, self.view)
+        self.main_ctrl.create_worker(self.worker_name, self.worker_config, self.view)
 
     def _start_worker(self):
         self.running = True
@@ -101,13 +101,13 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         """ Cancels orders of the widget's worker and then reloads the data of the widget
         """
         self.main_ctrl.remove_worker(worker_name)
-        self.config = self.main_ctrl.get_worker_config(new_worker_name)
-        self.setup_ui_data(self.config)
+        self.worker_config = self.main_ctrl.get_worker_config(new_worker_name)
+        self.setup_ui_data(self.worker_config)
         self._pause_worker()
 
     def handle_edit_worker(self):
         controller = CreateWorkerController(self.main_ctrl)
-        edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.config)
+        edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.worker_config)
         return_value = edit_worker_dialog.exec_()
 
         # User clicked save

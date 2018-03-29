@@ -3,6 +3,7 @@ import sys
 import logging
 import os.path
 import threading
+import copy
 
 import dexbot.errors as errors
 from dexbot.basestrategy import BaseStrategy
@@ -30,7 +31,7 @@ class WorkerInfrastructure(threading.Thread):
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
-        self.config = config
+        self.config = copy.deepcopy(config)
         self.view = view
         self.jobs = set()
         self.notify = None

@@ -9,8 +9,6 @@ from PyQt5 import QtWidgets
 
 class MainView(QtWidgets.QMainWindow):
 
-    worker_widgets = dict()
-
     def __init__(self, main_ctrl):
         self.main_ctrl = main_ctrl
         super(MainView, self).__init__()
@@ -19,6 +17,7 @@ class MainView(QtWidgets.QMainWindow):
         self.worker_container = self.ui.verticalLayout
         self.max_workers = 10
         self.num_of_workers = 0
+        self.worker_widgets = {}
 
         self.ui.add_worker_button.clicked.connect(self.handle_add_worker)
 
