@@ -32,6 +32,7 @@ class App(Qt.QApplication):
         else:
             sys.exit()
 
+
 if __name__ == '__main__':
     app = App(sys.argv)
     sys.exit(app.exec_())

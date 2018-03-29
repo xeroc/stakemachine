@@ -9,14 +9,15 @@ from PyQt5 import QtWidgets
 
 class MainView(QtWidgets.QMainWindow):
 
-    worker_widgets = dict()
-
     def __init__(self, main_ctrl):
         self.main_ctrl = main_ctrl
         super(MainView, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.worker_container = self.ui.verticalLayout
+        self.max_workers = 10
+        self.num_of_workers = 0
+        self.worker_widgets = {}
 
         self.ui.add_worker_button.clicked.connect(self.handle_add_worker)
 
@@ -25,10 +26,11 @@ class MainView(QtWidgets.QMainWindow):
         for worker_name in workers:
             self.add_worker_widget(worker_name)
 
-            # Artificially limit the number of workers to 1 until it's officially supported
-            # Todo: Remove the 2 lines below this after multi-worker support is added
-            self.ui.add_worker_button.setEnabled(False)
-            break
+            # Limit the max amount of workers so that the performance isn't greatly affected
+            self.num_of_workers += 1
+            if self.num_of_workers >= self.max_workers:
+                self.ui.add_worker_button.setEnabled(False)
+                break
 
         # Dispatcher polls for events from the workers that are used to change the ui
         self.dispatcher = ThreadDispatcher(self)
@@ -41,14 +43,16 @@ class MainView(QtWidgets.QMainWindow):
         self.worker_container.addWidget(widget)
         self.worker_widgets[worker_name] = widget
 
-        # Todo: Remove the line below this after multi-worker support is added
-        self.ui.add_worker_button.setEnabled(False)
+        self.num_of_workers += 1
+        if self.num_of_workers >= self.max_workers:
+            self.ui.add_worker_button.setEnabled(False)
 
     def remove_worker_widget(self, worker_name):
         self.worker_widgets.pop(worker_name, None)
 
-        # Todo: Remove the line below this after multi-worker support is added
-        self.ui.add_worker_button.setEnabled(True)
+        self.num_of_workers -= 1
+        if self.num_of_workers < self.max_workers:
+            self.ui.add_worker_button.setEnabled(True)
 
     def handle_add_worker(self):
         controller = CreateWorkerController(self.main_ctrl)
