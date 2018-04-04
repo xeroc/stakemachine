@@ -120,9 +120,9 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # a private logger that adds worker identify data to the LogRecord
         self.log = logging.LoggerAdapter(logging.getLogger('dexbot.per_worker'), {'worker_name': name,
-                                                                               'account': self.worker['account'],
-                                                                               'market': self.worker['market'],
-                                                                               'is_disabled': lambda: self.disabled})
+                                                                                  'account': self.worker['account'],
+                                                                                  'market': self.worker['market'],
+                                                                                  'is_disabled': lambda: self.disabled})
 
     @property
     def calculate_center_price(self):
