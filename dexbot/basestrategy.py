@@ -212,18 +212,6 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         return self._account.balance(asset)
 
-    def get_converted_asset_amount(self, asset):
-        """
-        Returns asset amount converted to base asset amount
-        """
-        base_asset = self.market['base']
-        quote_asset = Asset(asset['symbol'], bitshares_instance=self.bitshares)
-        if base_asset['symbol'] == quote_asset['symbol']:
-            return asset['amount']
-        else:
-            market = Market(base=base_asset, quote=quote_asset, bitshares_instance=self.bitshares)
-            return market.ticker()['latest']['price'] * asset['amount']
-
     @property
     def test_mode(self):
         return self.config['node'] == "wss://node.testnet.bitshares.eu"
