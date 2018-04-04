@@ -5,7 +5,7 @@ from setuptools.command.install import install
 
 from pyqt_distutils.build_ui import build_ui
 
-VERSION = '0.1.5'
+VERSION = '0.1.6'
 
 
 class InstallCommand(install):
