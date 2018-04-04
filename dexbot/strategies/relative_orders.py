@@ -2,7 +2,6 @@ from dexbot.basestrategy import BaseStrategy
 from dexbot.queue.idle_queue import idle_add
 
 from bitshares.amount import Amount
-from bitshares.price import Price
 
 
 class Strategy(BaseStrategy):
