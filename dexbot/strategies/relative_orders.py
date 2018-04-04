@@ -133,7 +133,7 @@ class Strategy(BaseStrategy):
         self['profit'] = profit
 
     def update_gui_slider(self):
-        total_balance = self.get_total_balance(self['order_ids'])
+        total_balance = self.total_balance(self['order_ids'])
         total = total_balance['quote'] + total_balance['base']
 
         if not total:  # Prevent division by zero

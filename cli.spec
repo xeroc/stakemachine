@@ -1,6 +1,7 @@
 # -*- mode: python -*-
 
-import os, sys
+import os
+import sys
 block_cipher = None
 
 
@@ -8,8 +9,7 @@ hiddenimports_strategies = [
     'dexbot',
     'dexbot.strategies',
     'dexbot.strategies.echo',
-    'dexbot.strategies.follow_orders',
-    'dexbot.strategies.simple',
+    'dexbot.strategies.relative_orders',
     'dexbot.strategies.storagedemo',
     'dexbot.strategies.walls',
 ]

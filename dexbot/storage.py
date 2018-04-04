@@ -1,19 +1,19 @@
-import sqlalchemy
 import os
 import json
 import threading
 import queue
 import uuid
-import time
-from sqlalchemy import create_engine, Table, Column, String, Integer, MetaData
+from appdirs import user_data_dir
+
+from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from appdirs import user_data_dir
+
 Base = declarative_base()
 
 # For dexbot.sqlite file
 appname = "dexbot"
-appauthor = "ChainSquad GmbH"
+appauthor = "Codaone Oy"
 storageDatabase = "dexbot.sqlite"
 
 

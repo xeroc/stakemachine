@@ -1,3 +1,5 @@
+from dexbot import __version__
+
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
@@ -18,6 +20,7 @@ class MainView(QtWidgets.QMainWindow):
         self.max_workers = 10
         self.num_of_workers = 0
         self.worker_widgets = {}
+        self.ui.status_bar.showMessage("ver {}".format(__version__))
 
         self.ui.add_worker_button.clicked.connect(self.handle_add_worker)
 
