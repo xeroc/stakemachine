@@ -34,19 +34,16 @@ or
     $ pip install -r --user requirements.txt
     $ python setup.py install --user
 
+## Running the GUI
+
+On Linux: `$ python ./app.py`
+
+## Running the CLI
+ Check documentation here: [https://dexbot-ih.readthedocs.io/en/latest/setup.html]
+
 ## Configuration
 
-Configuration happens in `config.yml`
-
-## Requirements
-
-Add your account's private key to the pybitshares wallet using `uptick`
-
-    uptick addkey
-
-## Execution
-
-    dexbot run
+Configuration is done in the GUI or CLI interactively, and is stored in `config.yml`. You can change the default API node here if you want to, but otherwise there should be no need to touch it.
 
 # IMPORTANT NOTE
 
