@@ -1,6 +1,6 @@
 import logging
 from events import Events
-from bitshares.asset import Asset
+from bitshares.amount import Amount
 from bitshares.market import Market
 from bitshares.account import Account
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
@@ -223,7 +223,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         return self._account.balances
 
     def _callbackPlaceFillOrders(self, d):
-        """ This method distringuishes notifications caused by Matched orders
+        """ This method distinguishes notifications caused by Matched orders
             from those caused by placed orders
         """
         if isinstance(d, FilledOrder):
@@ -263,8 +263,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             )
 
     def purge(self):
-        """
-        Clear all the worker data from the database and cancel all orders
+        """ Clear all the worker data from the database and cancel all orders
         """
         self.cancel_all()
         self.clear()
@@ -273,6 +272,62 @@ class BaseStrategy(Storage, StateMachine, Events):
     def get_order_amount(order, asset_type):
         try:
             order_amount = order[asset_type]['amount']
-        except KeyError:
+        except (KeyError, TypeError):
             order_amount = 0
         return order_amount
+
+    def total_balance(self, order_ids=None, return_asset=False):
+        """ Returns the combined balance of the given order ids and the account balance
+            The amounts are returned in quote and base assets of the market
+
+            :param order_ids: list of order ids to be added to the balance
+            :param return_asset: true if returned values should be Amount instances
+            :return: dict with keys quote and base
+        """
+        quote = 0
+        base = 0
+        quote_asset = self.market['quote']['id']
+        base_asset = self.market['base']['id']
+
+        for balance in self.balances:
+            if balance.asset['id'] == quote_asset:
+                quote += balance['amount']
+            elif balance.asset['id'] == base_asset:
+                base += balance['amount']
+
+        orders_balance = self.orders_balance(order_ids)
+        quote += orders_balance['quote']
+        base += orders_balance['base']
+
+        if return_asset:
+            quote = Amount(quote, quote_asset)
+            base = Amount(base, base_asset)
+
+        return {'quote': quote, 'base': base}
+
+    def orders_balance(self, order_ids, return_asset=False):
+        if not order_ids:
+            order_ids = []
+        elif isinstance(order_ids, str):
+            order_ids = [order_ids]
+
+        quote = 0
+        base = 0
+        quote_asset = self.market['quote']['id']
+        base_asset = self.market['base']['id']
+
+        for order_id in order_ids:
+            order = self.get_updated_order(order_id)
+            if not order:
+                continue
+            asset_id = order['base']['asset']['id']
+            if asset_id == quote_asset:
+                quote += order['base']['amount']
+            elif asset_id == base_asset:
+                base += order['base']['amount']
+
+        if return_asset:
+            quote = Amount(quote, quote_asset)
+            base = Amount(base, base_asset)
+
+        return {'quote': quote, 'base': base}
