@@ -332,7 +332,7 @@
                  <string notr="true">color: #005B78;</string>
                 </property>
                 <property name="text">
-                 <string>Buy</string>
+                 <string>Base</string>
                 </property>
                </widget>
               </item>
@@ -361,7 +361,7 @@
                  <string notr="true">color: #005B78;</string>
                 </property>
                 <property name="text">
-                 <string>Sell</string>
+                 <string>Quote</string>
                 </property>
                </widget>
               </item>

@@ -75,6 +75,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.currency_label.setText(value)
 
     def set_worker_profit(self, value):
+        value = float(value)
         if value >= 0:
             value = '+' + str(value)
 
