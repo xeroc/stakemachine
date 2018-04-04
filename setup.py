@@ -2,10 +2,15 @@
 
 from setuptools import setup
 from setuptools.command.install import install
+from distutils.util import convert_path
 
 from pyqt_distutils.build_ui import build_ui
 
-VERSION = '0.1.6'
+main_ns = {}
+ver_path = convert_path('dexbot/__init__.py')
+with open(ver_path) as ver_file:
+    exec(ver_file.read(), main_ns)
+    VERSION = main_ns['__version__']
 
 
 class InstallCommand(install):
