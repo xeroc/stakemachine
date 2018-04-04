@@ -157,12 +157,17 @@ class BaseStrategy(Storage, StateMachine, Events):
         return False
 
     def get_updated_order(self, order):
+        """ Tries to get the updated order from the API
+            returns None if the order doesn't exist
+        """
         if not order:
-            return False
+            return None
+        if isinstance(order, str):
+            order = {'id': order}
         for updated_order in self.updated_open_orders:
             if updated_order['id'] == order['id']:
                 return updated_order
-        return False
+        return None
 
     @property
     def updated_open_orders(self):
