@@ -10,43 +10,14 @@ master:
 
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
-## Installation
+## Installing and running the software
 
-Python 3.4+ & pip are required. With make:
+See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki/Installing-and-Running)
 
-    $ git clone https://github.com/codaone/dexbot
-    $ cd dexbot    
-    $ make install    
+## Contributing
 
-or
+Install the software, use it and report any problems by creating a ticket.
 
-    $ make install-user
-
-Without make:
-
-    $ git clone https://github.com/codaone/dexbot
-    $ cd dexbot
-    $ pip install -r requirements.txt
-    $ python setup.py install
-
-or
-
-    $ pip install -r --user requirements.txt
-    $ python setup.py install --user
-
-## Configuration
-
-Configuration happens in `config.yml`
-
-## Requirements
-
-Add your account's private key to the pybitshares wallet using `uptick`
-
-    uptick addkey
-
-## Execution
-
-    dexbot run
 
 # IMPORTANT NOTE
 
