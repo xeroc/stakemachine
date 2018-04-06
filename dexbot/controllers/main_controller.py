@@ -1,3 +1,5 @@
+import logging
+
 from dexbot.worker import WorkerInfrastructure
 
 from ruamel.yaml import YAML
@@ -10,6 +12,15 @@ class MainController:
         self.bitshares_instance = bitshares_instance
         set_shared_bitshares_instance(bitshares_instance)
         self.worker_manager = None
+
+        # Configure logging
+        formatter = logging.Formatter(
+            '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+        logger = logging.getLogger("dexbot.per_worker")
+        fh = logging.FileHandler('dexbot.log')
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+        logger.setLevel(logging.INFO)
 
     def create_worker(self, worker_name, config, view):
         # Todo: Add some threading here so that the GUI doesn't freeze

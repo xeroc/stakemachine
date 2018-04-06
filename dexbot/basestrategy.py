@@ -114,15 +114,18 @@ class BaseStrategy(Storage, StateMachine, Events):
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
 
-        # disabled flag - this flag can be flipped to True by a worker and
+        # Disabled flag - this flag can be flipped to True by a worker and
         # will be reset to False after reset only
         self.disabled = False
 
-        # a private logger that adds worker identify data to the LogRecord
-        self.log = logging.LoggerAdapter(logging.getLogger('dexbot.per_worker'), {'worker_name': name,
-                                                                                  'account': self.worker['account'],
-                                                                                  'market': self.worker['market'],
-                                                                                  'is_disabled': lambda: self.disabled})
+        # A private logger that adds worker identify data to the LogRecord
+        self.log = logging.LoggerAdapter(
+            logging.getLogger('dexbot.per_worker'),
+            {'worker_name': name,
+             'account': self.worker['account'],
+             'market': self.worker['market'],
+             'is_disabled': lambda: self.disabled}
+        )
 
     @property
     def calculate_center_price(self):
@@ -257,6 +260,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         """ Cancel all orders of the worker's account
         """
         if self.orders:
+            self.log.info('Canceling all orders')
             return self.bitshares.cancel(
                 [o["id"] for o in self.orders],
                 account=self.account
