@@ -31,6 +31,8 @@ a = Analysis(['app.py'],
 pyz = PYZ(a.pure, a.zipped_data,
           cipher=block_cipher)
 
+a.binaries = [b for b in a.binaries if "libdrm.so.2" not in b[0]]
+
 exe = EXE(pyz,
           a.scripts,
           a.binaries,
