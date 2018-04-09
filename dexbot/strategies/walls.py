@@ -1,14 +1,16 @@
 from math import fabs
-from pprint import pprint
 from collections import Counter
 from bitshares.amount import Amount
-from stakemachine.basestrategy import BaseStrategy
-from stakemachine.errors import InsufficientFundsError
-import logging
-log = logging.getLogger(__name__)
+from dexbot.basestrategy import BaseStrategy
+from dexbot.errors import InsufficientFundsError
 
 
-class Walls(BaseStrategy):
+class Strategy(BaseStrategy):
+    """
+    Walls strategy
+    This strategy simply places a buy and a sell wall
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -25,23 +27,23 @@ class Walls(BaseStrategy):
         self.counter = Counter()
 
         # Tests for actions
-        self.test_blocks = self.bot.get("test", {}).get("blocks", 0)
+        self.test_blocks = self.worker.get("test", {}).get("blocks", 0)
 
     def error(self, *args, **kwargs):
         self.disabled = True
         self.cancelall()
-        pprint(self.execute())
+        self.log.info(self.execute())
 
     def updateorders(self):
         """ Update the orders
         """
-        log.info("Replacing orders")
+        self.log.info("Replacing orders")
 
         # Canceling orders
         self.cancelall()
 
         # Target
-        target = self.bot.get("target", {})
+        target = self.worker.get("target", {})
         price = self.getprice()
 
         # prices
@@ -75,13 +77,13 @@ class Walls(BaseStrategy):
                 account=self.account
             )
 
-        pprint(self.execute())
+        self.log.info(self.execute())
 
     def getprice(self):
         """ Here we obtain the price for the quote and make sure it has
             a feed price
         """
-        target = self.bot.get("target", {})
+        target = self.worker.get("target", {})
         if target.get("reference") == "feed":
             assert self.market == self.market.core_quote_market(), "Wrong market for 'feed' reference!"
             ticker = self.market.ticker()
@@ -108,7 +110,7 @@ class Walls(BaseStrategy):
                 not self["insufficient_buy"] and
                 not self["insufficient_sell"]
             ):
-                log.info("No 2 orders available. Updating orders!")
+                self.log.info("No 2 orders available. Updating orders!")
                 self.updateorders()
         elif len(orders) == 0:
             self.updateorders()
@@ -116,7 +118,7 @@ class Walls(BaseStrategy):
         # Test if price feed has moved more than the threshold
         if (
             self["feed_price"] and
-            fabs(1 - float(self.getprice()) / self["feed_price"]) > self.bot["threshold"] / 100.0
+            fabs(1 - float(self.getprice()) / self["feed_price"]) > self.worker["threshold"] / 100.0
         ):
-            log.info("Price feed moved by more than the threshold. Updating orders!")
+            self.log.info("Price feed moved by more than the threshold. Updating orders!")
             self.updateorders()

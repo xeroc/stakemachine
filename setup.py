@@ -1,24 +1,41 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+from setuptools import setup
+from setuptools.command.install import install
+from distutils.util import convert_path
 
-VERSION = '0.0.6'
+from pyqt_distutils.build_ui import build_ui
+
+main_ns = {}
+ver_path = convert_path('dexbot/__init__.py')
+with open(ver_path) as ver_file:
+    exec(ver_file.read(), main_ns)
+    VERSION = main_ns['__version__']
+
+
+class InstallCommand(install):
+    """Customized setuptools install command - converts .ui and .qrc files to .py files
+    """
+    def run(self):
+        # Workaround for https://github.com/pypa/setuptools/issues/456
+        self.do_egg_install()
+        self.run_command('build_ui')
+
 
 setup(
-    name='stakemachine',
+    name='dexbot',
     version=VERSION,
-    description='Trading bot infrastructure for the DEX (BitShares)',
+    description='Trading bot for the DEX (BitShares)',
     long_description=open('README.md').read(),
-    download_url='https://github.com/xeroc/stakemachine/tarball/' + VERSION,
-    author='Fabian Schuh',
-    author_email='Fabian@chainsquad.com',
-    maintainer='Fabian Schuh',
-    maintainer_email='Fabian@chainsquad.com',
-    url='http://www.github.com/xeroc/stakemachine',
-    keywords=['stake', 'bot', 'trading', 'api', 'blog', 'blockchain'],
+    author='Codaone Oy',
+    author_email='support@codaone.com',
+    maintainer='Codaone Oy',
+    maintainer_email='support@codaone.com',
+    url='http://www.github.com/codaone/dexbot',
+    keywords=['DEX', 'bot', 'trading', 'api', 'blockchain'],
     packages=[
-        "stakemachine",
-        "stakemachine.strategies",
+        "dexbot",
+        "dexbot.strategies",
     ],
     classifiers=[
         'License :: OSI Approved :: MIT License',
@@ -27,22 +44,22 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
     ],
+    cmdclass={
+        'build_ui': build_ui,
+        'install': InstallCommand,
+    },
     entry_points={
         'console_scripts': [
-            'stakemachine = stakemachine.cli:main',
+            'dexbot = dexbot.cli:main',
         ],
     },
     install_requires=[
-        "bitshares>=0.1.7",
+        "bitshares",
         "uptick>=0.1.4",
-        "prettytable",
         "click",
-        "click-datetime",
-        "colorama",
-        "tqdm",
-        "pyyaml",
         "sqlalchemy",
-        "appdirs"
+        "appdirs",
+        "ruamel.yaml>=0.15.37"
     ],
     include_package_data=True,
 )

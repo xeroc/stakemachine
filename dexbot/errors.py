@@ -6,3 +6,7 @@ def InsufficientFundsError(amount):
     log.error(
         "[InsufficientFunds] Need {}".format(str(amount))
     )
+
+
+class NoWorkersAvailable(Exception):
+    pass

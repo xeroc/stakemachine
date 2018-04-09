@@ -1,0 +1,64 @@
+version: 0.1.{build}
+
+image: Visual Studio 2015
+
+environment:
+  matrix:
+    # Python 3.5.3 - 64-bit
+    - PYTHON: "C:\\Python35-x64"
+
+#---------------------------------#
+#        build                    #
+#---------------------------------#
+
+build: off
+
+configuration: Release
+
+install:
+  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;C:\MinGW\bin
+  - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
+  - copy c:\Python35-x64\python.exe c:\Python35-x64\python3.exe
+  - python --version
+  - make install
+
+after_test:
+  - make package
+  - '7z a DEXBot-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-cli.exe'
+
+# @TODO: Run tests..
+test_script:
+  - "echo tests..."
+
+artifacts:
+  - path: DEXBot-win64.zip
+    name: DEXBot-win64.zip
+
+#---------------------------------#
+#        deployment               #
+#---------------------------------#
+
+shallow_clone: false
+
+clone_depth: 1
+
+deploy:
+  - provider: GitHub
+    artifact: DEXBot-win64.zip
+    draft: false
+    prerelease: false
+    force_update: true
+    auth_token:
+      secure: 9qvwlVUHFBV4GwMz1Gu2HSnqU8Ex2nv5dsY4mVNCurrb+6ULIoHPgbvJPWTo3qV6
+    on:
+      appveyor_repo_tag: true     # deploy on tag push only
+
+#---------------------------------#
+#         notifications           #
+#---------------------------------#
+
+notifications:
+  - provider: Slack
+    auth_token:
+      secure: G9OMj9l2s3+lX8cRiNXXhuQJpnnjcBc0cqP8gzkdKVWqGA8vBTOIPGxD/536VKpeBH/5dJFQWT+vmnGS+XciaCg4hh5s6hDpnvePq2+uEYE=
+    channel: '#ci'

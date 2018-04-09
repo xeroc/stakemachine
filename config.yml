@@ -1,13 +1,3 @@
-node: "wss://node.testnet.bitshares.eu"
+node: wss://bitshares.openledger.info/ws
 
-bots:
- Echo:
-  module: "stakemachine.strategies.echo"
-  bot: "Echo"
-  market: GOLD:TEST
-  account: xeroc
- Demo:
-  module: "stakemachine.strategies.storagedemo"
-  bot: "StorageDemo"
-  market: GOLD:TEST
-  account: xeroc
+workers: {}

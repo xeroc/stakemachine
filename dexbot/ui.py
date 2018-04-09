@@ -1,46 +1,72 @@
 import os
-import click
 import logging
-import yaml
-from datetime import datetime
-from bitshares.price import Price
-from prettytable import PrettyTable
 from functools import update_wrapper
+
+import click
+from ruamel import yaml
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
+
 log = logging.getLogger(__name__)
 
 
 def verbose(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        global log
         verbosity = [
             "critical", "error", "warn", "info", "debug"
         ][int(min(ctx.obj.get("verbose", 0), 4))]
-        log.setLevel(getattr(logging, verbosity.upper()))
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        if ctx.obj.get("systemd", False):
+            # Don't print the timestamps: systemd will log it for us
+            formatter1 = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter(
+                '%(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+        elif verbosity == "debug":
+            # When debugging: log where the log call came from
+            formatter1 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter(
+                '%(asctime)s (%(module)s:%(lineno)d) - %(worker_name)s - %(levelname)s - %(message)s')
+        else:
+            formatter1 = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter(
+                '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+
+        # Use special format for special workers logger
+        logger = logging.getLogger("dexbot.per_worker")
         ch = logging.StreamHandler()
         ch.setLevel(getattr(logging, verbosity.upper()))
-        ch.setFormatter(formatter)
-        log.addHandler(ch)
+        ch.setFormatter(formatter2)
+        logger.addHandler(ch)
 
+        # Logging to a file
+        fh = logging.FileHandler('dexbot.log')
+        fh.setFormatter(formatter2)
+        logger.addHandler(fh)
+
+        logger.propagate = False  # Don't double up with root logger
+        # Set the root logger with basic format
+        ch = logging.StreamHandler()
+        ch.setLevel(getattr(logging, verbosity.upper()))
+        ch.setFormatter(formatter1)
+        logging.getLogger("dexbot").addHandler(ch)
+        logging.getLogger("").handlers = []
+        
         # GrapheneAPI logging
         if ctx.obj["verbose"] > 4:
             verbosity = [
                 "critical", "error", "warn", "info", "debug"
             ][int(min(ctx.obj.get("verbose", 4) - 4, 4))]
-            log = logging.getLogger("grapheneapi")
-            log.setLevel(getattr(logging, verbosity.upper()))
-            log.addHandler(ch)
+            logger = logging.getLogger("grapheneapi")
+            logger.setLevel(getattr(logging, verbosity.upper()))
+            logger.addHandler(ch)
 
         if ctx.obj["verbose"] > 8:
             verbosity = [
                 "critical", "error", "warn", "info", "debug"
             ][int(min(ctx.obj.get("verbose", 8) - 8, 4))]
-            log = logging.getLogger("graphenebase")
-            log.setLevel(getattr(logging, verbosity.upper()))
-            log.addHandler(ch)
+            logger = logging.getLogger("graphenebase")
+            logger.setLevel(getattr(logging, verbosity.upper()))
+            logger.addHandler(ch)
 
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
@@ -79,7 +105,7 @@ def unlock(f):
 def configfile(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        ctx.config = yaml.load(open(ctx.obj["configfile"]))
+        ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 
