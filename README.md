@@ -10,40 +10,13 @@ master:
 
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
-## Installation
+## Installing and running the software
 
-Python 3.4+ & pip are required. With make:
+See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki/Installing-and-Running)
 
-    $ git clone https://github.com/codaone/dexbot
-    $ cd dexbot    
-    $ make install    
+## Contributing
 
-or
-
-    $ make install-user
-
-Without make:
-
-    $ git clone https://github.com/codaone/dexbot
-    $ cd dexbot
-    $ pip install -r requirements.txt
-    $ python setup.py install
-
-or
-
-    $ pip install -r --user requirements.txt
-    $ python setup.py install --user
-
-## Running the GUI
-
-On Linux: `$ python ./app.py`
-
-## Running the CLI
- Check documentation here: [https://dexbot-ih.readthedocs.io/en/latest/setup.html]
-
-## Configuration
-
-Configuration is done in the GUI or CLI interactively, and is stored in `config.yml`. You can change the default API node here if you want to, but otherwise there should be no need to touch it.
+Install the software, use it and report any problems by creating a ticket.
 
 # IMPORTANT NOTE
 
