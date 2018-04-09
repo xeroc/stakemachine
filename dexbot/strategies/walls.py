@@ -40,7 +40,7 @@ class Strategy(BaseStrategy):
         self.counter = Counter()
 
         # Tests for actions
-        self.test_blocks = self.bot.get("test", {}).get("blocks", 0)
+        self.test_blocks = self.worker.get("test", {}).get("blocks", 0)
 
     def error(self, *args, **kwargs):
         self.disabled = True
@@ -56,7 +56,7 @@ class Strategy(BaseStrategy):
         self.cancelall()
 
         # Target
-        target = self.bot.get("target", {})
+        target = self.worker.get("target", {})
         price = self.getprice()
 
         # prices
@@ -96,7 +96,7 @@ class Strategy(BaseStrategy):
         """ Here we obtain the price for the quote and make sure it has
             a feed price
         """
-        target = self.bot.get("target", {})
+        target = self.worker.get("target", {})
         if target.get("reference") == "feed":
             assert self.market == self.market.core_quote_market(), "Wrong market for 'feed' reference!"
             ticker = self.market.ticker()
@@ -131,7 +131,7 @@ class Strategy(BaseStrategy):
         # Test if price feed has moved more than the threshold
         if (
             self["feed_price"] and
-            fabs(1 - float(self.getprice()) / self["feed_price"]) > self.bot["threshold"] / 100.0
+            fabs(1 - float(self.getprice()) / self["feed_price"]) > self.worker["threshold"] / 100.0
         ):
             self.log.info("Price feed moved by more than the threshold. Updating orders!")
             self.updateorders()

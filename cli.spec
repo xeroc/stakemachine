@@ -1,15 +1,14 @@
 # -*- mode: python -*-
 
-import os, sys
+import os
+import sys
 block_cipher = None
-
 
 hiddenimports_strategies = [
     'dexbot',
     'dexbot.strategies',
     'dexbot.strategies.echo',
-    'dexbot.strategies.follow_orders',
-    'dexbot.strategies.simple',
+    'dexbot.strategies.relative_orders',
     'dexbot.strategies.storagedemo',
     'dexbot.strategies.walls',
 ]
@@ -28,8 +27,9 @@ a = Analysis(['cli.py'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
+
 pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
+          cipher=block_cipher)
 
 exe = EXE(pyz,
           a.scripts,

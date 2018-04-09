@@ -1,13 +1,14 @@
 # -*- mode: python -*-
 
-import os, sys
+import os
+import sys
 block_cipher = None
 
 hiddenimports_strategies = [
     'dexbot',
     'dexbot.strategies',
     'dexbot.strategies.echo',
-    'dexbot.strategies.simple',
+    'dexbot.strategies.relative_orders',
     'dexbot.strategies.storagedemo',
     'dexbot.strategies.walls',
 ]
@@ -29,6 +30,8 @@ a = Analysis(['app.py'],
 
 pyz = PYZ(a.pure, a.zipped_data,
           cipher=block_cipher)
+
+a.binaries = [b for b in a.binaries if "libdrm.so.2" not in b[0]]
 
 exe = EXE(pyz,
           a.scripts,
