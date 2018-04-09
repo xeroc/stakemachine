@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 import logging
 import os
-import click
 import signal
 import sys
+
 from .ui import (
     verbose,
     chain,
     unlock,
-    configfile,
-    confirmwarning,
-    confirmalert,
-    warning,
-    alert,
+    configfile
 )
 from dexbot.worker import WorkerInfrastructure
 import dexbot.errors as errors
+
+import click
 
 log = logging.getLogger(__name__)
 

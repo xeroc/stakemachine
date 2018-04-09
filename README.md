@@ -18,7 +18,6 @@ See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki/Installing
 
 Install the software, use it and report any problems by creating a ticket.
 
-
 # IMPORTANT NOTE
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR

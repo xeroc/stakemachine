@@ -49,6 +49,7 @@ class Strategy(BaseStrategy):
         self.log.info(self.execute())
 
     def update_orders(self):
+        self.log.info('Change detected, updating orders')
         amount = self.target['amount']
 
         # Recalculate buy and sell order prices
@@ -56,7 +57,6 @@ class Strategy(BaseStrategy):
 
         # Cancel the orders before redoing them
         self.cancel_all()
-        self.log.info('An order was filled, canceling the orders')
 
         order_ids = []
 
@@ -74,7 +74,9 @@ class Strategy(BaseStrategy):
                 returnOrderId="head"
             )
             buy_order = self.get_order(buy_transaction['orderid'])
-            self.log.info('Placed a buy order for {} {} @ {}'.format(amount, self.market["quote"], self.buy_price))
+            self.log.info('Placed a buy order for {} {} @ {}'.format(amount,
+                                                                     self.market["quote"]['symbol'],
+                                                                     self.buy_price))
             if buy_order:
                 self['buy_order'] = buy_order
                 order_ids.append(buy_transaction['orderid'])
@@ -93,7 +95,9 @@ class Strategy(BaseStrategy):
                 returnOrderId="head"
             )
             sell_order = self.get_order(sell_transaction['orderid'])
-            self.log.info('Placed a sell order for {} {} @ {}'.format(amount, self.market["quote"], self.buy_price))
+            self.log.info('Placed a sell order for {} {} @ {}'.format(amount,
+                                                                      self.market["quote"]['symbol'],
+                                                                      self.sell_price))
             if sell_order:
                 self['sell_order'] = sell_order
                 order_ids.append(sell_transaction['orderid'])
@@ -133,7 +137,7 @@ class Strategy(BaseStrategy):
         self['profit'] = profit
 
     def update_gui_slider(self):
-        total_balance = self.get_total_balance(self['order_ids'])
+        total_balance = self.total_balance(self['order_ids'])
         total = total_balance['quote'] + total_balance['base']
 
         if not total:  # Prevent division by zero
