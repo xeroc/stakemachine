@@ -9,24 +9,14 @@ from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from . import helper
+
 Base = declarative_base()
 
 # For dexbot.sqlite file
 appname = "dexbot"
 appauthor = "Codaone Oy"
 storageDatabase = "dexbot.sqlite"
-
-
-def mkdir_p(d):
-    if os.path.isdir(d):
-        return
-    else:
-        try:
-            os.makedirs(d)
-        except FileExistsError:
-            return
-        except OSError:
-            raise
 
 
 class Config(Base):
@@ -184,6 +174,6 @@ data_dir = user_data_dir(appname, appauthor)
 sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
 
 # Create directory for sqlite file
-mkdir_p(data_dir)
+helper.mkdir(data_dir)
 
 db_worker = DatabaseWorker()

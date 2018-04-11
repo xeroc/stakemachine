@@ -16,7 +16,7 @@ from .ui import (
 from .worker import WorkerInfrastructure
 from .cli_conf import configure_dexbot
 from . import errors
-from . import storage
+from . import helper
 
 from ruamel import yaml
 # We need to do this before importing click
@@ -118,7 +118,7 @@ def configure(ctx):
             config = yaml.safe_load(fd)
     else:
         config = {}
-        storage.mkdir_p(os.path.dirname(ctx.obj['configfile']))
+        helper.mkdir(os.path.dirname(ctx.obj['configfile']))
     configure_dexbot(config)
 
     with open(cfg_file, "w") as fd:
