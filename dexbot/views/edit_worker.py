@@ -20,7 +20,16 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.base_asset_input.addItems(self.controller.base_assets)
         self.quote_asset_input.setText(self.controller.get_quote_asset(worker_data))
         self.account_name.setText(self.controller.get_account(worker_data))
-        self.amount_input.setValue(self.controller.get_target_amount(worker_data))
+
+        if self.controller.get_target_amount_relative(worker_data):
+            self.order_size_input_to_relative()
+            self.relative_order_size_checkbox.setChecked(True)
+        else:
+            self.order_size_input_to_static()
+            self.relative_order_size_checkbox.setChecked(False)
+
+        self.amount_input.setValue(float(self.controller.get_target_amount(worker_data)))
+
         self.center_price_input.setValue(self.controller.get_target_center_price(worker_data))
 
         center_price_dynamic = self.controller.get_target_center_price_dynamic(worker_data)
@@ -35,7 +44,31 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.save_button.clicked.connect(self.handle_save)
         self.cancel_button.clicked.connect(self.reject)
         self.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
+        self.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
+        self.relative_order_size_checkbox.stateChanged.connect(self.onchange_relative_order_size_checkbox)
         self.worker_data = {}
+
+    def order_size_input_to_relative(self):
+        input_field = self.amount_input
+        input_field.setSuffix('%')
+        input_field.setDecimals(2)
+        input_field.setMaximum(100.00)
+        input_field.setMinimumWidth(151)
+
+    def order_size_input_to_static(self):
+        input_field = self.amount_input
+        input_field.setSuffix('')
+        input_field.setDecimals(8)
+        input_field.setMaximum(1000000000.000000)
+        input_field.setMinimumWidth(151)
+
+    def onchange_relative_order_size_checkbox(self):
+        if self.relative_order_size_checkbox.isChecked():
+            self.order_size_input_to_relative()
+            self.amount_input.setValue(10.00)
+        else:
+            self.order_size_input_to_static()
+            self.amount_input.setValue(0.000000)
 
     def onchange_center_price_dynamic_checkbox(self):
         checkbox = self.center_price_dynamic_checkbox
@@ -96,8 +129,16 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
             return
 
         spread = float(self.spread_input.text()[:-1])  # Remove the percentage character from the end
+
+        # If order size is relative, remove percentage character in the end
+        if self.relative_order_size_checkbox.isChecked():
+            amount = float(self.amount_input.text()[:-1])
+        else:
+            amount = self.amount_input.text()
+
         target = {
-            'amount': float(self.amount_input.text()),
+            'amount': amount,
+            'amount_relative': bool(self.relative_order_size_checkbox.isChecked()),
             'center_price': float(self.center_price_input.text()),
             'center_price_dynamic': bool(self.center_price_dynamic_checkbox.isChecked()),
             'spread': spread

@@ -128,6 +128,10 @@ class CreateWorkerController:
         return worker_data['target']['amount']
 
     @staticmethod
+    def get_target_amount_relative(worker_data):
+        return worker_data['target']['amount_relative']
+
+    @staticmethod
     def get_target_center_price(worker_data):
         return worker_data['target']['center_price']
 
