@@ -30,7 +30,6 @@ class Strategy(BaseStrategy):
 
         self.buy_price = None
         self.sell_price = None
-        # self.calculate_order_prices()
 
         self.initial_balance = self['initial_balance'] or 0
         self.worker_name = kwargs.get('name')
@@ -45,7 +44,6 @@ class Strategy(BaseStrategy):
         """""
         if self.is_relative_order_size:
             balance = float(self.balance(self.market["quote"]))
-            # return balance * (self.order_size / 2 / 100)
             # amount = % of balance / sell_price = amount combined with calculated price to give % of balance
             return ((balance / 100) * self.order_size) / self.sell_price
         else:
@@ -58,7 +56,6 @@ class Strategy(BaseStrategy):
         """""
         if self.is_relative_order_size:
             balance = float(self.balance(self.market["base"]))
-            # return balance * (self.order_size / 2 / 100)
             # amount = % of balance / buy_price = amount combined with calculated price to give % of balance
             return ((balance / 100) * self.order_size) / self.buy_price
         else:
