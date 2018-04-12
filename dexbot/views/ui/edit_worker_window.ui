@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>459</height>
+    <height>486</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -252,11 +252,11 @@
          <number>8</number>
         </property>
         <property name="maximum">
-         <double>999999999.998999953269958</double>
+         <double>1000000000.000000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QLabel" name="center_price_label">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
@@ -284,7 +284,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QDoubleSpinBox" name="center_price_input">
         <property name="enabled">
          <bool>false</bool>
@@ -321,7 +321,14 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="center_price_dynamic_checkbox">
+        <property name="text">
+         <string>Calculate center price dynamically</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
        <widget class="QLabel" name="spread_label">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
@@ -349,7 +356,7 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="spread_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -377,10 +384,10 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QCheckBox" name="center_price_dynamic_checkbox">
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="relative_order_size_checkbox">
         <property name="text">
-         <string>Calculate center price dynamically</string>
+         <string>Relative order size</string>
         </property>
        </widget>
       </item>

@@ -124,17 +124,21 @@ class CreateWorkerController:
         return worker_data['account']
 
     @staticmethod
-    def get_target_amount(worker_data):
-        return worker_data['target']['amount']
+    def get_amount(worker_data):
+        return worker_data.get('amount', 0)
 
     @staticmethod
-    def get_target_center_price(worker_data):
-        return worker_data['target']['center_price']
+    def get_amount_relative(worker_data):
+        return worker_data.get('amount_relative', False)
 
     @staticmethod
-    def get_target_center_price_dynamic(worker_data):
-        return worker_data['target']['center_price_dynamic']
+    def get_center_price(worker_data):
+        return worker_data.get('center_price', 0)
 
     @staticmethod
-    def get_target_spread(worker_data):
-        return worker_data['target']['spread']
+    def get_center_price_dynamic(worker_data):
+        return worker_data.get('center_price_dynamic', True)
+
+    @staticmethod
+    def get_spread(worker_data):
+        return worker_data.get('spread', 5)
