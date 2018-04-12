@@ -118,14 +118,6 @@ class CreateWorkerView(QtWidgets.QDialog):
         else:
             amount = ui.amount_input.text()
 
-        target = {
-            'amount': amount,
-            'amount_relative': bool(ui.relative_order_size_checkbox.isChecked()),
-            'center_price': float(ui.center_price_input.text()),
-            'center_price_dynamic': bool(ui.center_price_dynamic_checkbox.isChecked()),
-            'spread': spread
-        }
-
         base_asset = ui.base_asset_input.currentText()
         quote_asset = ui.quote_asset_input.text()
         strategy = ui.strategy_input.currentText()
@@ -135,7 +127,11 @@ class CreateWorkerView(QtWidgets.QDialog):
             'market': '{}/{}'.format(quote_asset, base_asset),
             'module': worker_module,
             'strategy': strategy,
-            'target': target
+            'amount': amount,
+            'amount_relative': bool(ui.relative_order_size_checkbox.isChecked()),
+            'center_price': float(ui.center_price_input.text()),
+            'center_price_dynamic': bool(ui.center_price_dynamic_checkbox.isChecked()),
+            'spread': spread
         }
         self.worker_name = ui.worker_name_input.text()
         self.accept()

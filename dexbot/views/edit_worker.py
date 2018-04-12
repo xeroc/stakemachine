@@ -21,18 +21,18 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.quote_asset_input.setText(self.controller.get_quote_asset(worker_data))
         self.account_name.setText(self.controller.get_account(worker_data))
 
-        if self.controller.get_target_amount_relative(worker_data):
+        if self.controller.get_amount_relative(worker_data):
             self.order_size_input_to_relative()
             self.relative_order_size_checkbox.setChecked(True)
         else:
             self.order_size_input_to_static()
             self.relative_order_size_checkbox.setChecked(False)
 
-        self.amount_input.setValue(float(self.controller.get_target_amount(worker_data)))
+        self.amount_input.setValue(float(self.controller.get_amount(worker_data)))
 
-        self.center_price_input.setValue(self.controller.get_target_center_price(worker_data))
+        self.center_price_input.setValue(self.controller.get_center_price(worker_data))
 
-        center_price_dynamic = self.controller.get_target_center_price_dynamic(worker_data)
+        center_price_dynamic = self.controller.get_center_price_dynamic(worker_data)
         if center_price_dynamic:
             self.center_price_input.setEnabled(False)
             self.center_price_dynamic_checkbox.setChecked(True)
@@ -40,7 +40,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
             self.center_price_input.setEnabled(True)
             self.center_price_dynamic_checkbox.setChecked(False)
 
-        self.spread_input.setValue(self.controller.get_target_spread(worker_data))
+        self.spread_input.setValue(self.controller.get_spread(worker_data))
         self.save_button.clicked.connect(self.handle_save)
         self.cancel_button.clicked.connect(self.reject)
         self.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
@@ -136,14 +136,6 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         else:
             amount = self.amount_input.text()
 
-        target = {
-            'amount': amount,
-            'amount_relative': bool(self.relative_order_size_checkbox.isChecked()),
-            'center_price': float(self.center_price_input.text()),
-            'center_price_dynamic': bool(self.center_price_dynamic_checkbox.isChecked()),
-            'spread': spread
-        }
-
         base_asset = self.base_asset_input.currentText()
         quote_asset = self.quote_asset_input.text()
         strategy = self.strategy_input.currentText()
@@ -153,7 +145,11 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
             'market': '{}/{}'.format(quote_asset, base_asset),
             'module': worker_module,
             'strategy': strategy,
-            'target': target
+            'amount': amount,
+            'amount_relative': bool(self.relative_order_size_checkbox.isChecked()),
+            'center_price': float(self.center_price_input.text()),
+            'center_price_dynamic': bool(self.center_price_dynamic_checkbox.isChecked()),
+            'spread': spread
         }
         self.worker_name = self.worker_name_input.text()
         self.accept()

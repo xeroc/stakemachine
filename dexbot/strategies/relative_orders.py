@@ -18,15 +18,14 @@ class Strategy(BaseStrategy):
         self.error_onMarketUpdate = self.error
         self.error_onAccount = self.error
 
-        self.target = self.worker.get("target", {})
-        self.is_center_price_dynamic = self.target["center_price_dynamic"]
+        self.is_center_price_dynamic = self.worker["center_price_dynamic"]
         if self.is_center_price_dynamic:
             self.center_price = None
         else:
-            self.center_price = self.target["center_price"]
+            self.center_price = self.worker["center_price"]
 
-        self.is_relative_order_size = self.target['amount_relative']
-        self.order_size = float(self.target['amount'])
+        self.is_relative_order_size = self.worker['amount_relative']
+        self.order_size = float(self.worker['amount'])
 
         self.buy_price = None
         self.sell_price = None
@@ -64,8 +63,8 @@ class Strategy(BaseStrategy):
         if self.is_center_price_dynamic:
             self.center_price = self.calculate_center_price
 
-        self.buy_price = self.center_price * (1 - (self.target["spread"] / 2) / 100)
-        self.sell_price = self.center_price * (1 + (self.target["spread"] / 2) / 100)
+        self.buy_price = self.center_price * (1 - (self.worker["spread"] / 2) / 100)
+        self.sell_price = self.center_price * (1 + (self.worker["spread"] / 2) / 100)
 
     def error(self, *args, **kwargs):
         self.cancel_all()
