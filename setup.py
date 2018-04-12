@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-from setuptools import setup
-from setuptools.command.install import install
+from setuptools import setup, find_packages
+from distutils.command import build as build_module
 from distutils.util import convert_path
-
 from pyqt_distutils.build_ui import build_ui
 
 main_ns = {}
@@ -13,13 +12,10 @@ with open(ver_path) as ver_file:
     VERSION = main_ns['__version__']
 
 
-class InstallCommand(install):
-    """Customized setuptools install command - converts .ui and .qrc files to .py files
-    """
+class BuildCommand(build_module.build):
     def run(self):
-        # Workaround for https://github.com/pypa/setuptools/issues/456
-        self.do_egg_install()
         self.run_command('build_ui')
+        build_module.build.run(self)
 
 
 setup(
@@ -33,10 +29,7 @@ setup(
     maintainer_email='support@codaone.com',
     url='http://www.github.com/codaone/dexbot',
     keywords=['DEX', 'bot', 'trading', 'api', 'blockchain'],
-    packages=[
-        "dexbot",
-        "dexbot.strategies",
-    ],
+    packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
@@ -46,7 +39,7 @@ setup(
     ],
     cmdclass={
         'build_ui': build_ui,
-        'install': InstallCommand,
+        'build': BuildCommand
     },
     entry_points={
         'console_scripts': [
@@ -63,3 +56,4 @@ setup(
     ],
     include_package_data=True,
 )
+
