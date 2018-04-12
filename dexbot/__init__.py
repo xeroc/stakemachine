@@ -9,7 +9,7 @@ __version__ = VERSION
 
 
 config_dir = user_config_dir(APP_NAME, appauthor=AUTHOR)
-config_file = config_dir + "/config.yml"
+config_file = os.path.join(config_dir, "config.yml")
 
 default_config = """
 node: wss://bitshares.openledger.info/ws

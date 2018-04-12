@@ -15,13 +15,14 @@ clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
+
 pip:
 	python3 -m pip install -r requirements.txt
 
 lint:
 	flake8 dexbot/
 
-build: clean pip
+build: pip
 	python3 setup.py build
 
 install: build
