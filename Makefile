@@ -38,7 +38,7 @@ check: pip
 	python3 setup.py check
 
 package: build
-	pyinstaller app.spec
+	pyinstaller gui.spec
 	pyinstaller cli.spec
 
 dist: build

@@ -1,15 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from setuptools import setup, find_packages
 from distutils.command import build as build_module
-from distutils.util import convert_path
 from pyqt_distutils.build_ui import build_ui
 
-main_ns = {}
-ver_path = convert_path('dexbot/__init__.py')
-with open(ver_path) as ver_file:
-    exec(ver_file.read(), main_ns)
-    VERSION = main_ns['__version__']
+from dexbot import VERSION, APP_NAME
 
 
 class BuildCommand(build_module.build):
@@ -19,7 +14,7 @@ class BuildCommand(build_module.build):
 
 
 setup(
-    name='dexbot',
+    name=APP_NAME,
     version=VERSION,
     description='Trading bot for the DEX (BitShares)',
     long_description=open('README.md').read(),
@@ -43,7 +38,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'dexbot = dexbot.cli:main',
+            'dexbot-cli = dexbot.cli:main',
+            'dexbot-gui = dexbot.gui:main',
         ],
     },
     install_requires=[
