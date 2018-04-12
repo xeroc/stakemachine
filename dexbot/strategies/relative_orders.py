@@ -43,9 +43,8 @@ class Strategy(BaseStrategy):
         Get quote amount, calculate if order size is relative
         """""
         if self.is_relative_order_size:
-            balance = float(self.balance(self.market["quote"]))
-            # amount = % of balance / sell_price = amount combined with calculated price to give % of balance
-            return ((balance / 100) * self.order_size) / self.sell_price
+            quote_balance = float(self.balance(self.market["quote"]))
+            return quote_balance * (self.order_size / 100)
         else:
             return self.order_size
 
@@ -55,9 +54,9 @@ class Strategy(BaseStrategy):
         Get base amount, calculate if order size is relative
         """""
         if self.is_relative_order_size:
-            balance = float(self.balance(self.market["base"]))
+            base_balance = float(self.balance(self.market["base"]))
             # amount = % of balance / buy_price = amount combined with calculated price to give % of balance
-            return ((balance / 100) * self.order_size) / self.buy_price
+            return base_balance * (self.order_size / 100) / self.buy_price
         else:
             return self.order_size
 
@@ -90,7 +89,8 @@ class Strategy(BaseStrategy):
         # Buy Side
         if float(self.balance(self.market["base"])) < self.buy_price * amount_base:
             self.log.critical(
-                'Insufficient buy balance, needed {} {}'.format(self.buy_price * amount_base, self.market['base']['symbol'])
+                'Insufficient buy balance, needed {} {}'.format(self.buy_price * amount_base,
+                                                                self.market['base']['symbol'])
             )
             self.disabled = True
         else:
@@ -101,8 +101,8 @@ class Strategy(BaseStrategy):
                 returnOrderId="head"
             )
             buy_order = self.get_order(buy_transaction['orderid'])
-            self.log.info('Placed a buy order for {} {} @ {}'.format(amount_quote,
-                                                                     self.market["quote"]['symbol'],
+            self.log.info('Placed a buy order for {} {} @ {}'.format(self.buy_price * amount_base,
+                                                                     self.market["base"]['symbol'],
                                                                      self.buy_price))
             if buy_order:
                 self['buy_order'] = buy_order
