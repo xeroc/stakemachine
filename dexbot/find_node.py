@@ -33,19 +33,14 @@ else:
     ping_re = re.compile(r'min/avg/max/mdev = [\d.]+/([\d.]+)')
 
 
-def ping_cmd(x):
+def _ping_cmd(x):
     if system() == 'Windows':
         return 'ping', '-n', '5', '-w', '1500', x
     else:
         return 'ping', '-c5', '-n', '-w5', '-i0.3', x
 
 
-def make_ping_proc(host):
-    host = urlsplit(host).netloc.split(':')[0]
-    return Popen(ping_cmd(host), stdout=PIPE, stderr=STDOUT, universal_newlines=True)
-
-
-def process_ping_result(host, proc):
+def _process_ping_result(host, proc):
     out = proc.communicate()[0]
     try:
         return float(ping_re.search(out).group(1)), host
@@ -53,25 +48,26 @@ def process_ping_result(host, proc):
         return FAILED_PING_AMOUNT, host  # Hosts that fail are last
 
 
+def make_ping(host):
+    host = urlsplit(host).netloc.split(':')[0]
+    return Popen(_ping_cmd(host), stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+
+
 def start_pings():
-    return [(i, make_ping_proc(i)) for i in ALL_NODES]
+    return [(i, make_ping(i)) for i in ALL_NODES]
 
 
 def best_node(results=start_pings()):
     try:
-        r = sorted([process_ping_result(*i) for i in results])
+        r = sorted([_process_ping_result(*i) for i in results])
         return r[0][1]
     except BaseException:
         return None
 
 
 def is_host_online(host):
-    result = make_ping_proc(host)
-    ping = process_ping_result(host, result)[0]
+    result = make_ping(host)
+    ping = _process_ping_result(host, result)[0]
     if ping >= FAILED_PING_AMOUNT:
         return False
     return True
-
-
-if __name__ == '__main__':
-    print(best_node())
