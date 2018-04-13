@@ -47,7 +47,6 @@ setup(
         "uptick>=0.1.4",
         "click",
         "sqlalchemy",
-        "appdirs",
         "ruamel.yaml>=0.15.37"
     ],
     include_package_data=True,
