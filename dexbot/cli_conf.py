@@ -8,9 +8,8 @@ Requires the 'whiptail' tool: so UNIX-like systems only
 
 Note there is some common cross-UI configuration stuff: look in basestrategy.py
 It's expected GUI/web interfaces will be re-implementing code in this file, but they should
-understand the common code so bot strategy writers can define their configuration once
+understand the common code so worker strategy writers can define their configuration once
 for each strategy class.
-
 """
 
 
@@ -19,7 +18,7 @@ import os
 import os.path
 import sys
 import re
-from dexbot.bot import STRATEGIES
+from dexbot.worker import STRATEGIES
 from dexbot.whiptail import get_whiptail
 from dexbot.find_node import start_pings, best_node
 
@@ -43,16 +42,16 @@ WantedBy=default.target
 
 
 def select_choice(current, choices):
-    """for the radiolist, get us a list with the current value selected"""
+    """ For the radiolist, get us a list with the current value selected """
     return [(tag, text, (current == tag and "ON") or "OFF")
             for tag, text in choices]
 
 
 def process_config_element(elem, d, config):
     """
-    process an item of configuration metadata display a widget as appropriate
+    Process an item of configuration metadata display a widget as appropriate
     d: the Dialog object
-    config: the config dctionary for this bot
+    config: the config dictionary for this worker
     """
     if elem.type == "string":
         txt = d.prompt(elem.description, config.get(elem.key, elem.default))
@@ -112,10 +111,10 @@ def setup_systemd(d, config):
             if not os.path.exists(j):
                 os.mkdir(j)
         passwd = d.prompt("The wallet password entered with uptick\n"
-                          "NOTE: this will be saved on disc so the bot can run unattended. "
+                          "NOTE: this will be saved on disc so the worker can run unattended. "
                           "This means anyone with access to this computer's file can spend all your money",
                           password=True)
-        # because we hold password be restrictive
+        # Because we hold password be restrictive
         fd = os.open(SYSTEMD_SERVICE_NAME, os.O_WRONLY | os.O_CREAT, 0o600)
         with open(fd, "w") as fp:
             fp.write(
@@ -123,73 +122,69 @@ def setup_systemd(d, config):
                     exe=sys.argv[0],
                     passwd=passwd,
                     homedir=os.path.expanduser("~")))
-        # signal cli.py to set the unit up after writing config file
+        # Signal cli.py to set the unit up after writing config file
         config['systemd_status'] = 'install'
     else:
         config['systemd_status'] = 'reject'
 
 
-def configure_bot(d, bot):
-    strategy = bot.get('module', 'dexbot.strategies.echo')
-    bot['module'] = d.radiolist(
-        "Choose a bot strategy", select_choice(
+def configure_worker(d, worker):
+    strategy = worker.get('module', 'dexbot.strategies.echo')
+    worker['module'] = d.radiolist(
+        "Choose a worker strategy", select_choice(
             strategy, STRATEGIES))
-    # its always Strategy now, for backwards compatibilty only
-    bot['bot'] = 'Strategy'
-    # import the bot class but we don't __init__ it here
+    # It's always Strategy now, for backwards compatibility only
+    worker['worker'] = 'Strategy'
+    # Import the worker class but we don't __init__ it here
     klass = getattr(
-        importlib.import_module(bot["module"]),
-        bot["bot"]
+        importlib.import_module(worker["module"]),
+        worker["worker"]
     )
-    # use class metadata for per-bot configuration
+    # Use class metadata for per-worker configuration
     configs = klass.configure()
     if configs:
         for c in configs:
-            process_config_element(c, d, bot)
+            process_config_element(c, d, worker)
     else:
-        d.alert("This bot type does not have configuration information. "
-                "You will have to check the bot code and add configuration values to config.yml if required")
-    return bot
+        d.alert("This worker type does not have configuration information. "
+                "You will have to check the worker code and add configuration values to config.yml if required")
+    return worker
 
 
 def configure_dexbot(config):
     d = get_whiptail()
-    bots = config.get('bots', {})
-    if len(bots) == 0:
+    workers = config.get('workers', {})
+    if len(workers) == 0:
         ping_results = start_pings()
         while True:
-            txt = d.prompt("Your name for the bot")
-            config['bots'] = {txt: configure_bot(d, {})}
-            if not d.confirm("Set up another bot?\n(DEXBot can run multiple bots in one instance)"):
+            txt = d.prompt("Your name for the worker")
+            config['workers'] = {txt: configure_worker(d, {})}
+            if not d.confirm("Set up another worker?\n(DEXBot can run multiple workers in one instance)"):
                 break
         setup_systemd(d, config)
         node = best_node(ping_results)
         if node:
             config['node'] = node
         else:
-            # search failed, ask the user
+            # Search failed, ask the user
             config['node'] = d.prompt(
                 "Search for best BitShares node failed.\n\nPlease enter wss:// url of chosen node.")
     else:
         action = d.menu("You have an existing configuration.\nSelect an action:",
-                        [('NEW', 'Create a new bot'),
-                         ('DEL', 'Delete a bot'),
-                         ('EDIT', 'Edit a bot'),
+                        [('NEW', 'Create a new worker'),
+                         ('DEL', 'Delete a worker'),
+                         ('EDIT', 'Edit a worker'),
                          ('CONF', 'Redo general config')])
         if action == 'EDIT':
-            botname = d.menu("Select bot to edit", [(i, i) for i in bots])
-            config['bots'][botname] = configure_bot(d, config['bots'][botname])
+            worker_name = d.menu("Select worker to edit", [(i, i) for i in workers])
+            config['workers'][worker_name] = configure_worker(d, config['workers'][worker_name])
         elif action == 'DEL':
-            botname = d.menu("Select bot to delete", [(i, i) for i in bots])
-            del config['bots'][botname]
+            worker_name = d.menu("Select worker to delete", [(i, i) for i in workers])
+            del config['workers'][worker_name]
         if action == 'NEW':
-            txt = d.prompt("Your name for the new bot")
-            config['bots'][txt] = configure_bot(d, {})
+            txt = d.prompt("Your name for the new worker")
+            config['workers'][txt] = configure_worker(d, {})
         else:
             config['node'] = d.prompt("BitShares node to use", default=config['node'])
     d.clear()
     return config
-
-
-if __name__ == '__main__':
-    print(repr(configure({})))
