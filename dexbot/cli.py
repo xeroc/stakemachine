@@ -73,7 +73,7 @@ def run(ctx):
                 signal.signal(signal.SIGHUP, kill_workers)
                 # TODO: reload config on SIGUSR1
                 # signal.signal(signal.SIGUSR1, lambda x, y: worker.do_next_tick(worker.reread_config))
-            except ValueError:
+            except AttributeError:
                 log.debug("Cannot set all signals -- not available on this platform")
             worker.run()
         finally:
