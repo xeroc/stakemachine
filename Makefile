@@ -1,6 +1,9 @@
 .PHONY: clean-pyc clean-build docs
 
-clean: clean-build clean-pyc
+clean: clean-build clean-pyc clean-ui
+
+clean-ui:
+	find dexbot/views/ui/*.py ! -name '__init__.py' -type f -exec rm -f {} +
 
 clean-build:
 	rm -fr build/
@@ -12,6 +15,7 @@ clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
+
 pip:
 	python3 -m pip install -r requirements.txt
 
@@ -35,10 +39,10 @@ check: pip
 	python3 setup.py check
 
 package: build
-	pyinstaller app.spec
+	pyinstaller gui.spec
 	pyinstaller cli.spec
 
-dist: pip
+dist: build
 	python3 setup.py sdist upload -r pypi
 	python3 setup.py bdist_wheel upload
 
