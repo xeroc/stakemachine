@@ -72,9 +72,8 @@ class CreateWorkerController:
         else:
             return False
 
-    @staticmethod
-    def is_account_in_use(account):
-        workers = MainController.get_workers_data()
+    def is_account_in_use(self, account):
+        workers = self.main_ctrl.get_workers_data()
         for worker_name, worker in workers.items():
             if worker['account'] == account:
                 return True
@@ -88,13 +87,12 @@ class CreateWorkerController:
             # Private key already added
             pass
 
-    @staticmethod
-    def get_unique_worker_name():
+    def get_unique_worker_name(self):
         """
         Returns unique worker name "Worker %n", where %n is the next available index
         """
         index = 1
-        workers = MainController.get_workers_data().keys()
+        workers = self.main_ctrl.get_workers_data().keys()
         worker_name = "Worker {0}".format(index)
         while worker_name in workers:
             worker_name = "Worker {0}".format(index)

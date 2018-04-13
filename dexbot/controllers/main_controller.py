@@ -1,16 +1,21 @@
+import os
 import logging
 
 from dexbot.worker import WorkerInfrastructure
 
-from ruamel.yaml import YAML
+import appdirs
+from ruamel import yaml
 from bitshares.instance import set_shared_bitshares_instance
+
+CONFIG_PATH = os.path.join(appdirs.user_config_dir('dexbot'), 'config.yml')
 
 
 class MainController:
 
-    def __init__(self, bitshares_instance):
+    def __init__(self, bitshares_instance, config):
         self.bitshares_instance = bitshares_instance
         set_shared_bitshares_instance(bitshares_instance)
+        self.config = config
         self.worker_manager = None
 
         # Configure logging
@@ -51,60 +56,44 @@ class MainController:
             WorkerInfrastructure.remove_offline_worker(config, worker_name)
 
     @staticmethod
+    def create_config(config):
+        with open(CONFIG_PATH, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+
+    @staticmethod
     def load_config():
-        yaml = YAML()
-        with open('config.yml', 'r') as f:
-            return yaml.load(f)
+        with open(CONFIG_PATH, 'r') as f:
+            return yaml.safe_load(f)
 
-    @staticmethod
-    def get_workers_data():
+    def refresh_config(self):
+        self.config = self.load_config()
+
+    def get_workers_data(self):
+        """ Returns dict of all the workers data
         """
-        Returns dict of all the workers data
+        return self.config['workers']
+
+    def get_worker_config(self, worker_name):
+        """ Returns config file data with only the data from a specific worker
         """
-        with open('config.yml', 'r') as f:
-            yaml = YAML()
-            return yaml.load(f)['workers']
+        config = self.config
+        config['workers'] = {worker_name: config['workers'][worker_name]}
+        return config
 
-    @staticmethod
-    def get_worker_config(worker_name):
-        """
-        Returns config file data with only the data from a specific worker
-        """
-        with open('config.yml', 'r') as f:
-            yaml = YAML()
-            config = yaml.load(f)
-            config['workers'] = {worker_name: config['workers'][worker_name]}
-            return config
+    def remove_worker_config(self, worker_name):
+        self.config['workers'].pop(worker_name, None)
 
-    @staticmethod
-    def remove_worker_config(worker_name):
-        yaml = YAML()
-        with open('config.yml', 'r') as f:
-            config = yaml.load(f)
+        with open(CONFIG_PATH, 'w') as f:
+            yaml.dump(self.config, f)
 
-        config['workers'].pop(worker_name, None)
+    def add_worker_config(self, worker_name, worker_data):
+        self.config['workers'][worker_name] = worker_data
 
-        with open("config.yml", "w") as f:
-            yaml.dump(config, f)
+        with open(CONFIG_PATH, 'w') as f:
+            yaml.dump(self.config, f, default_flow_style=False)
 
-    @staticmethod
-    def add_worker_config(worker_name, worker_data):
-        yaml = YAML()
-        with open('config.yml', 'r') as f:
-            config = yaml.load(f)
-
-        config['workers'][worker_name] = worker_data
-
-        with open("config.yml", "w") as f:
-            yaml.dump(config, f)
-
-    @staticmethod
-    def replace_worker_config(worker_name, new_worker_name, worker_data):
-        yaml = YAML()
-        with open('config.yml', 'r') as f:
-            config = yaml.load(f)
-
-        workers = config['workers']
+    def replace_worker_config(self, worker_name, new_worker_name, worker_data):
+        workers = self.config['workers']
         # Rotate the dict keys to keep order
         for _ in range(len(workers)):
             key, value = workers.popitem(False)
@@ -113,5 +102,5 @@ class MainController:
             else:
                 workers[key] = value
 
-        with open("config.yml", "w") as f:
-            yaml.dump(config, f)
+        with open(CONFIG_PATH, 'w') as f:
+            yaml.dump(self.config, f, default_flow_style=False)
