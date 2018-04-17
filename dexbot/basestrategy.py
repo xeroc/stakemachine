@@ -1,12 +1,15 @@
 import logging
+
+from .storage import Storage
+from .statemachine import StateMachine
+
 from events import Events
+import bitsharesapi
 from bitshares.amount import Amount
 from bitshares.market import Market
 from bitshares.account import Account
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.instance import shared_bitshares_instance
-from .storage import Storage
-from .statemachine import StateMachine
 
 
 class BaseStrategy(Storage, StateMachine, Events):
@@ -246,25 +249,37 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.bitshares.blocking = False
         return r
 
+    def _cancel(self, orders):
+        try:
+            self.bitshares.cancel(orders, account=self.account)
+        except bitsharesapi.exceptions.UnhandledRPCError as e:
+            if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
+                # The order(s) we tried to cancel doesn't exist
+                print('nope')
+                return False
+            else:
+                raise
+        return True
+
     def cancel(self, orders):
-        """ Cancel specific orders
+        """ Cancel specific order(s)
         """
-        if not isinstance(orders, list):
+        if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
-        return self.bitshares.cancel(
-            [o["id"] for o in orders if "id" in o],
-            account=self.account
-        )
+
+        orders = [order['id'] for order in orders if 'id' in order]
+
+        success = self._cancel(orders)
+        if not success and len(orders) > 1:
+            for order in orders:
+                self._cancel(order)
 
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
         if self.orders:
             self.log.info('Canceling all orders')
-            return self.bitshares.cancel(
-                [o["id"] for o in self.orders],
-                account=self.account
-            )
+            self.cancel(self.orders)
 
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
