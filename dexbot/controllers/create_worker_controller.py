@@ -16,7 +16,8 @@ class CreateWorkerController:
     @property
     def strategies(self):
         strategies = {
-            'Relative Orders': 'dexbot.strategies.relative_orders'
+            'Relative Orders': 'dexbot.strategies.relative_orders',
+            'Staggered Orders': 'dexbot.strategies.staggered_orders'
         }
         return strategies
 
