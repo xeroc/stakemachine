@@ -12,7 +12,6 @@ from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.instance import shared_bitshares_instance
 
 
-
 class BaseStrategy(Storage, StateMachine, Events):
     """ Base Strategy and methods available in all Sub Classes that
         inherit this BaseStrategy.
