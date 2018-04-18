@@ -1,5 +1,6 @@
 from dexbot.basestrategy import BaseStrategy
 from dexbot.queue.idle_queue import idle_add
+
 from bitshares.amount import Amount
 
 
@@ -38,9 +39,8 @@ class Strategy(BaseStrategy):
 
     @property
     def amount_quote(self):
-        """""
-        Get quote amount, calculate if order size is relative
-        """""
+        """ Get quote amount, calculate if order size is relative
+        """
         if self.is_relative_order_size:
             quote_balance = float(self.balance(self.market["quote"]))
             return quote_balance * (self.order_size / 100)
@@ -49,9 +49,8 @@ class Strategy(BaseStrategy):
 
     @property
     def amount_base(self):
-        """""
-        Get base amount, calculate if order size is relative
-        """""
+        """ Get base amount, calculate if order size is relative
+        """
         if self.is_relative_order_size:
             base_balance = float(self.balance(self.market["base"]))
             # amount = % of balance / buy_price = amount combined with calculated price to give % of balance
