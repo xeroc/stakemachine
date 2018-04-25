@@ -9,6 +9,7 @@ Trading Bot Infrastructure for the BitShares Decentralized Exchange
 
     git clone https://github.com/xeroc/stakemachine
     cd stakemachine
+    sudo apt-get install python3-setuptools
     python3 setup.py install
     # or
     python3 setup.py install --user
