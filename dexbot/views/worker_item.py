@@ -99,9 +99,8 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.view.ui.add_worker_button.setEnabled(True)
 
     def reload_widget(self, worker_name):
-        """ Cancels orders of the widget's worker and then reloads the data of the widget
+        """ Reload the data of the widget
         """
-        self.main_ctrl.remove_worker(worker_name)
         self.worker_config = self.main_ctrl.get_worker_config(worker_name)
         self.setup_ui_data(self.worker_config)
         self._pause_worker()
@@ -114,6 +113,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         # User clicked save
         if return_value:
             new_worker_name = edit_worker_dialog.worker_name
+            self.main_ctrl.remove_worker(self.worker_name)
             self.main_ctrl.replace_worker_config(self.worker_name, new_worker_name, edit_worker_dialog.worker_data)
             self.reload_widget(new_worker_name)
             self.worker_name = new_worker_name
