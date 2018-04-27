@@ -1,8 +1,7 @@
-from dexbot import __version__
-
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
+from dexbot import __version__
 from dexbot.controllers.create_worker_controller import CreateWorkerController
 from dexbot.queue.queue_dispatcher import ThreadDispatcher
 
@@ -58,7 +57,7 @@ class MainView(QtWidgets.QMainWindow):
             self.ui.add_worker_button.setEnabled(True)
 
     def handle_add_worker(self):
-        controller = CreateWorkerController(self.main_ctrl)
+        controller = CreateWorkerController(self.main_ctrl.bitshares_instance, 'add')
         create_worker_dialog = CreateWorkerView(controller)
         return_value = create_worker_dialog.exec_()
 

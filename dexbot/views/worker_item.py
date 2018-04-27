@@ -35,6 +35,10 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         market = config['workers'][worker_name]['market']
         self.set_worker_market(market)
 
+        module = config['workers'][worker_name]['module']
+        strategies = CreateWorkerController.get_strategies()
+        self.set_worker_strategy(strategies[module]['name'])
+
         profit = db_worker.execute(db_worker.get_item, worker_name, 'profit')
         if profit:
             self.set_worker_profit(profit)
@@ -68,8 +72,9 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def set_worker_name(self, value):
         self.worker_name_label.setText(value)
 
-    def set_worker_account(self, value):
-        pass
+    def set_worker_strategy(self, value):
+        value = value.upper()
+        self.strategy_label.setText(value)
 
     def set_worker_market(self, value):
         self.currency_label.setText(value)
@@ -107,7 +112,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self._pause_worker()
 
     def handle_edit_worker(self):
-        controller = CreateWorkerController(self.main_ctrl)
+        controller = CreateWorkerController(self.main_ctrl.bitshares_instance, 'edit')
         edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.worker_config)
         return_value = edit_worker_dialog.exec_()
 
