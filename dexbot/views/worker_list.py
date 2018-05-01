@@ -5,6 +5,10 @@ from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
 from dexbot.controllers.create_worker_controller import CreateWorkerController
 from dexbot.queue.queue_dispatcher import ThreadDispatcher
+from dexbot.queue.idle_queue import idle_add
+import time
+from bitshares.instance import shared_bitshares_instance
+from threading import Thread
 
 from PyQt5 import QtWidgets
 
@@ -20,7 +24,9 @@ class MainView(QtWidgets.QMainWindow):
         self.max_workers = 10
         self.num_of_workers = 0
         self.worker_widgets = {}
-        self.ui.status_bar.showMessage("ver {}".format(__version__))
+        self.closing = False
+        self.statusbar_updater = None
+        self.statusbar_updater_first_run = True
 
         self.ui.add_worker_button.clicked.connect(self.handle_add_worker)
 
@@ -38,6 +44,13 @@ class MainView(QtWidgets.QMainWindow):
         # Dispatcher polls for events from the workers that are used to change the ui
         self.dispatcher = ThreadDispatcher(self)
         self.dispatcher.start()
+
+        self.ui.status_bar.showMessage("ver {} - node delay: - ms".format(__version__))
+        self.statusbar_updater = Thread(
+            target=self._update_statusbar_message
+        )
+        self.statusbar_updater.start()
+
 
     def add_worker_widget(self, worker_name):
         config = self.main_ctrl.get_worker_config(worker_name)
@@ -86,3 +99,36 @@ class MainView(QtWidgets.QMainWindow):
     def customEvent(self, event):
         # Process idle_queue_dispatcher events
         event.callback()
+
+    def closeEvent(self, event):
+        self.closing = True
+        self.ui.status_bar.showMessage("Closing app...")
+        if self.statusbar_updater and self.statusbar_updater.is_alive():
+            self.statusbar_updater.join()
+
+    def _update_statusbar_message(self):
+        while not self.closing:
+            # When running first time the workers are also interrupting with the connection
+            # so we delay the first time to get correct information
+            if (self.statusbar_updater_first_run):
+                self.statusbar_updater_first_run = False
+                time.sleep(1)
+
+            idle_add(self.set_statusbar_message)
+            runner_count = 0
+            # Wait for 30s but do it in 0.5s pieces to not prevent closing the app
+            while not self.closing and runner_count < 60:
+                runner_count += 1
+                time.sleep(0.5)
+
+    def set_statusbar_message(self):
+        start = time.time()
+        bts_instance = shared_bitshares_instance()
+        try:
+            # @todo should here be used num_retries=1 ?
+            bts_instance.connect()
+            latency = (time.time() - start) * 1000
+        except:
+            latency = -1
+
+        self.ui.status_bar.showMessage("ver {} - node delay: {:.2f}ms".format(__version__, latency))
