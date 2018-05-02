@@ -1,14 +1,13 @@
-from dexbot import __version__
+import time
+from threading import Thread
 
+from dexbot import __version__
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
 from dexbot.controllers.create_worker_controller import CreateWorkerController
 from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.queue.idle_queue import idle_add
-import time
-from bitshares.instance import shared_bitshares_instance
-from threading import Thread
 
 from PyQt5 import QtWidgets
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
