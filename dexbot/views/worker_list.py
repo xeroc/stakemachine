@@ -11,6 +11,7 @@ from bitshares.instance import shared_bitshares_instance
 from threading import Thread
 
 from PyQt5 import QtWidgets
+from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 
 
 class MainView(QtWidgets.QMainWindow):
@@ -45,12 +46,11 @@ class MainView(QtWidgets.QMainWindow):
         self.dispatcher = ThreadDispatcher(self)
         self.dispatcher.start()
 
-        self.ui.status_bar.showMessage("ver {} - node delay: - ms".format(__version__))
+        self.ui.status_bar.showMessage("ver {} - Node delay: - ms".format(__version__))
         self.statusbar_updater = Thread(
             target=self._update_statusbar_message
         )
         self.statusbar_updater.start()
-
 
     def add_worker_widget(self, worker_name):
         config = self.main_ctrl.get_worker_config(worker_name)
@@ -110,7 +110,7 @@ class MainView(QtWidgets.QMainWindow):
         while not self.closing:
             # When running first time the workers are also interrupting with the connection
             # so we delay the first time to get correct information
-            if (self.statusbar_updater_first_run):
+            if self.statusbar_updater_first_run:
                 self.statusbar_updater_first_run = False
                 time.sleep(1)
 
@@ -122,13 +122,17 @@ class MainView(QtWidgets.QMainWindow):
                 time.sleep(0.5)
 
     def set_statusbar_message(self):
-        start = time.time()
-        bts_instance = shared_bitshares_instance()
+        config = self.main_ctrl.load_config()
+        node = config['node']
+
         try:
-            # @todo should here be used num_retries=1 ?
-            bts_instance.connect()
+            start = time.time()
+            BitSharesNodeRPC(node, num_retries=1)
             latency = (time.time() - start) * 1000
-        except:
+        except BaseException:
             latency = -1
 
-        self.ui.status_bar.showMessage("ver {} - node delay: {:.2f}ms".format(__version__, latency))
+        if latency != -1:
+            self.ui.status_bar.showMessage("ver {} - Node delay: {:.2f}ms".format(__version__, latency))
+        else:
+            self.ui.status_bar.showMessage("ver {} - Node disconnected".format(__version__))
