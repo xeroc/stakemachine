@@ -3,7 +3,7 @@ import os
 from appdirs import user_config_dir
 
 APP_NAME = "dexbot"
-VERSION = '0.1.16'
+VERSION = '0.1.17'
 AUTHOR = "codaone"
 __version__ = VERSION
 
@@ -21,4 +21,3 @@ if not os.path.isfile(config_file):
     with open(config_file, 'w') as f:
         f.write(default_config)
         print("Created default config file at {}".format(config_file))
-
