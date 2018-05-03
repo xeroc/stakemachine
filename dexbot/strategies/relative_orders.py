@@ -79,6 +79,10 @@ class Strategy(BaseStrategy):
         # Cancel the orders before redoing them
         self.cancel_all()
 
+        # Mark the orders empty
+        self['buy_order'] = {}
+        self['sell_order'] = {}
+
         order_ids = []
 
         amount_base = self.amount_base
@@ -92,19 +96,10 @@ class Strategy(BaseStrategy):
             )
             self.disabled = True
         else:
-            buy_transaction = self.market.buy(
-                self.buy_price,
-                Amount(amount=amount_base, asset=self.market["quote"]),
-                account=self.account,
-                returnOrderId="head"
-            )
-            buy_order = self.get_order(buy_transaction['orderid'])
-            self.log.info('Placed a buy order for {} {} @ {}'.format(self.buy_price * amount_base,
-                                                                     self.market["base"]['symbol'],
-                                                                     self.buy_price))
+            buy_order = self.market_buy(amount_base, self.buy_price)
             if buy_order:
                 self['buy_order'] = buy_order
-                order_ids.append(buy_transaction['orderid'])
+                order_ids.append(buy_order['id'])
 
         # Sell Side
         if float(self.balance(self.market["quote"])) < amount_quote:
@@ -113,21 +108,16 @@ class Strategy(BaseStrategy):
             )
             self.disabled = True
         else:
-            sell_transaction = self.market.sell(
-                self.sell_price,
-                Amount(amount=amount_quote, asset=self.market["quote"]),
-                account=self.account,
-                returnOrderId="head"
-            )
-            sell_order = self.get_order(sell_transaction['orderid'])
-            self.log.info('Placed a sell order for {} {} @ {}'.format(amount_quote,
-                                                                      self.market["quote"]['symbol'],
-                                                                      self.sell_price))
+            sell_order = self.market_sell(amount_quote, self.sell_price)
             if sell_order:
                 self['sell_order'] = sell_order
-                order_ids.append(sell_transaction['orderid'])
+                order_ids.append(sell_order['id'])
 
         self['order_ids'] = order_ids
+
+        # Some orders weren't successfully created, redo them
+        if len(order_ids) < 2 and not self.disabled:
+            self.update_orders()
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
