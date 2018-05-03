@@ -21,4 +21,3 @@ if not os.path.isfile(config_file):
     with open(config_file, 'w') as f:
         f.write(default_config)
         print("Created default config file at {}".format(config_file))
-
