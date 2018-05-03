@@ -79,6 +79,10 @@ class Strategy(BaseStrategy):
         # Cancel the orders before redoing them
         self.cancel_all()
 
+        # Mark the orders empty
+        self['buy_order'] = {}
+        self['sell_order'] = {}
+
         order_ids = []
 
         amount_base = self.amount_base
@@ -96,8 +100,6 @@ class Strategy(BaseStrategy):
             if buy_order:
                 self['buy_order'] = buy_order
                 order_ids.append(buy_order['id'])
-            else:
-                self['buy_order'] = {}
 
         # Sell Side
         if float(self.balance(self.market["quote"])) < amount_quote:
@@ -110,10 +112,12 @@ class Strategy(BaseStrategy):
             if sell_order:
                 self['sell_order'] = sell_order
                 order_ids.append(sell_order['id'])
-            else:
-                self['sell_order'] = {}
 
         self['order_ids'] = order_ids
+
+        # Some orders weren't successfully created, redo them
+        if len(order_ids) < 2 and not self.disabled:
+            self.update_orders()
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating

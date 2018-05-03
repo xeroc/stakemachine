@@ -255,6 +255,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         except bitsharesapi.exceptions.UnhandledRPCError as e:
             if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
                 # The order(s) we tried to cancel doesn't exist
+                self.bitshares.txbuffer.clear()
                 return False
             else:
                 raise
@@ -281,18 +282,12 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
 
     def market_buy(self, amount, price):
-        try:
-            buy_transaction = self.market.buy(
-                price,
-                Amount(amount=amount, asset=self.market["quote"]),
-                account=self.account.name,
-                returnOrderId="head"
-            )
-        except bitsharesapi.exceptions.UnhandledRPCError as e:
-            if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
-                return None
-            else:
-                raise
+        buy_transaction = self.market.buy(
+            price,
+            Amount(amount=amount, asset=self.market["quote"]),
+            account=self.account.name,
+            returnOrderId="head"
+        )
 
         self.log.info(
             'Placed a buy order for {} {} @ {}'.format(price * amount,
@@ -302,18 +297,12 @@ class BaseStrategy(Storage, StateMachine, Events):
         return buy_order
 
     def market_sell(self, amount, price):
-        try:
-            sell_transaction = self.market.sell(
-                price,
-                Amount(amount=amount, asset=self.market["quote"]),
-                account=self.account.name,
-                returnOrderId="head"
-            )
-        except bitsharesapi.exceptions.UnhandledRPCError as e:
-            if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
-                return None
-            else:
-                raise
+        sell_transaction = self.market.sell(
+            price,
+            Amount(amount=amount, asset=self.market["quote"]),
+            account=self.account.name,
+            returnOrderId="head"
+        )
 
         sell_order = self.get_order(sell_transaction['orderid'])
         self.log.info(
