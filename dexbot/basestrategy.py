@@ -149,6 +149,37 @@ class BaseStrategy(Storage, StateMachine, Events):
             center_price = (highest_bid['price'] + lowest_ask['price']) / 2
             return center_price
 
+    def calculate_relative_center_price(self, spread, order_ids=None):
+        """ Calculate center price which shifts based on available funds
+        """
+        ticker = self.market.ticker()
+        highest_bid = ticker.get("highestBid").get('price')
+        lowest_ask = ticker.get("lowestAsk").get('price')
+        latest_price = ticker.get('latest').get('price')
+        if highest_bid is None or highest_bid == 0.0:
+            self.log.critical(
+                "Cannot estimate center price, there is no highest bid."
+            )
+            self.disabled = True
+        elif lowest_ask is None or lowest_ask == 0.0:
+            self.log.critical(
+                "Cannot estimate center price, there is no lowest ask."
+            )
+            self.disabled = True
+        else:
+            total_balance = self.total_balance(order_ids)
+            total = (total_balance['quote'] * latest_price) + total_balance['base']
+
+            if not total:  # Prevent division by zero
+                percentage = 0.5
+            else:
+                percentage = (total_balance['base'] / total)
+            center_price = (highest_bid + lowest_ask) / 2
+            lowest_price = center_price * (1 - spread / 100)
+            highest_price = center_price * (1 + spread / 100)
+            relative_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
+            return relative_center_price
+
     @property
     def orders(self):
         """ Return the worker's open accounts in the current market
