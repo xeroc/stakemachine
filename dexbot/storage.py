@@ -53,22 +53,22 @@ class Storage(dict):
         self.category = category
 
     def __setitem__(self, key, value):
-        db_worker.execute_noreturn(db_worker.set_item, self.category, key, value)
+        db_worker.set_item(self.category, key, value)
 
     def __getitem__(self, key):
-        return db_worker.execute(db_worker.get_item, self.category, key)
+        return db_worker.get_item(self.category, key)
 
     def __delitem__(self, key):
-        db_worker.execute_noreturn(db_worker.del_item, self.category, key)
+        db_worker.del_item(self.category, key)
 
     def __contains__(self, key):
-        return db_worker.execute(db_worker.contains, self.category, key)
+        return db_worker.contains(self.category, key)
 
     def items(self):
-        return db_worker.execute(db_worker.get_items, self.category)
+        return db_worker.get_items(self.category)
 
     def clear(self):
-        db_worker.execute_noreturn(db_worker.clear, self.category)
+        db_worker.clear(self.category)
 
 
 class DatabaseWorker(threading.Thread):
@@ -100,7 +100,7 @@ class DatabaseWorker(threading.Thread):
                 args = args+(token,)
             func(*args)
 
-    def get_result(self, token):
+    def _get_result(self, token):
         while True:
             with self.lock:
                 if token in self.results:
@@ -111,7 +111,7 @@ class DatabaseWorker(threading.Thread):
                     self.event.clear()
             self.event.wait()
 
-    def set_result(self, token, result):
+    def _set_result(self, token, result):
         with self.lock:
             self.results[token] = result
             self.event.set()
@@ -119,12 +119,15 @@ class DatabaseWorker(threading.Thread):
     def execute(self, func, *args):
         token = str(uuid.uuid4)
         self.task_queue.put((func, args, token))
-        return self.get_result(token)
+        return self._get_result(token)
 
     def execute_noreturn(self, func, *args):
         self.task_queue.put((func, args, None))
-        
+
     def set_item(self, category, key, value):
+        self.execute_noreturn(self._set_item, category, key, value)
+
+    def _set_item(self, category, key, value):
         value = json.dumps(value)
         e = self.session.query(Config).filter_by(
             category=category,
@@ -137,7 +140,10 @@ class DatabaseWorker(threading.Thread):
             self.session.add(e)
         self.session.commit()
 
-    def get_item(self, category, key, token):
+    def get_item(self, category, key):
+        self.execute(self._get_item, category, key)
+
+    def _get_item(self, category, key, token):
         e = self.session.query(Config).filter_by(
             category=category,
             key=key
@@ -146,9 +152,12 @@ class DatabaseWorker(threading.Thread):
             result = None
         else:
             result = json.loads(e.value)
-        self.set_result(token, result)
+        self._set_result(token, result)
 
     def del_item(self, category, key):
+        self.execute_noreturn(self._del_item, category, key)
+
+    def _del_item(self, category, key):
         e = self.session.query(Config).filter_by(
             category=category,
             key=key
@@ -156,21 +165,30 @@ class DatabaseWorker(threading.Thread):
         self.session.delete(e)
         self.session.commit()
 
-    def contains(self, category, key, token):
+    def contains(self, category, key):
+        self.execute(self._contains, category, key)
+
+    def _contains(self, category, key, token):
         e = self.session.query(Config).filter_by(
             category=category,
             key=key
         ).first()
-        self.set_result(token, bool(e))
+        self._set_result(token, bool(e))
 
-    def get_items(self, category, token):
+    def get_items(self, category):
+        self.execute(self._get_items, category)
+
+    def _get_items(self, category, token):
         es = self.session.query(Config).filter_by(
             category=category
         ).all()
         result = [(e.key, e.value) for e in es]
-        self.set_result(token, result)
+        self._set_result(token, result)
 
     def clear(self, category):
+        self.execute_noreturn(self._clear, category)
+
+    def _clear(self, category):
         rows = self.session.query(Config).filter_by(
             category=category
         )
