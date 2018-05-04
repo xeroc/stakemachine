@@ -60,7 +60,7 @@ class Strategy(BaseStrategy):
 
     def calculate_order_prices(self):
         if self.is_center_price_dynamic:
-            self.center_price = self.calculate_center_price
+            self.center_price = self.calculate_relative_center_price(self['order_ids'])
 
         self.buy_price = self.center_price * (1 - (self.worker["spread"] / 2) / 100)
         self.sell_price = self.center_price * (1 + (self.worker["spread"] / 2) / 100)
