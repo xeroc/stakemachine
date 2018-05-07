@@ -141,7 +141,7 @@ class DatabaseWorker(threading.Thread):
         self.session.commit()
 
     def get_item(self, category, key):
-        self.execute(self._get_item, category, key)
+        return self.execute(self._get_item, category, key)
 
     def _get_item(self, category, key, token):
         e = self.session.query(Config).filter_by(
@@ -166,7 +166,7 @@ class DatabaseWorker(threading.Thread):
         self.session.commit()
 
     def contains(self, category, key):
-        self.execute(self._contains, category, key)
+        return self.execute(self._contains, category, key)
 
     def _contains(self, category, key, token):
         e = self.session.query(Config).filter_by(
@@ -176,7 +176,7 @@ class DatabaseWorker(threading.Thread):
         self._set_result(token, bool(e))
 
     def get_items(self, category):
-        self.execute(self._get_items, category)
+        return self.execute(self._get_items, category)
 
     def _get_items(self, category, token):
         es = self.session.query(Config).filter_by(
