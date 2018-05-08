@@ -1,12 +1,10 @@
-from PyQt5 import QtWidgets
-from PyQt5.Qt import QApplication
-
 import logging
 import traceback
-import sys
 
 from dexbot.ui import translate_error
 from dexbot.queue.idle_queue import idle_add
+
+from PyQt5 import QtWidgets
 
 
 class PyQtHandler(logging.Handler):
@@ -32,7 +30,7 @@ class PyQtHandler(logging.Handler):
         idle_add(show_dialog, title, message, extra, detail)
 
 
-def guierror(func):
+def gui_error(func):
     """A decorator for GUI handler functions - traps all exceptions and displays the dialog
     """
     def func_wrapper(obj, *args, **kwargs):
