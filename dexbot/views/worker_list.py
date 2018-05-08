@@ -8,10 +8,10 @@ from .worker_item import WorkerItemWidget
 from dexbot.controllers.create_worker_controller import CreateWorkerController
 from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.queue.idle_queue import idle_add
+from .errors import guierror
 
 from PyQt5 import QtWidgets
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
-from .errors import guierror
 
 
 class MainView(QtWidgets.QMainWindow):

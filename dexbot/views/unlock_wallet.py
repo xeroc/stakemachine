@@ -1,6 +1,7 @@
 from .ui.unlock_wallet_window_ui import Ui_Dialog
 from .notice import NoticeDialog
 from .errors import guierror
+
 from PyQt5 import QtWidgets
 
 

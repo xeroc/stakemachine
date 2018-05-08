@@ -8,11 +8,13 @@ import sys
 from dexbot.ui import translate_error
 from dexbot.queue.idle_queue import idle_add
 
+
 class PyQtHandler(logging.Handler):
     """
     Logging handler for Py Qt events.
     Based on Vinay Sajip's DBHandler class (http://www.red-dove.com/python_logging.html)
     """
+
     def emit(self, record):
         # Use default formatting:
         self.format(record)
@@ -30,6 +32,7 @@ class PyQtHandler(logging.Handler):
             title = "DEXBot Error"
         idle_add(showdialog, title, message, extra, detail)
 
+
 def guierror(func):
     """A decorator for GUI handler functions - traps all exceptions and displays the dialog
     """
@@ -38,18 +41,19 @@ def guierror(func):
             return func(obj)
         except BaseException as exc:
             showdialog("DEXBot Error", "An error occurred with DEXBOT:   "+repr(exc), None, traceback.format_exc())
-            
+
     return func_wrapper
 
+
 def showdialog(title, message, extra=None, detail=None):
-   msg = QtWidgets.QMessageBox()
-   msg.setIcon(QtWidgets.QMessageBox.Critical)
-   msg.setText(message)
-   if extra:
-       msg.setInformativeText(extra)
-   msg.setWindowTitle(title)
-   if detail:
-       msg.setDetailedText(detail)
-   msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-	
-   msg.exec_()
+    msg = QtWidgets.QMessageBox()
+    msg.setIcon(QtWidgets.QMessageBox.Critical)
+    msg.setText(message)
+    if extra:
+        msg.setInformativeText(extra)
+    msg.setWindowTitle(title)
+    if detail:
+        msg.setDetailedText(detail)
+    msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+
+    msg.exec_()

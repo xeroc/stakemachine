@@ -3,7 +3,6 @@ from .confirmation import ConfirmationDialog
 from .edit_worker import EditWorkerView
 from dexbot.storage import db_worker
 from dexbot.controllers.create_worker_controller import CreateWorkerController
-
 from dexbot.views.errors import guierror
 
 from PyQt5 import QtWidgets
