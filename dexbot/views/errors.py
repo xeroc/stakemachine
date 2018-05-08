@@ -8,6 +8,7 @@ import sys
 from dexbot.ui import translate_error
 from dexbot.queue.idle_queue import idle_add
 
+
 class PyQtHandler(logging.Handler):
     """
     Logging handler for Py Qt events.
@@ -28,7 +29,8 @@ class PyQtHandler(logging.Handler):
             title = "Error on {}".format(record.worker_name)
         else:
             title = "DEXBot Error"
-        idle_add(showdialog, title, message, extra, detail)
+        idle_add(show_dialog, title, message, extra, detail)
+
 
 def guierror(func):
     """A decorator for GUI handler functions - traps all exceptions and displays the dialog
@@ -37,19 +39,21 @@ def guierror(func):
         try:
             return func(obj)
         except BaseException as exc:
-            showdialog("DEXBot Error", "An error occurred with DEXBOT:   "+repr(exc), None, traceback.format_exc())
+            show_dialog("DEXBot Error", "An error occurred with DEXBot: \n"+repr(exc), None, traceback.format_exc())
             
     return func_wrapper
 
-def showdialog(title, message, extra=None, detail=None):
-   msg = QtWidgets.QMessageBox()
-   msg.setIcon(QtWidgets.QMessageBox.Critical)
-   msg.setText(message)
-   if extra:
-       msg.setInformativeText(extra)
-   msg.setWindowTitle(title)
-   if detail:
-       msg.setDetailedText(detail)
-   msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-	
-   msg.exec_()
+
+def show_dialog(title, message, extra=None, detail=None):
+    msg = QtWidgets.QMessageBox()
+    msg.setIcon(QtWidgets.QMessageBox.Critical)
+    msg.setText(message)
+    if extra:
+        msg.setInformativeText(extra)
+    msg.setWindowTitle(title)
+    if detail:
+        msg.setDetailedText(detail)
+    msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+
+    msg.exec_()
+
