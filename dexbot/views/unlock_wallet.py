@@ -1,6 +1,6 @@
 from .ui.unlock_wallet_window_ui import Ui_Dialog
 from .notice import NoticeDialog
-
+from .errors import guierror
 from PyQt5 import QtWidgets
 
 
@@ -13,6 +13,7 @@ class UnlockWalletView(QtWidgets.QDialog):
         self.ui.setupUi(self)
         self.ui.ok_button.clicked.connect(self.validate_form)
 
+    @guierror
     def validate_form(self):
         password = self.ui.password_input.text()
         if not self.controller.unlock_wallet(password):

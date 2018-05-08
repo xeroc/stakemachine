@@ -3,6 +3,8 @@ import logging
 from dexbot import config_file
 from dexbot.worker import WorkerInfrastructure
 
+from dexbot.views.errors import PyQtHandler
+
 from ruamel.yaml import YAML
 from bitshares.instance import set_shared_bitshares_instance
 
@@ -22,6 +24,9 @@ class MainController:
         fh.setFormatter(formatter)
         logger.addHandler(fh)
         logger.setLevel(logging.INFO)
+        pyqth = PyQtHandler()
+        pyqth.setLevel(logging.ERROR)
+        logger.addHandler(pyqth)
 
     def create_worker(self, worker_name, config, view):
         # Todo: Add some threading here so that the GUI doesn't freeze

@@ -11,6 +11,7 @@ from dexbot.queue.idle_queue import idle_add
 
 from PyQt5 import QtWidgets
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
+from .errors import guierror
 
 
 class MainView(QtWidgets.QMainWindow):
@@ -69,6 +70,7 @@ class MainView(QtWidgets.QMainWindow):
         if self.num_of_workers < self.max_workers:
             self.ui.add_worker_button.setEnabled(True)
 
+    @guierror
     def handle_add_worker(self):
         controller = CreateWorkerController(self.main_ctrl)
         create_worker_dialog = CreateWorkerView(controller)

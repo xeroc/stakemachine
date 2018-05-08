@@ -1,5 +1,6 @@
 from .ui.create_wallet_window_ui import Ui_Dialog
 from .notice import NoticeDialog
+from .errors import guierror
 
 from PyQt5 import QtWidgets
 
@@ -13,6 +14,7 @@ class CreateWalletView(QtWidgets.QDialog):
         self.ui.setupUi(self)
         self.ui.ok_button.clicked.connect(self.validate_form)
 
+    @guierror
     def validate_form(self):
         password = self.ui.password_input.text()
         confirm_password = self.ui.confirm_password_input.text()

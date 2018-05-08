@@ -4,6 +4,8 @@ from .edit_worker import EditWorkerView
 from dexbot.storage import db_worker
 from dexbot.controllers.create_worker_controller import CreateWorkerController
 
+from dexbot.views.errors import guierror
+
 from PyQt5 import QtWidgets
 
 
@@ -47,6 +49,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         else:
             self.set_worker_slider(50)
 
+    @guierror
     def start_worker(self):
         self._start_worker()
         self.main_ctrl.create_worker(self.worker_name, self.worker_config, self.view)
@@ -56,6 +59,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.pause_button.show()
         self.play_button.hide()
 
+    @guierror
     def pause_worker(self):
         self._pause_worker()
         self.main_ctrl.stop_worker(self.worker_name)
@@ -85,6 +89,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def set_worker_slider(self, value):
         self.order_slider.setSliderPosition(value)
 
+    @guierror
     def remove_widget_dialog(self):
         dialog = ConfirmationDialog('Are you sure you want to remove worker "{}"?'.format(self.worker_name))
         return_value = dialog.exec_()
@@ -105,6 +110,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.setup_ui_data(self.worker_config)
         self._pause_worker()
 
+    @guierror
     def handle_edit_worker(self):
         controller = CreateWorkerController(self.main_ctrl)
         edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.worker_config)
