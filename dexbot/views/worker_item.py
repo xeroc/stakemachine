@@ -39,13 +39,13 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         strategies = CreateWorkerController.get_strategies()
         self.set_worker_strategy(strategies[module]['name'])
 
-        profit = db_worker.execute(db_worker.get_item, worker_name, 'profit')
+        profit = db_worker.get_item(worker_name, 'profit')
         if profit:
             self.set_worker_profit(profit)
         else:
             self.set_worker_profit(0)
 
-        percentage = db_worker.execute(db_worker.get_item, worker_name, 'slider')
+        percentage = db_worker.get_item(worker_name, 'slider')
         if percentage:
             self.set_worker_slider(percentage)
         else:
