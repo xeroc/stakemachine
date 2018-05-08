@@ -1,12 +1,10 @@
-from PyQt5 import QtWidgets
-from PyQt5.Qt import QApplication
-
 import logging
 import traceback
-import sys
 
 from dexbot.ui import translate_error
 from dexbot.queue.idle_queue import idle_add
+
+from PyQt5 import QtWidgets
 
 
 class PyQtHandler(logging.Handler):
@@ -30,22 +28,22 @@ class PyQtHandler(logging.Handler):
             title = "Error on {}".format(record.worker_name)
         else:
             title = "DEXBot Error"
-        idle_add(showdialog, title, message, extra, detail)
+        idle_add(show_dialog, title, message, extra, detail)
 
 
-def guierror(func):
+def gui_error(func):
     """A decorator for GUI handler functions - traps all exceptions and displays the dialog
     """
     def func_wrapper(obj, *args, **kwargs):
         try:
             return func(obj)
         except BaseException as exc:
-            showdialog("DEXBot Error", "An error occurred with DEXBOT:   "+repr(exc), None, traceback.format_exc())
+            show_dialog("DEXBot Error", "An error occurred with DEXBot: \n"+repr(exc), None, traceback.format_exc())
 
     return func_wrapper
 
 
-def showdialog(title, message, extra=None, detail=None):
+def show_dialog(title, message, extra=None, detail=None):
     msg = QtWidgets.QMessageBox()
     msg.setIcon(QtWidgets.QMessageBox.Critical)
     msg.setText(message)

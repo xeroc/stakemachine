@@ -1,7 +1,7 @@
 from .ui.edit_worker_window_ui import Ui_Dialog
 from .confirmation import ConfirmationDialog
 from .notice import NoticeDialog
-from .errors import guierror
+from .errors import gui_error
 
 from PyQt5 import QtWidgets
 
@@ -62,7 +62,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         input_field.setMaximum(1000000000.000000)
         input_field.setMinimumWidth(151)
 
-    @guierror
+    @gui_error
     def onchange_relative_order_size_checkbox(self):
         if self.relative_order_size_checkbox.isChecked():
             self.order_size_input_to_relative()
@@ -71,7 +71,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
             self.order_size_input_to_static()
             self.amount_input.setValue(0.000000)
 
-    @guierror
+    @gui_error
     def onchange_center_price_dynamic_checkbox(self):
         checkbox = self.center_price_dynamic_checkbox
         if checkbox.isChecked():
@@ -123,7 +123,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
                                     'Are you sure you want to do this?')
         return dialog.exec_()
 
-    @guierror
+    @gui_error
     def handle_save(self):
         if not self.validate_form():
             return
