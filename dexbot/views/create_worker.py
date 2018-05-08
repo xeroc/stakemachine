@@ -1,5 +1,6 @@
 from .notice import NoticeDialog
 from .ui.create_worker_window_ui import Ui_Dialog
+from .errors import gui_error
 
 from PyQt5 import QtWidgets
 
@@ -26,6 +27,7 @@ class CreateWorkerView(QtWidgets.QDialog):
         self.ui.relative_order_size_checkbox.stateChanged.connect(self.onchange_relative_order_size_checkbox)
         self.worker_data = {}
 
+    @gui_error
     def onchange_relative_order_size_checkbox(self):
         checkbox = self.ui.relative_order_size_checkbox
         if checkbox.isChecked():
@@ -40,6 +42,7 @@ class CreateWorkerView(QtWidgets.QDialog):
             self.ui.amount_input.setMaximum(1000000000.000000)
             self.ui.amount_input.setValue(0.000000)
 
+    @gui_error
     def onchange_center_price_dynamic_checkbox(self):
         checkbox = self.ui.center_price_dynamic_checkbox
         if checkbox.isChecked():
@@ -101,6 +104,7 @@ class CreateWorkerView(QtWidgets.QDialog):
         else:
             return True
 
+    @gui_error
     def handle_save(self):
         if not self.validate_form():
             return
