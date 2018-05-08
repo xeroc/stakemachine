@@ -74,6 +74,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
             self.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
 
     def set_staggered_orders_values(self, worker_data):
+        self.strategy_widget.amount_input.setValue(worker_data.get('amount', 0))
         self.strategy_widget.increment_input.setValue(worker_data.get('increment', 2.5))
         self.strategy_widget.spread_input.setValue(worker_data.get('spread', 5))
         self.strategy_widget.lower_bound_input.setValue(worker_data.get('lower_bound', 0.000001))
@@ -106,6 +107,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
         increment = float(self.strategy_widget.increment_input.text()[:-1])
 
         data = {
+            'amount': float(self.strategy_widget.amount_input.text()),
             'spread': spread,
             'increment': increment,
             'lower_bound': float(self.strategy_widget.lower_bound_input.text()),

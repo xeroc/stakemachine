@@ -21,6 +21,7 @@ class Strategy(BaseStrategy):
 
         self.worker_name = kwargs.get('name')
         self.view = kwargs.get('view')
+        self.amount = self.worker['amount']
         self.spread = self.worker['spread']
         self.increment = self.worker['increment']
         self.upper_bound = self.worker['upper_bound']
