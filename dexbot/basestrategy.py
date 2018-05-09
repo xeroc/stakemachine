@@ -303,11 +303,11 @@ class BaseStrategy(Storage, StateMachine, Events):
             returnOrderId="head"
         )
 
-        sell_order = self.get_order(sell_transaction['orderid'])
         self.log.info(
             'Placed a sell order for {} {} @ {}'.format(amount,
                                                         self.market["quote"]['symbol'],
                                                         price))
+        sell_order = self.get_order(sell_transaction['orderid'])
         return sell_order
 
     def purge(self):

@@ -43,6 +43,20 @@ class Config(Base):
         self.value = v
 
 
+class Orders(Base):
+    __tablename__ = 'orders'
+
+    id = Column(Integer, primary_key=True)
+    worker = Column(String)
+    order_id = Column(String)
+    order = Column(String)
+
+    def __init__(self, worker, order_id, order):
+        self.worker = worker
+        self.order_id = order_id
+        self.order = order
+
+
 class Storage(dict):
     """ Storage class
 
@@ -70,10 +84,25 @@ class Storage(dict):
     def clear(self):
         db_worker.clear(self.category)
 
+    def save_order(self, order):
+        order_id = order['id']
+        db_worker.save_order(self.category, order_id, order)
+
+    def remove_order(self, order):
+        order_id = order['id']
+        db_worker.remove_order(self.category, order_id)
+
+    def clear_orders(self):
+        db_worker.clear_orders(self.category)
+
+    def fetch_orders(self, worker=None):
+        if not worker:
+            worker = self.category
+        return db_worker.fetch_orders(worker)
+
 
 class DatabaseWorker(threading.Thread):
-    """
-    Thread safe database worker
+    """ Thread safe database worker
     """
 
     def __init__(self):
@@ -195,6 +224,58 @@ class DatabaseWorker(threading.Thread):
         for row in rows:
             self.session.delete(row)
             self.session.commit()
+
+    def save_order(self, worker, order_id, order):
+        self.execute_noreturn(self._save_order, worker, order_id, order)
+
+    def _save_order(self, worker, order_id, order):
+        value = json.dumps(order)
+        e = self.session.query(Orders).filter_by(
+            order_id=order_id
+        ).first()
+        if e:
+            e.value = value
+        else:
+            e = Orders(worker, order_id, value)
+            self.session.add(e)
+        self.session.commit()
+
+    def remove_order(self, worker, order_id):
+        self.execute_noreturn(self._remove_order, worker, order_id)
+
+    def _remove_order(self, worker, order_id):
+        e = self.session.query(Orders).filter_by(
+            worker=worker,
+            order_id=order_id
+        ).first()
+        self.session.delete(e)
+        self.session.commit()
+
+    def clear_orders(self, worker):
+        self.execute_noreturn(self._clear_orders, worker)
+
+    def _clear_orders(self, worker):
+        rows = self.session.query(Orders).filter_by(
+            worker=worker
+        )
+        for row in rows:
+            self.session.delete(row)
+            self.session.commit()
+
+    def fetch_orders(self, category):
+        return self.execute(self._fetch_orders, category)
+
+    def _fetch_orders(self, worker, token):
+        results = self.session.query(Orders).filter_by(
+            worker=worker,
+        ).all()
+        if not results:
+            result = None
+        else:
+            result = {}
+            for row in results:
+                result[row.order_id] = json.loads(row.order)
+        self._set_result(token, result)
 
 
 # Derive sqlite file directory
