@@ -1,6 +1,9 @@
 import logging
 
+from dexbot import config_file
 from dexbot.worker import WorkerInfrastructure
+
+from dexbot.views.errors import PyQtHandler
 
 from ruamel.yaml import YAML
 from bitshares.instance import set_shared_bitshares_instance
@@ -21,6 +24,9 @@ class MainController:
         fh.setFormatter(formatter)
         logger.addHandler(fh)
         logger.setLevel(logging.INFO)
+        pyqth = PyQtHandler()
+        pyqth.setLevel(logging.ERROR)
+        logger.addHandler(pyqth)
 
     def create_worker(self, worker_name, config, view):
         # Todo: Add some threading here so that the GUI doesn't freeze
@@ -53,7 +59,7 @@ class MainController:
     @staticmethod
     def load_config():
         yaml = YAML()
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             return yaml.load(f)
 
     @staticmethod
@@ -61,7 +67,7 @@ class MainController:
         """
         Returns dict of all the workers data
         """
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             yaml = YAML()
             return yaml.load(f)['workers']
 
@@ -70,7 +76,7 @@ class MainController:
         """
         Returns config file data with only the data from a specific worker
         """
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             yaml = YAML()
             config = yaml.load(f)
             config['workers'] = {worker_name: config['workers'][worker_name]}
@@ -79,29 +85,29 @@ class MainController:
     @staticmethod
     def remove_worker_config(worker_name):
         yaml = YAML()
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             config = yaml.load(f)
 
         config['workers'].pop(worker_name, None)
 
-        with open("config.yml", "w") as f:
+        with open(config_file, "w") as f:
             yaml.dump(config, f)
 
     @staticmethod
     def add_worker_config(worker_name, worker_data):
         yaml = YAML()
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             config = yaml.load(f)
 
         config['workers'][worker_name] = worker_data
 
-        with open("config.yml", "w") as f:
+        with open(config_file, "w") as f:
             yaml.dump(config, f)
 
     @staticmethod
     def replace_worker_config(worker_name, new_worker_name, worker_data):
         yaml = YAML()
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             config = yaml.load(f)
 
         workers = config['workers']
@@ -113,5 +119,5 @@ class MainController:
             else:
                 workers[key] = value
 
-        with open("config.yml", "w") as f:
+        with open(config_file, "w") as f:
             yaml.dump(config, f)

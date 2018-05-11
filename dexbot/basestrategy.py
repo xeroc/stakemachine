@@ -1,12 +1,15 @@
 import logging
+
+from .storage import Storage
+from .statemachine import StateMachine
+
 from events import Events
+import bitsharesapi
 from bitshares.amount import Amount
 from bitshares.market import Market
 from bitshares.account import Account
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.instance import shared_bitshares_instance
-from .storage import Storage
-from .statemachine import StateMachine
 
 
 class BaseStrategy(Storage, StateMachine, Events):
@@ -146,6 +149,37 @@ class BaseStrategy(Storage, StateMachine, Events):
             center_price = (highest_bid['price'] + lowest_ask['price']) / 2
             return center_price
 
+    def calculate_relative_center_price(self, spread, order_ids=None):
+        """ Calculate center price which shifts based on available funds
+        """
+        ticker = self.market.ticker()
+        highest_bid = ticker.get("highestBid").get('price')
+        lowest_ask = ticker.get("lowestAsk").get('price')
+        latest_price = ticker.get('latest').get('price')
+        if highest_bid is None or highest_bid == 0.0:
+            self.log.critical(
+                "Cannot estimate center price, there is no highest bid."
+            )
+            self.disabled = True
+        elif lowest_ask is None or lowest_ask == 0.0:
+            self.log.critical(
+                "Cannot estimate center price, there is no lowest ask."
+            )
+            self.disabled = True
+        else:
+            total_balance = self.total_balance(order_ids)
+            total = (total_balance['quote'] * latest_price) + total_balance['base']
+
+            if not total:  # Prevent division by zero
+                percentage = 0.5
+            else:
+                percentage = (total_balance['base'] / total)
+            center_price = (highest_bid + lowest_ask) / 2
+            lowest_price = center_price * (1 - spread / 100)
+            highest_price = center_price * (1 + spread / 100)
+            relative_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
+            return relative_center_price
+
     @property
     def orders(self):
         """ Return the worker's open accounts in the current market
@@ -246,25 +280,67 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.bitshares.blocking = False
         return r
 
+    def _cancel(self, orders):
+        try:
+            self.bitshares.cancel(orders, account=self.account)
+        except bitsharesapi.exceptions.UnhandledRPCError as e:
+            if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
+                # The order(s) we tried to cancel doesn't exist
+                self.bitshares.txbuffer.clear()
+                return False
+            else:
+                raise
+        return True
+
     def cancel(self, orders):
-        """ Cancel specific orders
+        """ Cancel specific order(s)
         """
-        if not isinstance(orders, list):
+        if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
-        return self.bitshares.cancel(
-            [o["id"] for o in orders if "id" in o],
-            account=self.account
-        )
+
+        orders = [order['id'] for order in orders if 'id' in order]
+
+        success = self._cancel(orders)
+        if not success and len(orders) > 1:
+            for order in orders:
+                self._cancel(order)
 
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
         if self.orders:
             self.log.info('Canceling all orders')
-            return self.bitshares.cancel(
-                [o["id"] for o in self.orders],
-                account=self.account
-            )
+            self.cancel(self.orders)
+
+    def market_buy(self, amount, price):
+        buy_transaction = self.market.buy(
+            price,
+            Amount(amount=amount, asset=self.market["quote"]),
+            account=self.account.name,
+            returnOrderId="head"
+        )
+
+        self.log.info(
+            'Placed a buy order for {} {} @ {}'.format(price * amount,
+                                                       self.market["base"]['symbol'],
+                                                       price))
+        buy_order = self.get_order(buy_transaction['orderid'])
+        return buy_order
+
+    def market_sell(self, amount, price):
+        sell_transaction = self.market.sell(
+            price,
+            Amount(amount=amount, asset=self.market["quote"]),
+            account=self.account.name,
+            returnOrderId="head"
+        )
+
+        sell_order = self.get_order(sell_transaction['orderid'])
+        self.log.info(
+            'Placed a sell order for {} {} @ {}'.format(amount,
+                                                        self.market["quote"]['symbol'],
+                                                        price))
+        return sell_order
 
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders

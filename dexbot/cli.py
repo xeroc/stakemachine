@@ -4,7 +4,8 @@ import os
 import signal
 import sys
 
-from .ui import (
+from dexbot import config_file
+from dexbot.ui import (
     verbose,
     chain,
     unlock,
@@ -26,7 +27,7 @@ logging.basicConfig(
 @click.group()
 @click.option(
     "--configfile",
-    default="config.yml",
+    default=config_file,
 )
 @click.option(
     '--verbose',
@@ -72,7 +73,7 @@ def run(ctx):
                 signal.signal(signal.SIGHUP, kill_workers)
                 # TODO: reload config on SIGUSR1
                 # signal.signal(signal.SIGUSR1, lambda x, y: worker.do_next_tick(worker.reread_config))
-            except ValueError:
+            except AttributeError:
                 log.debug("Cannot set all signals -- not available on this platform")
             worker.run()
         finally:

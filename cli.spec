@@ -4,7 +4,6 @@ import os
 import sys
 block_cipher = None
 
-
 hiddenimports_strategies = [
     'dexbot',
     'dexbot.strategies',
@@ -18,7 +17,7 @@ hiddenimports_packaging = [
     'packaging', 'packaging.version', 'packaging.specifiers', 'packaging.requirements'
 ]
 
-a = Analysis(['cli.py'],
+a = Analysis(['dexbot/cli.py'],
              binaries=[],
              datas=[],
              hiddenimports=hiddenimports_packaging + hiddenimports_strategies,
@@ -28,8 +27,9 @@ a = Analysis(['cli.py'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
+
 pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
+          cipher=block_cipher)
 
 exe = EXE(pyz,
           a.scripts,

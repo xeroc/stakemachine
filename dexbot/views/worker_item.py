@@ -4,6 +4,8 @@ from .edit_worker import EditWorkerView
 from dexbot.storage import db_worker
 from dexbot.controllers.create_worker_controller import CreateWorkerController
 
+from dexbot.views.errors import gui_error
+
 from PyQt5 import QtWidgets
 
 
@@ -47,6 +49,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         else:
             self.set_worker_slider(50)
 
+    @gui_error
     def start_worker(self):
         self._start_worker()
         self.main_ctrl.create_worker(self.worker_name, self.worker_config, self.view)
@@ -56,6 +59,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.pause_button.show()
         self.play_button.hide()
 
+    @gui_error
     def pause_worker(self):
         self._pause_worker()
         self.main_ctrl.stop_worker(self.worker_name)
@@ -85,6 +89,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def set_worker_slider(self, value):
         self.order_slider.setSliderPosition(value)
 
+    @gui_error
     def remove_widget_dialog(self):
         dialog = ConfirmationDialog('Are you sure you want to remove worker "{}"?'.format(self.worker_name))
         return_value = dialog.exec_()
@@ -98,14 +103,14 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.view.remove_worker_widget(self.worker_name)
         self.view.ui.add_worker_button.setEnabled(True)
 
-    def reload_widget(self, worker_name, new_worker_name):
-        """ Cancels orders of the widget's worker and then reloads the data of the widget
+    def reload_widget(self, worker_name):
+        """ Reload the data of the widget
         """
-        self.main_ctrl.remove_worker(worker_name)
-        self.worker_config = self.main_ctrl.get_worker_config(new_worker_name)
+        self.worker_config = self.main_ctrl.get_worker_config(worker_name)
         self.setup_ui_data(self.worker_config)
         self._pause_worker()
 
+    @gui_error
     def handle_edit_worker(self):
         controller = CreateWorkerController(self.main_ctrl)
         edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.worker_config)
@@ -114,6 +119,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         # User clicked save
         if return_value:
             new_worker_name = edit_worker_dialog.worker_name
+            self.main_ctrl.remove_worker(self.worker_name)
             self.main_ctrl.replace_worker_config(self.worker_name, new_worker_name, edit_worker_dialog.worker_data)
-            self.reload_widget(self.worker_name, new_worker_name)
+            self.reload_widget(new_worker_name)
             self.worker_name = new_worker_name

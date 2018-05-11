@@ -1,1 +1,2 @@
 include *.md
+include dexbot/resources/img/*

@@ -1,5 +1,6 @@
 from .notice import NoticeDialog
 from .ui.create_worker_window_ui import Ui_Dialog
+from .errors import gui_error
 
 from PyQt5 import QtWidgets
 
@@ -23,8 +24,25 @@ class CreateWorkerView(QtWidgets.QDialog):
         self.ui.save_button.clicked.connect(self.handle_save)
         self.ui.cancel_button.clicked.connect(self.reject)
         self.ui.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
+        self.ui.relative_order_size_checkbox.stateChanged.connect(self.onchange_relative_order_size_checkbox)
         self.worker_data = {}
 
+    @gui_error
+    def onchange_relative_order_size_checkbox(self):
+        checkbox = self.ui.relative_order_size_checkbox
+        if checkbox.isChecked():
+            self.ui.amount_input.setSuffix('%')
+            self.ui.amount_input.setDecimals(2)
+            self.ui.amount_input.setMaximum(100.00)
+            self.ui.amount_input.setValue(10.00)
+            self.ui.amount_input.setMinimumWidth(151)
+        else:
+            self.ui.amount_input.setSuffix('')
+            self.ui.amount_input.setDecimals(8)
+            self.ui.amount_input.setMaximum(1000000000.000000)
+            self.ui.amount_input.setValue(0.000000)
+
+    @gui_error
     def onchange_center_price_dynamic_checkbox(self):
         checkbox = self.ui.center_price_dynamic_checkbox
         if checkbox.isChecked():
@@ -86,6 +104,7 @@ class CreateWorkerView(QtWidgets.QDialog):
         else:
             return True
 
+    @gui_error
     def handle_save(self):
         if not self.validate_form():
             return
@@ -96,12 +115,12 @@ class CreateWorkerView(QtWidgets.QDialog):
 
         ui = self.ui
         spread = float(ui.spread_input.text()[:-1])  # Remove the percentage character from the end
-        target = {
-            'amount': float(ui.amount_input.text()),
-            'center_price': float(ui.center_price_input.text()),
-            'center_price_dynamic': bool(ui.center_price_dynamic_checkbox.isChecked()),
-            'spread': spread
-        }
+
+        # If order size is relative, remove percentage character in the end
+        if ui.relative_order_size_checkbox.isChecked():
+            amount = float(ui.amount_input.text()[:-1])
+        else:
+            amount = ui.amount_input.text()
 
         base_asset = ui.base_asset_input.currentText()
         quote_asset = ui.quote_asset_input.text()
@@ -112,7 +131,11 @@ class CreateWorkerView(QtWidgets.QDialog):
             'market': '{}/{}'.format(quote_asset, base_asset),
             'module': worker_module,
             'strategy': strategy,
-            'target': target
+            'amount': amount,
+            'amount_relative': bool(ui.relative_order_size_checkbox.isChecked()),
+            'center_price': float(ui.center_price_input.text()),
+            'center_price_dynamic': bool(ui.center_price_dynamic_checkbox.isChecked()),
+            'spread': spread
         }
         self.worker_name = ui.worker_name_input.text()
         self.accept()
