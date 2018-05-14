@@ -229,8 +229,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             assert type(o['sell_price']['quote']['amount']) in [
                 int, float], "o['sell_base']['quote']['amount'] not num {}".format(dict(o))
 
-            price = o['sell_price']['base']['amount'] / \
-                o['sell_price']['quote']['amount']
+            price = o['sell_price']['base']['amount'] / o['sell_price']['quote']['amount']
             quote_amount = base_amount / price
             o['sell_price']['base']['amount'] = base_amount
             o['sell_price']['quote']['amount'] = quote_amount
@@ -428,7 +427,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     def retry_action(self, action, *args, **kwargs):
         """
-        perform an action, and if certain suspected-to-be-spurious graphene bugs occur,
+        Perform an action, and if certain suspected-to-be-spurious graphene bugs occur,
         instead of bubbling the exception, it is quietly logged (level WARN), and try again
         tries a fixed number of times (MAX_TRIES) before failing
         """
@@ -442,7 +441,7 @@ class BaseStrategy(Storage, StateMachine, Events):
                         raise
                     else:
                         tries += 1
-                        self.log.warn("ignoring: '{}'".format(str(e)))
+                        self.log.warning("Ignoring: '{}'".format(str(e)))
                         self.bitshares.txbuffer.clear()
                         self.account.refresh()
                         time.sleep(2)
