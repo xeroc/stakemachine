@@ -442,7 +442,7 @@ class BaseStrategy(Storage, StateMachine, Events):
                         raise
                     else:
                         tries += 1
-                        self.log.warn("ignoring: '{}'".format(str(e)))
+                        self.log.warning("ignoring: '{}'".format(str(e)))
                         self.bitshares.txbuffer.clear()
                         self.account.refresh()
                         time.sleep(2)
