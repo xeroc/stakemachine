@@ -1,15 +1,20 @@
 import logging
+import time
 
 from .storage import Storage
 from .statemachine import StateMachine
 
 from events import Events
 import bitsharesapi
+import bitsharesapi.exceptions
 from bitshares.amount import Amount
 from bitshares.market import Market
 from bitshares.account import Account
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.instance import shared_bitshares_instance
+
+
+MAX_TRIES = 3
 
 
 class BaseStrategy(Storage, StateMachine, Events):
@@ -289,7 +294,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     def _cancel(self, orders):
         try:
-            self.bitshares.cancel(orders, account=self.account)
+            self.retry_action(self.bitshares.cancel, orders, account=self.account)
         except bitsharesapi.exceptions.UnhandledRPCError as e:
             if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
                 # The order(s) we tried to cancel doesn't exist
@@ -324,7 +329,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             'Placing a buy order for {} {} @ {}'.format(price * amount,
                                                         self.market["base"]['symbol'],
                                                         price))
-        buy_transaction = self.market.buy(
+        buy_transaction = self.retry_action(
+            self.market.buy,
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
@@ -339,7 +345,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             'Placing a sell order for {} {} @ {}'.format(amount,
                                                          self.market["quote"]['symbol'],
                                                          price))
-        sell_transaction = self.market.sell(
+        sell_transaction = self.retry_action(
+            self.market.sell,
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
@@ -418,3 +425,26 @@ class BaseStrategy(Storage, StateMachine, Events):
             base = Amount(base, base_asset)
 
         return {'quote': quote, 'base': base}
+
+    def retry_action(self, action, *args, **kwargs):
+        """
+        perform an action, and if certain suspected-to-be-spurious graphene bugs occur,
+        instead of bubbling the exception, it is quietly logged (level WARN), and try again
+        tries a fixed number of times (MAX_TRIES) before failing
+        """
+        tries = 0
+        while True:
+            try:
+                return action(*args, **kwargs)
+            except bitsharesapi.exceptions.UnhandledRPCError as e:
+                if "Assert Exception: amount_to_sell.amount > 0" in str(e):
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        tries += 1
+                        self.log.warn("ignoring: '{}'".format(str(e)))
+                        self.bitshares.txbuffer.clear()
+                        self.account.refresh()
+                        time.sleep(2)
+                else:
+                    raise
