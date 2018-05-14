@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from dexbot import cli
+from dexbot import gui
 
 if __name__ == '__main__':
-    cli.main()
+    gui.main()

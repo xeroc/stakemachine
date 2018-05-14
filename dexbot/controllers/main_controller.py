@@ -1,4 +1,9 @@
-from dexbot.bot import BotInfrastructure
+import logging
+
+from dexbot import config_file
+from dexbot.worker import WorkerInfrastructure
+
+from dexbot.views.errors import PyQtHandler
 
 from ruamel.yaml import YAML
 from bitshares.instance import set_shared_bitshares_instance
@@ -6,83 +11,113 @@ from bitshares.instance import set_shared_bitshares_instance
 
 class MainController:
 
-    bots = dict()
-
     def __init__(self, bitshares_instance):
         self.bitshares_instance = bitshares_instance
         set_shared_bitshares_instance(bitshares_instance)
-        self.bot_template = BotInfrastructure
+        self.worker_manager = None
 
-    def create_bot(self, botname, config, view):
+        # Configure logging
+        formatter = logging.Formatter(
+            '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+        logger = logging.getLogger("dexbot.per_worker")
+        fh = logging.FileHandler('dexbot.log')
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+        logger.setLevel(logging.INFO)
+        pyqth = PyQtHandler()
+        pyqth.setLevel(logging.ERROR)
+        logger.addHandler(pyqth)
+
+    def create_worker(self, worker_name, config, view):
         # Todo: Add some threading here so that the GUI doesn't freeze
-        bot = self.bot_template(config, self.bitshares_instance, view)
-        bot.daemon = True
-        bot.start()
-        self.bots[botname] = bot
-
-    def stop_bot(self, bot_name):
-        self.bots[bot_name].stop()
-        self.bots.pop(bot_name, None)
-
-    def remove_bot(self, bot_name):
-        # Todo: Add some threading here so that the GUI doesn't freeze
-        if bot_name in self.bots:
-            # Bot currently running
-            self.bots[bot_name].remove_bot()
-            self.bots[bot_name].stop()
-            self.bots.pop(bot_name, None)
+        if self.worker_manager and self.worker_manager.is_alive():
+            self.worker_manager.add_worker(worker_name, config)
         else:
-            # Bot not running
-            config = self.get_bot_config(bot_name)
-            self.bot_template.remove_offline_bot(config, bot_name)
+            self.worker_manager = WorkerInfrastructure(config, self.bitshares_instance, view)
+            self.worker_manager.daemon = True
+            self.worker_manager.start()
 
-        self.remove_bot_config(bot_name)
+    def stop_worker(self, worker_name):
+        self.worker_manager.stop(worker_name)
+
+    def remove_worker(self, worker_name):
+        # Todo: Add some threading here so that the GUI doesn't freeze
+        if self.worker_manager and self.worker_manager.is_alive():
+            # Worker manager currently running
+            if worker_name in self.worker_manager.workers:
+                self.worker_manager.remove_worker(worker_name)
+                self.worker_manager.stop(worker_name)
+            else:
+                # Worker not running
+                config = self.get_worker_config(worker_name)
+                WorkerInfrastructure.remove_offline_worker(config, worker_name)
+        else:
+            # Worker manager not running
+            config = self.get_worker_config(worker_name)
+            WorkerInfrastructure.remove_offline_worker(config, worker_name)
 
     @staticmethod
     def load_config():
         yaml = YAML()
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             return yaml.load(f)
 
     @staticmethod
-    def get_bots_data():
+    def get_workers_data():
         """
-        Returns dict of all the bots data
+        Returns dict of all the workers data
         """
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             yaml = YAML()
-            return yaml.load(f)['bots']
+            return yaml.load(f)['workers']
 
     @staticmethod
-    def get_latest_bot_config():
+    def get_worker_config(worker_name):
         """
-        Returns config file data with only the latest bot data
+        Returns config file data with only the data from a specific worker
         """
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             yaml = YAML()
             config = yaml.load(f)
-            latest_bot = list(config['bots'].keys())[-1]
-            config['bots'] = {latest_bot: config['bots'][latest_bot]}
+            config['workers'] = {worker_name: config['workers'][worker_name]}
             return config
 
     @staticmethod
-    def get_bot_config(botname):
-        """
-        Returns config file data with only the data from a specific bot
-        """
-        with open('config.yml', 'r') as f:
-            yaml = YAML()
-            config = yaml.load(f)
-            config['bots'] = {botname: config['bots'][botname]}
-            return config
-
-    @staticmethod
-    def remove_bot_config(bot_name):
+    def remove_worker_config(worker_name):
         yaml = YAML()
-        with open('config.yml', 'r') as f:
+        with open(config_file, 'r') as f:
             config = yaml.load(f)
 
-        config['bots'].pop(bot_name, None)
+        config['workers'].pop(worker_name, None)
 
-        with open("config.yml", "w") as f:
+        with open(config_file, "w") as f:
+            yaml.dump(config, f)
+
+    @staticmethod
+    def add_worker_config(worker_name, worker_data):
+        yaml = YAML()
+        with open(config_file, 'r') as f:
+            config = yaml.load(f)
+
+        config['workers'][worker_name] = worker_data
+
+        with open(config_file, "w") as f:
+            yaml.dump(config, f)
+
+    @staticmethod
+    def replace_worker_config(worker_name, new_worker_name, worker_data):
+        yaml = YAML()
+        with open(config_file, 'r') as f:
+            config = yaml.load(f)
+
+        workers = config['workers']
+        # Rotate the dict keys to keep order
+        for _ in range(len(workers)):
+            key, value = workers.popitem(False)
+            if worker_name == key:
+                workers[new_worker_name] = worker_data
+            else:
+                workers[key] = value
+
+        with open(config_file, "w") as f:
             yaml.dump(config, f)

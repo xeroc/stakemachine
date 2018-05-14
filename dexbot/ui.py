@@ -1,10 +1,12 @@
 import os
-import click
 import logging
-from ruamel import yaml
 from functools import update_wrapper
+
+import click
+from ruamel import yaml
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
+
 log = logging.getLogger(__name__)
 
 
@@ -14,47 +16,57 @@ def verbose(f):
         verbosity = [
             "critical", "error", "warn", "info", "debug"
         ][int(min(ctx.obj.get("verbose", 0), 4))]
-        if ctx.obj.get("systemd",False):
-            # dont print the timestamps: systemd will log it for us
+        if ctx.obj.get("systemd", False):
+            # Don't print the timestamps: systemd will log it for us
             formatter1 = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter(
+                '%(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
         elif verbosity == "debug":
-            # when debugging log where the log call came from
+            # When debugging: log where the log call came from
             formatter1 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - bot %(botname)s - %(levelname)s - %(message)s')           
+            formatter2 = logging.Formatter(
+                '%(asctime)s (%(module)s:%(lineno)d) - %(worker_name)s - %(levelname)s - %(message)s')
         else:
             formatter1 = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            formatter2 = logging.Formatter('%(asctime)s - bot %(botname)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+            formatter2 = logging.Formatter(
+                '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
 
-        # use special format for special bots logger
+        # Use special format for special workers logger
+        logger = logging.getLogger("dexbot.per_worker")
         ch = logging.StreamHandler()
         ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter2)
-        logging.getLogger("dexbot.per_bot").addHandler(ch)
-        logging.getLogger("dexbot.per_bot").propagate = False # don't double up with root logger
-        # set the root logger with basic format
+        logger.addHandler(ch)
+
+        # Logging to a file
+        fh = logging.FileHandler('dexbot.log')
+        fh.setFormatter(formatter2)
+        logger.addHandler(fh)
+
+        logger.propagate = False  # Don't double up with root logger
+        # Set the root logger with basic format
         ch = logging.StreamHandler()
         ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter1)
         logging.getLogger("dexbot").addHandler(ch)
         logging.getLogger("").handlers = []
-        
+
         # GrapheneAPI logging
         if ctx.obj["verbose"] > 4:
             verbosity = [
                 "critical", "error", "warn", "info", "debug"
             ][int(min(ctx.obj.get("verbose", 4) - 4, 4))]
-            log = logging.getLogger("grapheneapi")
-            log.setLevel(getattr(logging, verbosity.upper()))
-            log.addHandler(ch)
+            logger = logging.getLogger("grapheneapi")
+            logger.setLevel(getattr(logging, verbosity.upper()))
+            logger.addHandler(ch)
 
         if ctx.obj["verbose"] > 8:
             verbosity = [
                 "critical", "error", "warn", "info", "debug"
             ][int(min(ctx.obj.get("verbose", 8) - 8, 4))]
-            log = logging.getLogger("graphenebase")
-            log.setLevel(getattr(logging, verbosity.upper()))
-            log.addHandler(ch)
+            logger = logging.getLogger("graphenebase")
+            logger.setLevel(getattr(logging, verbosity.upper()))
+            logger.addHandler(ch)
 
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
@@ -147,3 +159,19 @@ def confirmalert(msg):
         click.style("Alert", fg="red") +
         "] " + msg
     )
+
+# error message "translation"
+# here we convert some of the cryptic Graphene API error messages into a longer sentence
+# particularly whe the problem is something the user themselves can fix (such as not enough
+# money in account)
+# it's here because both GUI and CLI might use it
+
+
+TRANSLATIONS = {'amount_to_sell.amount > 0': "You need to have sufficient buy and sell amounts in your account"}
+
+
+def translate_error(err):
+    for k, v in TRANSLATIONS.items():
+        if k in err:
+            return v
+    return None

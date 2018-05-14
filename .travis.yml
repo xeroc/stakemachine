@@ -1,0 +1,35 @@
+sudo: true
+matrix:
+  include:
+  - os: linux
+    language: python
+    python: '3.6'
+  - os: osx
+    language: generic
+    before_install:
+    - python --version
+    - brew upgrade python
+install:
+  - make install
+script:
+  - echo "@TODO - Running tests..."
+  - pyinstaller --distpath dist/$TRAVIS_OS_NAME gui.spec
+  - pyinstaller --distpath dist/$TRAVIS_OS_NAME cli.spec
+before_deploy:
+  - git config --local user.name "Travis"
+  - git config --local user.email "travis@travis-ci.org"
+  - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
+  - tar -czvf dist/DEXBot-$TRAVIS_OS_NAME.tar.gz dist/$TRAVIS_OS_NAME/*
+deploy:
+  - provider: releases
+    skip_cleanup: true
+    api_key:
+      secure: YHAPA2G3qu7at2hMu4AplXH/niI1ChlgldJVetaKO92iDQiyOk5VqFfhV1ec+nYdX8rtniwfD7YJr2nG2x1ATwKw4MyFcJEXqaOUmKWTeZ/Q3PnQQsa+2BnN4Rfz1aynpsKHDYS9gCU/YTqymujE8bdlxW1WtpYOqOSDkspGxZGZTiUKQ7/qhrjB3Dywm/KF9WEoba/X7tbhmSuU8sL45gBGY008TXZRWqAPM42qa/aBIrG/cIA865VlCUltPC6vzskcWI5q1UtYh6g2CiXJghcpFEO2rWWXmS1A+5nQp6ptJigjRgnhyFHmHb27lRM8aRGRDTeyJvlNuoyIvNj/FxhLXZvomgTyGyzTIl67WIXcxWMKx6KqqrqGyiooRMeFpDEYobZL/FY9whi3M+gUwsofAVQ6oL4a1L185egaXlMKGbM5GYB4OxVLsVtL2c0pJjvNIkCGGDzaqNpdo+vZflB4iCwvw548rWJsqsHnP1XMo28ZU86hibD7V0x+JW2BJEI0lMvOkRBslOhYBafIsbZakO4Zf4d+5b2dd8/xY/wTbuxwgDuBOmpqoByVYeCBah4bbnb8JS6eze+vUyxaI1XLAdQXbLQ788Agr2jdHGuy1wI8io9g5vtzS5oOyq8YFBM1tVKM2Mtw5nkSsTbPJsZg8m/kkre6qiXJl2gPQTE=
+    file: dist/*.tar.gz
+    file_glob: true
+    on:
+      tags: true
+notifications:
+  email: false
+  slack:
+    secure: iQwBqvwq0HmEODoWI52pnNi2trfZ4ly5/fDPmkr6Ez8z9rm5XQ3CBLtpH7JpNdkyen5r+dVTczJDIOTBLpXwe/AzwFKLqZc/0pkXnxzNSENnm++/G6uqS0u5fMdYSoR4fJC1zjzEj2ly11OdS+wX3y9//hD13U96u3iO6T/7EXU2VYt82wekziJXzyfK4JeJMs1L5M2Oz7ZBwiHeAZ/3ZNjKE+9TX7S/mlmG+bNiQhv/wSin2AnsB1recgFjp17ZHq4cW+K77TDnRlPZ0bVsOhGYUtMlW9llidXZbunLj3qITIDl7dufowBG95PTHh+L2KDcPv7UCxlN02kXWuz3nL47UwD7BZcLMJ0RLYk4g+qNBrytgrmhH82gdmenzCQ4PgHI/U1/8hgiEyGlBZWUTXrso5EF3VBRUhCtu8dG/F+rdGHSfK1mZQyDPe6my9E888TvfcWWCpVNammAZicrGWU9nY3Rqn7DFodBL896iFPs1DJD5fTF1th6hHEyRSuKZC80irFZRoxccDPuDYVIfPExJH328tFeh75WOuzQt4QCBFiOsiFDlCYhnQ8tNw/MWntPQHwY8PkUlvpvelPCgfh73ihXtMD61/6Hq+lOijkGFhEzgpqmzL4mSUd/EQRJHLE9lAVvRGdrzlaIV6f4CirJkZSAgf4LuYDl2JMZ3kE=

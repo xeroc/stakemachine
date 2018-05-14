@@ -1,31 +1,22 @@
 # DEXBot
 
-Trading Bot for the BitShares Decentralized Exchange
-(DEX).
+Trading Bot for the BitShares Decentralized Exchange (DEX).
+
+## Build status
+
+master:  
+[![Build Status](https://travis-ci.org/Codaone/DEXBot.svg?branch=master)](https://travis-ci.org/Codaone/DEXBot)
+
 
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
-## Installation
+## Installing and running the software
 
-    git clone https://github.com/codaone/dexbot
-    cd dexbot
-    python3 setup.py install
-    # or
-    python3 setup.py install --user
+See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki/Installing-and-Running)
 
-## Configuration
+## Contributing
 
-Configuration happens in `config.yml`
-
-## Requirements
-
-Add your account's private key to the pybitshares wallet using `uptick`
-
-    uptick addkey
-
-## Execution
-
-    dexbot run
+Install the software, use it and report any problems by creating a ticket.
 
 # IMPORTANT NOTE
 

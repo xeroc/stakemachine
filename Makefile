@@ -1,6 +1,9 @@
 .PHONY: clean-pyc clean-build docs
 
-clean: clean-build clean-pyc
+clean: clean-build clean-pyc clean-ui
+
+clean-ui:
+	find dexbot/views/ui/*.py ! -name '__init__.py' -type f -exec rm -f {} +
 
 clean-build:
 	rm -fr build/
@@ -13,10 +16,13 @@ clean-pyc:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f {} +
 
+pip:
+	python3 -m pip install -r requirements.txt
+
 lint:
 	flake8 dexbot/
 
-build:
+build: pip
 	python3 setup.py build
 
 install: build
@@ -29,10 +35,14 @@ git:
 	git push --all
 	git push --tags
 
-check:
+check: pip
 	python3 setup.py check
 
-dist:
+package: build
+	pyinstaller gui.spec
+	pyinstaller cli.spec
+
+dist: build
 	python3 setup.py sdist upload -r pypi
 	python3 setup.py bdist_wheel upload
 
