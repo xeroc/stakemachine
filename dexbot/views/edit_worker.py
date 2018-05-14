@@ -1,4 +1,7 @@
 from .ui.edit_worker_window_ui import Ui_Dialog
+from .confirmation import ConfirmationDialog
+from .notice import NoticeDialog
+from .errors import gui_error
 
 from PyQt5 import QtWidgets
 

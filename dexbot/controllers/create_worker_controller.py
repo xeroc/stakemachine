@@ -1,5 +1,6 @@
 import collections
 
+from dexbot.views.errors import gui_error
 from dexbot.controllers.main_controller import MainController
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.confirmation import ConfirmationDialog
@@ -141,6 +142,7 @@ class CreateWorkerController:
                                     'Are you sure you want to do this?')
         return dialog.exec_()
 
+    @gui_error
     def change_strategy_form(self, ui, worker_data=None):
         # Make sure the container is empty
         for index in reversed(range(ui.strategy_container.count())):
@@ -178,6 +180,7 @@ class CreateWorkerController:
     def validate_account_not_in_use(self, account):
         return not self.is_account_in_use(account)
 
+    @gui_error
     def validate_form(self, ui):
         error_text = ''
         base_asset = ui.base_asset_input.currentText()
@@ -213,6 +216,7 @@ class CreateWorkerController:
         else:
             return True
 
+    @gui_error
     def handle_save(self, ui):
         if not self.validate_form(ui):
             return

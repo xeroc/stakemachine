@@ -1,5 +1,7 @@
 import importlib
 
+from dexbot.views.errors import gui_error
+
 from PyQt5 import QtWidgets
 
 
@@ -28,12 +30,14 @@ class StrategyFormWidget(QtWidgets.QWidget):
             if config:
                 self.set_staggered_orders_values(config)
 
+    @gui_error
     def onchange_relative_order_size_checkbox(self, checked):
         if checked:
             self.order_size_input_to_relative()
         else:
             self.order_size_input_to_static()
 
+    @gui_error
     def order_size_input_to_relative(self):
         self.strategy_widget.amount_input.setSuffix('%')
         self.strategy_widget.amount_input.setDecimals(2)
@@ -41,6 +45,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
         self.strategy_widget.amount_input.setMinimumWidth(151)
         self.strategy_widget.amount_input.setValue(10.00)
 
+    @gui_error
     def order_size_input_to_static(self):
         self.strategy_widget.amount_input.setSuffix('')
         self.strategy_widget.amount_input.setDecimals(8)
@@ -56,6 +61,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
         elif self.module_name == 'staggered_orders':
             return self.staggered_orders_values
 
+    @gui_error
     def set_relative_orders_values(self, worker_data):
         if worker_data.get('amount_relative', False):
             self.order_size_input_to_relative()
@@ -73,6 +79,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
         else:
             self.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
 
+    @gui_error
     def set_staggered_orders_values(self, worker_data):
         self.strategy_widget.amount_input.setValue(worker_data.get('amount', 0))
         self.strategy_widget.increment_input.setValue(worker_data.get('increment', 2.5))

@@ -1,4 +1,5 @@
 from .ui.create_worker_window_ui import Ui_Dialog
+from .errors import gui_error
 
 from PyQt5 import QtWidgets
 
