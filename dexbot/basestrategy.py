@@ -320,33 +320,33 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
 
     def market_buy(self, amount, price):
+        self.log.info(
+            'Placing a buy order for {} {} @ {}'.format(price * amount,
+                                                        self.market["base"]['symbol'],
+                                                        price))
         buy_transaction = self.market.buy(
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head"
         )
-
-        self.log.info(
-            'Placed a buy order for {} {} @ {}'.format(price * amount,
-                                                       self.market["base"]['symbol'],
-                                                       price))
+        self.log.info('Placed buy order {}'.format(buy_transaction))
         buy_order = self.get_order(buy_transaction['orderid'])
         return buy_order
 
     def market_sell(self, amount, price):
+        self.log.info(
+            'Placing a sell order for {} {} @ {}'.format(amount,
+                                                         self.market["quote"]['symbol'],
+                                                         price))
         sell_transaction = self.market.sell(
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head"
         )
-
+        self.log.info('Placed sell order {}'.format(sell_transaction))
         sell_order = self.get_order(sell_transaction['orderid'])
-        self.log.info(
-            'Placed a sell order for {} {} @ {}'.format(amount,
-                                                        self.market["quote"]['symbol'],
-                                                        price))
         return sell_order
 
     def purge(self):
