@@ -29,7 +29,7 @@ class MainView(QtWidgets.QMainWindow):
         self.statusbar_updater = None
         self.statusbar_updater_first_run = True
 
-        self.ui.add_worker_button.clicked.connect(self.handle_add_worker)
+        self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
         # Load worker widgets from config file
         workers = main_ctrl.get_workers_data()

@@ -27,7 +27,7 @@ class CreateWorkerView(QtWidgets.QDialog, Ui_Dialog):
         # Set signals
         self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form(self))
         self.save_button.clicked.connect(lambda: controller.handle_save(self))
-        self.cancel_button.clicked.connect(self.reject)
+        self.cancel_button.clicked.connect(lambda: self.reject())
 
         self.controller.change_strategy_form(self)
         self.worker_data = {}

@@ -23,10 +23,10 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.setupUi(self)
         self.pause_button.hide()
 
-        self.pause_button.clicked.connect(self.pause_worker)
-        self.play_button.clicked.connect(self.start_worker)
-        self.remove_button.clicked.connect(self.remove_widget_dialog)
-        self.edit_button.clicked.connect(self.handle_edit_worker)
+        self.pause_button.clicked.connect(lambda: self.pause_worker())
+        self.play_button.clicked.connect(lambda: self.start_worker())
+        self.remove_button.clicked.connect(lambda: self.remove_widget_dialog())
+        self.edit_button.clicked.connect(lambda: self.handle_edit_worker())
 
         self.setup_ui_data(config)
 
