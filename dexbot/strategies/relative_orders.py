@@ -127,14 +127,8 @@ class Strategy(BaseStrategy):
         current_sell_order = self.get_updated_order(stored_sell_order)
         current_buy_order = self.get_updated_order(stored_buy_order)
 
-        # Update checks
-        sell_order_updated = not current_sell_order or \
-            current_sell_order['quote']['amount'] != stored_sell_order['quote']['amount']
-        buy_order_updated = not current_buy_order or \
-            current_buy_order['base']['amount'] != stored_buy_order['base']['amount']
-
-        if sell_order_updated or buy_order_updated:
-            # Either buy or sell order was changed, update both orders
+        if not current_sell_order or not current_buy_order:
+            # Either buy or sell order is missing, update both orders
             self.update_orders()
 
         if self.view:
