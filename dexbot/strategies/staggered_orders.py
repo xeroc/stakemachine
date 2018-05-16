@@ -40,20 +40,16 @@ class Strategy(BaseStrategy):
         self.clear_orders()
 
         center_price = self.calculate_center_price()
+        spread = self.spread
+        increment = self.increment
+        lower_bound = self.lower_bound
+        upper_bound = self.upper_bound
 
         # Calculate buy prices
-        buy_prices = []
-        buy_price = center_price / math.sqrt(1 + self.spread)
-        while buy_price > self.lower_bound:
-            buy_prices.append(buy_price)
-            buy_price = buy_price * (1 - self.increment)
+        buy_prices = self.calculate_buy_prices(center_price, spread, increment, lower_bound)
 
         # Calculate sell prices
-        sell_prices = []
-        sell_price = center_price * math.sqrt(1 + self.spread)
-        while sell_price < self.upper_bound:
-            sell_prices.append(sell_price)
-            sell_price = sell_price * (1 + self.increment)
+        sell_prices = self.calculate_sell_prices(center_price, spread, increment, upper_bound)
 
         # Calculate buy amounts
         highest_buy_price = buy_prices.pop(0)
@@ -136,9 +132,104 @@ class Strategy(BaseStrategy):
             self.update_gui_profit()
             self.update_gui_slider()
 
+    @staticmethod
+    def calculate_buy_prices(center_price, spread, increment, lower_bound):
+        buy_prices = []
+        if lower_bound > center_price / math.sqrt(1 + spread):
+            return buy_prices
+
+        buy_price = center_price / math.sqrt(1 + spread)
+        while buy_price > lower_bound:
+            buy_prices.append(buy_price)
+            buy_price = buy_price * (1 - increment)
+        return buy_prices
+
+    @staticmethod
+    def calculate_sell_prices(center_price, spread, increment, upper_bound):
+        sell_prices = []
+        if upper_bound < center_price * math.sqrt(1 + spread):
+            return sell_prices
+
+        sell_price = center_price * math.sqrt(1 + spread)
+        while sell_price < upper_bound:
+            sell_prices.append(sell_price)
+            sell_price = sell_price * (1 + increment)
+        return sell_prices
+
+    @staticmethod
+    def calculate_amounts(buy_prices, sell_prices, amount, spread, increment):
+        # Calculate buy amounts
+        buy_orders = []
+        if buy_prices:
+            highest_buy_price = buy_prices.pop(0)
+            buy_orders.append({'amount': amount, 'price': highest_buy_price})
+            for buy_price in buy_prices:
+                last_amount = buy_orders[-1]['amount']
+                current_amount = last_amount / math.sqrt(1 + increment)
+                buy_orders.append({'amount': current_amount, 'price': buy_price})
+
+        # Calculate sell amounts
+        sell_orders = []
+        if sell_prices:
+            lowest_sell_price = sell_prices.pop(0)
+            # amount = highest_buy_price * math.sqrt(1 + spread + increment) ?
+            sell_orders.append({'amount': amount, 'price': lowest_sell_price})
+            for sell_price in sell_prices:
+                last_amount = sell_orders[-1]['amount']
+                current_amount = last_amount / math.sqrt(1 + increment)
+                sell_orders.append({'amount': current_amount, 'price': sell_price})
+
+        return [buy_orders, sell_orders]
+
+    @staticmethod
+    def get_required_assets(market, amount, spread, increment, lower_bound, upper_bound):
+        if not lower_bound or not increment:
+            return None
+
+        ticker = market.ticker()
+        highest_bid = ticker.get("highestBid")
+        lowest_ask = ticker.get("lowestAsk")
+        if not float(highest_bid):
+            return None
+        elif not float(lowest_ask):
+            return None
+        else:
+            center_price = (highest_bid['price'] + lowest_ask['price']) / 2
+
+        # Calculate buy prices
+        buy_prices = Strategy.calculate_buy_prices(center_price, spread, increment, lower_bound)
+
+        # Calculate sell prices
+        sell_prices = Strategy.calculate_sell_prices(center_price, spread, increment, upper_bound)
+
+        # Calculate buy and sell amounts
+        buy_orders, sell_orders = Strategy.calculate_amounts(
+            buy_prices, sell_prices, amount, spread, increment
+        )
+
+        needed_buy_asset = 0
+        for buy_order in buy_orders:
+            needed_buy_asset += buy_order['amount']
+
+        needed_sell_asset = 0
+        for sell_order in sell_orders:
+            needed_sell_asset += sell_order['amount']
+
+        return [needed_buy_asset, needed_sell_asset]
+
     # GUI updaters
     def update_gui_profit(self):
         pass
 
     def update_gui_slider(self):
-        pass
+        ticker = self.market.ticker()
+        latest_price = ticker.get('latest').get('price')
+        total_balance = self.total_balance()
+        total = (total_balance['quote'] * latest_price) + total_balance['base']
+
+        if not total:  # Prevent division by zero
+            percentage = 50
+        else:
+            percentage = (total_balance['base'] / total) * 100
+        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
+        self['slider'] = percentage
