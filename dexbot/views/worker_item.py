@@ -117,8 +117,8 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def handle_edit_worker(self):
-        controller = CreateWorkerController(self.main_ctrl.bitshares_instance, 'edit')
-        edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.worker_config)
+        edit_worker_dialog = EditWorkerView(self.main_ctrl.bitshares_instance,
+                                            self.worker_name, self.worker_config)
         return_value = edit_worker_dialog.exec_()
 
         # User clicked save

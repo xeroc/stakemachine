@@ -1,18 +1,17 @@
 from .ui.edit_worker_window_ui import Ui_Dialog
-from .confirmation import ConfirmationDialog
-from .notice import NoticeDialog
-from .errors import gui_error
+from dexbot.controllers.create_worker_controller import CreateWorkerController
 
 from PyQt5 import QtWidgets
 
 
 class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
 
-    def __init__(self, controller, worker_name, config):
+    def __init__(self, bitshares_instance, worker_name, config):
         super().__init__()
-        self.controller = controller
         self.worker_name = worker_name
         self.strategy_widget = None
+        controller = CreateWorkerController(self, bitshares_instance, 'edit')
+        self.controller = controller
 
         self.setupUi(self)
         worker_data = config['workers'][worker_name]
@@ -33,9 +32,9 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.account_name.setText(self.controller.get_account(worker_data))
 
         # Set signals
-        self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form(self))
-        self.save_button.clicked.connect(lambda: self.controller.handle_save(self))
+        self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form())
+        self.save_button.clicked.connect(lambda: self.controller.handle_save())
         self.cancel_button.clicked.connect(lambda: self.reject())
 
-        self.controller.change_strategy_form(self, worker_data)
+        self.controller.change_strategy_form(worker_data)
         self.worker_data = {}
