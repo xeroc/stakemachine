@@ -171,6 +171,11 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>password_input</tabstop>
+  <tabstop>confirm_password_input</tabstop>
+  <tabstop>ok_button</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
