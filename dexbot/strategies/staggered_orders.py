@@ -40,6 +40,7 @@ class Strategy(BaseStrategy):
         self.clear_orders()
 
         center_price = self.calculate_center_price()
+        amount = self.amount
         spread = self.spread
         increment = self.increment
         lower_bound = self.lower_bound
@@ -51,21 +52,8 @@ class Strategy(BaseStrategy):
         # Calculate sell prices
         sell_prices = self.calculate_sell_prices(center_price, spread, increment, upper_bound)
 
-        # Calculate buy amounts
-        highest_buy_price = buy_prices.pop(0)
-        buy_orders = [{'amount': self.amount, 'price': highest_buy_price}]
-        for buy_price in buy_prices:
-            last_amount = buy_orders[-1]['amount']
-            amount = last_amount / math.sqrt(1 + self.increment)
-            buy_orders.append({'amount': amount, 'price': buy_price})
-
-        # Calculate sell amounts
-        lowest_sell_price = highest_buy_price * math.sqrt(1 + self.spread + self.increment)
-        sell_orders = [{'amount': self.amount, 'price': lowest_sell_price}]
-        for sell_price in sell_prices:
-            last_amount = sell_orders[-1]['amount']
-            amount = last_amount / math.sqrt(1 + self.increment)
-            sell_orders.append({'amount': amount, 'price': sell_price})
+        # Calculate buy and sell amounts
+        buy_orders, sell_orders = self.calculate_amounts(buy_prices, sell_prices, amount, spread, increment)
 
         # Make sure there is enough balance for the buy orders
         needed_buy_asset = 0
@@ -106,12 +94,12 @@ class Strategy(BaseStrategy):
         self.remove_order(order)
 
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
-            amount = order['quote']['amount']
             price = order['price'] * self.spread
+            amount = order['quote']['amount']
             new_order = self.market_sell(amount, price)
         else:  # Sell order
-            amount = order['base']['amount']
             price = order['price'] / self.spread
+            amount = order['base']['amount']
             new_order = self.market_buy(amount, price)
 
         self.save_order(new_order)
@@ -141,7 +129,7 @@ class Strategy(BaseStrategy):
         buy_price = center_price / math.sqrt(1 + spread)
         while buy_price > lower_bound:
             buy_prices.append(buy_price)
-            buy_price = buy_price * (1 - increment)
+            buy_price = buy_price / (1 + increment)
         return buy_prices
 
     @staticmethod
@@ -172,8 +160,8 @@ class Strategy(BaseStrategy):
         sell_orders = []
         if sell_prices:
             lowest_sell_price = sell_prices.pop(0)
-            # amount = highest_buy_price * math.sqrt(1 + spread + increment) ?
-            sell_orders.append({'amount': amount, 'price': lowest_sell_price})
+            current_amount = amount * math.sqrt(1 + spread + increment)
+            sell_orders.append({'amount': current_amount, 'price': lowest_sell_price})
             for sell_price in sell_prices:
                 last_amount = sell_orders[-1]['amount']
                 current_amount = last_amount / math.sqrt(1 + increment)
