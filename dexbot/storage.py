@@ -85,17 +85,25 @@ class Storage(dict):
         db_worker.clear(self.category)
 
     def save_order(self, order):
+        """ Save the order to the database
+        """
         order_id = order['id']
         db_worker.save_order(self.category, order_id, order)
 
     def remove_order(self, order):
+        """ Removes an order from the database
+        """
         order_id = order['id']
         db_worker.remove_order(self.category, order_id)
 
     def clear_orders(self):
+        """ Removes all worker's orders from the database
+        """
         db_worker.clear_orders(self.category)
 
     def fetch_orders(self, worker=None):
+        """ Get all the orders (or just specific worker's orders) from the database
+        """
         if not worker:
             worker = self.category
         return db_worker.fetch_orders(worker)
