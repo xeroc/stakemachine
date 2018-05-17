@@ -183,7 +183,7 @@ class Strategy(BaseStrategy):
 
     @staticmethod
     def get_required_assets(market, amount, spread, increment, lower_bound, upper_bound):
-        if not lower_bound or not increment:
+        if not amount or not lower_bound or not increment:
             return None
 
         ticker = market.ticker()

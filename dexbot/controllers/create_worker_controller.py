@@ -183,32 +183,34 @@ class CreateWorkerController:
 
     @gui_error
     def validate_form(self):
-        error_text = ''
+        error_texts = []
         base_asset = self.view.base_asset_input.currentText()
         quote_asset = self.view.quote_asset_input.text()
         worker_name = self.view.worker_name_input.text()
 
         if not self.validate_asset(base_asset):
-            error_text += 'Field "Base Asset" does not have a valid asset.\n'
+            error_texts.append('Field "Base Asset" does not have a valid asset.')
         if not self.validate_asset(quote_asset):
-            error_text += 'Field "Quote Asset" does not have a valid asset.\n'
+            error_texts.append('Field "Quote Asset" does not have a valid asset.')
         if not self.validate_market(base_asset, quote_asset):
-            error_text += "Market {}/{} doesn't exist.\n".format(base_asset, quote_asset)
+            error_texts.append("Market {}/{} doesn't exist.".format(base_asset, quote_asset))
         if self.mode == 'add':
             account = self.view.account_input.text()
             private_key = self.view.private_key_input.text()
             if not self.validate_worker_name(worker_name):
-                error_text += 'Worker name needs to be unique. "{}" is already in use.\n'.format(worker_name)
+                error_texts.append('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
             if not self.validate_account_name(account):
-                error_text += "Account doesn't exist.\n"
+                error_texts.append("Account doesn't exist.")
             if not self.validate_account(account, private_key):
-                error_text += 'Private key is invalid.\n'
+                error_texts.append('Private key is invalid.')
             if not self.validate_account_not_in_use(account):
-                error_text += 'Use a different account. "{}" is already in use.\n'.format(account)
+                error_texts.append('Use a different account. "{}" is already in use.'.format(account))
         elif self.mode == 'edit':
             if not self.validate_worker_name(worker_name, self.view.worker_name):
-                error_text += 'Worker name needs to be unique. "{}" is already in use.\n'.format(worker_name)
-        error_text = error_text.rstrip()  # Remove the extra line-ending
+                error_texts.append('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
+
+        error_texts.extend(self.view.strategy_widget.strategy_controller.validation_errors())
+        error_text = '\n'.join(error_texts)
 
         if error_text:
             dialog = NoticeDialog(error_text)

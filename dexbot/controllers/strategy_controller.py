@@ -58,6 +58,12 @@ class RelativeOrdersController:
         else:
             self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
 
+    def validation_errors(self):
+        error_texts = []
+        if not self.view.strategy_widget.amount_input.value():
+            error_texts.append("Amount can't be 0")
+        return error_texts
+
     @property
     def values(self):
         data = {
@@ -138,6 +144,18 @@ class StaggeredOrdersController:
 
     def set_required_quote(self, text):
         self.view.strategy_widget.required_quote_text.setText(text)
+
+    def validation_errors(self):
+        error_texts = []
+        if not self.view.strategy_widget.amount_input.value():
+            error_texts.append("Amount can't be 0")
+        if not self.view.strategy_widget.spread_input.value():
+            error_texts.append("Spread can't be 0")
+        if not self.view.strategy_widget.increment_input.value():
+            error_texts.append("Increment can't be 0")
+        if not self.view.strategy_widget.lower_bound_input.value():
+            error_texts.append("Lower bound can't be 0")
+        return error_texts
 
     @property
     def values(self):
