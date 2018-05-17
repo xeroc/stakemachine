@@ -62,6 +62,8 @@ class RelativeOrdersController:
         error_texts = []
         if not self.view.strategy_widget.amount_input.value():
             error_texts.append("Amount can't be 0")
+        if not self.view.strategy_widget.spread_input.value():
+            error_texts.append("Spread can't be 0")
         return error_texts
 
     @property
