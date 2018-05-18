@@ -38,9 +38,9 @@ class MainView(QtWidgets.QMainWindow):
 
             # Limit the max amount of workers so that the performance isn't greatly affected
             self.num_of_workers += 1
-            if self.num_of_workers >= self.max_workers:
-                self.ui.add_worker_button.setEnabled(False)
-                break
+            # if self.num_of_workers >= self.max_workers:
+            #     self.ui.add_worker_button.setEnabled(False)
+            #     break
 
         # Dispatcher polls for events from the workers that are used to change the ui
         self.dispatcher = ThreadDispatcher(self)
@@ -67,8 +67,8 @@ class MainView(QtWidgets.QMainWindow):
         self.worker_widgets.pop(worker_name, None)
 
         self.num_of_workers -= 1
-        if self.num_of_workers < self.max_workers:
-            self.ui.add_worker_button.setEnabled(True)
+        # if self.num_of_workers < self.max_workers:
+        #     self.ui.add_worker_button.setEnabled(True)
 
     @gui_error
     def handle_add_worker(self):
