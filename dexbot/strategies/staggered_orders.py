@@ -103,12 +103,12 @@ class Strategy(BaseStrategy):
         self.log.info('Change detected, updating orders')
 
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
-            price = order['price'] * self.spread
+            price = order['price'] * (1 + self.spread)
             amount = order['quote']['amount']
             self.remove_order(order)
             new_order = self.market_sell(amount, price)
         else:  # Sell order
-            price = (order['price'] ** -1) / self.spread
+            price = order['price'] / (1 + self.spread)
             amount = order['quote']['amount']
             self.remove_order(order)
             new_order = self.market_buy(amount, price)
