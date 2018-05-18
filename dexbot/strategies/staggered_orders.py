@@ -27,7 +27,14 @@ class Strategy(BaseStrategy):
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
 
-        self.check_orders()
+        if self['setup_done']:
+            self.place_orders()
+        else:
+            self.init_strategy()
+
+        if self.view:
+            self.update_gui_profit()
+            self.update_gui_slider()
 
     def error(self, *args, **kwargs):
         self.cancel_all()
@@ -90,6 +97,9 @@ class Strategy(BaseStrategy):
         self['setup_done'] = True
 
     def replace_order(self, order):
+        """ Replaces an order with a reverse order
+            buy orders become sell orders and sell orders become buy orders
+        """
         self.log.info('Change detected, updating orders')
         self.remove_order(order)
 
@@ -98,20 +108,35 @@ class Strategy(BaseStrategy):
             amount = order['quote']['amount']
             new_order = self.market_sell(amount, price)
         else:  # Sell order
-            price = order['price'] / self.spread
-            amount = order['base']['amount']
+            price = (order['price'] ** -1) / self.spread
+            amount = order['quote']['amount']
             new_order = self.market_buy(amount, price)
 
         self.save_order(new_order)
 
+    def place_order(self, order):
+        if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
+            price = order['price']
+            amount = order['quote']['amount']
+            self.market_buy(amount, price)
+        else:  # Sell order
+            price = order['price'] ** -1
+            amount = order['base']['amount']
+            self.market_sell(amount, price)
+
+    def place_orders(self):
+        """ Place all the orders found in the database
+        """
+        self.cancel_all()
+        orders = self.fetch_orders()
+        for order_id, order in orders.items():
+            self.place_order(order)
+
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
-        if not self['setup_done']:
-            self.init_strategy()
-
         orders = self.fetch_orders()
-        for order in orders:
+        for order_id, order in orders.items():
             current_order = self.get_order(order)
             if not current_order:
                 self.replace_order(order)
@@ -153,7 +178,7 @@ class Strategy(BaseStrategy):
             buy_orders.append({'amount': amount, 'price': highest_buy_price})
             for buy_price in buy_prices:
                 last_amount = buy_orders[-1]['amount']
-                current_amount = last_amount / math.sqrt(1 + increment)
+                current_amount = last_amount * math.sqrt(1 + increment)
                 buy_orders.append({'amount': current_amount, 'price': buy_price})
 
         # Calculate sell amounts
@@ -197,7 +222,7 @@ class Strategy(BaseStrategy):
 
         needed_buy_asset = 0
         for buy_order in buy_orders:
-            needed_buy_asset += buy_order['amount']
+            needed_buy_asset += buy_order['amount'] * buy_order['price']
 
         needed_sell_asset = 0
         for sell_order in sell_orders:
