@@ -60,8 +60,8 @@ class MainView(QtWidgets.QMainWindow):
         self.worker_widgets[worker_name] = widget
 
         self.num_of_workers += 1
-        if self.num_of_workers >= self.max_workers:
-            self.ui.add_worker_button.setEnabled(False)
+        # if self.num_of_workers >= self.max_workers:
+        #    self.ui.add_worker_button.setEnabled(False)
 
     def remove_worker_widget(self, worker_name):
         self.worker_widgets.pop(worker_name, None)
