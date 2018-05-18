@@ -1,5 +1,6 @@
 import logging
 import time
+import math
 
 from .storage import Storage
 from .statemachine import StateMachine
@@ -151,7 +152,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             )
             self.disabled = True
         else:
-            center_price = (highest_bid['price'] + lowest_ask['price']) / 2
+            center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
             return center_price
 
     def calculate_relative_center_price(self, spread, order_ids=None):
