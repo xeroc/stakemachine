@@ -1,15 +1,21 @@
 import logging
+import time
+import math
 
 from .storage import Storage
 from .statemachine import StateMachine
 
 from events import Events
 import bitsharesapi
+import bitsharesapi.exceptions
 from bitshares.amount import Amount
 from bitshares.market import Market
 from bitshares.account import Account
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.instance import shared_bitshares_instance
+
+
+MAX_TRIES = 3
 
 
 class BaseStrategy(Storage, StateMachine, Events):
@@ -146,7 +152,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             )
             self.disabled = True
         else:
-            center_price = (highest_bid['price'] + lowest_ask['price']) / 2
+            center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
             return center_price
 
     def calculate_relative_center_price(self, spread, order_ids=None):
@@ -218,6 +224,12 @@ class BaseStrategy(Storage, StateMachine, Events):
         limit_orders = self.account['limit_orders'][:]
         for o in limit_orders:
             base_amount = o['for_sale']
+            assert type(base_amount) in [int, float], "o['for_sale'] not num {}".format(dict(o))
+            assert type(o['sell_price']['base']['amount']) in [
+                int, float], "o['sell_base']['base']['amount'] not num {}".format(dict(o))
+            assert type(o['sell_price']['quote']['amount']) in [
+                int, float], "o['sell_base']['quote']['amount'] not num {}".format(dict(o))
+
             price = o['sell_price']['base']['amount'] / o['sell_price']['quote']['amount']
             quote_amount = base_amount / price
             o['sell_price']['base']['amount'] = base_amount
@@ -282,14 +294,14 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     def _cancel(self, orders):
         try:
-            self.bitshares.cancel(orders, account=self.account)
+            self.retry_action(self.bitshares.cancel, orders, account=self.account)
         except bitsharesapi.exceptions.UnhandledRPCError as e:
             if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
                 # The order(s) we tried to cancel doesn't exist
                 self.bitshares.txbuffer.clear()
                 return False
             else:
-                raise
+                self.log.exception("Unable to cancel order")
         return True
 
     def cancel(self, orders):
@@ -313,33 +325,35 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
 
     def market_buy(self, amount, price):
-        buy_transaction = self.market.buy(
+        self.log.info(
+            'Placing a buy order for {} {} @ {}'.format(price * amount,
+                                                        self.market["base"]['symbol'],
+                                                        price))
+        buy_transaction = self.retry_action(
+            self.market.buy,
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head"
         )
-
-        self.log.info(
-            'Placed a buy order for {} {} @ {}'.format(price * amount,
-                                                       self.market["base"]['symbol'],
-                                                       price))
+        self.log.info('Placed buy order {}'.format(buy_transaction))
         buy_order = self.get_order(buy_transaction['orderid'])
         return buy_order
 
     def market_sell(self, amount, price):
-        sell_transaction = self.market.sell(
+        self.log.info(
+            'Placing a sell order for {} {} @ {}'.format(amount,
+                                                         self.market["quote"]['symbol'],
+                                                         price))
+        sell_transaction = self.retry_action(
+            self.market.sell,
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head"
         )
-
+        self.log.info('Placed sell order {}'.format(sell_transaction))
         sell_order = self.get_order(sell_transaction['orderid'])
-        self.log.info(
-            'Placed a sell order for {} {} @ {}'.format(amount,
-                                                        self.market["quote"]['symbol'],
-                                                        price))
         return sell_order
 
     def purge(self):
@@ -411,3 +425,26 @@ class BaseStrategy(Storage, StateMachine, Events):
             base = Amount(base, base_asset)
 
         return {'quote': quote, 'base': base}
+
+    def retry_action(self, action, *args, **kwargs):
+        """
+        Perform an action, and if certain suspected-to-be-spurious graphene bugs occur,
+        instead of bubbling the exception, it is quietly logged (level WARN), and try again
+        tries a fixed number of times (MAX_TRIES) before failing
+        """
+        tries = 0
+        while True:
+            try:
+                return action(*args, **kwargs)
+            except bitsharesapi.exceptions.UnhandledRPCError as e:
+                if "Assert Exception: amount_to_sell.amount > 0" in str(e):
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        tries += 1
+                        self.log.warning("Ignoring: '{}'".format(str(e)))
+                        self.bitshares.txbuffer.clear()
+                        self.account.refresh()
+                        time.sleep(2)
+                else:
+                    raise
