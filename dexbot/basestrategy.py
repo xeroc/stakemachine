@@ -136,7 +136,6 @@ class BaseStrategy(Storage, StateMachine, Events):
              'is_disabled': lambda: self.disabled}
         )
 
-    @property
     def calculate_center_price(self):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
@@ -360,6 +359,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         """ Clear all the worker data from the database and cancel all orders
         """
         self.cancel_all()
+        self.clear_orders()
         self.clear()
 
     @staticmethod
