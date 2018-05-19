@@ -445,5 +445,13 @@ class BaseStrategy(Storage, StateMachine, Events):
                         self.bitshares.txbuffer.clear()
                         self.account.refresh()
                         time.sleep(2)
+                elif "now <= trx.expiration" in str(e):  # usually loss of sync to blockchain
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        tries += 1
+                        self.log.warning("retrying on '{}'".format(str(e)))
+                        self.bitshares.txbuffer.clear()
+                        time.sleep(6)  # wait at least a BitShares block
                 else:
                     raise
