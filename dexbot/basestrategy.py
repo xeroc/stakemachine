@@ -319,9 +319,10 @@ class BaseStrategy(Storage, StateMachine, Events):
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
+        self.log.info('Cancelling all orders')
         if self.orders:
-            self.log.info('Canceling all orders')
             self.cancel(self.orders)
+        self.log.info("Orders cancelled")
 
     def market_buy(self, amount, price):
         self.log.info(
@@ -335,7 +336,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed buy order {}'.format(buy_transaction))
+        self.log.debug('Placed buy order {}'.format(buy_transaction))
         buy_order = self.get_order(buy_transaction['orderid'])
         return buy_order
 
@@ -351,7 +352,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed sell order {}'.format(sell_transaction))
+        self.log.debug('Placed sell order {}'.format(sell_transaction))
         sell_order = self.get_order(sell_transaction['orderid'])
         return sell_order
 

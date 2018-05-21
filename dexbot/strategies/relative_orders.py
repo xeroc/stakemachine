@@ -10,7 +10,7 @@ class Strategy(BaseStrategy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self.log.info("Initalising Relative Orders")
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
         self.onAccount += self.check_orders
@@ -34,7 +34,6 @@ class Strategy(BaseStrategy):
         self.initial_balance = self['initial_balance'] or 0
         self.worker_name = kwargs.get('name')
         self.view = kwargs.get('view')
-
         self.check_orders()
 
     @property
@@ -115,6 +114,8 @@ class Strategy(BaseStrategy):
 
         self['order_ids'] = order_ids
 
+        self.log.info("New orders complete")
+
         # Some orders weren't successfully created, redo them
         if len(order_ids) < 2 and not self.disabled:
             self.update_orders()
@@ -122,14 +123,19 @@ class Strategy(BaseStrategy):
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
+
+        self.log.info("Market event: checking orders...")
+
         stored_sell_order = self['sell_order']
         stored_buy_order = self['buy_order']
+
         current_sell_order = self.get_updated_order(stored_sell_order)
         current_buy_order = self.get_updated_order(stored_buy_order)
-
         if not current_sell_order or not current_buy_order:
             # Either buy or sell order is missing, update both orders
             self.update_orders()
+        else:
+            self.log.info("Orders correct on market")
 
         if self.view:
             self.update_gui_profit()
