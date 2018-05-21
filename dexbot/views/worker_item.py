@@ -9,21 +9,6 @@ from dexbot.views.errors import gui_error
 from PyQt5 import QtWidgets
 
 
-def pyqt_set_trace():
-    '''Set a tracepoint in the Python debugger that works with Qt'''
-    from PyQt5.QtCore import pyqtRemoveInputHook
-    import pdb
-    import sys
-    pyqtRemoveInputHook()
-    # set up the debugger
-    debugger = pdb.Pdb()
-    debugger.reset()
-    # custom next to get outside of function scope
-    debugger.do_next(None)  # run the next command
-    users_frame = sys._getframe().f_back  # frame where the user invoked `pyqt_set_trace()`
-    debugger.interaction(users_frame, None)
-
-
 class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def __init__(self, worker_name, config, main_ctrl, view):
@@ -77,7 +62,6 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def pause_worker(self):
-        pyqt_set_trace()
         self.set_status("Pausing worker")
         self._pause_worker()
         self.main_ctrl.stop_worker(self.worker_name)
