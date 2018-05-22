@@ -223,14 +223,8 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         limit_orders = self.account['limit_orders'][:]
         for o in limit_orders:
-            base_amount = o['for_sale']
-            assert type(base_amount) in [int, float], "o['for_sale'] not num {}".format(dict(o))
-            assert type(o['sell_price']['base']['amount']) in [
-                int, float], "o['sell_base']['base']['amount'] not num {}".format(dict(o))
-            assert type(o['sell_price']['quote']['amount']) in [
-                int, float], "o['sell_base']['quote']['amount'] not num {}".format(dict(o))
-
-            price = o['sell_price']['base']['amount'] / o['sell_price']['quote']['amount']
+            base_amount = float(o['for_sale'])
+            price = float(o['sell_price']['base']['amount']) / float(o['sell_price']['quote']['amount'])
             quote_amount = base_amount / price
             o['sell_price']['base']['amount'] = base_amount
             o['sell_price']['quote']['amount'] = quote_amount
