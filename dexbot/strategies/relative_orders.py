@@ -124,8 +124,8 @@ class Strategy(BaseStrategy):
         """
         stored_sell_order = self['sell_order']
         stored_buy_order = self['buy_order']
-        current_sell_order = self.get_updated_order(stored_sell_order)
-        current_buy_order = self.get_updated_order(stored_buy_order)
+        current_sell_order = self.get_order(stored_sell_order)
+        current_buy_order = self.get_order(stored_buy_order)
 
         if not current_sell_order or not current_buy_order:
             # Either buy or sell order is missing, update both orders
