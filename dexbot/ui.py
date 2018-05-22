@@ -167,7 +167,8 @@ def confirmalert(msg):
 # it's here because both GUI and CLI might use it
 
 
-TRANSLATIONS = {'amount_to_sell.amount > 0': "You need to have sufficient buy and sell amounts in your account"}
+TRANSLATIONS = {'amount_to_sell.amount > 0': "You need to have sufficient buy and sell amounts in your account",
+                'now <= trx.expiration': "Your node has difficulty syncing to the blockchain, consider changing nodes"}
 
 
 def translate_error(err):
