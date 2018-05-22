@@ -330,10 +330,21 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
 
     def market_buy(self, amount, price):
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['base']) < price * amount:
+            self.log.critical(
+                "Insufficient buy balance, needed {} {}".format(
+                    price * amount, self.market['base']['symbol'])
+            )
+            self.disabled = True
+            return None
+
         self.log.info(
-            'Placing a buy order for {} {} @ {}'.format(price * amount,
-                                                        self.market["base"]['symbol'],
-                                                        price))
+            'Placing a buy order for {} {} @ {}'.format(
+                price * amount, self.market["base"]['symbol'], price)
+        )
+
+        # Place the order
         buy_transaction = self.retry_action(
             self.market.buy,
             price,
@@ -342,14 +353,28 @@ class BaseStrategy(Storage, StateMachine, Events):
             returnOrderId="head"
         )
         self.log.info('Placed buy order {}'.format(buy_transaction))
-        buy_order = self.get_order(buy_transaction['orderid'])
+        buy_order = self.get_order(buy_transaction['orderid'], return_none=False)
+        if buy_order['deleted']:
+            self.recheck_orders = True
+
         return buy_order
 
     def market_sell(self, amount, price):
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['quote']) < amount:
+            self.log.critical(
+                "Insufficient sell balance, needed {} {}".format(
+                    amount, self.market['quote']['symbol'])
+            )
+            self.disabled = True
+            return None
+
         self.log.info(
-            'Placing a sell order for {} {} @ {}'.format(amount,
-                                                         self.market["quote"]['symbol'],
-                                                         price))
+            'Placing a sell order for {} {} @ {}'.format(
+                amount, self.market["quote"]['symbol'], price)
+        )
+
+        # Place the order
         sell_transaction = self.retry_action(
             self.market.sell,
             price,
@@ -358,7 +383,10 @@ class BaseStrategy(Storage, StateMachine, Events):
             returnOrderId="head"
         )
         self.log.info('Placed sell order {}'.format(sell_transaction))
-        sell_order = self.get_order(sell_transaction['orderid'])
+        sell_order = self.get_order(sell_transaction['orderid'], return_none=False)
+        if sell_order['deleted']:
+            self.recheck_orders = True
+
         return sell_order
 
     def purge(self):
