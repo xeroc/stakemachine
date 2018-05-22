@@ -191,11 +191,18 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
 
-    def get_order(self, order_id):
-        for order in self.orders:
-            if order['id'] == order_id:
-                return order
-        return False
+    @staticmethod
+    def get_order(order_id, return_none=True):
+        """ Returns the Order object for the order_id
+
+            :param str order_id: blockchain object id of the order
+            :param bool return_none: return None instead of an empty
+                Order object when the order doesn't exist
+        """
+        order = Order(order_id)
+        if return_none and order['deleted']:
+            return None
+        return order
 
     def get_updated_order(self, order):
         """ Tries to get the updated order from the API
