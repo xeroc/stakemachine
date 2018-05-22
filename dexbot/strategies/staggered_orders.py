@@ -212,7 +212,7 @@ class Strategy(BaseStrategy):
         elif not float(lowest_ask):
             return None
         else:
-            center_price = (highest_bid['price'] + lowest_ask['price']) / 2
+            center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
 
         # Calculate buy prices
         buy_prices = Strategy.calculate_buy_prices(center_price, spread, increment, lower_bound)
