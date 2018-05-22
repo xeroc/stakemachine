@@ -142,7 +142,7 @@ class Strategy(BaseStrategy):
         """
         orders = self.fetch_orders()
         for order_id, order in orders.items():
-            current_order = self.get_order(order)
+            current_order = self.get_order(order_id)
             if not current_order:
                 self.place_reverse_order(order)
 

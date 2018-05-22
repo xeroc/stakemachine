@@ -199,10 +199,13 @@ class BaseStrategy(Storage, StateMachine, Events):
     def get_order(order_id, return_none=True):
         """ Returns the Order object for the order_id
 
-            :param str order_id: blockchain object id of the order
+            :param str|dict order_id: blockchain object id of the order
+                can be a dict with the id key in it
             :param bool return_none: return None instead of an empty
                 Order object when the order doesn't exist
         """
+        if 'id' in order_id:
+            order_id = order_id['id']
         order = Order(order_id)
         if return_none and order['deleted']:
             return None
