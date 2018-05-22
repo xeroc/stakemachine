@@ -119,6 +119,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             bitshares_instance=self.bitshares
         )
 
+        # Recheck flag - Tell the strategy to check for updated orders
+        self.recheck_orders = False
+
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
 
@@ -319,6 +322,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         success = self._cancel(orders)
         if not success and len(orders) > 1:
+            # One of the order cancels failed, cancel the orders one by one
             for order in orders:
                 self._cancel(order)
 
