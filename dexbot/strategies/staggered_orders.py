@@ -108,7 +108,7 @@ class Strategy(BaseStrategy):
             new_order = self.market_sell(amount, price)
         else:  # Sell order
             price = (order['price'] ** -1) / (1 + self.spread)
-            amount = order['quote']['amount']
+            amount = order['base']['amount']
             new_order = self.market_buy(amount, price)
 
         if new_order:
