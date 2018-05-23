@@ -26,7 +26,9 @@ class Strategy(BaseStrategy):
             self.center_price = self.worker["center_price"]
 
         self.is_relative_order_size = self.worker['amount_relative']
+        self.is_center_price_offset = self.worker.get('center_price_offset', False)
         self.order_size = float(self.worker['amount'])
+        self.spread = self.worker.get('spread') / 100
 
         self.buy_price = None
         self.sell_price = None
@@ -60,10 +62,18 @@ class Strategy(BaseStrategy):
 
     def calculate_order_prices(self):
         if self.is_center_price_dynamic:
-            self.center_price = self.calculate_relative_center_price(self.worker['spread'], self['order_ids'])
+            if self.is_center_price_offset:
+                self.center_price = self.calculate_offset_center_price(
+                    self.spread, order_ids=self['order_ids'])
+            else:
+                self.center_price = self.calculate_center_price()
+        else:
+            if self.is_center_price_offset:
+                self.center_price = self.calculate_offset_center_price(
+                    self.spread, self.center_price, self['order_ids'])
 
-        self.buy_price = self.center_price / math.sqrt(1 + (self.worker["spread"] / 100))
-        self.sell_price = self.center_price * math.sqrt(1 + (self.worker["spread"] / 100))
+        self.buy_price = self.center_price / math.sqrt(1 + self.spread)
+        self.sell_price = self.center_price * math.sqrt(1 + self.spread)
 
     def error(self, *args, **kwargs):
         self.cancel_all()
