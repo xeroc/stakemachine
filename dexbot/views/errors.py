@@ -43,11 +43,11 @@ class PyQtHandler(logging.Handler):
 
 
 def gui_error(func):
-    """A decorator for GUI handler functions - traps all exceptions and displays the dialog
+    """ A decorator for GUI handler functions - traps all exceptions and displays the dialog
     """
-    def func_wrapper(obj, *args, **kwargs):
+    def func_wrapper(*args, **kwargs):
         try:
-            return func(obj)
+            return func(*args, **kwargs)
         except BaseException as exc:
             show_dialog("DEXBot Error", "An error occurred with DEXBot: \n"+repr(exc), None, traceback.format_exc())
 

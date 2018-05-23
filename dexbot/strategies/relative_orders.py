@@ -1,7 +1,7 @@
+import math
+
 from dexbot.basestrategy import BaseStrategy
 from dexbot.queue.idle_queue import idle_add
-
-from bitshares.amount import Amount
 
 
 class Strategy(BaseStrategy):
@@ -26,7 +26,9 @@ class Strategy(BaseStrategy):
             self.center_price = self.worker["center_price"]
 
         self.is_relative_order_size = self.worker['amount_relative']
+        self.is_center_price_offset = self.worker.get('center_price_offset', False)
         self.order_size = float(self.worker['amount'])
+        self.spread = self.worker.get('spread') / 100
 
         self.buy_price = None
         self.sell_price = None
@@ -59,10 +61,18 @@ class Strategy(BaseStrategy):
 
     def calculate_order_prices(self):
         if self.is_center_price_dynamic:
-            self.center_price = self.calculate_relative_center_price(self.worker['spread'], self['order_ids'])
+            if self.is_center_price_offset:
+                self.center_price = self.calculate_offset_center_price(
+                    self.spread, order_ids=self['order_ids'])
+            else:
+                self.center_price = self.calculate_center_price()
+        else:
+            if self.is_center_price_offset:
+                self.center_price = self.calculate_offset_center_price(
+                    self.spread, self.center_price, self['order_ids'])
 
-        self.buy_price = self.center_price * (1 - (self.worker["spread"] / 2) / 100)
-        self.sell_price = self.center_price * (1 + (self.worker["spread"] / 2) / 100)
+        self.buy_price = self.center_price / math.sqrt(1 + self.spread)
+        self.sell_price = self.center_price * math.sqrt(1 + self.spread)
 
     def error(self, *args, **kwargs):
         self.cancel_all()
@@ -128,9 +138,9 @@ class Strategy(BaseStrategy):
 
         stored_sell_order = self['sell_order']
         stored_buy_order = self['buy_order']
+        current_sell_order = self.get_order(stored_sell_order)
+        current_buy_order = self.get_order(stored_buy_order)
 
-        current_sell_order = self.get_updated_order(stored_sell_order)
-        current_buy_order = self.get_updated_order(stored_buy_order)
         if not current_sell_order or not current_buy_order:
             # Either buy or sell order is missing, update both orders
             self.update_orders()
