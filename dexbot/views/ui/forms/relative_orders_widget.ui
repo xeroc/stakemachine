@@ -241,7 +241,7 @@
       <item row="6" column="1">
        <widget class="QCheckBox" name="center_price_offset_checkbox">
         <property name="text">
-         <string>Center Price Offset based on asset balances</string>
+         <string>Center price offset based on asset balances</string>
         </property>
        </widget>
       </item>

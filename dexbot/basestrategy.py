@@ -139,54 +139,53 @@ class BaseStrategy(Storage, StateMachine, Events):
              'is_disabled': lambda: self.disabled}
         )
 
-    def calculate_center_price(self):
+    def calculate_center_price(self, suppress_errors=False):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
         lowest_ask = ticker.get("lowestAsk")
-        if highest_bid is None or highest_bid == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no highest bid."
-            )
-            self.disabled = True
+        if not float(highest_bid):
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no highest bid."
+                )
+                self.disabled = True
+            return None
         elif lowest_ask is None or lowest_ask == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no lowest ask."
-            )
-            self.disabled = True
-        else:
-            center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
-            return center_price
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no lowest ask."
+                )
+                self.disabled = True
+            return None
 
-    def calculate_center_price_with_offset(self, spread, order_ids=None):
+        center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
+        return center_price
+
+    def calculate_offset_center_price(self, spread, center_price=None, order_ids=None):
         """ Calculate center price which shifts based on available funds
         """
-        ticker = self.market.ticker()
-        highest_bid = ticker.get("highestBid").get('price')
-        lowest_ask = ticker.get("lowestAsk").get('price')
-        latest_price = ticker.get('latest').get('price')
-        if highest_bid is None or highest_bid == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no highest bid."
-            )
-            self.disabled = True
-        elif lowest_ask is None or lowest_ask == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no lowest ask."
-            )
-            self.disabled = True
+        if center_price is None:
+            # No center price was given so we simply calculate the center price
+            calculated_center_price = self.calculate_center_price()
+            center_price = calculated_center_price
         else:
-            total_balance = self.total_balance(order_ids)
-            total = (total_balance['quote'] * latest_price) + total_balance['base']
+            # Center price was given so we only use the calculated center price
+            # for quote to base asset conversion
+            calculated_center_price = self.calculate_center_price(True)
+            if not calculated_center_price:
+                calculated_center_price = center_price
 
-            if not total:  # Prevent division by zero
-                percentage = 0.5
-            else:
-                percentage = (total_balance['base'] / total)
-            center_price = (highest_bid + lowest_ask) / 2
-            lowest_price = center_price * (1 - spread / 100)
-            highest_price = center_price * (1 + spread / 100)
-            relative_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
-            return relative_center_price
+        total_balance = self.total_balance(order_ids)
+        total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
+
+        if not total:  # Prevent division by zero
+            percentage = 0
+        else:
+            percentage = (total_balance['base'] / total)
+        lowest_price = center_price / math.sqrt(1 + spread)
+        highest_price = center_price * math.sqrt(1 + spread)
+        offset_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
+        return offset_center_price
 
     @property
     def orders(self):

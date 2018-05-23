@@ -57,6 +57,7 @@ class RelativeOrdersController:
             self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(True)
         else:
             self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
+            self.view.strategy_widget.center_price_input.setDisabled(False)
 
         if worker_data.get('center_price_offset', True):
             self.view.strategy_widget.center_price_offset_checkbox.setChecked(True)
