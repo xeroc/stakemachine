@@ -204,6 +204,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             :param bool return_none: return None instead of an empty
                 Order object when the order doesn't exist
         """
+        if not order_id:
+            return None
         if 'id' in order_id:
             order_id = order_id['id']
         order = Order(order_id)
