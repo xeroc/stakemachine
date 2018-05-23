@@ -120,6 +120,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             bitshares_instance=self.bitshares
         )
 
+        # Recheck flag - Tell the strategy to check for updated orders
+        self.recheck_orders = False
+
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
 
@@ -136,7 +139,6 @@ class BaseStrategy(Storage, StateMachine, Events):
              'is_disabled': lambda: self.disabled}
         )
 
-    @property
     def calculate_center_price(self):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
@@ -193,11 +195,21 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
 
-    def get_order(self, order_id):
-        for order in self.orders:
-            if order['id'] == order_id:
-                return order
-        return False
+    @staticmethod
+    def get_order(order_id, return_none=True):
+        """ Returns the Order object for the order_id
+
+            :param str|dict order_id: blockchain object id of the order
+                can be a dict with the id key in it
+            :param bool return_none: return None instead of an empty
+                Order object when the order doesn't exist
+        """
+        if 'id' in order_id:
+            order_id = order_id['id']
+        order = Order(order_id)
+        if return_none and order['deleted']:
+            return None
+        return order
 
     def get_updated_order(self, order):
         """ Tries to get the updated order from the API
@@ -308,6 +320,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         success = self._cancel(orders)
         if not success and len(orders) > 1:
+            # One of the order cancels failed, cancel the orders one by one
             for order in orders:
                 self._cancel(order)
 
@@ -319,10 +332,21 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
 
     def market_buy(self, amount, price):
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['base']) < price * amount:
+            self.log.critical(
+                "Insufficient buy balance, needed {} {}".format(
+                    price * amount, self.market['base']['symbol'])
+            )
+            self.disabled = True
+            return None
+
         self.log.info(
-            'Placing a buy order for {} {} @ {}'.format(price * amount,
-                                                        self.market["base"]['symbol'],
-                                                        price))
+            'Placing a buy order for {} {} @ {}'.format(
+                price * amount, self.market["base"]['symbol'], price)
+        )
+
+        # Place the order
         buy_transaction = self.retry_action(
             self.market.buy,
             price,
@@ -331,14 +355,28 @@ class BaseStrategy(Storage, StateMachine, Events):
             returnOrderId="head"
         )
         self.log.info('Placed buy order {}'.format(buy_transaction))
-        buy_order = self.get_order(buy_transaction['orderid'])
+        buy_order = self.get_order(buy_transaction['orderid'], return_none=False)
+        if buy_order['deleted']:
+            self.recheck_orders = True
+
         return buy_order
 
     def market_sell(self, amount, price):
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['quote']) < amount:
+            self.log.critical(
+                "Insufficient sell balance, needed {} {}".format(
+                    amount, self.market['quote']['symbol'])
+            )
+            self.disabled = True
+            return None
+
         self.log.info(
-            'Placing a sell order for {} {} @ {}'.format(amount,
-                                                         self.market["quote"]['symbol'],
-                                                         price))
+            'Placing a sell order for {} {} @ {}'.format(
+                amount, self.market["quote"]['symbol'], price)
+        )
+
+        # Place the order
         sell_transaction = self.retry_action(
             self.market.sell,
             price,
@@ -347,13 +385,17 @@ class BaseStrategy(Storage, StateMachine, Events):
             returnOrderId="head"
         )
         self.log.info('Placed sell order {}'.format(sell_transaction))
-        sell_order = self.get_order(sell_transaction['orderid'])
+        sell_order = self.get_order(sell_transaction['orderid'], return_none=False)
+        if sell_order['deleted']:
+            self.recheck_orders = True
+
         return sell_order
 
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
         """
         self.cancel_all()
+        self.clear_orders()
         self.clear()
 
     @staticmethod

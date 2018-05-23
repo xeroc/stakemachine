@@ -5,7 +5,6 @@ from dexbot import __version__
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
-from dexbot.controllers.create_worker_controller import CreateWorkerController
 from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.queue.idle_queue import idle_add
 from .errors import gui_error
@@ -29,7 +28,7 @@ class MainView(QtWidgets.QMainWindow):
         self.statusbar_updater = None
         self.statusbar_updater_first_run = True
 
-        self.ui.add_worker_button.clicked.connect(self.handle_add_worker)
+        self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
         # Load worker widgets from config file
         workers = main_ctrl.get_workers_data()
@@ -71,8 +70,7 @@ class MainView(QtWidgets.QMainWindow):
 
     @gui_error
     def handle_add_worker(self):
-        controller = CreateWorkerController(self.main_ctrl)
-        create_worker_dialog = CreateWorkerView(controller)
+        create_worker_dialog = CreateWorkerView(self.main_ctrl.bitshares_instance)
         return_value = create_worker_dialog.exec_()
 
         # User clicked save
