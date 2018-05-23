@@ -157,7 +157,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
             return center_price
 
-    def calculate_relative_center_price(self, spread, order_ids=None):
+    def calculate_center_price_with_offset(self, spread, order_ids=None):
         """ Calculate center price which shifts based on available funds
         """
         ticker = self.market.ticker()
