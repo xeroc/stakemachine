@@ -1,8 +1,7 @@
+import math
+
 from dexbot.basestrategy import BaseStrategy
 from dexbot.queue.idle_queue import idle_add
-
-from bitshares.amount import Amount
-import math
 
 
 class Strategy(BaseStrategy):
