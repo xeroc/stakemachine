@@ -334,18 +334,22 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.log.info("Orders cancelled")
 
     def market_buy(self, amount, price):
+        symbol = self.market['base']['symbol']
+        precision = self.market['base']['precision']
+        base_amount = self.truncate(price * amount, precision)
+
         # Make sure we have enough balance for the order
-        if self.balance(self.market['base']) < price * amount:
+        if self.balance(self.market['base']) < base_amount:
             self.log.critical(
                 "Insufficient buy balance, needed {} {}".format(
-                    price * amount, self.market['base']['symbol'])
+                    base_amount, symbol)
             )
             self.disabled = True
             return None
 
         self.log.info(
             'Placing a buy order for {} {} @ {}'.format(
-                price * amount, self.market["base"]['symbol'], price)
+                base_amount, symbol, round(price, 8))
         )
 
         # Place the order
@@ -364,18 +368,22 @@ class BaseStrategy(Storage, StateMachine, Events):
         return buy_order
 
     def market_sell(self, amount, price):
+        symbol = self.market['quote']['symbol']
+        precision = self.market['quote']['precision']
+        quote_amount = self.truncate(amount, precision)
+
         # Make sure we have enough balance for the order
-        if self.balance(self.market['quote']) < amount:
+        if self.balance(self.market['quote']) < quote_amount:
             self.log.critical(
                 "Insufficient sell balance, needed {} {}".format(
-                    amount, self.market['quote']['symbol'])
+                    amount, symbol)
             )
             self.disabled = True
             return None
 
         self.log.info(
             'Placing a sell order for {} {} @ {}'.format(
-                amount, self.market["quote"]['symbol'], price)
+                quote_amount, symbol, round(price, 8))
         )
 
         # Place the order
@@ -494,3 +502,9 @@ class BaseStrategy(Storage, StateMachine, Events):
                         time.sleep(6)  # Wait at least a BitShares block
                 else:
                     raise
+
+    @staticmethod
+    def truncate(number, decimals):
+        """ Change the decimal point of a number without rounding
+        """
+        return math.floor(number * 10 ** decimals) / 10 ** decimals
