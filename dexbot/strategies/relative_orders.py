@@ -10,7 +10,7 @@ class Strategy(BaseStrategy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.log.info("Initalising Relative Orders")
+        self.log.info("Initializing Relative Orders")
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
         self.onAccount += self.check_orders
@@ -133,7 +133,6 @@ class Strategy(BaseStrategy):
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
-
         self.log.info("Market event: checking orders...")
 
         stored_sell_order = self['sell_order']

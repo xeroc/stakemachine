@@ -328,10 +328,10 @@ class BaseStrategy(Storage, StateMachine, Events):
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
-        self.log.info('Cancelling all orders')
+        self.log.info('Canceling all orders')
         if self.orders:
             self.cancel(self.orders)
-        self.log.info("Orders cancelled")
+        self.log.info("Orders canceled")
 
     def market_buy(self, amount, price):
         symbol = self.market['base']['symbol']
