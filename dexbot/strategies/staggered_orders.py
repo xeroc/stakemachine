@@ -102,7 +102,7 @@ class Strategy(BaseStrategy):
         """ Replaces an order with a reverse order
             buy orders become sell orders and sell orders become buy orders
         """
-        self.log.info('order is {}'.format(order))
+        assert order['base'], "order is deformed {}".format(dict(order))
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price'] * (1 + self.spread)
             amount = order['quote']['amount']
