@@ -102,6 +102,7 @@ class Strategy(BaseStrategy):
         """ Replaces an order with a reverse order
             buy orders become sell orders and sell orders become buy orders
         """
+        self.log.info('order is {}'.format(order))
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price'] * (1 + self.spread)
             amount = order['quote']['amount']
@@ -247,15 +248,20 @@ class Strategy(BaseStrategy):
         pass
 
     def update_gui_slider(self):
-        ticker = self.market.ticker()
-        latest_price = ticker.get('latest').get('price')
-        order_ids = self.fetch_orders().keys()
-        total_balance = self.total_balance(order_ids)
-        total = (total_balance['quote'] * latest_price) + total_balance['base']
 
-        if not total:  # Prevent division by zero
-            percentage = 50
-        else:
-            percentage = (total_balance['base'] / total) * 100
-        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
-        self['slider'] = percentage
+        orders = self.fetch_orders()
+        if orders:
+            ticker = self.market.ticker()
+            if 'latest' in ticker and ticker['latest']:
+                latest_price = ticker['latest'].get('price')
+                if latest_price:
+                    order_ids = orders.keys()
+                    total_balance = self.total_balance(order_ids)
+                    total = (total_balance['quote'] * latest_price) + total_balance['base']
+
+                    if not total:  # Prevent division by zero
+                        percentage = 50
+                    else:
+                        percentage = (total_balance['base'] / total) * 100
+                        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
+                        self['slider'] = percentage
