@@ -333,7 +333,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
         self.log.info("Orders canceled")
 
-    def market_buy(self, amount, price):
+    def market_buy(self, amount, price, return_none=False):
         symbol = self.market['base']['symbol']
         precision = self.market['base']['precision']
         base_amount = self.truncate(price * amount, precision)
@@ -361,13 +361,13 @@ class BaseStrategy(Storage, StateMachine, Events):
             returnOrderId="head"
         )
         self.log.debug('Placed buy order {}'.format(buy_transaction))
-        buy_order = self.get_order(buy_transaction['orderid'], return_none=False)
-        if buy_order['deleted']:
+        buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
+        if buy_order and buy_order['deleted']:
             self.recheck_orders = True
 
         return buy_order
 
-    def market_sell(self, amount, price):
+    def market_sell(self, amount, price, return_none=False):
         symbol = self.market['quote']['symbol']
         precision = self.market['quote']['precision']
         quote_amount = self.truncate(amount, precision)
@@ -395,8 +395,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             returnOrderId="head"
         )
         self.log.debug('Placed sell order {}'.format(sell_transaction))
-        sell_order = self.get_order(sell_transaction['orderid'], return_none=False)
-        if sell_order['deleted']:
+        sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
+        if sell_order and sell_order['deleted']:
             self.recheck_orders = True
 
         return sell_order
