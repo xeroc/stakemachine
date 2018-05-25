@@ -135,7 +135,8 @@ class Strategy(BaseStrategy):
         self.cancel_all()
         orders = self.fetch_orders()
         for order_id, order in orders.items():
-            self.place_order(order)
+            if not self.get_order(order_id):
+                self.place_order(order)
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
