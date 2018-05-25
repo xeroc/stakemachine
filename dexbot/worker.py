@@ -216,7 +216,7 @@ class WorkerInfrastructure(threading.Thread):
     @staticmethod
     def remove_offline_worker(config, worker_name):
         # Initialize the base strategy to get control over the data
-        strategy = BaseStrategy(config, worker_name)
+        strategy = BaseStrategy(worker_name, config)
         strategy.purge()
 
     def do_next_tick(self, job):

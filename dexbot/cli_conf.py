@@ -18,9 +18,11 @@ import os
 import os.path
 import sys
 import re
+
 from dexbot.worker import STRATEGIES
 from dexbot.whiptail import get_whiptail
 from dexbot.find_node import start_pings, best_node
+from dexbot.basestrategy import BaseStrategy
 
 SYSTEMD_SERVICE_NAME = os.path.expanduser(
     "~/.local/share/systemd/user/dexbot.service")
@@ -181,6 +183,8 @@ def configure_dexbot(config):
         elif action == 'DEL':
             worker_name = d.menu("Select worker to delete", [(i, i) for i in workers])
             del config['workers'][worker_name]
+            strategy = BaseStrategy(worker_name)
+            strategy.purge()  # Cancel the orders of the bot
         if action == 'NEW':
             txt = d.prompt("Your name for the new worker")
             config['workers'][txt] = configure_worker(d, {})

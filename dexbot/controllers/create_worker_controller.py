@@ -47,9 +47,11 @@ class CreateWorkerController:
         ]
         return assets
 
-    @staticmethod
-    def is_worker_name_valid(worker_name):
-        worker_names = MainController.get_workers_data().keys()
+    def remove_worker(self, worker_name):
+        self.main_ctrl.remove_worker(worker_name)
+
+    def is_worker_name_valid(self, worker_name):
+        worker_names = self.main_ctrl.config.get_workers_data().keys()
         # Check that the name is unique
         if worker_name in worker_names:
             return False
@@ -88,7 +90,7 @@ class CreateWorkerController:
             return False
 
     def is_account_in_use(self, account):
-        workers = self.main_ctrl.get_workers_data()
+        workers = self.main_ctrl.config.get_workers_data()
         for worker_name, worker in workers.items():
             if worker['account'] == account:
                 return True
@@ -107,7 +109,7 @@ class CreateWorkerController:
         """ Returns unique worker name "Worker %n", where %n is the next available index
         """
         index = 1
-        workers = self.main_ctrl.get_workers_data().keys()
+        workers = self.main_ctrl.config.get_workers_data().keys()
         worker_name = "Worker {0}".format(index)
         while worker_name in workers:
             worker_name = "Worker {0}".format(index)

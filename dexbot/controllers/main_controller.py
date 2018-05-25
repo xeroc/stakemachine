@@ -1,16 +1,12 @@
-import os
 import logging
 import sys
 
 from dexbot import config_file, VERSION
 from dexbot.worker import WorkerInfrastructure
+from dexbot.config import Config
 from dexbot.views.errors import PyQtHandler
 
-import appdirs
-from ruamel import yaml
 from bitshares.instance import set_shared_bitshares_instance
-
-CONFIG_PATH = os.path.join(appdirs.user_config_dir('dexbot'), 'config.yml')
 
 
 class MainController:
@@ -56,59 +52,10 @@ class MainController:
                 self.worker_manager.stop(worker_name)
             else:
                 # Worker not running
-                config = self.get_worker_config(worker_name)
+                config = self.config.get_worker_config(worker_name)
                 WorkerInfrastructure.remove_offline_worker(config, worker_name)
         else:
             # Worker manager not running
-            config = self.get_worker_config(worker_name)
+            config = self.config.get_worker_config(worker_name)
             WorkerInfrastructure.remove_offline_worker(config, worker_name)
 
-    @staticmethod
-    def create_config(config):
-        with open(CONFIG_PATH, 'w') as f:
-            yaml.dump(config, f, default_flow_style=False)
-
-    @staticmethod
-    def load_config():
-        with open(CONFIG_PATH, 'r') as f:
-            return yaml.safe_load(f)
-
-    def refresh_config(self):
-        self.config = self.load_config()
-
-    def get_workers_data(self):
-        """ Returns dict of all the workers data
-        """
-        return self.config['workers']
-
-    def get_worker_config(self, worker_name):
-        """ Returns config file data with only the data from a specific worker
-        """
-        config = self.config
-        config['workers'] = {worker_name: config['workers'][worker_name]}
-        return config
-
-    def remove_worker_config(self, worker_name):
-        self.config['workers'].pop(worker_name, None)
-
-        with open(CONFIG_PATH, 'w') as f:
-            yaml.dump(self.config, f)
-
-    def add_worker_config(self, worker_name, worker_data):
-        self.config['workers'][worker_name] = worker_data
-
-        with open(CONFIG_PATH, 'w') as f:
-            yaml.dump(self.config, f, default_flow_style=False)
-
-    def replace_worker_config(self, worker_name, new_worker_name, worker_data):
-        workers = self.config['workers']
-        # Rotate the dict keys to keep order
-        for _ in range(len(workers)):
-            key, value = workers.popitem(False)
-            if worker_name == key:
-                workers[new_worker_name] = worker_data
-            else:
-                workers[key] = value
-
-        with open(CONFIG_PATH, 'w') as f:
-            yaml.dump(self.config, f, default_flow_style=False)

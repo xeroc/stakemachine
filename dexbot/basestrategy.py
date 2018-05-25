@@ -1,10 +1,11 @@
-import collections
 import logging
+import collections
 import time
 import math
 
 from .storage import Storage
 from .statemachine import StateMachine
+from .config import Config
 
 from events import Events
 import bitsharesapi
@@ -103,8 +104,8 @@ class BaseStrategy(Storage, StateMachine, Events):
     
     def __init__(
         self,
-        config,
         name,
+        config=None,
         onAccount=None,
         onOrderMatched=None,
         onOrderPlaced=None,
@@ -142,6 +143,11 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Redirect this event to also call order placed and order matched
         self.onMarketUpdate += self._callbackPlaceFillOrders
+
+        if config:
+            self.config = config
+        else:
+            self.config = config = Config.get_worker_config_file(name)
 
         self.config = config
         self.worker = config["workers"][name]

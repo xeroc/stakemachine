@@ -11,13 +11,13 @@ from PyQt5 import QtWidgets
 
 class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
-    def __init__(self, worker_name, config, main_ctrl, view):
+    def __init__(self, worker_name, worker_config, main_ctrl, view):
         super().__init__()
 
         self.main_ctrl = main_ctrl
         self.running = False
         self.worker_name = worker_name
-        self.worker_config = config
+        self.worker_config = worker_config
         self.view = view
 
         self.setupUi(self)
@@ -28,7 +28,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.remove_button.clicked.connect(lambda: self.remove_widget_dialog())
         self.edit_button.clicked.connect(lambda: self.handle_edit_worker())
 
-        self.setup_ui_data(config)
+        self.setup_ui_data(worker_config)
 
     def setup_ui_data(self, config):
         worker_name = list(config['workers'].keys())[0]
@@ -100,7 +100,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         return_value = dialog.exec_()
         if return_value:
             self.remove_widget()
-            self.main_ctrl.remove_worker_config(self.worker_name)
+            self.main_ctrl.config.remove_worker_config(self.worker_name)
 
     def remove_widget(self):
         self.main_ctrl.remove_worker(self.worker_name)
@@ -124,7 +124,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         # User clicked save
         if return_value:
             new_worker_name = edit_worker_dialog.worker_name
-            self.main_ctrl.remove_worker(self.worker_name)
-            self.main_ctrl.replace_worker_config(self.worker_name, new_worker_name, edit_worker_dialog.worker_data)
-            self.reload_widget(new_worker_name)
+            self.main_ctrl.config.replace_worker_config(self.worker_name,
+                                                        new_worker_name, edit_worker_dialog.worker_data)
+            self.reload_widget(self.worker_name, new_worker_name)
             self.worker_name = new_worker_name

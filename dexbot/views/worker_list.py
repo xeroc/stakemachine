@@ -18,6 +18,7 @@ class MainView(QtWidgets.QMainWindow):
     def __init__(self, main_ctrl):
         self.main_ctrl = main_ctrl
         super(MainView, self).__init__()
+        self.config = main_ctrl.config
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.worker_container = self.ui.verticalLayout
@@ -31,7 +32,7 @@ class MainView(QtWidgets.QMainWindow):
         self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
         # Load worker widgets from config file
-        workers = main_ctrl.get_workers_data()
+        workers = self.config.get_workers_data()
         for worker_name in workers:
             self.add_worker_widget(worker_name)
 
@@ -50,7 +51,7 @@ class MainView(QtWidgets.QMainWindow):
         self.statusbar_updater.start()
 
     def add_worker_widget(self, worker_name):
-        config = self.main_ctrl.get_worker_config(worker_name)
+        config = self.config.get_worker_config(worker_name)
         widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
         self.worker_container.addWidget(widget)
@@ -76,7 +77,7 @@ class MainView(QtWidgets.QMainWindow):
         # User clicked save
         if return_value == 1:
             worker_name = create_worker_dialog.worker_name
-            self.main_ctrl.add_worker_config(worker_name, create_worker_dialog.worker_data)
+            self.config.add_worker_config(worker_name, create_worker_dialog.worker_data)
             self.add_worker_widget(worker_name)
 
     def set_worker_name(self, worker_name, value):
