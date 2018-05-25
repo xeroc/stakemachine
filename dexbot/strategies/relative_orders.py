@@ -11,6 +11,7 @@ class Strategy(BaseStrategy):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log.info("Initializing Relative Orders")
+
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
         self.onAccount += self.check_orders
@@ -37,6 +38,10 @@ class Strategy(BaseStrategy):
         self.worker_name = kwargs.get('name')
         self.view = kwargs.get('view')
         self.check_orders()
+
+    def error(self, *args, **kwargs):
+        self.cancel_all()
+        self.disabled = True
 
     @property
     def amount_quote(self):
@@ -73,11 +78,6 @@ class Strategy(BaseStrategy):
 
         self.buy_price = self.center_price / math.sqrt(1 + self.spread)
         self.sell_price = self.center_price * math.sqrt(1 + self.spread)
-
-    def error(self, *args, **kwargs):
-        self.cancel_all()
-        self.disabled = True
-        self.log.info(self.execute())
 
     def update_orders(self):
         self.log.info('Change detected, updating orders')
