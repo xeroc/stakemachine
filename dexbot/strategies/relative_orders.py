@@ -10,6 +10,7 @@ class Strategy(BaseStrategy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.log.info("Initializing Relative Orders")
 
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
@@ -36,8 +37,11 @@ class Strategy(BaseStrategy):
         self.initial_balance = self['initial_balance'] or 0
         self.worker_name = kwargs.get('name')
         self.view = kwargs.get('view')
-
         self.check_orders()
+
+    def error(self, *args, **kwargs):
+        self.cancel_all()
+        self.disabled = True
 
     @property
     def amount_quote(self):
@@ -75,11 +79,6 @@ class Strategy(BaseStrategy):
         self.buy_price = self.center_price / math.sqrt(1 + self.spread)
         self.sell_price = self.center_price * math.sqrt(1 + self.spread)
 
-    def error(self, *args, **kwargs):
-        self.cancel_all()
-        self.disabled = True
-        self.log.info(self.execute())
-
     def update_orders(self):
         self.log.info('Change detected, updating orders')
 
@@ -99,31 +98,20 @@ class Strategy(BaseStrategy):
         amount_quote = self.amount_quote
 
         # Buy Side
-        if float(self.balance(self.market["base"])) < self.buy_price * amount_base:
-            self.log.critical(
-                'Insufficient buy balance, needed {} {}'.format(self.buy_price * amount_base,
-                                                                self.market['base']['symbol'])
-            )
-            self.disabled = True
-        else:
-            buy_order = self.market_buy(amount_base, self.buy_price)
-            if buy_order:
-                self['buy_order'] = buy_order
-                order_ids.append(buy_order['id'])
+        buy_order = self.market_buy(amount_base, self.buy_price)
+        if buy_order:
+            self['buy_order'] = buy_order
+            order_ids.append(buy_order['id'])
 
         # Sell Side
-        if float(self.balance(self.market["quote"])) < amount_quote:
-            self.log.critical(
-                "Insufficient sell balance, needed {} {}".format(amount_quote, self.market['quote']['symbol'])
-            )
-            self.disabled = True
-        else:
-            sell_order = self.market_sell(amount_quote, self.sell_price)
-            if sell_order:
-                self['sell_order'] = sell_order
-                order_ids.append(sell_order['id'])
+        sell_order = self.market_sell(amount_quote, self.sell_price)
+        if sell_order:
+            self['sell_order'] = sell_order
+            order_ids.append(sell_order['id'])
 
         self['order_ids'] = order_ids
+
+        self.log.info("Done placing orders")
 
         # Some orders weren't successfully created, redo them
         if len(order_ids) < 2 and not self.disabled:
@@ -140,6 +128,8 @@ class Strategy(BaseStrategy):
         if not current_sell_order or not current_buy_order:
             # Either buy or sell order is missing, update both orders
             self.update_orders()
+        else:
+            self.log.info("Orders correct on market")
 
         if self.view:
             self.update_gui_profit()

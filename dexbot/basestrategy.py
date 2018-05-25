@@ -328,23 +328,28 @@ class BaseStrategy(Storage, StateMachine, Events):
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
+        self.log.info('Canceling all orders')
         if self.orders:
-            self.log.info('Canceling all orders')
             self.cancel(self.orders)
+        self.log.info("Orders canceled")
 
-    def market_buy(self, amount, price):
+    def market_buy(self, amount, price, return_none=False):
+        symbol = self.market['base']['symbol']
+        precision = self.market['base']['precision']
+        base_amount = self.truncate(price * amount, precision)
+
         # Make sure we have enough balance for the order
-        if self.balance(self.market['base']) < price * amount:
+        if self.balance(self.market['base']) < base_amount:
             self.log.critical(
                 "Insufficient buy balance, needed {} {}".format(
-                    price * amount, self.market['base']['symbol'])
+                    base_amount, symbol)
             )
             self.disabled = True
             return None
 
         self.log.info(
             'Placing a buy order for {} {} @ {}'.format(
-                price * amount, self.market["base"]['symbol'], price)
+                base_amount, symbol, round(price, 8))
         )
 
         # Place the order
@@ -355,9 +360,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed buy order {}'.format(buy_transaction))
-        buy_order = self.get_order(buy_transaction['orderid'], return_none=False)
-        if buy_order['deleted']:
+        self.log.debug('Placed buy order {}'.format(buy_transaction))
+        buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
+        if buy_order and buy_order['deleted']:
             # The API doesn't return data on orders that don't exist
             # We need to calculate the data on our own
             buy_order = self.calculate_order_data(buy_order, amount, price)
@@ -365,19 +370,23 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         return buy_order
 
-    def market_sell(self, amount, price):
+    def market_sell(self, amount, price, return_none=False):
+        symbol = self.market['quote']['symbol']
+        precision = self.market['quote']['precision']
+        quote_amount = self.truncate(amount, precision)
+
         # Make sure we have enough balance for the order
-        if self.balance(self.market['quote']) < amount:
+        if self.balance(self.market['quote']) < quote_amount:
             self.log.critical(
                 "Insufficient sell balance, needed {} {}".format(
-                    amount, self.market['quote']['symbol'])
+                    amount, symbol)
             )
             self.disabled = True
             return None
 
         self.log.info(
             'Placing a sell order for {} {} @ {}'.format(
-                amount, self.market["quote"]['symbol'], price)
+                quote_amount, symbol, round(price, 8))
         )
 
         # Place the order
@@ -388,9 +397,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed sell order {}'.format(sell_transaction))
-        sell_order = self.get_order(sell_transaction['orderid'], return_none=False)
-        if sell_order['deleted']:
+        self.log.debug('Placed sell order {}'.format(sell_transaction))
+        sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
+        if sell_order and sell_order['deleted']:
             # The API doesn't return data on orders that don't exist
             # We need to calculate the data on our own
             sell_order = self.calculate_order_data(sell_order, amount, price)
@@ -508,3 +517,9 @@ class BaseStrategy(Storage, StateMachine, Events):
                         time.sleep(6)  # Wait at least a BitShares block
                 else:
                     raise
+
+    @staticmethod
+    def truncate(number, decimals):
+        """ Change the decimal point of a number without rounding
+        """
+        return math.floor(number * 10 ** decimals) / 10 ** decimals
