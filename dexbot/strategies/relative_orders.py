@@ -98,29 +98,16 @@ class Strategy(BaseStrategy):
         amount_quote = self.amount_quote
 
         # Buy Side
-        if float(self.balance(self.market["base"])) < self.buy_price * amount_base:
-            self.log.critical(
-                'Insufficient buy balance, needed {} {}'.format(self.buy_price * amount_base,
-                                                                self.market['base']['symbol'])
-            )
-            self.disabled = True
-        else:
-            buy_order = self.market_buy(amount_base, self.buy_price)
-            if buy_order:
-                self['buy_order'] = buy_order
-                order_ids.append(buy_order['id'])
+        buy_order = self.market_buy(amount_base, self.buy_price)
+        if buy_order:
+            self['buy_order'] = buy_order
+            order_ids.append(buy_order['id'])
 
         # Sell Side
-        if float(self.balance(self.market["quote"])) < amount_quote:
-            self.log.critical(
-                "Insufficient sell balance, needed {} {}".format(amount_quote, self.market['quote']['symbol'])
-            )
-            self.disabled = True
-        else:
-            sell_order = self.market_sell(amount_quote, self.sell_price)
-            if sell_order:
-                self['sell_order'] = sell_order
-                order_ids.append(sell_order['id'])
+        sell_order = self.market_sell(amount_quote, self.sell_price)
+        if sell_order:
+            self['sell_order'] = sell_order
+            order_ids.append(sell_order['id'])
 
         self['order_ids'] = order_ids
 
