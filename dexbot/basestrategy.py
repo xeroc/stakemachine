@@ -1,14 +1,22 @@
-import logging, collections
+import collections
+import logging
+import time
+import math
+
+from .storage import Storage
+from .statemachine import StateMachine
+
 from events import Events
+import bitsharesapi
+import bitsharesapi.exceptions
 from bitshares.amount import Amount
 from bitshares.market import Market
 from bitshares.account import Account
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.instance import shared_bitshares_instance
-from .storage import Storage
-from .statemachine import StateMachine
 
 
+MAX_TRIES = 3
 ConfigElement = collections.namedtuple('ConfigElement','key type default description extra')
 # Bots need to specify their own configuration values
 # I want this to be UI-agnostic so a future web or GUI interface can use it too
@@ -147,6 +155,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             bitshares_instance=self.bitshares
         )
 
+        # Recheck flag - Tell the strategy to check for updated orders
+        self.recheck_orders = False
+
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
 
@@ -163,24 +174,53 @@ class BaseStrategy(Storage, StateMachine, Events):
              'is_disabled': lambda: self.disabled}
         )
 
-    @property
-    def calculate_center_price(self):
+    def calculate_center_price(self, suppress_errors=False):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
         lowest_ask = ticker.get("lowestAsk")
-        if highest_bid is None or highest_bid == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no highest bid."
-            )
-            self.disabled = True
+        if not float(highest_bid):
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no highest bid."
+                )
+                self.disabled = True
+            return None
         elif lowest_ask is None or lowest_ask == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no lowest ask."
-            )
-            self.disabled = True
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no lowest ask."
+                )
+                self.disabled = True
+            return None
+
+        center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
+        return center_price
+
+    def calculate_offset_center_price(self, spread, center_price=None, order_ids=None):
+        """ Calculate center price which shifts based on available funds
+        """
+        if center_price is None:
+            # No center price was given so we simply calculate the center price
+            calculated_center_price = self.calculate_center_price()
+            center_price = calculated_center_price
         else:
-            center_price = (highest_bid['price'] + lowest_ask['price']) / 2
-            return center_price
+            # Center price was given so we only use the calculated center price
+            # for quote to base asset conversion
+            calculated_center_price = self.calculate_center_price(True)
+            if not calculated_center_price:
+                calculated_center_price = center_price
+
+        total_balance = self.total_balance(order_ids)
+        total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
+
+        if not total:  # Prevent division by zero
+            percentage = 0
+        else:
+            percentage = (total_balance['base'] / total)
+        lowest_price = center_price / math.sqrt(1 + spread)
+        highest_price = center_price * math.sqrt(1 + spread)
+        offset_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
+        return offset_center_price
 
     @property
     def orders(self):
@@ -189,11 +229,23 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
 
-    def get_order(self, order_id):
-        for order in self.orders:
-            if order['id'] == order_id:
-                return order
-        return False
+    @staticmethod
+    def get_order(order_id, return_none=True):
+        """ Returns the Order object for the order_id
+
+            :param str|dict order_id: blockchain object id of the order
+                can be a dict with the id key in it
+            :param bool return_none: return None instead of an empty
+                Order object when the order doesn't exist
+        """
+        if not order_id:
+            return None
+        if 'id' in order_id:
+            order_id = order_id['id']
+        order = Order(order_id)
+        if return_none and order['deleted']:
+            return None
+        return order
 
     def get_updated_order(self, order):
         """ Tries to get the updated order from the API
@@ -219,8 +271,8 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         limit_orders = self.account['limit_orders'][:]
         for o in limit_orders:
-            base_amount = o['for_sale']
-            price = o['sell_price']['base']['amount'] / o['sell_price']['quote']['amount']
+            base_amount = float(o['for_sale'])
+            price = float(o['sell_price']['base']['amount']) / float(o['sell_price']['quote']['amount'])
             quote_amount = base_amount / price
             o['sell_price']['base']['amount'] = base_amount
             o['sell_price']['quote']['amount'] = quote_amount
@@ -282,30 +334,104 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.bitshares.blocking = False
         return r
 
+    def _cancel(self, orders):
+        try:
+            self.retry_action(self.bitshares.cancel, orders, account=self.account)
+        except bitsharesapi.exceptions.UnhandledRPCError as e:
+            if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
+                # The order(s) we tried to cancel doesn't exist
+                self.bitshares.txbuffer.clear()
+                return False
+            else:
+                self.log.exception("Unable to cancel order")
+        return True
+
     def cancel(self, orders):
-        """ Cancel specific orders
+        """ Cancel specific order(s)
         """
-        if not isinstance(orders, list):
+        if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
-        return self.bitshares.cancel(
-            [o["id"] for o in orders if "id" in o],
-            account=self.account
-        )
+
+        orders = [order['id'] for order in orders if 'id' in order]
+
+        success = self._cancel(orders)
+        if not success and len(orders) > 1:
+            # One of the order cancels failed, cancel the orders one by one
+            for order in orders:
+                self._cancel(order)
 
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
         if self.orders:
             self.log.info('Canceling all orders')
-            return self.bitshares.cancel(
-                [o["id"] for o in self.orders],
-                account=self.account
+            self.cancel(self.orders)
+
+    def market_buy(self, amount, price):
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['base']) < price * amount:
+            self.log.critical(
+                "Insufficient buy balance, needed {} {}".format(
+                    price * amount, self.market['base']['symbol'])
             )
+            self.disabled = True
+            return None
+
+        self.log.info(
+            'Placing a buy order for {} {} @ {}'.format(
+                price * amount, self.market["base"]['symbol'], price)
+        )
+
+        # Place the order
+        buy_transaction = self.retry_action(
+            self.market.buy,
+            price,
+            Amount(amount=amount, asset=self.market["quote"]),
+            account=self.account.name,
+            returnOrderId="head"
+        )
+        self.log.info('Placed buy order {}'.format(buy_transaction))
+        buy_order = self.get_order(buy_transaction['orderid'], return_none=False)
+        if buy_order['deleted']:
+            self.recheck_orders = True
+
+        return buy_order
+
+    def market_sell(self, amount, price):
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['quote']) < amount:
+            self.log.critical(
+                "Insufficient sell balance, needed {} {}".format(
+                    amount, self.market['quote']['symbol'])
+            )
+            self.disabled = True
+            return None
+
+        self.log.info(
+            'Placing a sell order for {} {} @ {}'.format(
+                amount, self.market["quote"]['symbol'], price)
+        )
+
+        # Place the order
+        sell_transaction = self.retry_action(
+            self.market.sell,
+            price,
+            Amount(amount=amount, asset=self.market["quote"]),
+            account=self.account.name,
+            returnOrderId="head"
+        )
+        self.log.info('Placed sell order {}'.format(sell_transaction))
+        sell_order = self.get_order(sell_transaction['orderid'], return_none=False)
+        if sell_order['deleted']:
+            self.recheck_orders = True
+
+        return sell_order
 
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
         """
         self.cancel_all()
+        self.clear_orders()
         self.clear()
 
     @staticmethod
@@ -371,3 +497,34 @@ class BaseStrategy(Storage, StateMachine, Events):
             base = Amount(base, base_asset)
 
         return {'quote': quote, 'base': base}
+
+    def retry_action(self, action, *args, **kwargs):
+        """
+        Perform an action, and if certain suspected-to-be-spurious graphene bugs occur,
+        instead of bubbling the exception, it is quietly logged (level WARN), and try again
+        tries a fixed number of times (MAX_TRIES) before failing
+        """
+        tries = 0
+        while True:
+            try:
+                return action(*args, **kwargs)
+            except bitsharesapi.exceptions.UnhandledRPCError as e:
+                if "Assert Exception: amount_to_sell.amount > 0" in str(e):
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        tries += 1
+                        self.log.warning("Ignoring: '{}'".format(str(e)))
+                        self.bitshares.txbuffer.clear()
+                        self.account.refresh()
+                        time.sleep(2)
+                elif "now <= trx.expiration" in str(e):  # Usually loss of sync to blockchain
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        tries += 1
+                        self.log.warning("retrying on '{}'".format(str(e)))
+                        self.bitshares.txbuffer.clear()
+                        time.sleep(6)  # Wait at least a BitShares block
+                else:
+                    raise

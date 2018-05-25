@@ -6,7 +6,8 @@ import signal
 import sys
 import appdirs
 
-from .ui import (
+from dexbot import config_file
+from dexbot.ui import (
     verbose,
     check_connection,
     chain,
@@ -36,7 +37,7 @@ logging.basicConfig(
 @click.group()
 @click.option(
     "--configfile",
-    default=os.path.join(appdirs.user_config_dir("dexbot"), "config.yml"),
+    default=config_file,
 )
 @click.option(
     '--verbose',

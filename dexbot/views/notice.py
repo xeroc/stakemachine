@@ -11,4 +11,4 @@ class NoticeDialog(QtWidgets.QDialog):
         self.ui.setupUi(self)
 
         self.ui.notice_label.setText(text)
-        self.ui.ok_button.clicked.connect(self.accept)
+        self.ui.ok_button.clicked.connect(lambda: self.accept())

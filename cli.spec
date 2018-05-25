@@ -9,6 +9,7 @@ hiddenimports_strategies = [
     'dexbot.strategies',
     'dexbot.strategies.echo',
     'dexbot.strategies.relative_orders',
+    'dexbot.strategies.staggered_orders',
     'dexbot.strategies.storagedemo',
     'dexbot.strategies.walls',
 ]
@@ -17,7 +18,7 @@ hiddenimports_packaging = [
     'packaging', 'packaging.version', 'packaging.specifiers', 'packaging.requirements'
 ]
 
-a = Analysis(['cli.py'],
+a = Analysis(['dexbot/cli.py'],
              binaries=[],
              datas=[],
              hiddenimports=hiddenimports_packaging + hiddenimports_strategies,

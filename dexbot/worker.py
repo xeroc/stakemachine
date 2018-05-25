@@ -51,6 +51,7 @@ class WorkerInfrastructure(threading.Thread):
     def init_workers(self, config):
         """ Initialize the workers
         """
+        self.config_lock.acquire()
         for worker_name, worker in config["workers"].items():
             if "account" not in worker:
                 log_workers.critical("Worker has no account", extra={
@@ -82,6 +83,7 @@ class WorkerInfrastructure(threading.Thread):
                     'worker_name': worker_name, 'account': worker['account'],
                     'market': 'unknown', 'is_disabled': (lambda: True)
                 })
+        self.config_lock.release()
 
     def update_notify(self):
         if not self.config['workers']:
@@ -118,8 +120,11 @@ class WorkerInfrastructure(threading.Thread):
             try:
                 self.workers[worker_name].ontick(data)
             except Exception as e:
-                self.workers[worker_name].error_ontick(e)
-                self.workers[worker_name].log.exception("in .tick()")
+                self.workers[worker_name].log.exception("in ontick()")
+                try:
+                    self.workers[worker_name].error_ontick(e)
+                except Exception:
+                    self.workers[worker_name].log.exception("in error_ontick()")
         self.config_lock.release()
 
     def on_market(self, data):
@@ -135,8 +140,11 @@ class WorkerInfrastructure(threading.Thread):
                 try:
                     self.workers[worker_name].onMarketUpdate(data)
                 except Exception as e:
-                    self.workers[worker_name].error_onMarketUpdate(e)
-                    self.workers[worker_name].log.exception(".onMarketUpdate()")
+                    self.workers[worker_name].log.exception("in onMarketUpdate()")
+                    try:
+                        self.workers[worker_name].error_onMarketUpdate(e)
+                    except Exception:
+                        self.workers[worker_name].log.exception("in error_onMarketUpdate()")
         self.config_lock.release()
 
     def on_account(self, account_update):
@@ -150,8 +158,11 @@ class WorkerInfrastructure(threading.Thread):
                 try:
                     self.workers[worker_name].onAccount(account_update)
                 except Exception as e:
-                    self.workers[worker_name].error_onAccount(e)
-                    self.workers[worker_name].log.exception(".onAccountUpdate()")
+                    self.workers[worker_name].log.exception("in onAccountUpdate()")
+                    try:
+                        self.workers[worker_name].error_onAccount(e)
+                    except Exception:
+                        self.workers[worker_name].log.exception("in error_onAccountUpdate()")
         self.config_lock.release()
 
     def add_worker(self, worker_name, config):
@@ -209,5 +220,5 @@ class WorkerInfrastructure(threading.Thread):
         strategy.purge()
 
     def do_next_tick(self, job):
-        """Add a callable to be executed on the next tick"""
+        """ Add a callable to be executed on the next tick """
         self.jobs.add(job)
