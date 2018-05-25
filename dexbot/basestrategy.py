@@ -363,6 +363,9 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.log.debug('Placed buy order {}'.format(buy_transaction))
         buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
         if buy_order and buy_order['deleted']:
+            # The API doesn't return data on orders that don't exist
+            # We need to calculate the data on our own
+            buy_order = self.calculate_order_data(buy_order, amount, price)
             self.recheck_orders = True
 
         return buy_order
@@ -397,9 +400,21 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.log.debug('Placed sell order {}'.format(sell_transaction))
         sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
         if sell_order and sell_order['deleted']:
+            # The API doesn't return data on orders that don't exist
+            # We need to calculate the data on our own
+            sell_order = self.calculate_order_data(sell_order, amount, price)
+            sell_order.invert()
             self.recheck_orders = True
 
         return sell_order
+
+    def calculate_order_data(self, order, amount, price):
+        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        order['quote'] = quote_asset
+        order['price'] = price
+        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        order['base'] = base_asset
+        return order
 
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
