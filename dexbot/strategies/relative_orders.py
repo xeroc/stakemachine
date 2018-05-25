@@ -98,13 +98,13 @@ class Strategy(BaseStrategy):
         amount_quote = self.amount_quote
 
         # Buy Side
-        buy_order = self.market_buy(amount_base, self.buy_price)
+        buy_order = self.market_buy(amount_base, self.buy_price, True)
         if buy_order:
             self['buy_order'] = buy_order
             order_ids.append(buy_order['id'])
 
         # Sell Side
-        sell_order = self.market_sell(amount_quote, self.sell_price)
+        sell_order = self.market_sell(amount_quote, self.sell_price, True)
         if sell_order:
             self['sell_order'] = sell_order
             order_ids.append(sell_order['id'])
