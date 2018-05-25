@@ -10,6 +10,7 @@ class Strategy(BaseStrategy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.log.info("Initializing Staggered Orders")
 
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
@@ -97,6 +98,7 @@ class Strategy(BaseStrategy):
                 self.save_order(order)
 
         self['setup_done'] = True
+        self.log.info("Done placing orders")
 
     def place_reverse_order(self, order):
         """ Replaces an order with a reverse order
@@ -138,14 +140,21 @@ class Strategy(BaseStrategy):
             if not self.get_order(order_id):
                 self.place_order(order)
 
+        self.log.info("Done placing orders")
+
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
+        order_placed = False
         orders = self.fetch_orders()
         for order_id, order in orders.items():
             current_order = self.get_order(order_id)
             if not current_order:
                 self.place_reverse_order(order)
+                order_placed = True
+
+        if order_placed:
+            self.log.info("Done placing orders")
 
         if self.view:
             self.update_gui_profit()
