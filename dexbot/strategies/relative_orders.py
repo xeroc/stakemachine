@@ -111,7 +111,7 @@ class Strategy(BaseStrategy):
 
         self['order_ids'] = order_ids
 
-        self.log.info("New orders complete")
+        self.log.info("Done placing orders")
 
         # Some orders weren't successfully created, redo them
         if len(order_ids) < 2 and not self.disabled:
@@ -120,8 +120,6 @@ class Strategy(BaseStrategy):
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
-        self.log.info("Market event: checking orders...")
-
         stored_sell_order = self['sell_order']
         stored_buy_order = self['buy_order']
         current_sell_order = self.get_order(stored_sell_order)
