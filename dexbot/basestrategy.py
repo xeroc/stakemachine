@@ -18,7 +18,8 @@ from bitshares.instance import shared_bitshares_instance
 
 
 MAX_TRIES = 3
-ConfigElement = collections.namedtuple('ConfigElement','key type default description extra')
+
+ConfigElement = collections.namedtuple('ConfigElement', 'key type default description extra')
 # Bots need to specify their own configuration values
 # I want this to be UI-agnostic so a future web or GUI interface can use it too
 # so each bot can have a class method 'configure' which returns a list of ConfigElement
@@ -89,7 +90,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         Return a list of ConfigElement objects defining the configuration values for 
         this class
         User interfaces should then generate widgets based on this values, gather
-        data and save back to the config dictionary for the bot.
+        data and save back to the config dictionary for the worker.
 
         NOTE: when overriding you almost certainly will want to call the ancestor
         and then add your config values to the list.
@@ -101,7 +102,7 @@ class BaseStrategy(Storage, StateMachine, Events):
                           "BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"",
                           "[A-Z]+:[A-Z]+")
         ]
-    
+
     def __init__(
         self,
         name,
@@ -369,23 +370,28 @@ class BaseStrategy(Storage, StateMachine, Events):
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
+        self.log.info('Canceling all orders')
         if self.orders:
-            self.log.info('Canceling all orders')
             self.cancel(self.orders)
+        self.log.info("Orders canceled")
 
-    def market_buy(self, amount, price):
+    def market_buy(self, amount, price, return_none=False):
+        symbol = self.market['base']['symbol']
+        precision = self.market['base']['precision']
+        base_amount = self.truncate(price * amount, precision)
+
         # Make sure we have enough balance for the order
-        if self.balance(self.market['base']) < price * amount:
+        if self.balance(self.market['base']) < base_amount:
             self.log.critical(
                 "Insufficient buy balance, needed {} {}".format(
-                    price * amount, self.market['base']['symbol'])
+                    base_amount, symbol)
             )
             self.disabled = True
             return None
 
         self.log.info(
             'Placing a buy order for {} {} @ {}'.format(
-                price * amount, self.market["base"]['symbol'], price)
+                base_amount, symbol, round(price, 8))
         )
 
         # Place the order
@@ -396,26 +402,33 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed buy order {}'.format(buy_transaction))
-        buy_order = self.get_order(buy_transaction['orderid'], return_none=False)
-        if buy_order['deleted']:
+        self.log.debug('Placed buy order {}'.format(buy_transaction))
+        buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
+        if buy_order and buy_order['deleted']:
+            # The API doesn't return data on orders that don't exist
+            # We need to calculate the data on our own
+            buy_order = self.calculate_order_data(buy_order, amount, price)
             self.recheck_orders = True
 
         return buy_order
 
-    def market_sell(self, amount, price):
+    def market_sell(self, amount, price, return_none=False):
+        symbol = self.market['quote']['symbol']
+        precision = self.market['quote']['precision']
+        quote_amount = self.truncate(amount, precision)
+
         # Make sure we have enough balance for the order
-        if self.balance(self.market['quote']) < amount:
+        if self.balance(self.market['quote']) < quote_amount:
             self.log.critical(
                 "Insufficient sell balance, needed {} {}".format(
-                    amount, self.market['quote']['symbol'])
+                    amount, symbol)
             )
             self.disabled = True
             return None
 
         self.log.info(
             'Placing a sell order for {} {} @ {}'.format(
-                amount, self.market["quote"]['symbol'], price)
+                quote_amount, symbol, round(price, 8))
         )
 
         # Place the order
@@ -426,12 +439,24 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed sell order {}'.format(sell_transaction))
-        sell_order = self.get_order(sell_transaction['orderid'], return_none=False)
-        if sell_order['deleted']:
+        self.log.debug('Placed sell order {}'.format(sell_transaction))
+        sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
+        if sell_order and sell_order['deleted']:
+            # The API doesn't return data on orders that don't exist
+            # We need to calculate the data on our own
+            sell_order = self.calculate_order_data(sell_order, amount, price)
+            sell_order.invert()
             self.recheck_orders = True
 
         return sell_order
+
+    def calculate_order_data(self, order, amount, price):
+        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        order['quote'] = quote_asset
+        order['price'] = price
+        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        order['base'] = base_asset
+        return order
 
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
@@ -534,3 +559,9 @@ class BaseStrategy(Storage, StateMachine, Events):
                         time.sleep(6)  # Wait at least a BitShares block
                 else:
                     raise
+
+    @staticmethod
+    def truncate(number, decimals):
+        """ Change the decimal point of a number without rounding
+        """
+        return math.floor(number * 10 ** decimals) / 10 ** decimals

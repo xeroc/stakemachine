@@ -28,6 +28,7 @@ class MainView(QtWidgets.QMainWindow):
         self.closing = False
         self.statusbar_updater = None
         self.statusbar_updater_first_run = True
+        self.main_ctrl.set_info_handler(self.set_worker_status)
 
         self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
@@ -135,3 +136,7 @@ class MainView(QtWidgets.QMainWindow):
             self.ui.status_bar.showMessage("ver {} - Node delay: {:.2f}ms".format(__version__, latency))
         else:
             self.ui.status_bar.showMessage("ver {} - Node disconnected".format(__version__))
+
+    def set_worker_status(self, worker_name, level, status):
+        if worker_name != 'NONE':
+            self.worker_widgets[worker_name].set_status(status)

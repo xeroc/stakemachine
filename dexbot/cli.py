@@ -4,7 +4,6 @@ import os
 import os.path
 import signal
 import sys
-import appdirs
 
 from dexbot import config_file
 from dexbot.ui import (
@@ -24,6 +23,7 @@ from ruamel import yaml
 if "LANG" not in os.environ:
     os.environ['LANG'] = 'C.UTF-8'
 import click
+
 
 log = logging.getLogger(__name__)
 

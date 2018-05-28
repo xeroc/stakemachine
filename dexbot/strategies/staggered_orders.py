@@ -1,6 +1,6 @@
 import math
 
-from dexbot.basestrategy import BaseStrategy
+from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.queue.idle_queue import idle_add
 
 
@@ -8,8 +8,18 @@ class Strategy(BaseStrategy):
     """ Staggered Orders strategy
     """
 
+    @classmethod
+    def configure(cls):
+        return BaseStrategy.configure() + [
+            ConfigElement('upper_bound', 'float', 1.0, 'The top price in the range', (0.0, None)),
+            ConfigElement('lower_bound', 'float', 1.0, 'The bottom price in the range', (0.0, None)),
+            ConfigElement('increment', 'float', 1.0, 'The percentage difference between staggered orders', (0.0, 100.0)),
+            ConfigElement('amount', 'float', 1.0, 'The amount of buy/sell orders', (0.0, None)),
+            ConfigElement('spread', 'float', 5.0, 'The percentage difference between buy and sell', (0.0, 100.0))]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.log.info("Initializing Staggered Orders")
 
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
@@ -97,6 +107,7 @@ class Strategy(BaseStrategy):
                 self.save_order(order)
 
         self['setup_done'] = True
+        self.log.info("Done placing orders")
 
     def place_reverse_order(self, order):
         """ Replaces an order with a reverse order
@@ -135,16 +146,24 @@ class Strategy(BaseStrategy):
         self.cancel_all()
         orders = self.fetch_orders()
         for order_id, order in orders.items():
-            self.place_order(order)
+            if not self.get_order(order_id):
+                self.place_order(order)
+
+        self.log.info("Done placing orders")
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
+        order_placed = False
         orders = self.fetch_orders()
         for order_id, order in orders.items():
             current_order = self.get_order(order_id)
             if not current_order:
                 self.place_reverse_order(order)
+                order_placed = True
+
+        if order_placed:
+            self.log.info("Done placing orders")
 
         if self.view:
             self.update_gui_profit()

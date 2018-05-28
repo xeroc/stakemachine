@@ -55,6 +55,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def start_worker(self):
+        self.set_status("Starting worker")
         self._start_worker()
         self.main_ctrl.create_worker(self.worker_name, self.worker_config, self.view)
 
@@ -65,6 +66,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def pause_worker(self):
+        self.set_status("Pausing worker")
         self._pause_worker()
         self.main_ctrl.stop_worker(self.worker_name)
 
@@ -128,3 +130,6 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
                                                         new_worker_name, edit_worker_dialog.worker_data)
             self.reload_widget(self.worker_name, new_worker_name)
             self.worker_name = new_worker_name
+
+    def set_status(self, status):
+        self.worker_status.setText(status)

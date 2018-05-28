@@ -2,11 +2,14 @@ import os
 import sys
 import logging
 import logging.config
+from datetime import datetime
+from prettytable import PrettyTable
 from functools import update_wrapper
 
 from . import find_node
 
 import click
+from bitshares.price import Price
 from ruamel import yaml
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
@@ -72,10 +75,6 @@ def verbose(f):
             logger.setLevel(getattr(logging, verbosity.upper()))
             logger.addHandler(ch)
 
-        # Has the user set logging in the config
-        if "logging" in ctx.config:
-            # This is defined in https://docs.python.org/3.4/library/logging.config.html#logging-config-dictschema
-            logging.config.dictConfig(ctx.config['logging'])
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 

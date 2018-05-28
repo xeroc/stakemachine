@@ -4,7 +4,8 @@ The result is dexbot can be run without having to hand-edit config files.
 If systemd is detected it will offer to install a user service unit (under ~/.local/share/systemd
 This requires a per-user systemd process to be runnng
 
-Requires the 'whiptail' tool: so UNIX-like systems only
+Requires the 'whiptail' tool for text-based configuration (so UNIX only)
+if not available, falls back to a line-based configurator ("NoWhiptail")
 
 Note there is some common cross-UI configuration stuff: look in basestrategy.py
 It's expected GUI/web interfaces will be re-implementing code in this file, but they should
@@ -18,11 +19,23 @@ import os
 import os.path
 import sys
 import re
+import tempfile
+import shutil
 
 from dexbot.worker import STRATEGIES
 from dexbot.whiptail import get_whiptail
 from dexbot.find_node import start_pings, best_node
 from dexbot.basestrategy import BaseStrategy
+
+
+# FIXME: auto-discovery of strategies would be cool but can't figure out a way
+STRATEGIES = [
+    {'tag': 'relative',
+     'class': 'dexbot.strategies.relative_orders',
+     'name': 'Relative Orders'},
+    {'tag': 'stagger',
+     'class': 'dexbot.strategies.staggered_orders',
+     'name': 'Staggered Orders'}]
 
 SYSTEMD_SERVICE_NAME = os.path.expanduser(
     "~/.local/share/systemd/user/dexbot.service")
@@ -35,6 +48,7 @@ Description=Dexbot
 Type=notify
 WorkingDirectory={homedir}
 ExecStart={exe} --systemd run
+TimeoutSec=20m
 Environment=PYTHONUNBUFFERED=true
 Environment=UNLOCK={passwd}
 
@@ -67,10 +81,7 @@ def process_config_element(elem, d, config):
     if elem.type == "bool":
         config[elem.key] = d.confirm(elem.description)
     if elem.type in ("float", "int"):
-        txt = d.prompt(
-            elem.description, config.get(
-                elem.key, str(
-                    elem.default)))
+        txt = d.prompt(elem.description, str(config.get(elem.key, elem.default)))
         while True:
             try:
                 if elem.type == "int":
@@ -85,10 +96,7 @@ def process_config_element(elem, d, config):
                     break
             except ValueError:
                 d.alert("Not a valid value")
-            txt = d.prompt(
-                elem.description, config.get(
-                    elem.key, str(
-                        elem.default)))
+            txt = d.prompt(elem.description, str(config.get(elem.key, elem.default)))
         config[elem.key] = val
     if elem.type == "choice":
         config[elem.key] = d.radiolist(elem.description, select_choice(
@@ -112,7 +120,7 @@ def setup_systemd(d, config):
             j = os.path.expanduser(i)
             if not os.path.exists(j):
                 os.mkdir(j)
-        passwd = d.prompt("The wallet password entered with uptick\n"
+        passwd = d.prompt("The wallet password\n"
                           "NOTE: this will be saved on disc so the worker can run unattended. "
                           "This means anyone with access to this computer's file can spend all your money",
                           password=True)
@@ -132,15 +140,21 @@ def setup_systemd(d, config):
 
 def configure_worker(d, worker):
     strategy = worker.get('module', 'dexbot.strategies.echo')
+    for i in STRATEGIES:
+        if strategy == i['class']:
+            strategy = i['tag']
     worker['module'] = d.radiolist(
         "Choose a worker strategy", select_choice(
-            strategy, STRATEGIES))
+            strategy, [(i['tag'], i['name']) for i in STRATEGIES]))
+    for i in STRATEGIES:
+        if i['tag'] == worker['module']:
+            worker['module'] = i['class']
     # It's always Strategy now, for backwards compatibility only
     worker['worker'] = 'Strategy'
     # Import the worker class but we don't __init__ it here
     klass = getattr(
         importlib.import_module(worker["module"]),
-        worker["worker"]
+        'Strategy'
     )
     # Use class metadata for per-worker configuration
     configs = klass.configure()

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>480</width>
-    <height>138</height>
+    <height>179</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -547,6 +547,13 @@ border-right: 2px solid  #005B78;
          </widget>
         </item>
        </layout>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="worker_status">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

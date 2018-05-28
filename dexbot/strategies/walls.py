@@ -19,10 +19,8 @@ class Strategy(BaseStrategy):
             ConfigElement("sell", "float", 0.0, "the default amount to sell", (0.0, None)),
             ConfigElement("blocks", "int", 20, "number of blocks to wait before re-calculating", (0, 10000)),
             ConfigElement("dry_run", "bool", False,
-                          "Dry Run Mode\nIf Yes the bot won't buy or sell anything, just log what it would do.\n"
-                          "If No, the bot will buy and sell for real.", None)
+                          "Dry Run Mode\nIf Yes the bot won't buy or sell anything, just log what it would do.\nIf No, the bot will buy and sell for real.", None)
         ]
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

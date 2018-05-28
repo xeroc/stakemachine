@@ -1,6 +1,7 @@
 class StateMachine:
     """ Generic state machine
     """
+
     def __init__(self, *args, **kwargs):
         self.states = set()
         self.state = None
