@@ -24,7 +24,7 @@ ConfigElement = collections.namedtuple('ConfigElement', 'key type default descri
 # I want this to be UI-agnostic so a future web or GUI interface can use it too
 # so each bot can have a class method 'configure' which returns a list of ConfigElement
 # named tuples. tuple fields as follows.
-# key: the key in the bot config dictionary that gets saved back to config.yml
+# key: the key in the worker config dictionary that gets saved back to config.yml
 # type: one of "int", "float", "bool", "string", "choice"
 # default: the default value. must be right type.
 # description: comments to user, full sentences encouraged
@@ -90,7 +90,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         Return a list of ConfigElement objects defining the configuration values for 
         this class
         User interfaces should then generate widgets based on this values, gather
-        data and save back to the config dictionary for the bot.
+        data and save back to the config dictionary for the worker.
 
         NOTE: when overriding you almost certainly will want to call the ancestor
         and then add your config values to the list.
