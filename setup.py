@@ -14,6 +14,13 @@ install_requires = [
     "ruamel.yaml>=0.15.37"
 ]
 
+
+class BuildCommand(build_module.build):
+    def run(self):
+        self.run_command('build_ui')
+        build_module.build.run(self)
+
+
 try:
     from pyqt_distutils.build_ui import build_ui
     cmdclass = {
@@ -21,17 +28,11 @@ try:
         'build': BuildCommand
     }
     console_scripts.append('dexbot-gui = dexbot.gui:main')
-    install_requires.extend("pyqt5", "pyqt-distutils")
-except:
-    print("GUI not available")
+    install_requires.extend(["pyqt-distutils"])
+except BaseException as e:
+    print("GUI not available: {}".format(e))
 
 from dexbot import VERSION, APP_NAME
-
-
-class BuildCommand(build_module.build):
-    def run(self):
-        self.run_command('build_ui')
-        build_module.build.run(self)
 
 
 setup(
