@@ -200,7 +200,7 @@ def configure_dexbot(config):
                          ('CONF', 'Redo general config')])
         if action == 'EDIT':
             workername = d.menu("Select bot to edit", [(i, i) for i in workers])
-            config['workers'][workername] = configure_worker(d, config['workers'][botname])
+            config['workers'][workername] = configure_worker(d, config['workers'][workername])
         elif action == 'DEL':
             workername = d.menu("Select bot to delete", [(i, i) for i in workers])
             del config['workers'][workername]
