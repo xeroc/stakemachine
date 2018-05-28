@@ -57,6 +57,12 @@ class RelativeOrdersController:
             self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(True)
         else:
             self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
+            self.view.strategy_widget.center_price_input.setDisabled(False)
+
+        if worker_data.get('center_price_offset', True):
+            self.view.strategy_widget.center_price_offset_checkbox.setChecked(True)
+        else:
+            self.view.strategy_widget.center_price_offset_checkbox.setChecked(False)
 
     def validation_errors(self):
         error_texts = []
@@ -73,6 +79,7 @@ class RelativeOrdersController:
             'amount_relative': self.view.strategy_widget.relative_order_size_checkbox.isChecked(),
             'center_price': self.view.strategy_widget.center_price_input.value(),
             'center_price_dynamic': self.view.strategy_widget.center_price_dynamic_checkbox.isChecked(),
+            'center_price_offset': self.view.strategy_widget.center_price_offset_checkbox.isChecked(),
             'spread': self.view.strategy_widget.spread_input.value()
         }
         return data

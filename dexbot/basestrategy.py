@@ -120,6 +120,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             bitshares_instance=self.bitshares
         )
 
+        # Recheck flag - Tell the strategy to check for updated orders
+        self.recheck_orders = False
+
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
 
@@ -136,54 +139,53 @@ class BaseStrategy(Storage, StateMachine, Events):
              'is_disabled': lambda: self.disabled}
         )
 
-    def calculate_center_price(self):
+    def calculate_center_price(self, suppress_errors=False):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
         lowest_ask = ticker.get("lowestAsk")
-        if highest_bid is None or highest_bid == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no highest bid."
-            )
-            self.disabled = True
+        if not float(highest_bid):
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no highest bid."
+                )
+                self.disabled = True
+            return None
         elif lowest_ask is None or lowest_ask == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no lowest ask."
-            )
-            self.disabled = True
-        else:
-            center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
-            return center_price
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no lowest ask."
+                )
+                self.disabled = True
+            return None
 
-    def calculate_relative_center_price(self, spread, order_ids=None):
+        center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
+        return center_price
+
+    def calculate_offset_center_price(self, spread, center_price=None, order_ids=None):
         """ Calculate center price which shifts based on available funds
         """
-        ticker = self.market.ticker()
-        highest_bid = ticker.get("highestBid").get('price')
-        lowest_ask = ticker.get("lowestAsk").get('price')
-        latest_price = ticker.get('latest').get('price')
-        if highest_bid is None or highest_bid == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no highest bid."
-            )
-            self.disabled = True
-        elif lowest_ask is None or lowest_ask == 0.0:
-            self.log.critical(
-                "Cannot estimate center price, there is no lowest ask."
-            )
-            self.disabled = True
+        if center_price is None:
+            # No center price was given so we simply calculate the center price
+            calculated_center_price = self.calculate_center_price()
+            center_price = calculated_center_price
         else:
-            total_balance = self.total_balance(order_ids)
-            total = (total_balance['quote'] * latest_price) + total_balance['base']
+            # Center price was given so we only use the calculated center price
+            # for quote to base asset conversion
+            calculated_center_price = self.calculate_center_price(True)
+            if not calculated_center_price:
+                calculated_center_price = center_price
 
-            if not total:  # Prevent division by zero
-                percentage = 0.5
-            else:
-                percentage = (total_balance['base'] / total)
-            center_price = (highest_bid + lowest_ask) / 2
-            lowest_price = center_price * (1 - spread / 100)
-            highest_price = center_price * (1 + spread / 100)
-            relative_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
-            return relative_center_price
+        total_balance = self.total_balance(order_ids)
+        total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
+
+        if not total:  # Prevent division by zero
+            percentage = 0
+        else:
+            percentage = (total_balance['base'] / total)
+        lowest_price = center_price / math.sqrt(1 + spread)
+        highest_price = center_price * math.sqrt(1 + spread)
+        offset_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
+        return offset_center_price
 
     @property
     def orders(self):
@@ -192,11 +194,23 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
 
-    def get_order(self, order_id):
-        for order in self.orders:
-            if order['id'] == order_id:
-                return order
-        return False
+    @staticmethod
+    def get_order(order_id, return_none=True):
+        """ Returns the Order object for the order_id
+
+            :param str|dict order_id: blockchain object id of the order
+                can be a dict with the id key in it
+            :param bool return_none: return None instead of an empty
+                Order object when the order doesn't exist
+        """
+        if not order_id:
+            return None
+        if 'id' in order_id:
+            order_id = order_id['id']
+        order = Order(order_id)
+        if return_none and order['deleted']:
+            return None
+        return order
 
     def get_updated_order(self, order):
         """ Tries to get the updated order from the API
@@ -222,14 +236,8 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         limit_orders = self.account['limit_orders'][:]
         for o in limit_orders:
-            base_amount = o['for_sale']
-            assert type(base_amount) in [int, float], "o['for_sale'] not num {}".format(dict(o))
-            assert type(o['sell_price']['base']['amount']) in [
-                int, float], "o['sell_base']['base']['amount'] not num {}".format(dict(o))
-            assert type(o['sell_price']['quote']['amount']) in [
-                int, float], "o['sell_base']['quote']['amount'] not num {}".format(dict(o))
-
-            price = o['sell_price']['base']['amount'] / o['sell_price']['quote']['amount']
+            base_amount = float(o['for_sale'])
+            price = float(o['sell_price']['base']['amount']) / float(o['sell_price']['quote']['amount'])
             quote_amount = base_amount / price
             o['sell_price']['base']['amount'] = base_amount
             o['sell_price']['quote']['amount'] = quote_amount
@@ -313,21 +321,38 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         success = self._cancel(orders)
         if not success and len(orders) > 1:
+            # One of the order cancels failed, cancel the orders one by one
             for order in orders:
                 self._cancel(order)
 
     def cancel_all(self):
         """ Cancel all orders of the worker's account
         """
+        self.log.info('Canceling all orders')
         if self.orders:
-            self.log.info('Canceling all orders')
             self.cancel(self.orders)
+        self.log.info("Orders canceled")
 
-    def market_buy(self, amount, price):
+    def market_buy(self, amount, price, return_none=False):
+        symbol = self.market['base']['symbol']
+        precision = self.market['base']['precision']
+        base_amount = self.truncate(price * amount, precision)
+
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['base']) < base_amount:
+            self.log.critical(
+                "Insufficient buy balance, needed {} {}".format(
+                    base_amount, symbol)
+            )
+            self.disabled = True
+            return None
+
         self.log.info(
-            'Placing a buy order for {} {} @ {}'.format(price * amount,
-                                                        self.market["base"]['symbol'],
-                                                        price))
+            'Placing a buy order for {} {} @ {}'.format(
+                base_amount, symbol, round(price, 8))
+        )
+
+        # Place the order
         buy_transaction = self.retry_action(
             self.market.buy,
             price,
@@ -335,15 +360,36 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed buy order {}'.format(buy_transaction))
-        buy_order = self.get_order(buy_transaction['orderid'])
+        self.log.debug('Placed buy order {}'.format(buy_transaction))
+        buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
+        if buy_order and buy_order['deleted']:
+            # The API doesn't return data on orders that don't exist
+            # We need to calculate the data on our own
+            buy_order = self.calculate_order_data(buy_order, amount, price)
+            self.recheck_orders = True
+
         return buy_order
 
-    def market_sell(self, amount, price):
+    def market_sell(self, amount, price, return_none=False):
+        symbol = self.market['quote']['symbol']
+        precision = self.market['quote']['precision']
+        quote_amount = self.truncate(amount, precision)
+
+        # Make sure we have enough balance for the order
+        if self.balance(self.market['quote']) < quote_amount:
+            self.log.critical(
+                "Insufficient sell balance, needed {} {}".format(
+                    amount, symbol)
+            )
+            self.disabled = True
+            return None
+
         self.log.info(
-            'Placing a sell order for {} {} @ {}'.format(amount,
-                                                         self.market["quote"]['symbol'],
-                                                         price))
+            'Placing a sell order for {} {} @ {}'.format(
+                quote_amount, symbol, round(price, 8))
+        )
+
+        # Place the order
         sell_transaction = self.retry_action(
             self.market.sell,
             price,
@@ -351,9 +397,24 @@ class BaseStrategy(Storage, StateMachine, Events):
             account=self.account.name,
             returnOrderId="head"
         )
-        self.log.info('Placed sell order {}'.format(sell_transaction))
-        sell_order = self.get_order(sell_transaction['orderid'])
+        self.log.debug('Placed sell order {}'.format(sell_transaction))
+        sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
+        if sell_order and sell_order['deleted']:
+            # The API doesn't return data on orders that don't exist
+            # We need to calculate the data on our own
+            sell_order = self.calculate_order_data(sell_order, amount, price)
+            sell_order.invert()
+            self.recheck_orders = True
+
         return sell_order
+
+    def calculate_order_data(self, order, amount, price):
+        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        order['quote'] = quote_asset
+        order['price'] = price
+        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        order['base'] = base_asset
+        return order
 
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
@@ -446,5 +507,19 @@ class BaseStrategy(Storage, StateMachine, Events):
                         self.bitshares.txbuffer.clear()
                         self.account.refresh()
                         time.sleep(2)
+                elif "now <= trx.expiration" in str(e):  # Usually loss of sync to blockchain
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        tries += 1
+                        self.log.warning("retrying on '{}'".format(str(e)))
+                        self.bitshares.txbuffer.clear()
+                        time.sleep(6)  # Wait at least a BitShares block
                 else:
                     raise
+
+    @staticmethod
+    def truncate(number, decimals):
+        """ Change the decimal point of a number without rounding
+        """
+        return math.floor(number * 10 ** decimals) / 10 ** decimals

@@ -25,11 +25,14 @@ class MainController:
         fh.setFormatter(formatter)
         logger.addHandler(fh)
         logger.setLevel(logging.INFO)
-        pyqth = PyQtHandler()
-        pyqth.setLevel(logging.ERROR)
-        logger.addHandler(pyqth)
+        self.pyqt_handler = PyQtHandler()
+        self.pyqt_handler.setLevel(logging.INFO)
+        logger.addHandler(self.pyqt_handler)
         logger.info("DEXBot {} on python {} {}".format(VERSION, sys.version[:6], sys.platform), extra={
                     'worker_name': 'NONE', 'account': 'NONE', 'market': 'NONE'})
+
+    def set_info_handler(self, handler):
+        self.pyqt_handler.set_info_handler(handler)
 
     def create_worker(self, worker_name, config, view):
         # Todo: Add some threading here so that the GUI doesn't freeze
