@@ -2,7 +2,28 @@
 
 from setuptools import setup, find_packages
 from distutils.command import build as build_module
-from pyqt_distutils.build_ui import build_ui
+cmdclass = {}
+console_scripts = ['dexbot-cli = dexbot.cli:main']
+install_requires = [
+    "bitshares==0.1.16",
+    "uptick>=0.1.4",
+    "click",
+    "sqlalchemy",
+    "appdirs",
+    "sdnotify",
+    "ruamel.yaml>=0.15.37"
+]
+
+try:
+    from pyqt_distutils.build_ui import build_ui
+    cmdclass = {
+        'build_ui': build_ui,
+        'build': BuildCommand
+    }
+    console_scripts.append('dexbot-gui = dexbot.gui:main')
+    install_requires.extend("pyqt5", "pyqt-distutils")
+except:
+    print("GUI not available")
 
 from dexbot import VERSION, APP_NAME
 
@@ -32,27 +53,11 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
     ],
-    cmdclass={
-        'build_ui': build_ui,
-        'build': BuildCommand
-    },
+    cmdclass=cmdclass,
     entry_points={
-        'console_scripts': [
-            'dexbot-cli = dexbot.cli:main',
-            'dexbot-gui = dexbot.gui:main',
-        ],
+        'console_scripts': console_scripts
     },
-    install_requires=[
-        "bitshares==0.1.16",
-        "uptick>=0.1.4",
-        "click",
-        "sqlalchemy",
-        "appdirs",
-        "pyqt5",
-        "sdnotify",
-        'pyqt-distutils',
-        "ruamel.yaml>=0.15.37"
-    ],
+    install_requires=install_requires,
     dependency_links=[
         # Temporally force downloads from a different repo, change this once the websocket fix has been merged
         "https://github.com/mikakoi/python-bitshares/tarball/websocket-fix#egg=bitshares-0.1.11.beta"
