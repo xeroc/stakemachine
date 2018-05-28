@@ -48,6 +48,7 @@ Description=Dexbot
 Type=notify
 WorkingDirectory={homedir}
 ExecStart={exe} --systemd run
+TimeoutSec=20m
 Environment=PYTHONUNBUFFERED=true
 Environment=UNLOCK={passwd}
 
