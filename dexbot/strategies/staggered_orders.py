@@ -166,10 +166,10 @@ class Strategy(BaseStrategy):
     @staticmethod
     def calculate_buy_prices(center_price, spread, increment, lower_bound):
         buy_prices = []
-        if lower_bound > center_price / math.sqrt(1 + spread):
+        if lower_bound > center_price / math.sqrt(1 + increment + spread):
             return buy_prices
 
-        buy_price = center_price / math.sqrt(1 + spread)
+        buy_price = center_price / math.sqrt(1 + increment + spread)
         while buy_price > lower_bound:
             buy_prices.append(buy_price)
             buy_price = buy_price / (1 + increment)
@@ -178,10 +178,10 @@ class Strategy(BaseStrategy):
     @staticmethod
     def calculate_sell_prices(center_price, spread, increment, upper_bound):
         sell_prices = []
-        if upper_bound < center_price * math.sqrt(1 + spread):
+        if upper_bound < center_price * math.sqrt(1 + increment + spread):
             return sell_prices
 
-        sell_price = center_price * math.sqrt(1 + spread)
+        sell_price = center_price * math.sqrt(1 + increment spread)
         while sell_price < upper_bound:
             sell_prices.append(sell_price)
             sell_price = sell_price * (1 + increment)
