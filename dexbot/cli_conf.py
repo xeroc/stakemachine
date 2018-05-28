@@ -25,8 +25,6 @@ import tempfile
 import shutil
 
 from dexbot.whiptail import get_whiptail
-from dexbot.find_node import start_pings, best_node
-
 
 # FIXME: auto-discovery of strategies would be cool but can't figure out a way
 STRATEGIES = [
@@ -172,20 +170,12 @@ def configure_dexbot(config):
     workers = config.get('workers', {})
     config['workers'] = workers
     if len(workers) == 0:
-        ping_results = start_pings()
         while True:
             txt = d.prompt("Your name for the bot")
             config['workers'][txt] = configure_worker(d, {})
             if not d.confirm("Set up another bot?\n(DEXBOt can run multiple bots in one instance)"):
                 break
         setup_systemd(d, config)
-        node = best_node(ping_results)
-        if node:
-            config['node'] = node
-        else:
-            # search failed, ask the user
-            config['node'] = d.prompt(
-                "Search for best BitShares node failed.\n\nPlease enter wss:// url of chosen node.")
     else:
         action = d.menu("You have an existing configuration.\nSelect an action:",
                         [('NEW', 'Create a new bot'),

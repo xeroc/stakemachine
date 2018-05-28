@@ -12,7 +12,7 @@ config_dir = user_config_dir(APP_NAME, appauthor=AUTHOR)
 config_file = os.path.join(config_dir, "config.yml")
 
 default_config = """
-node: wss://bitshares.openledger.info/ws
+node: wss://status200.bitshares.apasia.tech/ws
 workers: {}
 """
 
