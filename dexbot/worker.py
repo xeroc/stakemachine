@@ -45,7 +45,7 @@ class WorkerInfrastructure(threading.Thread):
         user_worker_path = os.path.expanduser("~/bots")
         if os.path.exists(user_worker_path):
             sys.path.append(user_worker_path)
-        
+
     def init_workers(self, config):
         """ Initialize the workers
         """
@@ -105,7 +105,7 @@ class WorkerInfrastructure(threading.Thread):
     # Events
     def on_block(self, data):
         if self.jobs:
-            try: 
+            try:
                 for job in self.jobs:
                     job()
             finally:
@@ -190,7 +190,8 @@ class WorkerInfrastructure(threading.Thread):
             # Kill all of the workers
             for worker in self.workers:
                 self.workers[worker].cancel_all()
-            self.notify.websocket.close()
+            if self.notify:
+                self.notify.websocket.close()
 
     def remove_worker(self, worker_name=None):
         if worker_name:

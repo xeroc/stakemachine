@@ -10,10 +10,12 @@ class Strategy(BaseStrategy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.log.info("Initializing Staggered Orders")
 
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
         self.onAccount += self.check_orders
+        self.ontick += self.tick
 
         self.error_ontick = self.error
         self.error_onMarketUpdate = self.error
@@ -39,7 +41,6 @@ class Strategy(BaseStrategy):
     def error(self, *args, **kwargs):
         self.cancel_all()
         self.disabled = True
-        self.log.info(self.execute())
 
     def init_strategy(self):
         # Make sure no orders remain
@@ -87,43 +88,51 @@ class Strategy(BaseStrategy):
         # Place the buy orders
         for buy_order in buy_orders:
             order = self.market_buy(buy_order['amount'], buy_order['price'])
-            self.save_order(order)
+            if order:
+                self.save_order(order)
 
         # Place the sell orders
         for sell_order in sell_orders:
             order = self.market_sell(sell_order['amount'], sell_order['price'])
-            self.save_order(order)
+            if order:
+                self.save_order(order)
 
         self['setup_done'] = True
+        self.log.info("Done placing orders")
 
-    def replace_order(self, order):
+    def place_reverse_order(self, order):
         """ Replaces an order with a reverse order
             buy orders become sell orders and sell orders become buy orders
         """
         self.log.info('Change detected, updating orders')
+        self.remove_order(order)
 
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price'] * (1 + self.spread)
             amount = order['quote']['amount']
-            self.remove_order(order)
             new_order = self.market_sell(amount, price)
         else:  # Sell order
-            price = order['price'] / (1 + self.spread)
-            amount = order['quote']['amount']
-            self.remove_order(order)
+            price = (order['price'] ** -1) / (1 + self.spread)
+            amount = order['base']['amount']
             new_order = self.market_buy(amount, price)
 
-        self.save_order(new_order)
+        if new_order:
+            self.remove_order(order)
+            self.save_order(new_order)
 
     def place_order(self, order):
+        self.remove_order(order)
+
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price']
             amount = order['quote']['amount']
-            self.market_buy(amount, price)
+            new_order = self.market_buy(amount, price)
         else:  # Sell order
             price = order['price'] ** -1
             amount = order['base']['amount']
-            self.market_sell(amount, price)
+            new_order = self.market_sell(amount, price)
+
+        self.save_order(new_order)
 
     def place_orders(self):
         """ Place all the orders found in the database
@@ -131,16 +140,24 @@ class Strategy(BaseStrategy):
         self.cancel_all()
         orders = self.fetch_orders()
         for order_id, order in orders.items():
-            self.place_order(order)
+            if not self.get_order(order_id):
+                self.place_order(order)
+
+        self.log.info("Done placing orders")
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
+        order_placed = False
         orders = self.fetch_orders()
         for order_id, order in orders.items():
-            current_order = self.get_order(order)
+            current_order = self.get_order(order_id)
             if not current_order:
-                self.replace_order(order)
+                self.place_reverse_order(order)
+                order_placed = True
+
+        if order_placed:
+            self.log.info("Done placing orders")
 
         if self.view:
             self.update_gui_profit()
@@ -208,7 +225,7 @@ class Strategy(BaseStrategy):
         elif not float(lowest_ask):
             return None
         else:
-            center_price = (highest_bid['price'] + lowest_ask['price']) / 2
+            center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
 
         # Calculate buy prices
         buy_prices = Strategy.calculate_buy_prices(center_price, spread, increment, lower_bound)
@@ -231,6 +248,13 @@ class Strategy(BaseStrategy):
 
         return [needed_buy_asset, needed_sell_asset]
 
+    def tick(self, d):
+        """ ticks come in on every block
+        """
+        if self.recheck_orders:
+            self.check_orders()
+            self.recheck_orders = False
+
     # GUI updaters
     def update_gui_profit(self):
         pass
@@ -238,7 +262,8 @@ class Strategy(BaseStrategy):
     def update_gui_slider(self):
         ticker = self.market.ticker()
         latest_price = ticker.get('latest').get('price')
-        total_balance = self.total_balance()
+        order_ids = self.fetch_orders().keys()
+        total_balance = self.total_balance(order_ids)
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 
         if not total:  # Prevent division by zero

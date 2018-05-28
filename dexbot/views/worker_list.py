@@ -27,6 +27,7 @@ class MainView(QtWidgets.QMainWindow):
         self.closing = False
         self.statusbar_updater = None
         self.statusbar_updater_first_run = True
+        self.main_ctrl.set_info_handler(self.set_worker_status)
 
         self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
@@ -37,9 +38,9 @@ class MainView(QtWidgets.QMainWindow):
 
             # Limit the max amount of workers so that the performance isn't greatly affected
             self.num_of_workers += 1
-            # if self.num_of_workers >= self.max_workers:
-            #     self.ui.add_worker_button.setEnabled(False)
-            #     break
+            if self.num_of_workers >= self.max_workers:
+                self.ui.add_worker_button.setEnabled(False)
+                break
 
         # Dispatcher polls for events from the workers that are used to change the ui
         self.dispatcher = ThreadDispatcher(self)
@@ -58,16 +59,17 @@ class MainView(QtWidgets.QMainWindow):
         self.worker_container.addWidget(widget)
         self.worker_widgets[worker_name] = widget
 
+        # Limit the max amount of workers so that the performance isn't greatly affected
         self.num_of_workers += 1
-        # if self.num_of_workers >= self.max_workers:
-        #    self.ui.add_worker_button.setEnabled(False)
+        if self.num_of_workers >= self.max_workers:
+            self.ui.add_worker_button.setEnabled(False)
 
     def remove_worker_widget(self, worker_name):
         self.worker_widgets.pop(worker_name, None)
 
         self.num_of_workers -= 1
-        # if self.num_of_workers < self.max_workers:
-        #     self.ui.add_worker_button.setEnabled(True)
+        if self.num_of_workers < self.max_workers:
+            self.ui.add_worker_button.setEnabled(True)
 
     @gui_error
     def handle_add_worker(self):
@@ -135,3 +137,7 @@ class MainView(QtWidgets.QMainWindow):
             self.ui.status_bar.showMessage("ver {} - Node delay: {:.2f}ms".format(__version__, latency))
         else:
             self.ui.status_bar.showMessage("ver {} - Node disconnected".format(__version__))
+
+    def set_worker_status(self, worker_name, level, status):
+        if worker_name != 'NONE':
+            self.worker_widgets[worker_name].set_status(status)
