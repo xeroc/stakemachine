@@ -198,12 +198,12 @@ def configure_dexbot(config):
                          ('EDIT', 'Edit a bot'),
                          ('CONF', 'Redo general config')])
         if action == 'EDIT':
-            botname = d.menu("Select bot to edit", [(i, i) for i in workers])
-            config['workers'][botname] = configure_worker(d, config['workers'][botname])
+            workername = d.menu("Select bot to edit", [(i, i) for i in workers])
+            config['workers'][workername] = configure_worker(d, config['workers'][botname])
         elif action == 'DEL':
-            botname = d.menu("Select bot to delete", [(i, i) for i in bots])
-            del config['workers'][botname]
-        if action == 'NEW':
+            workername = d.menu("Select bot to delete", [(i, i) for i in workers])
+            del config['workers'][workername]
+        elif action == 'NEW':
             txt = d.prompt("Your name for the new bot")
             config['workers'][txt] = configure_bot(d, {})
         else:
