@@ -1,31 +1,29 @@
 #!/usr/bin/env python3
 import logging
 import os
+import os.path
+import sys
+import signal
+
 # we need to do this before importing click
 if not "LANG" in os.environ:
     os.environ['LANG'] = 'C.UTF-8'
 import click
-import os.path
-import os
-import sys
 import appdirs
 from ruamel import yaml
 
-from .ui import (
+from dexbot import config_file
+from dexbot.ui import (
     verbose,
     chain,
     unlock,
-    configfile,
-    confirmwarning,
-    confirmalert,
-    warning,
-    alert,
+    configfile
 )
+from dexbot.cli_conf import configure_dexbot
+from dexbot import storage
+from dexbot.worker import WorkerInfrastructure
+import dexbot.errors as errors
 
-from .bot import BotInfrastructure
-from .cli_conf import configure_dexbot
-from . import errors
-from . import storage
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +37,7 @@ logging.basicConfig(
 @click.group()
 @click.option(
     "--configfile",
-    default=os.path.join(appdirs.user_config_dir("dexbot"),"config.yml"),
+    default=config_file,
 )
 @click.option(
     '--verbose',
@@ -72,24 +70,42 @@ def main(ctx, **kwargs):
 @unlock
 @verbose
 def run(ctx):
-    """ Continuously run the bot
+    """ Continuously run the worker
     """
     if ctx.obj['pidfile']:
-        with open(ctx.obj['pidfile'],'w') as fd:
+        with open(ctx.obj['pidfile'], 'w') as fd:
             fd.write(str(os.getpid()))
     try:
-        bot = BotInfrastructure(ctx.config)
-        bot.init_bots()
-        if ctx.obj['systemd']:
+        try:
+            worker = WorkerInfrastructure(ctx.config)
+            # Set up signalling. do it here as of no relevance to GUI
+            kill_workers = worker_job(worker, worker.stop)
+            # These first two UNIX & Windows
+            signal.signal(signal.SIGTERM, kill_workers)
+            signal.signal(signal.SIGINT, kill_workers)
             try:
-                import sdnotify  # a soft dependency on sdnotify -- don't crash on non-systemd systems
-                n = sdnotify.SystemdNotifier()
-                n.notify("READY=1")
-            except BaseException:
-                log.debug("sdnotify not available")
-        bot.notify.listen()
-    except errors.NoBotsAvailable:
+                # These signals are UNIX-only territory, will ValueError here on Windows
+                signal.signal(signal.SIGHUP, kill_workers)
+                # TODO: reload config on SIGUSR1
+                # signal.signal(signal.SIGUSR1, lambda x, y: worker.do_next_tick(worker.reread_config))
+            except AttributeError:
+                log.debug("Cannot set all signals -- not available on this platform")
+            worker.init_workers(ctx.config)
+            if ctx.obj['systemd']:  # tell systemd we are running
+                try:
+                    import sdnotify  # a soft dependency on sdnotify -- don't crash on non-systemd systems
+                    n = sdnotify.SystemdNotifier()
+                    n.notify("READY=1")
+                except BaseException:
+                    log.debug("sdnotify not available")
+            worker.update_notify()
+            worker.notify.listen()
+        finally:
+            if ctx.obj['pidfile']:
+                os.unlink(ctx.obj['pidfile'])
+    except errors.NoWorkersAvailable:
         sys.exit(70)  # 70= "Software error" in /usr/include/sysexts.h
+        # this needs to be in an outside try otherwise we will exit before the finally clause
 
 
 @main.command()
@@ -116,6 +132,11 @@ def configure(ctx):
         os.system("systemctl --user enable dexbot")
         click.echo("starting dexbot daemon")
         os.system("systemctl --user start dexbot")
+
+
+def worker_job(worker, job):
+    return lambda x, y: worker.do_next_tick(job)
+
 
 if __name__ == '__main__':
     main()

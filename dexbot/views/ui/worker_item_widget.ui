@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>480</width>
-    <height>138</height>
+    <height>179</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -92,7 +92,7 @@
           <number>1</number>
          </property>
          <item>
-          <widget class="QLabel" name="botname_label">
+          <widget class="QLabel" name="worker_name_label">
            <property name="font">
             <font>
              <pointsize>12</pointsize>
@@ -104,7 +104,7 @@
             <string notr="true">color: #005B78;</string>
            </property>
            <property name="text">
-            <string>Botname</string>
+            <string>Worker name</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
@@ -136,7 +136,7 @@
             <string notr="true">color: #005B78;</string>
            </property>
            <property name="text">
-            <string>SIMPLE STRATEGY</string>
+            <string>RELATIVE ORDERS</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignBottom|Qt::AlignRight|Qt::AlignTrailing</set>
@@ -332,7 +332,7 @@
                  <string notr="true">color: #005B78;</string>
                 </property>
                 <property name="text">
-                 <string>Buy</string>
+                 <string>Base</string>
                 </property>
                </widget>
               </item>
@@ -361,7 +361,7 @@
                  <string notr="true">color: #005B78;</string>
                 </property>
                 <property name="text">
-                 <string>Sell</string>
+                 <string>Quote</string>
                 </property>
                </widget>
               </item>
@@ -547,6 +547,13 @@ border-right: 2px solid  #005B78;
          </widget>
         </item>
        </layout>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="worker_status">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

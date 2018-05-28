@@ -10,18 +10,18 @@ class Walls(BaseStrategy):
     Walls strategy
     This strategy simply places a buy and a sell wall
     """
-    
+
     @classmethod
     def configure(cls):
         return BaseStrategy.configure()+[
-            ConfigElement("spread","int",5,"the spread between sell and buy as percentage",(0,100)),
-            ConfigElement("threshold","int",5,"percentage the feed has to move before we change orders",(0,100)),
-            ConfigElement("buy","float",0.0,"the default amount to buy",(0.0,None)),
-            ConfigElement("sell","float",0.0,"the default amount to sell",(0.0,None)),
-            ConfigElement("blocks","int",20,"number of blocks to wait before re-calculating",(0,10000)),
-            ConfigElement("dry_run","bool",False,"Dry Run Mode\nIf Yes the bot won't buy or sell anything, just log what it would do.\nIf No, the bot will buy and sell for real.",None)
+            ConfigElement("spread", "int", 5, "the spread between sell and buy as percentage", (0, 100)),
+            ConfigElement("threshold", "int", 5, "percentage the feed has to move before we change orders", (0, 100)),
+            ConfigElement("buy", "float", 0.0, "the default amount to buy", (0.0, None)),
+            ConfigElement("sell", "float", 0.0, "the default amount to sell", (0.0, None)),
+            ConfigElement("blocks", "int", 20, "number of blocks to wait before re-calculating", (0, 10000)),
+            ConfigElement("dry_run", "bool", False,
+                          "Dry Run Mode\nIf Yes the bot won't buy or sell anything, just log what it would do.\nIf No, the bot will buy and sell for real.", None)
         ]
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -39,7 +39,7 @@ class Walls(BaseStrategy):
         self.counter = Counter()
 
         # Tests for actions
-        self.test_blocks = self.bot.get("test", {}).get("blocks", 0)
+        self.test_blocks = self.worker.get("test", {}).get("blocks", 0)
 
     def error(self, *args, **kwargs):
         self.disabled = True
@@ -55,7 +55,7 @@ class Walls(BaseStrategy):
         self.cancelall()
 
         # Target
-        target = self.bot.get("target", {})
+        target = self.worker.get("target", {})
         price = self.getprice()
 
         # prices
@@ -95,7 +95,7 @@ class Walls(BaseStrategy):
         """ Here we obtain the price for the quote and make sure it has
             a feed price
         """
-        target = self.bot.get("target", {})
+        target = self.worker.get("target", {})
         if target.get("reference") == "feed":
             assert self.market == self.market.core_quote_market(), "Wrong market for 'feed' reference!"
             ticker = self.market.ticker()
@@ -130,7 +130,7 @@ class Walls(BaseStrategy):
         # Test if price feed has moved more than the threshold
         if (
             self["feed_price"] and
-            fabs(1 - float(self.getprice()) / self["feed_price"]) > self.bot["threshold"] / 100.0
+            fabs(1 - float(self.getprice()) / self["feed_price"]) > self.worker["threshold"] / 100.0
         ):
             self.log.info("Price feed moved by more than the threshold. Updating orders!")
             self.updateorders()

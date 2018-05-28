@@ -4,7 +4,7 @@ from PyQt5 import Qt
 from bitshares import BitShares
 
 from dexbot.controllers.main_controller import MainController
-from dexbot.views.bot_list import MainView
+from dexbot.views.worker_list import MainView
 from dexbot.controllers.wallet_controller import WalletController
 from dexbot.views.unlock_wallet import UnlockWalletView
 from dexbot.views.create_wallet import CreateWalletView
@@ -32,6 +32,11 @@ class App(Qt.QApplication):
         else:
             sys.exit()
 
-if __name__ == '__main__':
+
+def main():
     app = App(sys.argv)
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()

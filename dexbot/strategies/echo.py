@@ -6,7 +6,7 @@ class Strategy(BaseStrategy):
     Echo strategy
     Strategy that logs all events within the blockchain
     """
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -83,7 +83,7 @@ class Strategy(BaseStrategy):
         # raise ValueError("Testing disabling")
 
     def print_accountUpdate(self, i):
-        """ This method is called when the bot's account name receives
+        """ This method is called when the worker's account name receives
             any update. This includes anything that changes
             ``2.6.xxxx``, e.g., any operation that affects your account.
         """
