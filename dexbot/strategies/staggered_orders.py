@@ -181,7 +181,7 @@ class Strategy(BaseStrategy):
         if upper_bound < center_price * math.sqrt(1 + increment + spread):
             return sell_prices
 
-        sell_price = center_price * math.sqrt(1 + increment spread)
+        sell_price = center_price * math.sqrt(1 + increment + spread)
         while sell_price < upper_bound:
             sell_prices.append(sell_price)
             sell_price = sell_price * (1 + increment)

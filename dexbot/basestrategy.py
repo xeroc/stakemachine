@@ -182,8 +182,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             percentage = 0
         else:
             percentage = (total_balance['base'] / total)
-        lowest_price = center_price / (1 + spread / 2)
-        highest_price = center_price * (1 + spread / 2)
+        lowest_price = center_price / math.sqrt(1 + spread)
+        highest_price = center_price * math.sqrt(1 + spread)
         offset_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
         return offset_center_price
 
