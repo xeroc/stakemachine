@@ -98,8 +98,8 @@ class BaseStrategy(Storage, StateMachine, Events):
         # these configs are common to all bots
         return [
             ConfigElement("account", "string", "", "BitShares account name for the bot to operate with", ""),
-            ConfigElement("market", "string", "USD:BTS",
-                          "BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"", "[A-Z]+:[A-Z]+")
+            ConfigElement("market", "string", "USD/BTS",
+                          "BitShares market to operate on, in the format ASSET/OTHERASSET, for example \"USD/BTS\"", r"[A-Z\.]+/[A-Z\.]+")
         ]
 
     def __init__(
