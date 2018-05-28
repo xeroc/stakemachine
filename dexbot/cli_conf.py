@@ -81,10 +81,7 @@ def process_config_element(elem, d, config):
     if elem.type == "bool":
         config[elem.key] = d.confirm(elem.description)
     if elem.type in ("float", "int"):
-        txt = d.prompt(
-            elem.description, config.get(
-                elem.key, str(
-                    elem.default)))
+        txt = d.prompt(elem.description, str(config.get(elem.key, elem.default)))
         while True:
             try:
                 if elem.type == "int":
@@ -99,10 +96,7 @@ def process_config_element(elem, d, config):
                     break
             except ValueError:
                 d.alert("Not a valid value")
-            txt = d.prompt(
-                elem.description, config.get(
-                    elem.key, str(
-                        elem.default)))
+            txt = d.prompt(elem.description, str(config.get(elem.key, elem.default)))
         config[elem.key] = val
     if elem.type == "choice":
         config[elem.key] = d.radiolist(elem.description, select_choice(
