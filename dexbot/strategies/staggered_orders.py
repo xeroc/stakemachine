@@ -10,7 +10,7 @@ class Strategy(BaseStrategy):
 
     @classmethod
     def configure(cls):
-        return BaseStrategy.configure(cls) + [
+        return BaseStrategy.configure() + [
             ConfigElement('upper_bound', 'float', 1.0, 'The top price in the range', (0.0, None)),
             ConfigElement('lower_bound', 'float', 1.0, 'The bottom price in the range', (0.0, None)),
             ConfigElement('increment', 'float', 1.0, 'The percentage difference between staggered orders', (0.0, 100.0)),
