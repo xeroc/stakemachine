@@ -137,7 +137,6 @@ class Strategy(BaseStrategy):
     def place_orders(self):
         """ Place all the orders found in the database
         """
-        self.cancel_all()
         orders = self.fetch_orders()
         for order_id, order in orders.items():
             if not self.get_order(order_id):
