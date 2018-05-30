@@ -24,9 +24,7 @@ import shutil
 
 from dexbot.worker import STRATEGIES
 from dexbot.whiptail import get_whiptail
-from dexbot.find_node import start_pings, best_node
 from dexbot.basestrategy import BaseStrategy
-
 
 # FIXME: auto-discovery of strategies would be cool but can't figure out a way
 STRATEGIES = [
@@ -171,20 +169,12 @@ def configure_dexbot(config):
     d = get_whiptail()
     workers = config.get('workers', {})
     if len(workers) == 0:
-        ping_results = start_pings()
         while True:
             txt = d.prompt("Your name for the worker")
             config['workers'] = {txt: configure_worker(d, {})}
             if not d.confirm("Set up another worker?\n(DEXBot can run multiple workers in one instance)"):
                 break
         setup_systemd(d, config)
-        node = best_node(ping_results)
-        if node:
-            config['node'] = node
-        else:
-            # Search failed, ask the user
-            config['node'] = d.prompt(
-                "Search for best BitShares node failed.\n\nPlease enter wss:// url of chosen node.")
     else:
         action = d.menu("You have an existing configuration.\nSelect an action:",
                         [('NEW', 'Create a new worker'),
