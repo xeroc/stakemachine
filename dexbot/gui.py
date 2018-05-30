@@ -1,11 +1,9 @@
 import sys
-import os
 
-from ruamel import yaml
 from PyQt5 import Qt
 from bitshares import BitShares
 
-from dexbot.config import Config, CONFIG_PATH
+from dexbot.config import Config
 from dexbot.controllers.main_controller import MainController
 from dexbot.views.worker_list import MainView
 from dexbot.controllers.wallet_controller import WalletController
@@ -17,16 +15,7 @@ class App(Qt.QApplication):
     def __init__(self, sys_argv):
         super(App, self).__init__(sys_argv)
 
-        # Make sure config file exists
-        if not os.path.exists(CONFIG_PATH):
-            config_data = {'node': 'wss://bitshares.openledger.info/ws', 'workers': {}}
-            config = Config(config_data)
-        else:
-            config = Config()
-
-        with open(CONFIG_PATH, 'r') as f:
-            test = yaml.load(f, Loader=yaml.RoundTripLoader)
-
+        config = Config()
         bitshares_instance = BitShares(config['node'])
 
         # Wallet unlock

@@ -1,57 +1,76 @@
 import os
+import pathlib
 
 import appdirs
 from ruamel import yaml
+from collections import OrderedDict
 
-CONFIG_PATH = os.path.join(appdirs.user_config_dir('dexbot'), 'config.yml')
+
+CONFIG_DIR = appdirs.user_config_dir('dexbot')
+CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.yml')
 
 
-class Config(dict):
+class Config:
 
     def __init__(self, config=None):
-        super().__init__()
         if config:
-            self.config = config
+            self.create_config(config)
+            self._config = self.load_config()
         else:
-            self.config = self.load_config()
+            if not os.path.isfile(CONFIG_FILE):
+                self.create_config(self.default_data)
+            self._config = self.load_config()
 
     def __setitem__(self, key, value):
-        self.config[key] = value
+        self._config[key] = value
 
     def __getitem__(self, key):
-        return self.config[key]
+        return self._config[key]
 
     def __delitem__(self, key):
-        del self.config[key]
+        del self._config[key]
 
     def __contains__(self, key):
-        return key in self.config
+        return key in self._config
+
+    @property
+    def default_data(self):
+        return {'node': 'wss://status200.bitshares.apasia.tech/ws', 'workers': {}}
+
+    @property
+    def workers_data(self):
+        """ Returns dict of all the workers data
+        """
+        return self._config['workers']
+
+    def dict(self):
+        """ Returns a dict instance of the stored data
+        """
+        return self._config
 
     @staticmethod
     def create_config(config):
-        with open(CONFIG_PATH, 'w') as f:
+        if not os.path.exists(CONFIG_DIR):
+            pathlib.Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
+
+        with open(CONFIG_FILE, 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
 
     @staticmethod
     def load_config():
-        with open(CONFIG_PATH, 'r') as f:
-            return yaml.load(f, Loader=yaml.RoundTripLoader)
+        with open(CONFIG_FILE, 'r') as f:
+            return Config.ordered_load(f, loader=yaml.SafeLoader)
 
     def refresh_config(self):
-        self.config = self.load_config()
-
-    def get_workers_data(self):
-        """ Returns dict of all the workers data
-        """
-        return self.config['workers']
+        self._config = self.load_config()
 
     @staticmethod
     def get_worker_config_file(worker_name):
         """ Returns config file data with only the data from a specific worker.
             Config loaded from a file
         """
-        with open(CONFIG_PATH, 'r') as f:
-            config = yaml.load(f, Loader=yaml.RoundTripLoader)
+        with open(CONFIG_FILE, 'r') as f:
+            config = Config.ordered_load(f, loader=yaml.SafeLoader)
 
         config['workers'] = {worker_name: config['workers'][worker_name]}
         return config
@@ -60,24 +79,24 @@ class Config(dict):
         """ Returns config file data with only the data from a specific worker.
             Config loaded from memory
         """
-        config = self.config
-        config['workers'] = {worker_name: config['workers'][worker_name]}
+        config = self._config.copy()
+        config['workers'] = OrderedDict({worker_name: config['workers'][worker_name]})
         return config
 
     def remove_worker_config(self, worker_name):
-        self.config['workers'].pop(worker_name, None)
+        self._config['workers'].pop(worker_name, None)
 
-        with open(CONFIG_PATH, 'w') as f:
-            yaml.dump(self.config, f)
+        with open(CONFIG_FILE, 'w') as f:
+            yaml.dump(self._config, f)
 
     def add_worker_config(self, worker_name, worker_data):
-        self.config['workers'][worker_name] = worker_data
+        self._config['workers'][worker_name] = worker_data
 
-        with open(CONFIG_PATH, 'w') as f:
-            yaml.dump(self.config, f, default_flow_style=False)
+        with open(CONFIG_FILE, 'w') as f:
+            yaml.dump(self._config, f, default_flow_style=False)
 
     def replace_worker_config(self, worker_name, new_worker_name, worker_data):
-        workers = self.config['workers']
+        workers = self._config['workers']
         # Rotate the dict keys to keep order
         for _ in range(len(workers)):
             key, value = workers.popitem(False)
@@ -86,5 +105,22 @@ class Config(dict):
             else:
                 workers[key] = value
 
-        with open(CONFIG_PATH, 'w') as f:
-            yaml.dump(self.config, f, default_flow_style=False)
+        with open(CONFIG_FILE, 'w') as f:
+            yaml.dump(self._config, f, default_flow_style=False)
+
+    @staticmethod
+    def ordered_load(stream, loader=None, object_pairs_hook=OrderedDict):
+        if loader is None:
+            loader = yaml.UnsafeLoader
+
+        class OrderedLoader(loader):
+            pass
+
+        def construct_mapping(mapping_loader, node):
+            mapping_loader.flatten_mapping(node)
+            return object_pairs_hook(mapping_loader.construct_pairs(node))
+
+        OrderedLoader.add_constructor(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            construct_mapping)
+        return yaml.load(stream, OrderedLoader)

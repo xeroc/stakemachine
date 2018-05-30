@@ -1,9 +1,8 @@
 import logging
 import sys
 
-from dexbot import config_file, VERSION
+from dexbot import VERSION
 from dexbot.worker import WorkerInfrastructure
-from dexbot.config import Config
 from dexbot.views.errors import PyQtHandler
 
 from bitshares.instance import set_shared_bitshares_instance

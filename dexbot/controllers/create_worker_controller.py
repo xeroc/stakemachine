@@ -1,7 +1,7 @@
 import collections
 
 from dexbot.views.errors import gui_error
-from dexbot.controllers.main_controller import MainController
+from dexbot.config import Config
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.confirmation import ConfirmationDialog
 from dexbot.views.strategy_form import StrategyFormWidget
@@ -47,11 +47,9 @@ class CreateWorkerController:
         ]
         return assets
 
-    def remove_worker(self, worker_name):
-        self.main_ctrl.remove_worker(worker_name)
-
-    def is_worker_name_valid(self, worker_name):
-        worker_names = self.main_ctrl.config.get_workers_data().keys()
+    @staticmethod
+    def is_worker_name_valid(worker_name):
+        worker_names = Config().workers_data.keys()
         # Check that the name is unique
         if worker_name in worker_names:
             return False
@@ -89,8 +87,9 @@ class CreateWorkerController:
         else:
             return False
 
-    def is_account_in_use(self, account):
-        workers = self.main_ctrl.config.get_workers_data()
+    @staticmethod
+    def is_account_in_use(account):
+        workers = Config().workers_data
         for worker_name, worker in workers.items():
             if worker['account'] == account:
                 return True
@@ -109,7 +108,7 @@ class CreateWorkerController:
         """ Returns unique worker name "Worker %n", where %n is the next available index
         """
         index = 1
-        workers = self.main_ctrl.config.get_workers_data().keys()
+        workers = Config().workers_data.keys()
         worker_name = "Worker {0}".format(index)
         while worker_name in workers:
             worker_name = "Worker {0}".format(index)

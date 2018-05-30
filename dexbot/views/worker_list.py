@@ -33,7 +33,7 @@ class MainView(QtWidgets.QMainWindow):
         self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
         # Load worker widgets from config file
-        workers = self.config.get_workers_data()
+        workers = self.config.workers_data
         for worker_name in workers:
             self.add_worker_widget(worker_name)
 
@@ -52,8 +52,7 @@ class MainView(QtWidgets.QMainWindow):
         self.statusbar_updater.start()
 
     def add_worker_widget(self, worker_name):
-        config = self.config.get_worker_config(worker_name)
-        widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
+        widget = WorkerItemWidget(worker_name, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
         self.worker_container.addWidget(widget)
         self.worker_widgets[worker_name] = widget
@@ -69,6 +68,10 @@ class MainView(QtWidgets.QMainWindow):
         self.num_of_workers -= 1
         if self.num_of_workers < self.max_workers:
             self.ui.add_worker_button.setEnabled(True)
+
+    def change_worker_widget_name(self, old_worker_name, new_worker_name):
+        worker_data = self.worker_widgets.pop(old_worker_name)
+        self.worker_widgets[new_worker_name] = worker_data
 
     @gui_error
     def handle_add_worker(self):
@@ -122,9 +125,7 @@ class MainView(QtWidgets.QMainWindow):
                 time.sleep(0.5)
 
     def set_statusbar_message(self):
-        config = self.main_ctrl.load_config()
-        node = config['node']
-
+        node = self.config['node']
         try:
             start = time.time()
             BitSharesNodeRPC(node, num_retries=1)
@@ -139,4 +140,6 @@ class MainView(QtWidgets.QMainWindow):
 
     def set_worker_status(self, worker_name, level, status):
         if worker_name != 'NONE':
-            self.worker_widgets[worker_name].set_status(status)
+            worker = self.worker_widgets.get(worker_name, None)
+            if worker:
+                worker.set_status(status)
