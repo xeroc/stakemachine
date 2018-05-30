@@ -10,25 +10,28 @@ DEFAULT_CONFIG_DIR = appdirs.user_config_dir('dexbot')
 DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')
 
 
-class Config:
+class Config(dict):
 
     def __init__(self, config=None, path=None):
         """ Creates or loads the config file based on if it exists.
+            :param dict config: data used to create the config file
+            :param str path: path to the config file
         """
+        super().__init__()
         if path:
-            self.config_dir = os.path.dirname(config)
-            self.config_file = config
+            self.config_dir = os.path.dirname(path)
+            self.config_file = path
         else:
             self.config_dir = DEFAULT_CONFIG_DIR
             self.config_file = DEFAULT_CONFIG_FILE
 
         if config:
-            self.create_config(config, path)
-            self._config = self.load_config(path)
+            self.create_config(config, self.config_file)
+            self._config = self.load_config(self.config_file)
         else:
             if not os.path.isfile(self.config_file):
-                self.create_config(self.default_data, path)
-            self._config = self.load_config(path)
+                self.create_config(self.default_data, self.config_file)
+            self._config = self.load_config(self.config_file)
 
     def __setitem__(self, key, value):
         self._config[key] = value
