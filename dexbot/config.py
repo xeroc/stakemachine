@@ -6,20 +6,29 @@ from ruamel import yaml
 from collections import OrderedDict
 
 
-CONFIG_DIR = appdirs.user_config_dir('dexbot')
-CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.yml')
+DEFAULT_CONFIG_DIR = appdirs.user_config_dir('dexbot')
+DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')
 
 
 class Config:
 
-    def __init__(self, config=None):
-        if config:
-            self.create_config(config)
-            self._config = self.load_config()
+    def __init__(self, config=None, path=None):
+        """ Creates or loads the config file based on if it exists.
+        """
+        if path:
+            self.config_dir = os.path.dirname(config)
+            self.config_file = config
         else:
-            if not os.path.isfile(CONFIG_FILE):
-                self.create_config(self.default_data)
-            self._config = self.load_config()
+            self.config_dir = DEFAULT_CONFIG_DIR
+            self.config_file = DEFAULT_CONFIG_FILE
+
+        if config:
+            self.create_config(config, path)
+            self._config = self.load_config(path)
+        else:
+            if not os.path.isfile(self.config_file):
+                self.create_config(self.default_data, path)
+            self._config = self.load_config(path)
 
     def __setitem__(self, key, value):
         self._config[key] = value
@@ -49,27 +58,43 @@ class Config:
         return self._config
 
     @staticmethod
-    def create_config(config):
-        if not os.path.exists(CONFIG_DIR):
-            pathlib.Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
+    def create_config(config, path=None):
+        if not path:
+            config_dir = DEFAULT_CONFIG_DIR
+            config_file = DEFAULT_CONFIG_FILE
+        else:
+            config_dir = os.path.dirname(path)
+            config_file = path
 
-        with open(CONFIG_FILE, 'w') as f:
+        if not os.path.exists(config_dir):
+            pathlib.Path(config_dir).mkdir(parents=True, exist_ok=True)
+
+        with open(config_file, 'w') as f:
             yaml.dump(config, f, default_flow_style=False)
 
     @staticmethod
-    def load_config():
-        with open(CONFIG_FILE, 'r') as f:
+    def load_config(path=None):
+        if not path:
+            path = DEFAULT_CONFIG_FILE
+        with open(path, 'r') as f:
             return Config.ordered_load(f, loader=yaml.SafeLoader)
+
+    def save_config(self):
+        with open(self.config_file, 'w') as f:
+            yaml.dump(self._config, f, default_flow_style=False)
 
     def refresh_config(self):
         self._config = self.load_config()
 
     @staticmethod
-    def get_worker_config_file(worker_name):
+    def get_worker_config_file(worker_name, path=None):
         """ Returns config file data with only the data from a specific worker.
             Config loaded from a file
         """
-        with open(CONFIG_FILE, 'r') as f:
+        if not path:
+            path = DEFAULT_CONFIG_FILE
+
+        with open(path, 'r') as f:
             config = Config.ordered_load(f, loader=yaml.SafeLoader)
 
         config['workers'] = {worker_name: config['workers'][worker_name]}
@@ -86,13 +111,13 @@ class Config:
     def remove_worker_config(self, worker_name):
         self._config['workers'].pop(worker_name, None)
 
-        with open(CONFIG_FILE, 'w') as f:
+        with open(self.config_file, 'w') as f:
             yaml.dump(self._config, f)
 
     def add_worker_config(self, worker_name, worker_data):
         self._config['workers'][worker_name] = worker_data
 
-        with open(CONFIG_FILE, 'w') as f:
+        with open(self.config_file, 'w') as f:
             yaml.dump(self._config, f, default_flow_style=False)
 
     def replace_worker_config(self, worker_name, new_worker_name, worker_data):
@@ -105,7 +130,7 @@ class Config:
             else:
                 workers[key] = value
 
-        with open(CONFIG_FILE, 'w') as f:
+        with open(self.config_file, 'w') as f:
             yaml.dump(self._config, f, default_flow_style=False)
 
     @staticmethod

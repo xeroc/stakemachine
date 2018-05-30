@@ -5,10 +5,9 @@ import os.path
 import signal
 import sys
 
-from dexbot.config import CONFIG_FILE
+from dexbot.config import Config, DEFAULT_CONFIG_FILE
 from dexbot.ui import (
     verbose,
-    check_connection,
     chain,
     unlock,
     configfile
@@ -37,7 +36,7 @@ logging.basicConfig(
 @click.group()
 @click.option(
     "--configfile",
-    default=CONFIG_FILE,
+    default=DEFAULT_CONFIG_FILE,
 )
 @click.option(
     '--verbose',
@@ -101,10 +100,7 @@ def run(ctx):
         sys.exit(70)  # 70= "Software error" in /usr/include/sysexts.h
     finally:
         if ctx.obj['pidfile']:
-            try:
-                os.remove(ctx.obj['pidfile'])
-            except OSError:
-                pass
+            helper.remove(ctx.obj['pidfile'])
 
 
 @main.command()
@@ -112,17 +108,9 @@ def run(ctx):
 def configure(ctx):
     """ Interactively configure dexbot
     """
-    cfg_file = ctx.obj["configfile"]
-    if not os.path.exists(ctx.obj['configfile']):
-        helper.mkdir(os.path.dirname(ctx.obj['configfile']))
-        with open(ctx.obj['configfile'], 'w') as fd:
-            fd.write(default_config)
-    with open(ctx.obj["configfile"]) as fd:
-        config = yaml.safe_load(fd)
+    config = Config(ctx.obj['configfile'])
     configure_dexbot(config)
-
-    with open(cfg_file, "w") as fd:
-        yaml.dump(config, fd, default_flow_style=False)
+    config.save_config()
 
     click.echo("New configuration saved")
     if config['systemd_status'] == 'installed':
