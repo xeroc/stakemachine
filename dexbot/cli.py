@@ -5,7 +5,7 @@ import os.path
 import signal
 import sys
 
-from dexbot import config_file
+from dexbot.config import CONFIG_FILE
 from dexbot.ui import (
     verbose,
     check_connection,
@@ -37,7 +37,7 @@ logging.basicConfig(
 @click.group()
 @click.option(
     "--configfile",
-    default=config_file,
+    default=CONFIG_FILE,
 )
 @click.option(
     '--verbose',

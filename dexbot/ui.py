@@ -2,14 +2,11 @@ import os
 import sys
 import logging
 import logging.config
-from datetime import datetime
-from prettytable import PrettyTable
 from functools import update_wrapper
 
 from . import find_node
 
 import click
-from bitshares.price import Price
 from ruamel import yaml
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
