@@ -41,13 +41,7 @@ The configuration consists of a series of questions about the bots you wish to c
 
    DEXBot needs to have a public node (also called "witness") that gives access to the BitShares blockchain.
 
-   The configuration tool will ping a standard list of nodes and use the one with the least latency. If this fails
-   (most likely because you are not online), the config tool will ask you to enter a value here.
-
-   If think this process is wrong or the list should have servers added/removed (see ``dexbot/find_nodes.py``))
-   please file a
-   `Github bug report <https://github.com/ihaywood3/DEXBot/issues/new>`_ .
-
+   DEXBot uses ``wss://status200.bitshares.apasia.tech/ws`` as its default node
    If you run your own witness node then you can edit ``config.yml`` to change the node value.
 
 5. Systemd.

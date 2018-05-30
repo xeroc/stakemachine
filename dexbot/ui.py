@@ -4,8 +4,6 @@ import logging
 import logging.config
 from functools import update_wrapper
 
-from . import find_node
-
 import click
 from ruamel import yaml
 from bitshares import BitShares
@@ -72,16 +70,6 @@ def verbose(f):
             logger.setLevel(getattr(logging, verbosity.upper()))
             logger.addHandler(ch)
 
-        return ctx.invoke(f, *args, **kwargs)
-    return update_wrapper(new_func, f)
-
-
-def check_connection(f):
-    @click.pass_context
-    def new_func(ctx, *args, **kwargs):
-        if not find_node.is_host_online(ctx.config['node']):
-            node = find_node.best_node()
-            ctx.config['node'] = node
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 

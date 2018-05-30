@@ -66,7 +66,6 @@ def main(ctx, **kwargs):
 @main.command()
 @click.pass_context
 @configfile
-@check_connection
 @chain
 @unlock
 @verbose
