@@ -30,7 +30,7 @@ class Strategy(BaseStrategy):
         self.lower_bound = self.worker['lower_bound']
 
         if self['setup_done']:
-            self.place_orders()
+            self.check_orders()
         else:
             self.init_strategy()
 
@@ -133,6 +133,7 @@ class Strategy(BaseStrategy):
 
     def place_orders(self):
         """ Place all the orders found in the database
+            FIXME: unused method
         """
         orders = self.fetch_orders()
         for order_id, order in orders.items():
