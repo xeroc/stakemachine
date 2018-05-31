@@ -10,7 +10,7 @@ from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.queue.idle_queue import idle_add
 from .errors import gui_error
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 
 
@@ -51,6 +51,8 @@ class MainView(QtWidgets.QMainWindow):
             target=self._update_statusbar_message
         )
         self.statusbar_updater.start()
+
+        QtGui.QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
     def add_worker_widget(self, worker_name):
         config = self.main_ctrl.get_worker_config(worker_name)

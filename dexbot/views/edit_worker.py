@@ -8,9 +8,10 @@ from PyQt5 import QtWidgets
 
 class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
 
-    def __init__(self, controller, worker_name, config):
+    def __init__(self, parent_widget, controller, worker_name, config):
         super().__init__()
         self.controller = controller
+        self.parent_widget = parent_widget
 
         self.setupUi(self)
         worker_data = config['workers'][worker_name]
@@ -44,6 +45,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.spread_input.setValue(self.controller.get_spread(worker_data))
         self.save_button.clicked.connect(self.handle_save)
         self.cancel_button.clicked.connect(self.reject)
+        self.remove_button.clicked.connect(self.handle_remove)
         self.center_price_dynamic_checkbox.stateChanged.connect(self.onchange_center_price_dynamic_checkbox)
         self.relative_order_size_checkbox.stateChanged.connect(self.onchange_relative_order_size_checkbox)
         self.worker_data = {}
@@ -156,3 +158,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         }
         self.worker_name = self.worker_name_input.text()
         self.accept()
+
+    def handle_remove(self):
+        self.parent_widget.remove_widget_dialog()
+        self.reject()

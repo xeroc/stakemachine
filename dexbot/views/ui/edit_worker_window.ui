@@ -417,6 +417,23 @@
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
+       <widget class="QPushButton" name="remove_button">
+        <property name="styleSheet">
+         <string notr="true">border: 1px solid #8f8f91;
+border-radius: 4px;
+background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                       stop: 0 #eb9994, stop: 1 #cc2522);
+min-width: 80px;
+min-height: 23px;
+color: #fff;
+ </string>
+        </property>
+        <property name="text">
+         <string>Delete</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>

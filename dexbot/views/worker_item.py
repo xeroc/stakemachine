@@ -1,12 +1,14 @@
+import re
+
 from .ui.worker_item_widget_ui import Ui_widget
 from .confirmation import ConfirmationDialog
 from .edit_worker import EditWorkerView
 from dexbot.storage import db_worker
 from dexbot.controllers.create_worker_controller import CreateWorkerController
-
 from dexbot.views.errors import gui_error
+from dexbot.resources import icons_rc
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 
 class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
@@ -21,12 +23,11 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.view = view
 
         self.setupUi(self)
-        self.pause_button.hide()
 
-        self.pause_button.clicked.connect(self.pause_worker)
-        self.play_button.clicked.connect(self.start_worker)
-        self.remove_button.clicked.connect(self.remove_widget_dialog)
         self.edit_button.clicked.connect(self.handle_edit_worker)
+
+        self.toggle.mouseReleaseEvent=self.toggle_worker
+        self.onoff.mouseReleaseEvent=self.toggle_worker
 
         self.setup_ui_data(config)
 
@@ -48,6 +49,23 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.set_worker_slider(percentage)
         else:
             self.set_worker_slider(50)
+
+    @gui_error
+    def toggle_worker(self):
+        if self.horizontalLayout_5.alignment() != QtCore.Qt.AlignRight:
+            toggle_alignment = QtCore.Qt.AlignRight
+            toggle_label_text = "TURN WORKER OFF"
+        else:
+            toggle_alignment = QtCore.Qt.AlignLeft
+            toggle_label_text = "TURN WORKER ON"
+
+        _translate = QtCore.QCoreApplication.translate
+        self.toggle_label.setText(_translate("widget", toggle_label_text))
+        self.horizontalLayout_5.setAlignment(toggle_alignment)
+
+        # TODO: better way of repainting the widget
+        self.toggle.hide()
+        self.toggle.show()
 
     @gui_error
     def start_worker(self):
@@ -78,6 +96,10 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def set_worker_market(self, value):
         self.currency_label.setText(value)
 
+        values = re.split("[/:]", value)
+        self.base_asset_label.setText(values[0])
+        self.quote_asset_label.setText(values[1])
+
     def set_worker_profit(self, value):
         value = float(value)
         if value >= 0:
@@ -87,7 +109,17 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.profit_label.setText(value)
 
     def set_worker_slider(self, value):
-        self.order_slider.setSliderPosition(value)
+        barWidth = self.bar.width();
+
+        spacing = self.bar.layout().spacing();
+        margin_left = self.bar.layout().contentsMargins().left()
+        margin_right = self.bar.layout().contentsMargins().right()
+        total_padding = spacing + margin_left + margin_right
+
+        base_width = (barWidth-total_padding) * (value/100)
+
+        self.base_asset_label.setMaximumWidth(base_width)
+        self.base_asset_label.setMinimumWidth(base_width)
 
     @gui_error
     def remove_widget_dialog(self):
@@ -113,7 +145,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     @gui_error
     def handle_edit_worker(self):
         controller = CreateWorkerController(self.main_ctrl)
-        edit_worker_dialog = EditWorkerView(controller, self.worker_name, self.worker_config)
+        edit_worker_dialog = EditWorkerView(self, controller, self.worker_name, self.worker_config)
         return_value = edit_worker_dialog.exec_()
 
         # User clicked save
@@ -123,3 +155,4 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.main_ctrl.replace_worker_config(self.worker_name, new_worker_name, edit_worker_dialog.worker_data)
             self.reload_widget(new_worker_name)
             self.worker_name = new_worker_name
+

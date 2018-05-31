@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="font">
+    <file>font/SourceSansPro-Bold.ttf</file>
+  </qresource>
+</RCC>
