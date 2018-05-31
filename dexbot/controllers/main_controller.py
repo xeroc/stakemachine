@@ -46,6 +46,9 @@ class MainController:
     def stop_worker(self, worker_name):
         self.worker_manager.stop(worker_name)
 
+    def pause_worker(self, worker_name):
+        self.worker_manager.pause(worker_name)
+
     def remove_worker(self, worker_name):
         # Todo: Add some threading here so that the GUI doesn't freeze
         if self.worker_manager and self.worker_manager.is_alive():

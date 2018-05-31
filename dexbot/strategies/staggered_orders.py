@@ -100,6 +100,11 @@ class Strategy(BaseStrategy):
         self['setup_done'] = True
         self.log.info("Done placing orders")
 
+    def pause(self, *args, **kwargs):
+        """ Override pause() method because we don't want to remove orders
+        """
+        self.log.info("Got pause command, stopping and leaving orders on the market")
+
     def place_reverse_order(self, order):
         """ Replaces an order with a reverse order
             buy orders become sell orders and sell orders become buy orders

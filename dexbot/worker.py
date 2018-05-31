@@ -174,7 +174,12 @@ class WorkerInfrastructure(threading.Thread):
         self.update_notify()
         self.notify.listen()
 
-    def stop(self, worker_name=None):
+    def stop(self, worker_name=None, pause=None):
+        """ Used to stop the worker(s)
+            :param str worker_name: name of the worker to stop
+            :param bool pause: optional argument which tells worker if it was
+                stopped or just paused
+        """
         if worker_name and len(self.workers) > 1:
             # Kill only the specified worker
             self.remove_market(worker_name)
@@ -183,15 +188,26 @@ class WorkerInfrastructure(threading.Thread):
                 self.config['workers'].pop(worker_name)
 
             self.accounts.remove(account)
-            self.workers[worker_name].cancel_all()
+            if pause:
+                self.workers[worker_name].pause()
+            else:
+                self.workers[worker_name].cancel_all()
             self.workers.pop(worker_name, None)
             self.update_notify()
         else:
             # Kill all of the workers
             for worker in self.workers:
-                self.workers[worker].cancel_all()
+                if pause:
+                    self.workers[worker].pause()
+                else:
+                    self.workers[worker].cancel_all()
             if self.notify:
                 self.notify.websocket.close()
+
+    def pause(self, *args, **kwargs):
+        """ GUI should call this method when pausing a worker.
+        """
+        self.stop(pause=True, *args, **kwargs)
 
     def remove_worker(self, worker_name=None):
         if worker_name:
