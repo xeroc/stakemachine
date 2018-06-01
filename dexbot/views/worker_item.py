@@ -30,7 +30,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.setup_ui_data(self.worker_config)
 
     def setup_ui_data(self, config):
-        worker_name = list(config['workers'].keys())[0]
+        worker_name = self.worker_name
         self.set_worker_name(worker_name)
 
         market = config['workers'][worker_name]['market']
@@ -133,5 +133,5 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.main_ctrl.config.replace_worker_config(self.worker_name,
                                                         new_worker_name,
                                                         edit_worker_dialog.worker_data)
-            self.reload_widget(new_worker_name)
             self.worker_name = new_worker_name
+            self.reload_widget(new_worker_name)

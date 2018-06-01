@@ -1,12 +1,14 @@
 import os
 import pathlib
 
+from dexbot import APP_NAME, AUTHOR
+
 import appdirs
 from ruamel import yaml
 from collections import OrderedDict
 
 
-DEFAULT_CONFIG_DIR = appdirs.user_config_dir('dexbot')
+DEFAULT_CONFIG_DIR = appdirs.user_config_dir(APP_NAME, appauthor=AUTHOR)
 DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')
 
 
@@ -79,6 +81,7 @@ class Config(dict):
     def load_config(path=None):
         if not path:
             path = DEFAULT_CONFIG_FILE
+
         with open(path, 'r') as f:
             return Config.ordered_load(f, loader=yaml.SafeLoader)
 
@@ -87,7 +90,7 @@ class Config(dict):
             yaml.dump(self._config, f, default_flow_style=False)
 
     def refresh_config(self):
-        self._config = self.load_config()
+        self._config = self.load_config(self.config_file)
 
     @staticmethod
     def get_worker_config_file(worker_name, path=None):
@@ -100,7 +103,7 @@ class Config(dict):
         with open(path, 'r') as f:
             config = Config.ordered_load(f, loader=yaml.SafeLoader)
 
-        config['workers'] = {worker_name: config['workers'][worker_name]}
+        config['workers'] = OrderedDict({worker_name: config['workers'][worker_name]})
         return config
 
     def get_worker_config(self, worker_name):
@@ -115,7 +118,7 @@ class Config(dict):
         self._config['workers'].pop(worker_name, None)
 
         with open(self.config_file, 'w') as f:
-            yaml.dump(self._config, f)
+            yaml.dump(self._config, f, default_flow_style=False)
 
     def add_worker_config(self, worker_name, worker_data):
         self._config['workers'][worker_name] = worker_data
