@@ -1,5 +1,9 @@
 <RCC>
   <qresource prefix="bot_widget">
+    <file>svg/modifystrategy.svg</file>
+    <file>img/dexbot.png</file>
+    <file>svg/dexbot.svg</file>
+    <file>svg/simplestrategy.svg</file>
     <file>img/bin.png</file>
     <file>img/pause.png</file>
     <file>img/pen.png</file>
