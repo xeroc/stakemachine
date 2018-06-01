@@ -179,12 +179,20 @@ class BaseStrategy(Storage, StateMachine, Events):
         total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
 
         if not total:  # Prevent division by zero
-            percentage = 0
+            balance = 0
         else:
-            percentage = (total_balance['base'] / total)
-        lowest_price = center_price / math.sqrt(1 + spread)
-        highest_price = center_price * math.sqrt(1 + spread)
-        offset_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
+            # Returns a value between -1 and 1
+            balance = (total_balance['base'] / total) * 2 - 1
+
+        if balance < 0:
+            # With less of base asset center price should be offset downward
+            offset_center_price = calculated_center_price / math.sqrt(1 + spread * (balance * -1))
+        elif balance > 0:
+            # With more of base asset center price will be offset upwards
+            offset_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
+        else:
+            offset_center_price = calculated_center_price
+
         return offset_center_price
 
     @property
