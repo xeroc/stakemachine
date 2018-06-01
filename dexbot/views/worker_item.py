@@ -55,13 +55,15 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.set_worker_slider(50)
 
     @gui_error
-    def toggle_worker(self):
+    def toggle_worker(self, args):
         if self.horizontalLayout_5.alignment() != QtCore.Qt.AlignRight:
             toggle_alignment = QtCore.Qt.AlignRight
             toggle_label_text = "TURN WORKER OFF"
+            self.start_worker()
         else:
             toggle_alignment = QtCore.Qt.AlignLeft
             toggle_label_text = "TURN WORKER ON"
+            self.pause_worker()
 
         _translate = QtCore.QCoreApplication.translate
         self.toggle_label.setText(_translate("widget", toggle_label_text))
@@ -79,8 +81,6 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def _start_worker(self):
         self.running = True
-        self.pause_button.show()
-        self.play_button.hide()
 
     @gui_error
     def pause_worker(self):
@@ -90,8 +90,6 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def _pause_worker(self):
         self.running = False
-        self.pause_button.hide()
-        self.play_button.show()
 
     def set_worker_name(self, value):
         self.worker_name_label.setText(value)

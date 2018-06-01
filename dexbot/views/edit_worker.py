@@ -36,6 +36,12 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form())
         self.save_button.clicked.connect(lambda: self.controller.handle_save())
         self.cancel_button.clicked.connect(lambda: self.reject())
+        self.remove_button.clicked.connect(self.handle_remove)
 
         self.controller.change_strategy_form(worker_data)
         self.worker_data = {}
+
+    def handle_remove(self):
+        self.parent_widget.remove_widget_dialog()
+        self.reject()
+
