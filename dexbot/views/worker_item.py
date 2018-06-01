@@ -104,8 +104,8 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.currency_label.setText(value)
 
         values = re.split("[/:]", value)
-        self.base_asset_label.setText(values[0])
-        self.quote_asset_label.setText(values[1])
+        self.base_asset_label.setText(values[1])
+        self.quote_asset_label.setText(values[0])
 
     def set_worker_profit(self, value):
         value = float(value)
@@ -116,15 +116,14 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.profit_label.setText(value)
 
     def set_worker_slider(self, value):
-        barWidth = self.bar.width();
+        bar_width = self.bar.width()
 
-        spacing = self.bar.layout().spacing();
+        spacing = self.bar.layout().spacing()
         margin_left = self.bar.layout().contentsMargins().left()
         margin_right = self.bar.layout().contentsMargins().right()
         total_padding = spacing + margin_left + margin_right
 
-        base_width = (barWidth-total_padding) * (value/100)
-
+        base_width = (bar_width - total_padding) * (value / 100)
         self.base_asset_label.setMaximumWidth(base_width)
         self.base_asset_label.setMinimumWidth(base_width)
 
