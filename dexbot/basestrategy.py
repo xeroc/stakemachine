@@ -178,7 +178,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         total_balance = self.total_balance(order_ids)
         total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
 
-        if not total:
+        if not total:  # Prevent division by zero
             balance = 0
         else:
             # Returns a value between -1 and 1

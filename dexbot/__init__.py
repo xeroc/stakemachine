@@ -3,7 +3,7 @@ import os
 from appdirs import user_config_dir
 
 APP_NAME = "dexbot"
-VERSION = '0.2.7'
+VERSION = '0.2.8'
 AUTHOR = "codaone"
 __version__ = VERSION
 
