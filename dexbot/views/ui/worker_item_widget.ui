@@ -76,7 +76,7 @@ border-radius: 20px;
            <property name="font">
             <font>
              <family>Source Sans Pro</family>
-             <pointsize>20</pointsize>
+             <pointsize>18</pointsize>
              <weight>75</weight>
              <bold>true</bold>
             </font>
