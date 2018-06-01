@@ -84,7 +84,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def pause_worker(self):
         self.set_status("Pausing worker")
         self._pause_worker()
-        self.main_ctrl.stop_worker(self.worker_name)
+        self.main_ctrl.pause_worker(self.worker_name)
 
     def _pause_worker(self):
         self.running = False
