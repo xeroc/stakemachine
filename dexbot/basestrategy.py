@@ -333,6 +333,12 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
         self.log.info("Orders canceled")
 
+    def pause(self):
+        """ Pause the worker
+        """
+        # By default, just call cancel_all(); strategies may override this method
+        self.cancel_all()
+
     def market_buy(self, amount, price, return_none=False):
         symbol = self.market['base']['symbol']
         precision = self.market['base']['precision']

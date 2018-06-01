@@ -30,9 +30,11 @@ class Strategy(BaseStrategy):
         self.lower_bound = self.worker['lower_bound']
 
         if self['setup_done']:
-            self.place_orders()
+            self.check_orders()
         else:
             self.init_strategy()
+
+        self.log.info('Done initializing Staggered Orders')
 
         if self.view:
             self.update_gui_profit()
@@ -100,6 +102,11 @@ class Strategy(BaseStrategy):
         self['setup_done'] = True
         self.log.info("Done placing orders")
 
+    def pause(self, *args, **kwargs):
+        """ Override pause() method because we don't want to remove orders
+        """
+        self.log.info("Stopping and leaving orders on the market")
+
     def place_reverse_order(self, order):
         """ Replaces an order with a reverse order
             buy orders become sell orders and sell orders become buy orders
@@ -133,6 +140,7 @@ class Strategy(BaseStrategy):
 
     def place_orders(self):
         """ Place all the orders found in the database
+            FIXME: unused method
         """
         orders = self.fetch_orders()
         for order_id, order in orders.items():
