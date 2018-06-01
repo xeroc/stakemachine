@@ -334,7 +334,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.log.info("Orders canceled")
 
     def pause(self):
-        """ Pause worker. User presed "pause" button in the GUI
+        """ Pause the worker
         """
         # By default, just call cancel_all(); strategies may override this method
         self.cancel_all()

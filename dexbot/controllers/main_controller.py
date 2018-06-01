@@ -43,11 +43,8 @@ class MainController:
             self.worker_manager.daemon = True
             self.worker_manager.start()
 
-    def stop_worker(self, worker_name):
-        self.worker_manager.stop(worker_name)
-
     def pause_worker(self, worker_name):
-        self.worker_manager.pause(worker_name)
+        self.worker_manager.stop(worker_name, pause=True)
 
     def remove_worker(self, worker_name):
         # Todo: Add some threading here so that the GUI doesn't freeze

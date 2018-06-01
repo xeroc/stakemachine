@@ -103,7 +103,7 @@ class Strategy(BaseStrategy):
     def pause(self, *args, **kwargs):
         """ Override pause() method because we don't want to remove orders
         """
-        self.log.info("Got pause command, stopping and leaving orders on the market")
+        self.log.info("Stopping and leaving orders on the market")
 
     def place_reverse_order(self, order):
         """ Replaces an order with a reverse order

@@ -64,7 +64,7 @@ def run(ctx):
         try:
             worker = WorkerInfrastructure(ctx.config)
             # Set up signalling. do it here as of no relevance to GUI
-            kill_workers = worker_job(worker, worker.pause)
+            kill_workers = worker_job(worker, lambda: worker.stop(pause=True))
             # These first two UNIX & Windows
             signal.signal(signal.SIGTERM, kill_workers)
             signal.signal(signal.SIGINT, kill_workers)
