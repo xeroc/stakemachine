@@ -41,7 +41,6 @@ class Strategy(BaseStrategy):
             self.update_gui_slider()
 
     def error(self, *args, **kwargs):
-        self.cancel_all()
         self.disabled = True
 
     def init_strategy(self):
