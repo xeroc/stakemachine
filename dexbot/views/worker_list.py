@@ -142,4 +142,6 @@ class MainView(QtWidgets.QMainWindow):
 
     def set_worker_status(self, worker_name, level, status):
         if worker_name != 'NONE':
-            self.worker_widgets[worker_name].set_status(status)
+            worker = self.worker_widgets.get(worker_name, None)
+            if worker:
+                worker.set_status(status)

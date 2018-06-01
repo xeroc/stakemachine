@@ -26,8 +26,8 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
         self.edit_button.clicked.connect(lambda: self.handle_edit_worker())
 
-        self.toggle.mouseReleaseEvent=self.toggle_worker
-        self.onoff.mouseReleaseEvent=self.toggle_worker
+        self.toggle.mouseReleaseEvent = lambda _: self.toggle_worker()
+        self.onoff.mouseReleaseEvent = lambda _: self.toggle_worker()
 
         self.setup_ui_data(config)
 
@@ -55,16 +55,13 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.set_worker_slider(50)
 
     @gui_error
-    def toggle_worker(self, args):
+    def toggle_worker(self, ):
         if self.horizontalLayout_5.alignment() != QtCore.Qt.AlignRight:
-            toggle_alignment = QtCore.Qt.AlignRight
-            toggle_label_text = "TURN WORKER OFF"
             self.start_worker()
         else:
-            toggle_alignment = QtCore.Qt.AlignLeft
-            toggle_label_text = "TURN WORKER ON"
             self.pause_worker()
 
+    def _toggle_worker(self, toggle_label_text, toggle_alignment):
         _translate = QtCore.QCoreApplication.translate
         self.toggle_label.setText(_translate("widget", toggle_label_text))
         self.horizontalLayout_5.setAlignment(toggle_alignment)
@@ -81,6 +78,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def _start_worker(self):
         self.running = True
+        self._toggle_worker('TURN WORKER OFF', QtCore.Qt.AlignRight)
 
     @gui_error
     def pause_worker(self):
@@ -90,6 +88,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def _pause_worker(self):
         self.running = False
+        self._toggle_worker('TURN WORKER ON', QtCore.Qt.AlignLeft)
 
     def set_worker_name(self, value):
         self.worker_name_label.setText(value)
@@ -122,13 +121,12 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         total_padding = spacing + margin_left + margin_right
         usable_width = (bar_width - total_padding)
 
-
         # So we keep the roundness of bars.
         # If bar width is less than 2 * border-radius, it squares the corners
         base_width = usable_width * (value / 100)
-        if (base_width < 20):
+        if base_width < 20:
             base_width = 20
-        if (base_width > usable_width - 20):
+        if base_width > usable_width - 20:
             base_width = usable_width - 20
 
         self.base_asset_label.setMaximumWidth(base_width)
