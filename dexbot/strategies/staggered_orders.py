@@ -34,6 +34,8 @@ class Strategy(BaseStrategy):
         else:
             self.init_strategy()
 
+        self.log.info('Done initializing Staggered Orders')
+
         if self.view:
             self.update_gui_profit()
             self.update_gui_slider()
