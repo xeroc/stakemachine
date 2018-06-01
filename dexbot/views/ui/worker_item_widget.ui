@@ -84,6 +84,9 @@ border-radius: 20px;
            <property name="text">
             <string>Bot name</string>
            </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+           </property>
            <property name="textInteractionFlags">
             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
            </property>
@@ -94,17 +97,17 @@ border-radius: 20px;
            <property name="minimumSize">
             <size>
              <width>10</width>
-             <height>9</height>
+             <height>16</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>10</width>
-             <height>9</height>
+             <height>16</height>
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">margin-top: 2px;</string>
+            <string notr="true">margin-top: 9px;</string>
            </property>
            <property name="text">
             <string/>
@@ -141,6 +144,9 @@ border-radius: 20px;
              <weight>75</weight>
              <bold>true</bold>
             </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">margin-top: 9px;</string>
            </property>
            <property name="text">
             <string>SIMPLE STRATEGY</string>
@@ -556,7 +562,7 @@ margin: 0px;</string>
                <string notr="true"/>
               </property>
               <property name="text">
-               <string>MODIFY STRATEGY</string>
+               <string>MODIFY WORKER</string>
               </property>
               <property name="textInteractionFlags">
                <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>

@@ -243,14 +243,21 @@
          <cursorShape>PointingHandCursor</cursorShape>
         </property>
         <property name="styleSheet">
-         <string notr="true">border: 1px solid #8f8f91;
-border-radius: 4px;
-background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+         <string notr="true"> QPushButton {
+	border: 1px solid #8f8f91;
+	border-radius: 4px;
+	background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
                                        stop: 0 #eb9994, stop: 1 #cc2522);
-min-width: 80px;
-min-height: 23px;
-color: #fff;
- </string>
+	min-width: 80px;
+	min-height: 23px;
+	color: #fff;
+ }
+ 
+ QPushButton:hover {
+     background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                       stop: 0 #ed9f9c, stop: 1 #db4240);
+ }
+</string>
         </property>
         <property name="text">
          <string>Delete</string>
