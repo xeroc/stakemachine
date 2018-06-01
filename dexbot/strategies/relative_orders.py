@@ -1,7 +1,7 @@
+import math
+
 from dexbot.basestrategy import BaseStrategy
 from dexbot.queue.idle_queue import idle_add
-
-from bitshares.amount import Amount
 
 
 class Strategy(BaseStrategy):
@@ -10,6 +10,7 @@ class Strategy(BaseStrategy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.log.info("Initializing Relative Orders")
 
         # Define Callbacks
         self.onMarketUpdate += self.check_orders
@@ -26,7 +27,9 @@ class Strategy(BaseStrategy):
             self.center_price = self.worker["center_price"]
 
         self.is_relative_order_size = self.worker['amount_relative']
+        self.is_center_price_offset = self.worker.get('center_price_offset', False)
         self.order_size = float(self.worker['amount'])
+        self.spread = self.worker.get('spread') / 100
 
         self.buy_price = None
         self.sell_price = None
@@ -34,8 +37,11 @@ class Strategy(BaseStrategy):
         self.initial_balance = self['initial_balance'] or 0
         self.worker_name = kwargs.get('name')
         self.view = kwargs.get('view')
-
         self.check_orders()
+
+    def error(self, *args, **kwargs):
+        self.cancel_all()
+        self.disabled = True
 
     @property
     def amount_quote(self):
@@ -60,15 +66,18 @@ class Strategy(BaseStrategy):
 
     def calculate_order_prices(self):
         if self.is_center_price_dynamic:
-            self.center_price = self.calculate_relative_center_price(self.worker['spread'], self['order_ids'])
+            if self.is_center_price_offset:
+                self.center_price = self.calculate_offset_center_price(
+                    self.spread, order_ids=self['order_ids'])
+            else:
+                self.center_price = self.calculate_center_price()
+        else:
+            if self.is_center_price_offset:
+                self.center_price = self.calculate_offset_center_price(
+                    self.spread, self.center_price, self['order_ids'])
 
-        self.buy_price = self.center_price * (1 - (self.worker["spread"] / 2) / 100)
-        self.sell_price = self.center_price * (1 + (self.worker["spread"] / 2) / 100)
-
-    def error(self, *args, **kwargs):
-        self.cancel_all()
-        self.disabled = True
-        self.log.info(self.execute())
+        self.buy_price = self.center_price / math.sqrt(1 + self.spread)
+        self.sell_price = self.center_price * math.sqrt(1 + self.spread)
 
     def update_orders(self):
         self.log.info('Change detected, updating orders')
@@ -89,31 +98,20 @@ class Strategy(BaseStrategy):
         amount_quote = self.amount_quote
 
         # Buy Side
-        if float(self.balance(self.market["base"])) < self.buy_price * amount_base:
-            self.log.critical(
-                'Insufficient buy balance, needed {} {}'.format(self.buy_price * amount_base,
-                                                                self.market['base']['symbol'])
-            )
-            self.disabled = True
-        else:
-            buy_order = self.market_buy(amount_base, self.buy_price)
-            if buy_order:
-                self['buy_order'] = buy_order
-                order_ids.append(buy_order['id'])
+        buy_order = self.market_buy(amount_base, self.buy_price, True)
+        if buy_order:
+            self['buy_order'] = buy_order
+            order_ids.append(buy_order['id'])
 
         # Sell Side
-        if float(self.balance(self.market["quote"])) < amount_quote:
-            self.log.critical(
-                "Insufficient sell balance, needed {} {}".format(amount_quote, self.market['quote']['symbol'])
-            )
-            self.disabled = True
-        else:
-            sell_order = self.market_sell(amount_quote, self.sell_price)
-            if sell_order:
-                self['sell_order'] = sell_order
-                order_ids.append(sell_order['id'])
+        sell_order = self.market_sell(amount_quote, self.sell_price, True)
+        if sell_order:
+            self['sell_order'] = sell_order
+            order_ids.append(sell_order['id'])
 
         self['order_ids'] = order_ids
+
+        self.log.info("Done placing orders")
 
         # Some orders weren't successfully created, redo them
         if len(order_ids) < 2 and not self.disabled:
@@ -124,12 +122,14 @@ class Strategy(BaseStrategy):
         """
         stored_sell_order = self['sell_order']
         stored_buy_order = self['buy_order']
-        current_sell_order = self.get_updated_order(stored_sell_order)
-        current_buy_order = self.get_updated_order(stored_buy_order)
+        current_sell_order = self.get_order(stored_sell_order)
+        current_buy_order = self.get_order(stored_buy_order)
 
         if not current_sell_order or not current_buy_order:
             # Either buy or sell order is missing, update both orders
             self.update_orders()
+        else:
+            self.log.info("Orders correct on market")
 
         if self.view:
             self.update_gui_profit()
