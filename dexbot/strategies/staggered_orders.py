@@ -28,6 +28,8 @@ class Strategy(BaseStrategy):
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
+        # Order expiration time, should be high enough
+        self.expiration = 60*60*24*365*5
 
         if self['setup_done']:
             self.check_orders()
@@ -88,13 +90,13 @@ class Strategy(BaseStrategy):
 
         # Place the buy orders
         for buy_order in buy_orders:
-            order = self.market_buy(buy_order['amount'], buy_order['price'])
+            order = self.market_buy(buy_order['amount'], buy_order['price'], expiration=self.expiration)
             if order:
                 self.save_order(order)
 
         # Place the sell orders
         for sell_order in sell_orders:
-            order = self.market_sell(sell_order['amount'], sell_order['price'])
+            order = self.market_sell(sell_order['amount'], sell_order['price'], expiration=self.expiration)
             if order:
                 self.save_order(order)
 
@@ -113,11 +115,11 @@ class Strategy(BaseStrategy):
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price'] * (1 + self.spread)
             amount = order['quote']['amount']
-            new_order = self.market_sell(amount, price)
+            new_order = self.market_sell(amount, price, expiration=self.expiration)
         else:  # Sell order
             price = (order['price'] ** -1) / (1 + self.spread)
             amount = order['base']['amount']
-            new_order = self.market_buy(amount, price)
+            new_order = self.market_buy(amount, price, expiration=self.expiration)
 
         if new_order:
             self.remove_order(order)
@@ -129,11 +131,11 @@ class Strategy(BaseStrategy):
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price']
             amount = order['quote']['amount']
-            new_order = self.market_buy(amount, price)
+            new_order = self.market_buy(amount, price, expiration=self.expiration)
         else:  # Sell order
             price = order['price'] ** -1
             amount = order['base']['amount']
-            new_order = self.market_sell(amount, price)
+            new_order = self.market_sell(amount, price, expiration=self.expiration)
 
         self.save_order(new_order)
 
