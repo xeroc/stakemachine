@@ -1,5 +1,4 @@
 import math
-
 from datetime import datetime
 from datetime import timedelta
 
@@ -16,7 +15,7 @@ class Strategy(BaseStrategy):
         self.log.info("Initializing Staggered Orders")
 
         # Define Callbacks
-        self.onMarketUpdate += self.onMarketUpdate_wrapper
+        self.onMarketUpdate += self.on_market_update_wrapper
         self.onAccount += self.check_orders
         self.ontick += self.tick
 
@@ -152,7 +151,7 @@ class Strategy(BaseStrategy):
 
         self.log.info("Done placing orders")
 
-    def onMarketUpdate_wrapper(self, *args, **kwargs):
+    def on_market_update_wrapper(self, *args, **kwargs):
         """ Handle market update callbacks
         """
         delta = datetime.now() - self.last_check
