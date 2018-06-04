@@ -133,7 +133,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.base_asset_label.setMinimumWidth(base_width)
 
     @gui_error
-    def handle_remove_worker(self):
+    def remove_widget_dialog(self):
         dialog = ConfirmationDialog(
             'Are you sure you want to remove worker "{}"?'.format(self.worker_name))
         return_value = dialog.exec_()
