@@ -30,6 +30,7 @@ class Strategy(BaseStrategy):
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
+        self.last_check = datetime.now()
 
         if self['setup_done']:
             self.check_orders()
