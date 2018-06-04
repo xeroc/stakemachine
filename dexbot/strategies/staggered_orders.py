@@ -1,4 +1,6 @@
 import math
+from datetime import datetime
+from datetime import timedelta
 
 from dexbot.basestrategy import BaseStrategy
 from dexbot.queue.idle_queue import idle_add
@@ -13,7 +15,7 @@ class Strategy(BaseStrategy):
         self.log.info("Initializing Staggered Orders")
 
         # Define Callbacks
-        self.onMarketUpdate += self.check_orders
+        self.onMarketUpdate += self.on_market_update_wrapper
         self.onAccount += self.check_orders
         self.ontick += self.tick
 
@@ -30,6 +32,7 @@ class Strategy(BaseStrategy):
         self.lower_bound = self.worker['lower_bound']
         # Order expiration time, should be high enough
         self.expiration = 60*60*24*365*5
+        self.last_check = datetime.now()
 
         if self['setup_done']:
             self.check_orders()
@@ -150,6 +153,15 @@ class Strategy(BaseStrategy):
 
         self.log.info("Done placing orders")
 
+    def on_market_update_wrapper(self, *args, **kwargs):
+        """ Handle market update callbacks
+        """
+        delta = datetime.now() - self.last_check
+
+        # Only allow to check orders whether minimal time passed
+        if delta > timedelta(seconds=5):
+            self.check_orders(*args, **kwargs)
+
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
@@ -167,6 +179,8 @@ class Strategy(BaseStrategy):
         if self.view:
             self.update_gui_profit()
             self.update_gui_slider()
+
+        self.last_check = datetime.now()
 
     @staticmethod
     def calculate_buy_prices(center_price, spread, increment, lower_bound):
