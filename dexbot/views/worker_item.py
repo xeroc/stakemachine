@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtWidgets
 
 class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
-    def __init__(self, worker_name, main_ctrl, view):
+    def __init__(self, worker_name, config, main_ctrl, view):
         super().__init__()
 
         self.main_ctrl = main_ctrl
@@ -25,11 +25,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
         self.setupUi(self)
 
-        self.pause_button.clicked.connect(lambda: self.pause_worker())
-        self.play_button.clicked.connect(lambda: self.start_worker())
-        self.remove_button.clicked.connect(lambda: self.handle_remove_worker())
         self.edit_button.clicked.connect(lambda: self.handle_edit_worker())
-
         self.toggle.mouseReleaseEvent = lambda _: self.toggle_worker()
         self.onoff.mouseReleaseEvent = lambda _: self.toggle_worker()
 
@@ -173,3 +169,6 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
                                                         edit_worker_dialog.worker_data)
             self.worker_name = new_worker_name
             self.reload_widget(new_worker_name)
+
+    def set_status(self, status):
+        self.worker_status.setText(status)

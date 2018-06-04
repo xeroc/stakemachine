@@ -56,7 +56,8 @@ class MainView(QtWidgets.QMainWindow):
         QtGui.QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
     def add_worker_widget(self, worker_name):
-        widget = WorkerItemWidget(worker_name, self.main_ctrl, self)
+        config = self.config.get_worker_config(worker_name)
+        widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
         self.worker_container.addWidget(widget)
         self.worker_widgets[worker_name] = widget
