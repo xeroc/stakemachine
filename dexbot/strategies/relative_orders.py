@@ -157,7 +157,7 @@ class Strategy(BaseStrategy):
 
     def update_gui_slider(self):
         ticker = self.market.ticker()
-        latest_price = ticker.get('latest', {}).get('latest', None)
+        latest_price = ticker.get('latest', {}).get('price', None)
         if not latest_price:
             return
 
