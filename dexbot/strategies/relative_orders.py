@@ -147,7 +147,10 @@ class Strategy(BaseStrategy):
 
     def update_gui_slider(self):
         ticker = self.market.ticker()
-        latest_price = ticker.get('latest').get('price')
+        latest_price = ticker.get('latest', {}).get('price', None)
+        if not latest_price:
+            return
+
         total_balance = self.total_balance(self['order_ids'])
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 
