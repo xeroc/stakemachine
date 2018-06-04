@@ -1,11 +1,15 @@
+import re
+
 from .ui.worker_item_widget_ui import Ui_widget
 from .confirmation import ConfirmationDialog
 from .edit_worker import EditWorkerView
 from .errors import gui_error
 from dexbot.storage import db_worker
 from dexbot.controllers.create_worker_controller import CreateWorkerController
+from dexbot.views.errors import gui_error
+from dexbot.resources import icons_rc
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 
 class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
@@ -20,14 +24,16 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.view = view
 
         self.setupUi(self)
-        self.pause_button.hide()
 
         self.pause_button.clicked.connect(lambda: self.pause_worker())
         self.play_button.clicked.connect(lambda: self.start_worker())
         self.remove_button.clicked.connect(lambda: self.handle_remove_worker())
         self.edit_button.clicked.connect(lambda: self.handle_edit_worker())
 
-        self.setup_ui_data(self.worker_config)
+        self.toggle.mouseReleaseEvent = lambda _: self.toggle_worker()
+        self.onoff.mouseReleaseEvent = lambda _: self.toggle_worker()
+
+        self.setup_ui_data(config)
 
     def setup_ui_data(self, config):
         worker_name = self.worker_name
@@ -53,6 +59,22 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.set_worker_slider(50)
 
     @gui_error
+    def toggle_worker(self, ):
+        if self.horizontalLayout_5.alignment() != QtCore.Qt.AlignRight:
+            self.start_worker()
+        else:
+            self.pause_worker()
+
+    def _toggle_worker(self, toggle_label_text, toggle_alignment):
+        _translate = QtCore.QCoreApplication.translate
+        self.toggle_label.setText(_translate("widget", toggle_label_text))
+        self.horizontalLayout_5.setAlignment(toggle_alignment)
+
+        # TODO: better way of repainting the widget
+        self.toggle.hide()
+        self.toggle.show()
+
+    @gui_error
     def start_worker(self):
         self.set_status("Starting worker")
         self._start_worker()
@@ -60,19 +82,17 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     def _start_worker(self):
         self.running = True
-        self.pause_button.show()
-        self.play_button.hide()
+        self._toggle_worker('TURN WORKER OFF', QtCore.Qt.AlignRight)
 
     @gui_error
     def pause_worker(self):
         self.set_status("Pausing worker")
         self._pause_worker()
-        self.main_ctrl.stop_worker(self.worker_name)
+        self.main_ctrl.pause_worker(self.worker_name)
 
     def _pause_worker(self):
         self.running = False
-        self.pause_button.hide()
-        self.play_button.show()
+        self._toggle_worker('TURN WORKER ON', QtCore.Qt.AlignLeft)
 
     def set_worker_name(self, value):
         self.worker_name_label.setText(value)
@@ -84,6 +104,10 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def set_worker_market(self, value):
         self.currency_label.setText(value)
 
+        values = re.split("[/:]", value)
+        self.base_asset_label.setText(values[1])
+        self.quote_asset_label.setText(values[0])
+
     def set_worker_profit(self, value):
         value = float(value)
         if value >= 0:
@@ -93,10 +117,24 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.profit_label.setText(value)
 
     def set_worker_slider(self, value):
-        self.order_slider.setSliderPosition(value)
+        bar_width = self.bar.width()
 
-    def set_status(self, status):
-        self.worker_status.setText(status)
+        spacing = self.bar.layout().spacing()
+        margin_left = self.bar.layout().contentsMargins().left()
+        margin_right = self.bar.layout().contentsMargins().right()
+        total_padding = spacing + margin_left + margin_right
+        usable_width = (bar_width - total_padding)
+
+        # So we keep the roundness of bars.
+        # If bar width is less than 2 * border-radius, it squares the corners
+        base_width = usable_width * (value / 100)
+        if base_width < 20:
+            base_width = 20
+        if base_width > usable_width - 20:
+            base_width = usable_width - 20
+
+        self.base_asset_label.setMaximumWidth(base_width)
+        self.base_asset_label.setMinimumWidth(base_width)
 
     @gui_error
     def handle_remove_worker(self):
@@ -121,7 +159,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def handle_edit_worker(self):
-        edit_worker_dialog = EditWorkerView(self.main_ctrl.bitshares_instance,
+        edit_worker_dialog = EditWorkerView(self, self.main_ctrl.bitshares_instance,
                                             self.worker_name, self.worker_config)
         return_value = edit_worker_dialog.exec_()
 

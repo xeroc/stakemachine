@@ -220,12 +220,20 @@ class BaseStrategy(Storage, StateMachine, Events):
         total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
 
         if not total:  # Prevent division by zero
-            percentage = 0
+            balance = 0
         else:
-            percentage = (total_balance['base'] / total)
-        lowest_price = center_price / math.sqrt(1 + spread)
-        highest_price = center_price * math.sqrt(1 + spread)
-        offset_center_price = ((highest_price - lowest_price) * percentage) + lowest_price
+            # Returns a value between -1 and 1
+            balance = (total_balance['base'] / total) * 2 - 1
+
+        if balance < 0:
+            # With less of base asset center price should be offset downward
+            offset_center_price = calculated_center_price / math.sqrt(1 + spread * (balance * -1))
+        elif balance > 0:
+            # With more of base asset center price will be offset upwards
+            offset_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
+        else:
+            offset_center_price = calculated_center_price
+
         return offset_center_price
 
     @property
@@ -374,7 +382,13 @@ class BaseStrategy(Storage, StateMachine, Events):
             self.cancel(self.orders)
         self.log.info("Orders canceled")
 
-    def market_buy(self, amount, price, return_none=False):
+    def pause(self):
+        """ Pause the worker
+        """
+        # By default, just call cancel_all(); strategies may override this method
+        self.cancel_all()
+
+    def market_buy(self, amount, price, return_none=False, *args, **kwargs):
         symbol = self.market['base']['symbol']
         precision = self.market['base']['precision']
         base_amount = self.truncate(price * amount, precision)
@@ -399,7 +413,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
-            returnOrderId="head"
+            returnOrderId="head",
+            *args,
+            **kwargs
         )
         self.log.debug('Placed buy order {}'.format(buy_transaction))
         buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
@@ -411,7 +427,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         return buy_order
 
-    def market_sell(self, amount, price, return_none=False):
+    def market_sell(self, amount, price, return_none=False, *args, **kwargs):
         symbol = self.market['quote']['symbol']
         precision = self.market['quote']['precision']
         quote_amount = self.truncate(amount, precision)
@@ -436,7 +452,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             price,
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
-            returnOrderId="head"
+            returnOrderId="head",
+            *args,
+            **kwargs
         )
         self.log.debug('Placed sell order {}'.format(sell_transaction))
         sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)

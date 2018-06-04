@@ -35,8 +35,8 @@ def verbose(f):
 
         # Use special format for special workers logger
         logger = logging.getLogger("dexbot.per_worker")
+        logger.setLevel(getattr(logging, verbosity.upper()))
         ch = logging.StreamHandler()
-        ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter2)
         logger.addHandler(ch)
 
@@ -48,7 +48,6 @@ def verbose(f):
         logger.propagate = False  # Don't double up with root logger
         # Set the root logger with basic format
         ch = logging.StreamHandler()
-        ch.setLevel(getattr(logging, verbosity.upper()))
         ch.setFormatter(formatter1)
         logging.getLogger("dexbot").addHandler(ch)
         logging.getLogger("").handlers = []

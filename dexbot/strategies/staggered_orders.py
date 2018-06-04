@@ -1,4 +1,6 @@
 import math
+from datetime import datetime
+from datetime import timedelta
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.queue.idle_queue import idle_add
@@ -22,7 +24,7 @@ class Strategy(BaseStrategy):
         self.log.info("Initializing Staggered Orders")
 
         # Define Callbacks
-        self.onMarketUpdate += self.check_orders
+        self.onMarketUpdate += self.on_market_update_wrapper
         self.onAccount += self.check_orders
         self.ontick += self.tick
 
@@ -37,18 +39,22 @@ class Strategy(BaseStrategy):
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
+        # Order expiration time, should be high enough
+        self.expiration = 60*60*24*365*5
+        self.last_check = datetime.now()
 
         if self['setup_done']:
-            self.place_orders()
+            self.check_orders()
         else:
             self.init_strategy()
+
+        self.log.info('Done initializing Staggered Orders')
 
         if self.view:
             self.update_gui_profit()
             self.update_gui_slider()
 
     def error(self, *args, **kwargs):
-        self.cancel_all()
         self.disabled = True
 
     def init_strategy(self):
@@ -96,18 +102,23 @@ class Strategy(BaseStrategy):
 
         # Place the buy orders
         for buy_order in buy_orders:
-            order = self.market_buy(buy_order['amount'], buy_order['price'])
+            order = self.market_buy(buy_order['amount'], buy_order['price'], expiration=self.expiration)
             if order:
                 self.save_order(order)
 
         # Place the sell orders
         for sell_order in sell_orders:
-            order = self.market_sell(sell_order['amount'], sell_order['price'])
+            order = self.market_sell(sell_order['amount'], sell_order['price'], expiration=self.expiration)
             if order:
                 self.save_order(order)
 
         self['setup_done'] = True
         self.log.info("Done placing orders")
+
+    def pause(self, *args, **kwargs):
+        """ Override pause() method because we don't want to remove orders
+        """
+        self.log.info("Stopping and leaving orders on the market")
 
     def place_reverse_order(self, order):
         """ Replaces an order with a reverse order
@@ -116,11 +127,11 @@ class Strategy(BaseStrategy):
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price'] * (1 + self.spread)
             amount = order['quote']['amount']
-            new_order = self.market_sell(amount, price)
+            new_order = self.market_sell(amount, price, expiration=self.expiration)
         else:  # Sell order
             price = (order['price'] ** -1) / (1 + self.spread)
             amount = order['base']['amount']
-            new_order = self.market_buy(amount, price)
+            new_order = self.market_buy(amount, price, expiration=self.expiration)
 
         if new_order:
             self.remove_order(order)
@@ -132,24 +143,33 @@ class Strategy(BaseStrategy):
         if order['base']['symbol'] == self.market['base']['symbol']:  # Buy order
             price = order['price']
             amount = order['quote']['amount']
-            new_order = self.market_buy(amount, price)
+            new_order = self.market_buy(amount, price, expiration=self.expiration)
         else:  # Sell order
             price = order['price'] ** -1
             amount = order['base']['amount']
-            new_order = self.market_sell(amount, price)
+            new_order = self.market_sell(amount, price, expiration=self.expiration)
 
         self.save_order(new_order)
 
     def place_orders(self):
         """ Place all the orders found in the database
+            FIXME: unused method
         """
-        self.cancel_all()
         orders = self.fetch_orders()
         for order_id, order in orders.items():
             if not self.get_order(order_id):
                 self.place_order(order)
 
         self.log.info("Done placing orders")
+
+    def on_market_update_wrapper(self, *args, **kwargs):
+        """ Handle market update callbacks
+        """
+        delta = datetime.now() - self.last_check
+
+        # Only allow to check orders whether minimal time passed
+        if delta > timedelta(seconds=5):
+            self.check_orders(*args, **kwargs)
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
@@ -169,13 +189,15 @@ class Strategy(BaseStrategy):
             self.update_gui_profit()
             self.update_gui_slider()
 
+        self.last_check = datetime.now()
+
     @staticmethod
     def calculate_buy_prices(center_price, spread, increment, lower_bound):
         buy_prices = []
-        if lower_bound > center_price / math.sqrt(1 + spread):
+        if lower_bound > center_price / math.sqrt(1 + increment + spread):
             return buy_prices
 
-        buy_price = center_price / math.sqrt(1 + spread)
+        buy_price = center_price / math.sqrt(1 + increment + spread)
         while buy_price > lower_bound:
             buy_prices.append(buy_price)
             buy_price = buy_price / (1 + increment)
@@ -184,10 +206,10 @@ class Strategy(BaseStrategy):
     @staticmethod
     def calculate_sell_prices(center_price, spread, increment, upper_bound):
         sell_prices = []
-        if upper_bound < center_price * math.sqrt(1 + spread):
+        if upper_bound < center_price * math.sqrt(1 + increment + spread):
             return sell_prices
 
-        sell_price = center_price * math.sqrt(1 + spread)
+        sell_price = center_price * math.sqrt(1 + increment + spread)
         while sell_price < upper_bound:
             sell_prices.append(sell_price)
             sell_price = sell_price * (1 + increment)
@@ -267,8 +289,15 @@ class Strategy(BaseStrategy):
 
     def update_gui_slider(self):
         ticker = self.market.ticker()
-        latest_price = ticker.get('latest').get('price')
-        order_ids = self.fetch_orders().keys()
+        latest_price = ticker.get('latest', {}).get('price', None)
+        if not latest_price:
+            return
+
+        orders = self.fetch_orders()
+        if orders:
+            order_ids = orders.keys()
+        else:
+            order_ids = None
         total_balance = self.total_balance(order_ids)
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 

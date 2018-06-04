@@ -19,16 +19,22 @@ clean-pyc:
 pip:
 	python3 -m pip install -r requirements.txt
 
+pip-user:
+	python3 -m pip install --user -r requirements.txt
+
 lint:
 	flake8 dexbot/
 
 build: pip
 	python3 setup.py build
 
+build-user: pip-user
+	python3 setup.py build
+
 install: build
 	python3 setup.py install
 
-install-user: build
+install-user: build-user
 	python3 setup.py install --user
 
 git:

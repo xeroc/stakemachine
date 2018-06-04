@@ -9,7 +9,7 @@ from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.queue.idle_queue import idle_add
 from .errors import gui_error
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 
 
@@ -37,6 +37,8 @@ class MainView(QtWidgets.QMainWindow):
         for worker_name in workers:
             self.add_worker_widget(worker_name)
 
+            # Limit the max amount of workers so that the performance isn't greatly affected
+            self.num_of_workers += 1
             if self.num_of_workers >= self.max_workers:
                 self.ui.add_worker_button.setEnabled(False)
                 break
@@ -50,6 +52,8 @@ class MainView(QtWidgets.QMainWindow):
             target=self._update_statusbar_message
         )
         self.statusbar_updater.start()
+
+        QtGui.QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
     def add_worker_widget(self, worker_name):
         widget = WorkerItemWidget(worker_name, self.main_ctrl, self)

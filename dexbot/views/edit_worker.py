@@ -6,12 +6,13 @@ from PyQt5 import QtWidgets
 
 class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
 
-    def __init__(self, bitshares_instance, worker_name, config):
+    def __init__(self, parent_widget, bitshares_instance, worker_name, config):
         super().__init__()
         self.worker_name = worker_name
         self.strategy_widget = None
         controller = CreateWorkerController(self, bitshares_instance, 'edit')
         self.controller = controller
+        self.parent_widget = parent_widget
 
         self.setupUi(self)
         worker_data = config['workers'][worker_name]
@@ -35,6 +36,12 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form())
         self.save_button.clicked.connect(lambda: self.controller.handle_save())
         self.cancel_button.clicked.connect(lambda: self.reject())
+        self.remove_button.clicked.connect(self.handle_remove)
 
         self.controller.change_strategy_form(worker_data)
         self.worker_data = {}
+
+    def handle_remove(self):
+        self.parent_widget.remove_widget_dialog()
+        self.reject()
+
