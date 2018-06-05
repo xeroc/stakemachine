@@ -8,6 +8,7 @@ from .worker_item import WorkerItemWidget
 from dexbot.queue.queue_dispatcher import ThreadDispatcher
 from dexbot.queue.idle_queue import idle_add
 from .errors import gui_error
+from .layouts.flow_layout import FlowLayout
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
@@ -20,7 +21,7 @@ class MainView(QtWidgets.QMainWindow):
         super(MainView, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.worker_container = self.ui.verticalLayout
+        self.worker_container = self.ui.scrollAreaContent
         self.max_workers = 10
         self.num_of_workers = 0
         self.worker_widgets = {}
@@ -30,7 +31,8 @@ class MainView(QtWidgets.QMainWindow):
         self.main_ctrl.set_info_handler(self.set_worker_status)
 
         self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
-
+        self.layout = FlowLayout(self.worker_container)
+        self.layout.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignTop)
         # Load worker widgets from config file
         workers = main_ctrl.get_workers_data()
         for worker_name in workers:
@@ -58,7 +60,7 @@ class MainView(QtWidgets.QMainWindow):
         config = self.main_ctrl.get_worker_config(worker_name)
         widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
-        self.worker_container.addWidget(widget)
+        self.layout.addWidget(widget)
         self.worker_widgets[worker_name] = widget
 
         # Limit the max amount of workers so that the performance isn't greatly affected
