@@ -11,12 +11,17 @@ class Strategy(BaseStrategy):
     @classmethod
     def configure(cls):
         return BaseStrategy.configure() + [
-            ConfigElement('center_price_dynamic', 'bool', False, "Dynamic centre price", None),
-            ConfigElement('center_price', 'float', 0.0, "Initial center price", (0, 0, None)),
+            ConfigElement('center_price_dynamic',
+                          'bool', False, 'Dynamic centre price', None),
+            ConfigElement('center_price', 'float', 0.0,
+                          'Initial center price', (0, 0, None)),
             ConfigElement('amount_relative', 'bool', False,
-                          "Amount is expressed as a percentage of the account balance of quote/base asset", None),
-            ConfigElement('amount', 'float', 1.0, 'The amount of buy/sell orders', (0.0, None)),
-            ConfigElement('spread', 'float', 5.0, 'The percentage difference between buy and sell', (0.0, 100.0))]
+                          'Amount is expressed as a percentage of the account balance of quote/base asset', None),
+            ConfigElement('amount', 'float', 1.0,
+                          'The amount of buy/sell orders', (0.0, None)),
+            ConfigElement('spread', 'float', 5.0,
+                          'The percentage difference between buy and sell (Spread)', (0.0, 100.0))
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
