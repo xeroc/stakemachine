@@ -18,8 +18,6 @@ log_workers = logging.getLogger('dexbot.per_worker')
 # is_disabled is a callable returning True if the worker is currently disabled.
 # GUIs can add a handler to this logger to get a stream of events of the running workers.
 
-STRATEGIES = [('dexbot.strategies.echo', 'Echo Test')]
-
 
 class WorkerInfrastructure(threading.Thread):
 

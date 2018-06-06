@@ -19,10 +19,7 @@ import os
 import os.path
 import sys
 import re
-import tempfile
-import shutil
 
-from dexbot.worker import STRATEGIES
 from dexbot.whiptail import get_whiptail
 from dexbot.basestrategy import BaseStrategy
 
@@ -62,10 +59,9 @@ def select_choice(current, choices):
 
 
 def process_config_element(elem, d, config):
-    """
-    Process an item of configuration metadata display a widget as appropriate
-    d: the Dialog object
-    config: the config dictionary for this worker
+    """ Process an item of configuration metadata display a widget as appropriate
+        d: the Dialog object
+        config: the config dictionary for this worker
     """
     if elem.type == "string":
         txt = d.prompt(elem.description, config.get(elem.key, elem.default))
@@ -137,18 +133,17 @@ def setup_systemd(d, config):
 
 
 def configure_worker(d, worker):
-    strategy = worker.get('module', 'dexbot.strategies.echo')
+    default_strategy = worker.get('module', 'dexbot.strategies.relative_orders')
     for i in STRATEGIES:
-        if strategy == i['class']:
-            strategy = i['tag']
+        if default_strategy == i['class']:
+            default_strategy = i['tag']
+
     worker['module'] = d.radiolist(
         "Choose a worker strategy", select_choice(
-            strategy, [(i['tag'], i['name']) for i in STRATEGIES]))
+            default_strategy, [(i['tag'], i['name']) for i in STRATEGIES]))
     for i in STRATEGIES:
         if i['tag'] == worker['module']:
             worker['module'] = i['class']
-    # It's always Strategy now, for backwards compatibility only
-    worker['worker'] = 'Strategy'
     # Import the worker class but we don't __init__ it here
     klass = getattr(
         importlib.import_module(worker["module"]),

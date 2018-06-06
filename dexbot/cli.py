@@ -17,7 +17,6 @@ from .cli_conf import configure_dexbot
 from . import errors
 from . import helper
 
-from ruamel import yaml
 # We need to do this before importing click
 if "LANG" not in os.environ:
     os.environ['LANG'] = 'C.UTF-8'
@@ -108,7 +107,7 @@ def run(ctx):
 def configure(ctx):
     """ Interactively configure dexbot
     """
-    config = Config(ctx.obj['configfile'])
+    config = Config(path=ctx.obj['configfile'])
     configure_dexbot(config)
     config.save_config()
 
