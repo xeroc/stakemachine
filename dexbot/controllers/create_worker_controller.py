@@ -1,4 +1,5 @@
 import collections
+import re
 
 from dexbot.views.errors import gui_error
 from dexbot.config import Config
@@ -125,7 +126,7 @@ class CreateWorkerController:
 
     @staticmethod
     def get_assets(worker_data):
-        return worker_data['market'].split('/')
+        return re.split("[/:]", worker_data['market'])
 
     def get_base_asset(self, worker_data):
         return self.get_assets(worker_data)[1]

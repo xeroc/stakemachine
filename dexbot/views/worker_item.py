@@ -98,9 +98,9 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.strategy_label.setText(value)
 
     def set_worker_market(self, value):
-        self.currency_label.setText(value)
-
         values = re.split("[/:]", value)
+        market = '/'.join(values)
+        self.currency_label.setText(market)
         self.base_asset_label.setText(values[1])
         self.quote_asset_label.setText(values[0])
 
