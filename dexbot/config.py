@@ -47,6 +47,9 @@ class Config(dict):
     def __contains__(self, key):
         return key in self._config
 
+    def get(self, key, default=None):
+        return self._config.get(key, default)
+
     @property
     def default_data(self):
         return {'node': 'wss://status200.bitshares.apasia.tech/ws', 'workers': {}}
