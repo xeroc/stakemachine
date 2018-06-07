@@ -17,7 +17,7 @@ from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def __init__(self, main_ctrl):
-        super().__init__(flags=0)
+        super().__init__()
         self.setupUi(self)
         self.main_ctrl = main_ctrl
 
