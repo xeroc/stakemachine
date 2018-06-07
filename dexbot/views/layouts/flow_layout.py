@@ -1,6 +1,5 @@
-import sys
+from PyQt5 import Qt, QtCore, QtWidgets
 
-from PyQt5 import Qt, QtCore, QtGui, QtWidgets
 
 class FlowLayout(QtWidgets.QLayout):
 
@@ -26,30 +25,28 @@ class FlowLayout(QtWidgets.QLayout):
         return len(self.item_list)
 
     def itemAt(self, index):
-        if index >= 0 and index < len(self.item_list):
+        if 0 <= index < len(self.item_list):
             return self.item_list[index]
-
         return None
 
     def takeAt(self, index):
-        if index >= 0 and index < len(self.item_list):
+        if 0 <= index < len(self.item_list):
             return self.item_list.pop(index)
-
         return None
 
     def expandingDirections(self):
-        return QtCore.Qt.Orientations(QtCore.Qt.Orientation(0))
+        return Qt.Orientations(Qt.Orientation(0))
 
     def hasHeightForWidth(self):
         return True
 
     def heightForWidth(self, width):
-        height = self._doLayout(QtCore.QRect(0, 0, width, 0), True)
+        height = self._do_layout(QtCore.QRect(0, 0, width, 0), True)
         return height
 
     def setGeometry(self, rect):
         super(FlowLayout, self).setGeometry(rect)
-        self._doLayout(rect, False)
+        self._do_layout(rect, False)
 
     def sizeHint(self):
         return self.minimumSize()
@@ -64,7 +61,7 @@ class FlowLayout(QtWidgets.QLayout):
         size += QtCore.QSize(2 * margin, 2 * margin)
         return size
 
-    def _doLayout(self, rect, test_only):
+    def _do_layout(self, rect, test_only):
         x = rect.x()
         y = rect.y()
         line_height = 0
