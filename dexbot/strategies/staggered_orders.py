@@ -14,20 +14,20 @@ class Strategy(BaseStrategy):
     def configure(cls):
         return BaseStrategy.configure() + [
             ConfigElement(
-                'amount', 'float', 1.0, 'The amount of buy/sell orders',
-                (0.0, None)),
+                'amount', 'float', 1.0,
+                'The amount of buy/sell orders', (0.0, None)),
             ConfigElement(
-                'spread', 'float', 6.0, 'The percentage difference between buy and sell (Spread)',
-                (0.0, None)),
+                'spread', 'float', 6.0,
+                'The percentage difference between buy and sell (Spread)', (0.0, None)),
             ConfigElement(
-                'increment', 'float', 4.0, 'The percentage difference between staggered orders (Increment)',
-                (0.0, None)),
+                'increment', 'float', 4.0,
+                'The percentage difference between staggered orders (Increment)', (0.0, None)),
             ConfigElement(
-                'upper_bound', 'float', 1.0, 'The top price in the range',
-                (0.0, None)),
+                'upper_bound', 'float', 1.0,
+                'The top price in the range', (0.0, None)),
             ConfigElement(
-                'lower_bound', 'float', 1000.0, 'The bottom price in the range',
-                (0.0, None))
+                'lower_bound', 'float', 1000.0,
+                'The bottom price in the range', (0.0, None))
         ]
 
     def __init__(self, *args, **kwargs):
