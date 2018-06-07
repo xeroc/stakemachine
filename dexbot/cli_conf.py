@@ -76,11 +76,9 @@ def process_config_element(elem, d, config):
                         elem.key, elem.default))
         config[elem.key] = txt
     if elem.type == "bool":
-        if elem.default:
-            default = 'yes'
-        else:
-            default = 'no'
-        config[elem.key] = d.confirm(elem.description, default)
+        value = config.get(elem.key, elem.default)
+        value = 'yes' if value else 'no'
+        config[elem.key] = d.confirm(elem.description, value)
     if elem.type in ("float", "int"):
         txt = d.prompt(elem.description, str(config.get(elem.key, elem.default)))
         while True:
