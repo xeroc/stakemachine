@@ -2,25 +2,25 @@ import time
 from threading import Thread
 
 from dexbot import __version__
+from dexbot.queue.queue_dispatcher import ThreadDispatcher
+from dexbot.queue.idle_queue import idle_add
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
-from dexbot.queue.queue_dispatcher import ThreadDispatcher
-from dexbot.queue.idle_queue import idle_add
 from .errors import gui_error
+from .layouts.flow_layout import FlowLayout
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtGui, QtWidgets
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 
 
-class MainView(QtWidgets.QMainWindow):
+class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def __init__(self, main_ctrl):
+        super().__init__()
+        self.setupUi(self)
         self.main_ctrl = main_ctrl
-        super(MainView, self).__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
-        self.worker_container = self.ui.verticalLayout
+
         self.max_workers = 10
         self.num_of_workers = 0
         self.worker_widgets = {}
@@ -28,8 +28,9 @@ class MainView(QtWidgets.QMainWindow):
         self.statusbar_updater = None
         self.statusbar_updater_first_run = True
         self.main_ctrl.set_info_handler(self.set_worker_status)
+        self.layout = FlowLayout(self.scrollAreaContent)
 
-        self.ui.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
+        self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
         # Load worker widgets from config file
         workers = main_ctrl.get_workers_data()
@@ -39,14 +40,14 @@ class MainView(QtWidgets.QMainWindow):
             # Limit the max amount of workers so that the performance isn't greatly affected
             self.num_of_workers += 1
             if self.num_of_workers >= self.max_workers:
-                self.ui.add_worker_button.setEnabled(False)
+                self.add_worker_button.setEnabled(False)
                 break
 
         # Dispatcher polls for events from the workers that are used to change the ui
         self.dispatcher = ThreadDispatcher(self)
         self.dispatcher.start()
 
-        self.ui.status_bar.showMessage("ver {} - Node delay: - ms".format(__version__))
+        self.status_bar.showMessage("ver {} - Node delay: - ms".format(__version__))
         self.statusbar_updater = Thread(
             target=self._update_statusbar_message
         )
@@ -58,20 +59,20 @@ class MainView(QtWidgets.QMainWindow):
         config = self.main_ctrl.get_worker_config(worker_name)
         widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
-        self.worker_container.addWidget(widget)
+        self.layout.addWidget(widget)
         self.worker_widgets[worker_name] = widget
 
         # Limit the max amount of workers so that the performance isn't greatly affected
         self.num_of_workers += 1
         if self.num_of_workers >= self.max_workers:
-            self.ui.add_worker_button.setEnabled(False)
+            self.add_worker_button.setEnabled(False)
 
     def remove_worker_widget(self, worker_name):
         self.worker_widgets.pop(worker_name, None)
 
         self.num_of_workers -= 1
         if self.num_of_workers < self.max_workers:
-            self.ui.add_worker_button.setEnabled(True)
+            self.add_worker_button.setEnabled(True)
 
     @gui_error
     def handle_add_worker(self):
@@ -105,7 +106,7 @@ class MainView(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.closing = True
-        self.ui.status_bar.showMessage("Closing app...")
+        self.status_bar.showMessage("Closing app...")
         if self.statusbar_updater and self.statusbar_updater.is_alive():
             self.statusbar_updater.join()
 
@@ -136,9 +137,9 @@ class MainView(QtWidgets.QMainWindow):
             latency = -1
 
         if latency != -1:
-            self.ui.status_bar.showMessage("ver {} - Node delay: {:.2f}ms".format(__version__, latency))
+            self.status_bar.showMessage("ver {} - Node delay: {:.2f}ms".format(__version__, latency))
         else:
-            self.ui.status_bar.showMessage("ver {} - Node disconnected".format(__version__))
+            self.status_bar.showMessage("ver {} - Node disconnected".format(__version__))
 
     def set_worker_status(self, worker_name, level, status):
         if worker_name != 'NONE':
