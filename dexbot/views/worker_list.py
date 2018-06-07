@@ -2,8 +2,8 @@ import time
 from threading import Thread
 
 from dexbot import __version__
-from dexbot.queue.queue_dispatcher import ThreadDispatcher
-from dexbot.queue.idle_queue import idle_add
+from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
+from dexbot.qt_queue.idle_queue import idle_add
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
@@ -21,6 +21,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.main_ctrl = main_ctrl
 
+        self.config = main_ctrl.config
         self.max_workers = 10
         self.num_of_workers = 0
         self.worker_widgets = {}
@@ -33,7 +34,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
 
         # Load worker widgets from config file
-        workers = main_ctrl.get_workers_data()
+        workers = self.config.workers_data
         for worker_name in workers:
             self.add_worker_widget(worker_name)
 
@@ -56,7 +57,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         QtGui.QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
     def add_worker_widget(self, worker_name):
-        config = self.main_ctrl.get_worker_config(worker_name)
+        config = self.config.get_worker_config(worker_name)
         widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
         widget.setFixedSize(widget.frameSize())
         self.layout.addWidget(widget)
@@ -74,6 +75,10 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.num_of_workers < self.max_workers:
             self.add_worker_button.setEnabled(True)
 
+    def change_worker_widget_name(self, old_worker_name, new_worker_name):
+        worker_data = self.worker_widgets.pop(old_worker_name)
+        self.worker_widgets[new_worker_name] = worker_data
+
     @gui_error
     def handle_add_worker(self):
         create_worker_dialog = CreateWorkerView(self.main_ctrl.bitshares_instance)
@@ -82,7 +87,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         # User clicked save
         if return_value == 1:
             worker_name = create_worker_dialog.worker_name
-            self.main_ctrl.add_worker_config(worker_name, create_worker_dialog.worker_data)
+            self.config.add_worker_config(worker_name, create_worker_dialog.worker_data)
             self.add_worker_widget(worker_name)
 
     def set_worker_name(self, worker_name, value):
@@ -126,9 +131,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
                 time.sleep(0.5)
 
     def set_statusbar_message(self):
-        config = self.main_ctrl.load_config()
-        node = config['node']
-
+        node = self.config['node']
         try:
             start = time.time()
             BitSharesNodeRPC(node, num_retries=1)

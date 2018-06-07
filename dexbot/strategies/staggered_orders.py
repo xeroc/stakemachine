@@ -2,13 +2,33 @@ import math
 from datetime import datetime
 from datetime import timedelta
 
-from dexbot.basestrategy import BaseStrategy
-from dexbot.queue.idle_queue import idle_add
+from dexbot.basestrategy import BaseStrategy, ConfigElement
+from dexbot.qt_queue.idle_queue import idle_add
 
 
 class Strategy(BaseStrategy):
     """ Staggered Orders strategy
     """
+
+    @classmethod
+    def configure(cls):
+        return BaseStrategy.configure() + [
+            ConfigElement(
+                'amount', 'float', 1.0,
+                'The amount of buy/sell orders', (0.0, None)),
+            ConfigElement(
+                'spread', 'float', 6.0,
+                'The percentage difference between buy and sell (Spread)', (0.0, None)),
+            ConfigElement(
+                'increment', 'float', 4.0,
+                'The percentage difference between staggered orders (Increment)', (0.0, None)),
+            ConfigElement(
+                'upper_bound', 'float', 1.0,
+                'The top price in the range', (0.0, None)),
+            ConfigElement(
+                'lower_bound', 'float', 1000.0,
+                'The bottom price in the range', (0.0, None))
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

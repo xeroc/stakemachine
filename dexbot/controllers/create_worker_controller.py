@@ -1,7 +1,8 @@
 import collections
+import re
 
 from dexbot.views.errors import gui_error
-from dexbot.controllers.main_controller import MainController
+from dexbot.config import Config
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.confirmation import ConfirmationDialog
 from dexbot.views.strategy_form import StrategyFormWidget
@@ -49,7 +50,7 @@ class CreateWorkerController:
 
     @staticmethod
     def is_worker_name_valid(worker_name):
-        worker_names = MainController.get_workers_data().keys()
+        worker_names = Config().workers_data.keys()
         # Check that the name is unique
         if worker_name in worker_names:
             return False
@@ -89,7 +90,7 @@ class CreateWorkerController:
 
     @staticmethod
     def is_account_in_use(account):
-        workers = MainController.get_workers_data()
+        workers = Config().workers_data
         for worker_name, worker in workers.items():
             if worker['account'] == account:
                 return True
@@ -108,7 +109,7 @@ class CreateWorkerController:
         """ Returns unique worker name "Worker %n", where %n is the next available index
         """
         index = 1
-        workers = MainController.get_workers_data().keys()
+        workers = Config().workers_data.keys()
         worker_name = "Worker {0}".format(index)
         while worker_name in workers:
             worker_name = "Worker {0}".format(index)
@@ -125,7 +126,7 @@ class CreateWorkerController:
 
     @staticmethod
     def get_assets(worker_data):
-        return worker_data['market'].split('/')
+        return re.split("[/:]", worker_data['market'])
 
     def get_base_asset(self, worker_data):
         return self.get_assets(worker_data)[1]

@@ -2,7 +2,7 @@ import logging
 import traceback
 
 from dexbot.ui import translate_error
-from dexbot.queue.idle_queue import idle_add
+from dexbot.qt_queue.idle_queue import idle_add
 
 from PyQt5 import QtWidgets
 
