@@ -24,6 +24,8 @@ import subprocess
 from dexbot.whiptail import get_whiptail
 from dexbot.basestrategy import BaseStrategy
 
+from bitshares import BitShares
+
 # FIXME: auto-discovery of strategies would be cool but can't figure out a way
 STRATEGIES = [
     {'tag': 'relative',
@@ -198,11 +200,15 @@ def configure_dexbot(config):
         if action == 'EDIT':
             worker_name = d.menu("Select worker to edit", [(i, i) for i in workers])
             config['workers'][worker_name] = configure_worker(d, config['workers'][worker_name])
+            bitshares_instance = BitShares(config['node'])
+            strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance)
+            strategy.purge()
         elif action == 'DEL':
             worker_name = d.menu("Select worker to delete", [(i, i) for i in workers])
             del config['workers'][worker_name]
-            strategy = BaseStrategy(worker_name)
-            strategy.purge()  # Cancel the orders of the bot
+            bitshares_instance = BitShares(config['node'])
+            strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance)
+            strategy.purge()
         elif action == 'NEW':
             txt = d.prompt("Your name for the new worker")
             config['workers'][txt] = configure_worker(d, {})
