@@ -24,15 +24,19 @@ install:
 
 after_test:
   - make package
-  - '7z a DEXBot-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-cli.exe'
+  - '7z a DEXBot-cli-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-cli.exe'
+  - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
 
 # @TODO: Run tests..
 test_script:
   - "echo tests..."
 
 artifacts:
-  - path: DEXBot-win64.zip
-    name: DEXBot-win64.zip
+  - path: DEXBot-cli-win64.zip
+    name: DEXBot-cli-win64.zip
+
+  - path: DEXBot-gui-win64.zip
+    name: DEXBot-gui-win64.zip
 
 #---------------------------------#
 #        deployment               #
@@ -44,7 +48,6 @@ clone_depth: 1
 
 deploy:
   - provider: GitHub
-    artifact: DEXBot-win64.zip
     draft: false
     prerelease: false
     force_update: true

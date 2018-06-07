@@ -19,7 +19,8 @@ before_deploy:
   - git config --local user.name "Travis"
   - git config --local user.email "travis@travis-ci.org"
   - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
-  - tar -czvf dist/DEXBot-$TRAVIS_OS_NAME.tar.gz dist/$TRAVIS_OS_NAME/*
+  - tar -czvf dist/DEXBot-cli-$TRAVIS_OS_NAME-$TRAVIS_TAG.tar.gz dist/$TRAVIS_OS_NAME/DEXBot-cli
+  - tar -czvf dist/DEXBot-gui-$TRAVIS_OS_NAME-$TRAVIS_TAG.tar.gz dist/$TRAVIS_OS_NAME/DEXBot-gui
 deploy:
   - provider: releases
     skip_cleanup: true
