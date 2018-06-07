@@ -13,7 +13,7 @@ from dexbot.ui import (
     configfile
 )
 from .worker import WorkerInfrastructure
-from .cli_conf import configure_dexbot
+from .cli_conf import configure_dexbot, dexbot_service_running
 from . import errors
 from . import helper
 
@@ -107,17 +107,17 @@ def run(ctx):
 def configure(ctx):
     """ Interactively configure dexbot
     """
+    # Make sure the dexbot service isn't running while we do the config edits
+    if dexbot_service_running():
+        click.echo("Stopping dexbot daemon")
+        os.system('systemctl --user stop dexbot')
+
     config = Config(path=ctx.obj['configfile'])
     configure_dexbot(config)
     config.save_config()
 
     click.echo("New configuration saved")
-    if config['systemd_status'] == 'installed':
-        # we are already installed
-        click.echo("Restarting dexbot daemon")
-        os.system("systemctl --user restart dexbot")
-    if config['systemd_status'] == 'install':
-        os.system("systemctl --user enable dexbot")
+    if config.get('systemd_status', 'disabled') == 'enabled':
         click.echo("Starting dexbot daemon")
         os.system("systemctl --user start dexbot")
 
