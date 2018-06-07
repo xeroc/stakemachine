@@ -5,8 +5,8 @@ from dexbot import __version__
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
 from .worker_item import WorkerItemWidget
-from dexbot.queue.queue_dispatcher import ThreadDispatcher
-from dexbot.queue.idle_queue import idle_add
+from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
+from dexbot.qt_queue.idle_queue import idle_add
 from .errors import gui_error
 
 from PyQt5 import QtGui, QtWidgets

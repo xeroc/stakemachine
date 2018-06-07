@@ -3,7 +3,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
-from dexbot.queue.idle_queue import idle_add
+from dexbot.qt_queue.idle_queue import idle_add
 
 
 class Strategy(BaseStrategy):
