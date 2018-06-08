@@ -3,8 +3,10 @@ import traceback
 
 from dexbot.ui import translate_error
 from dexbot.queue.idle_queue import idle_add
+from .ui.error_dialog_ui import Ui_Dialog
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtGui import QIcon, QPixmap
 
 
 class PyQtHandler(logging.Handler):
@@ -42,6 +44,49 @@ class PyQtHandler(logging.Handler):
         self.info_handler = info_handler
 
 
+class ErrorDialog(QtWidgets.QDialog, Ui_Dialog):
+
+    def __init__(self, title, message, extra=None, detail=None):
+        super().__init__()
+        self.setupUi(self)
+
+        self.resize(400, 1)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMinimizeButtonHint)
+
+        self.setWindowTitle('DEXBot - {}'.format(title))
+        self.message_label.setText(message)
+
+        self.hide_details.hide()
+        self.detail_box.hide()
+
+        if extra:
+            self.extra_label.setText(extra)
+
+        if detail:
+            self.detail_box.setText(detail)
+        else:
+            self.show_details.hide()
+
+        # Button actions
+        self.hide_details.clicked.connect(lambda: self.hide_details_func())
+        self.show_details.clicked.connect(lambda: self.show_details_func())
+        self.ok_button.clicked.connect(lambda: self.accept())
+
+    def show_details_func(self):
+        self.detail_box.show()
+        self.show_details.hide()
+        self.hide_details.show()
+        self.vertical_spacer.hide()
+        self.resize(self.geometry().width(), 300)
+
+    def hide_details_func(self):
+        self.detail_box.hide()
+        self.hide_details.hide()
+        self.show_details.show()
+        self.vertical_spacer.show()
+        self.resize(self.geometry().width(), 1)
+
+
 def gui_error(func):
     """ A decorator for GUI handler functions - traps all exceptions and displays the dialog
     """
@@ -55,14 +100,5 @@ def gui_error(func):
 
 
 def show_dialog(title, message, extra=None, detail=None):
-    msg = QtWidgets.QMessageBox()
-    msg.setIcon(QtWidgets.QMessageBox.Critical)
-    msg.setText(message)
-    if extra:
-        msg.setInformativeText(extra)
-    msg.setWindowTitle(title)
-    if detail:
-        msg.setDetailedText(detail)
-    msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-
-    msg.exec_()
+    error_dialog = ErrorDialog(title, message, extra, detail)
+    error_dialog.exec_()
