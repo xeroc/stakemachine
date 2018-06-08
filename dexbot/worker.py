@@ -8,6 +8,7 @@ import copy
 import dexbot.errors as errors
 from dexbot.basestrategy import BaseStrategy
 
+from bitshares import BitShares
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
@@ -224,7 +225,8 @@ class WorkerInfrastructure(threading.Thread):
     @staticmethod
     def remove_offline_worker(config, worker_name):
         # Initialize the base strategy to get control over the data
-        strategy = BaseStrategy(worker_name, config)
+        bitshares_instance = BitShares(config['node'])
+        strategy = BaseStrategy(worker_name, config, bitshares_instance=bitshares_instance)
         strategy.purge()
 
     def do_next_tick(self, job):
