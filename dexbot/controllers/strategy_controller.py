@@ -1,4 +1,4 @@
-from dexbot.queue.idle_queue import idle_add
+from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.views.errors import gui_error
 from dexbot.strategies.staggered_orders import Strategy as StaggeredOrdersStrategy
 

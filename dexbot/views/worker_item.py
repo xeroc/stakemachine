@@ -3,6 +3,7 @@ import re
 from .ui.worker_item_widget_ui import Ui_widget
 from .confirmation import ConfirmationDialog
 from .edit_worker import EditWorkerView
+from .errors import gui_error
 from dexbot.storage import db_worker
 from dexbot.controllers.create_worker_controller import CreateWorkerController
 from dexbot.views.errors import gui_error
@@ -19,20 +20,19 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.main_ctrl = main_ctrl
         self.running = False
         self.worker_name = worker_name
-        self.worker_config = config
+        self.worker_config = self.main_ctrl.config.get_worker_config(worker_name)
         self.view = view
 
         self.setupUi(self)
 
         self.edit_button.clicked.connect(lambda: self.handle_edit_worker())
-
         self.toggle.mouseReleaseEvent = lambda _: self.toggle_worker()
         self.onoff.mouseReleaseEvent = lambda _: self.toggle_worker()
 
         self.setup_ui_data(config)
 
     def setup_ui_data(self, config):
-        worker_name = list(config['workers'].keys())[0]
+        worker_name = self.worker_name
         self.set_worker_name(worker_name)
 
         market = config['workers'][worker_name]['market']
@@ -98,9 +98,9 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.strategy_label.setText(value)
 
     def set_worker_market(self, value):
-        self.currency_label.setText(value)
-
         values = re.split("[/:]", value)
+        market = '/'.join(values)
+        self.currency_label.setText(market)
         self.base_asset_label.setText(values[1])
         self.quote_asset_label.setText(values[0])
 
@@ -134,22 +134,22 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def remove_widget_dialog(self):
-        dialog = ConfirmationDialog('Are you sure you want to remove worker "{}"?'.format(self.worker_name))
+        dialog = ConfirmationDialog(
+            'Are you sure you want to remove worker "{}"?'.format(self.worker_name))
         return_value = dialog.exec_()
         if return_value:
             self.remove_widget()
-            self.main_ctrl.remove_worker_config(self.worker_name)
 
     def remove_widget(self):
         self.main_ctrl.remove_worker(self.worker_name)
-        self.deleteLater()
         self.view.remove_worker_widget(self.worker_name)
-        self.view.ui.add_worker_button.setEnabled(True)
+        self.main_ctrl.config.remove_worker_config(self.worker_name)
+        self.deleteLater()
 
     def reload_widget(self, worker_name):
         """ Reload the data of the widget
         """
-        self.worker_config = self.main_ctrl.get_worker_config(worker_name)
+        self.worker_config = self.main_ctrl.config.get_worker_config(worker_name)
         self.setup_ui_data(self.worker_config)
         self._pause_worker()
 
@@ -162,10 +162,13 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         # User clicked save
         if return_value:
             new_worker_name = edit_worker_dialog.worker_name
+            self.view.change_worker_widget_name(self.worker_name, new_worker_name)
             self.main_ctrl.remove_worker(self.worker_name)
-            self.main_ctrl.replace_worker_config(self.worker_name, new_worker_name, edit_worker_dialog.worker_data)
-            self.reload_widget(new_worker_name)
+            self.main_ctrl.config.replace_worker_config(self.worker_name,
+                                                        new_worker_name,
+                                                        edit_worker_dialog.worker_data)
             self.worker_name = new_worker_name
+            self.reload_widget(new_worker_name)
 
     def set_status(self, status):
         self.worker_status.setText(status)

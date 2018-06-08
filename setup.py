@@ -2,15 +2,37 @@
 
 from setuptools import setup, find_packages
 from distutils.command import build as build_module
-from pyqt_distutils.build_ui import build_ui
-
-from dexbot import VERSION, APP_NAME
+cmdclass = {}
+console_scripts = ['dexbot-cli = dexbot.cli:main']
+install_requires = [
+    "bitshares==0.1.16",
+    "uptick>=0.1.4",
+    "click",
+    "sqlalchemy",
+    "appdirs",
+    "sdnotify",
+    "ruamel.yaml>=0.15.37"
+]
 
 
 class BuildCommand(build_module.build):
     def run(self):
         self.run_command('build_ui')
         build_module.build.run(self)
+
+
+try:
+    from pyqt_distutils.build_ui import build_ui
+    cmdclass = {
+        'build_ui': build_ui,
+        'build': BuildCommand
+    }
+    console_scripts.append('dexbot-gui = dexbot.gui:main')
+    install_requires.extend(["pyqt-distutils"])
+except BaseException as e:
+    print("GUI not available: {}".format(e))
+
+from dexbot import VERSION, APP_NAME
 
 
 setup(
@@ -32,23 +54,18 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
     ],
-    cmdclass={
-        'build_ui': build_ui,
-        'build': BuildCommand
-    },
+    cmdclass=cmdclass,
     entry_points={
-        'console_scripts': [
-            'dexbot-cli = dexbot.cli:main',
-            'dexbot-gui = dexbot.gui:main',
-        ],
+        'console_scripts': console_scripts
     },
     install_requires=[
         "bitshares==0.1.16",
         "uptick>=0.1.4",
         "click",
         "sqlalchemy",
-        "ruamel.yaml>=0.15.37"
+        "appdirs",
+        "ruamel.yaml>=0.15.37",
+        "sdnotify"
     ],
     include_package_data=True,
 )
-

@@ -1,5 +1,7 @@
 import os
+import sys
 import logging
+import logging.config
 from functools import update_wrapper
 
 import click
@@ -87,15 +89,28 @@ def unlock(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
         if not ctx.obj.get("unsigned", False):
+            systemd = ctx.obj.get('systemd', False)
             if ctx.bitshares.wallet.created():
                 if "UNLOCK" in os.environ:
                     pwd = os.environ["UNLOCK"]
                 else:
-                    pwd = click.prompt("Current Wallet Passphrase", hide_input=True)
+                    if systemd:
+                        # No user available to interact with
+                        log.critical("Passphrase not available, exiting")
+                        sys.exit(78)  # 'configuration error' in sysexits.h
+                    pwd = click.prompt(
+                        "Current Wallet Passphrase", hide_input=True)
                 ctx.bitshares.wallet.unlock(pwd)
             else:
+                if systemd:
+                    # No user available to interact with
+                    log.critical("Wallet not installed, cannot run")
+                    sys.exit(78)
                 click.echo("No wallet installed yet. Creating ...")
-                pwd = click.prompt("Wallet Encryption Passphrase", hide_input=True, confirmation_prompt=True)
+                pwd = click.prompt(
+                    "Wallet Encryption Passphrase",
+                    hide_input=True,
+                    confirmation_prompt=True)
                 ctx.bitshares.wallet.create(pwd)
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
@@ -104,7 +119,12 @@ def unlock(f):
 def configfile(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
+        try:
+            ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
+        except FileNotFoundError:
+            alert("Looking for the config file in %s\nNot found!\n"
+                  "Try running 'dexbot configure' to generate\n" % ctx.obj['configfile'])
+            sys.exit(78)  # 'configuration error' in sysexits.h
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 
@@ -147,7 +167,7 @@ def confirmwarning(msg):
 def alert(msg):
     click.echo(
         "[" +
-        click.style("alert", fg="yellow") +
+        click.style("Alert", fg="red") +
         "] " + msg
     )
 

@@ -1,12 +1,29 @@
 import math
 
-from dexbot.basestrategy import BaseStrategy
-from dexbot.queue.idle_queue import idle_add
+from dexbot.basestrategy import BaseStrategy, ConfigElement
+from dexbot.qt_queue.idle_queue import idle_add
 
 
 class Strategy(BaseStrategy):
     """ Relative Orders strategy
     """
+
+    @classmethod
+    def configure(cls):
+        return BaseStrategy.configure() + [
+            ConfigElement('amount_relative', 'bool', False,
+                          'Amount is expressed as a percentage of the account balance of quote/base asset', None),
+            ConfigElement('amount', 'float', 1.0,
+                          'The amount of buy/sell orders', (0.0, None)),
+            ConfigElement('center_price_dynamic', 'bool', True,
+                          'Dynamic centre price', None),
+            ConfigElement('center_price', 'float', 0.0,
+                          'Initial center price', (0, 0, None)),
+            ConfigElement('center_price_offset', 'bool', False,
+                          'Center price offset based on asset balances', None),
+            ConfigElement('spread', 'float', 5.0,
+                          'The percentage difference between buy and sell (Spread)', (0.0, 100.0))
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
