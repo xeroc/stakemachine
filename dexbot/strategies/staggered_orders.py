@@ -80,9 +80,9 @@ class Strategy(BaseStrategy):
         self.clear_orders()
 
         # Dynamic / Manual center price
-        center_price = self.calculate_center_price()
-
         if self.worker['center_price_dynamic']:
+            center_price = self.calculate_center_price()
+        else:
             center_price = self.worker['center_price']
 
         amount = self.amount
