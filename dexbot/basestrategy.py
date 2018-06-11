@@ -10,6 +10,7 @@ from .config import Config
 from events import Events
 import bitsharesapi
 import bitsharesapi.exceptions
+import bitshares.exceptions
 from bitshares.amount import Amount
 from bitshares.market import Market
 from bitshares.account import Account
@@ -358,6 +359,9 @@ class BaseStrategy(Storage, StateMachine, Events):
                 return False
             else:
                 self.log.exception("Unable to cancel order")
+        except bitshares.exceptions.MissingKeyError:
+            self.log.exception('Unable to cancel order(s), private key missing.')
+
         return True
 
     def cancel(self, orders):
