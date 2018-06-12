@@ -1,5 +1,5 @@
 from .ui.create_worker_window_ui import Ui_Dialog
-from dexbot.controllers.create_worker_controller import CreateWorkerController
+from dexbot.controllers.worker_controller import WorkerController
 
 from PyQt5 import QtWidgets
 
@@ -9,7 +9,7 @@ class CreateWorkerView(QtWidgets.QDialog, Ui_Dialog):
     def __init__(self, bitshares_instance):
         super().__init__()
         self.strategy_widget = None
-        controller = CreateWorkerController(self, bitshares_instance, 'add')
+        controller = WorkerController(self, bitshares_instance, 'add')
         self.controller = controller
 
         self.setupUi(self)

@@ -14,7 +14,7 @@ from bitshares.account import Account
 from bitsharesbase.account import PrivateKey
 
 
-class CreateWorkerController:
+class WorkerController:
 
     def __init__(self, view, bitshares_instance, mode):
         self.view = view
@@ -38,7 +38,7 @@ class CreateWorkerController:
     def get_strategies():
         """ Static method for getting the strategies
         """
-        controller = CreateWorkerController(None, None, None)
+        controller = WorkerController(None, None, None)
         return controller.strategies
 
     @property

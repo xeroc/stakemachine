@@ -1,5 +1,5 @@
 from .ui.edit_worker_window_ui import Ui_Dialog
-from dexbot.controllers.create_worker_controller import CreateWorkerController
+from dexbot.controllers.worker_controller import WorkerController
 
 from PyQt5 import QtWidgets
 
@@ -10,7 +10,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         super().__init__()
         self.worker_name = worker_name
         self.strategy_widget = None
-        controller = CreateWorkerController(self, bitshares_instance, 'edit')
+        controller = WorkerController(self, bitshares_instance, 'edit')
         self.controller = controller
         self.parent_widget = parent_widget
 
