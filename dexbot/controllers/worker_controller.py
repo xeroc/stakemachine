@@ -12,6 +12,7 @@ from bitshares.instance import shared_bitshares_instance
 from bitshares.asset import Asset
 from bitshares.account import Account
 from bitsharesbase.account import PrivateKey
+from PyQt5 import QtGui
 
 
 class WorkerController:
@@ -246,3 +247,10 @@ class WorkerController:
         }
         self.view.worker_name = self.view.worker_name_input.text()
         self.view.accept()
+
+
+class UppercaseValidator(QtGui.QValidator):
+
+    @staticmethod
+    def validate(string, pos):
+        return QtGui.QValidator.Acceptable, string.upper(), pos
