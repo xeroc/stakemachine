@@ -1,5 +1,5 @@
 from .ui.edit_worker_window_ui import Ui_Dialog
-from dexbot.controllers.create_worker_controller import CreateWorkerController
+from dexbot.controllers.worker_controller import WorkerController, UppercaseValidator
 
 from PyQt5 import QtWidgets
 
@@ -10,12 +10,14 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         super().__init__()
         self.worker_name = worker_name
         self.strategy_widget = None
-        controller = CreateWorkerController(self, bitshares_instance, 'edit')
+        controller = WorkerController(self, bitshares_instance, 'edit')
         self.controller = controller
         self.parent_widget = parent_widget
 
         self.setupUi(self)
         worker_data = config['workers'][worker_name]
+
+        validator = UppercaseValidator(self)
 
         # Todo: Using a model here would be more Qt like
         # Populate the comboboxes
@@ -31,6 +33,10 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.base_asset_input.addItems(self.controller.base_assets)
         self.quote_asset_input.setText(self.controller.get_quote_asset(worker_data))
         self.account_name.setText(self.controller.get_account(worker_data))
+
+        # Validating assets fields
+        self.base_asset_input.setValidator(validator)
+        self.quote_asset_input.setValidator(validator)
 
         # Set signals
         self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form())

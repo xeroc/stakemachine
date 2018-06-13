@@ -5,7 +5,7 @@ from .confirmation import ConfirmationDialog
 from .edit_worker import EditWorkerView
 from .errors import gui_error
 from dexbot.storage import db_worker
-from dexbot.controllers.create_worker_controller import CreateWorkerController
+from dexbot.controllers.worker_controller import WorkerController
 from dexbot.views.errors import gui_error
 from dexbot.resources import icons_rc
 
@@ -39,7 +39,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.set_worker_market(market)
 
         module = config['workers'][worker_name]['module']
-        strategies = CreateWorkerController.get_strategies()
+        strategies = WorkerController.get_strategies()
         self.set_worker_strategy(strategies[module]['name'])
 
         profit = db_worker.get_item(worker_name, 'profit')
