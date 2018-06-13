@@ -145,7 +145,7 @@ QScrollBar {
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap resource="../../resources/icons.qrc">:/bot_widget/img/dexbot.png</pixmap>
+             <pixmap resource="../../resources/icons.qrc">:/general/img/dexbot.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
