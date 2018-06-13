@@ -158,7 +158,7 @@
          <number>8</number>
         </property>
         <property name="minimum">
-         <double>0.000000000000000</double>
+         <double>-999999999.998999953269958</double>
         </property>
         <property name="maximum">
          <double>999999999.998999953269958</double>

@@ -17,12 +17,6 @@ class Strategy(BaseStrategy):
                 'amount', 'float', 1.0,
                 'The amount of buy/sell orders', (0.0, None)),
             ConfigElement(
-                'center_price_dynamic', 'bool', True,
-                'Dynamic centre price', None),
-            ConfigElement(
-                'center_price', 'float', 0.0,
-                'Initial center price', (0, 0, None)),
-            ConfigElement(
                 'spread', 'float', 6.0,
                 'The percentage difference between buy and sell (Spread)', (0.0, None)),
             ConfigElement(
@@ -79,12 +73,7 @@ class Strategy(BaseStrategy):
         self.cancel_all()
         self.clear_orders()
 
-        # Dynamic / Manual center price
-        if self.worker['center_price_dynamic']:
-            center_price = self.calculate_center_price()
-        else:
-            center_price = self.worker['center_price']
-
+        center_price = self.calculate_center_price()
         amount = self.amount
         spread = self.spread
         increment = self.increment
