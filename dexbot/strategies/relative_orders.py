@@ -104,10 +104,11 @@ class Strategy(BaseStrategy):
 
         # Cancel the orders before redoing them
         self.cancel_all()
+        self.clear_orders()
 
         # Mark the orders empty
-        self['buy_order'] = {}
-        self['sell_order'] = {}
+        # self['buy_order'] = {}
+        # self['sell_order'] = {}
 
         order_ids = []
 
@@ -117,13 +118,15 @@ class Strategy(BaseStrategy):
         # Buy Side
         buy_order = self.market_buy(amount_base, self.buy_price, True)
         if buy_order:
-            self['buy_order'] = buy_order
+            # self['buy_order'] = sell_order
+            self.save_order(buy_order)
             order_ids.append(buy_order['id'])
 
         # Sell Side
         sell_order = self.market_sell(amount_quote, self.sell_price, True)
         if sell_order:
-            self['sell_order'] = sell_order
+            # self['sell_order'] = sell_order
+            self.save_order(sell_order)
             order_ids.append(sell_order['id'])
 
         self['order_ids'] = order_ids
@@ -137,16 +140,19 @@ class Strategy(BaseStrategy):
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
-        stored_sell_order = self['sell_order']
-        stored_buy_order = self['buy_order']
-        current_sell_order = self.get_order(stored_sell_order)
-        current_buy_order = self.get_order(stored_buy_order)
+        orders = self.fetch_orders()
 
-        if not current_sell_order or not current_buy_order:
-            # Either buy or sell order is missing, update both orders
+        if not orders:
             self.update_orders()
         else:
             self.log.info("Orders correct on market")
+            for order_id, order in orders.items():
+                # Looks up order from BitShares
+                current_order = self.get_order(order_id)
+
+                if not current_order:
+                    self.update_orders()
+                    break
 
         if self.view:
             self.update_gui_profit()
@@ -168,7 +174,13 @@ class Strategy(BaseStrategy):
         if not latest_price:
             return
 
-        total_balance = self.total_balance(self['order_ids'])
+        order_ids = None
+        orders = self.fetch_orders()
+
+        if orders:
+            order_ids = orders.keys()
+
+        total_balance = self.total_balance(order_ids)
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 
         if not total:  # Prevent division by zero
