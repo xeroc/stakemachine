@@ -2,6 +2,9 @@ import os
 import shutil
 import errno
 import logging
+from appdirs import user_data_dir
+
+from dexbot import APP_NAME, AUTHOR
 
 
 def mkdir(d):
@@ -32,7 +35,8 @@ def remove(path):
 def initialize_orders_log():
     """ Creates .csv log file, adds the headers first time only
     """
-    filename = 'orders.csv'
+    data_dir = user_data_dir(APP_NAME, AUTHOR)
+    filename = data_dir + '/orders.csv'
     file = os.path.isfile(filename)
 
     formatter = logging.Formatter('%(message)s')
