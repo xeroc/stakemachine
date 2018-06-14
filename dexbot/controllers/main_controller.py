@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from dexbot import VERSION
+from dexbot import VERSION, helper
 from dexbot.worker import WorkerInfrastructure
 from dexbot.views.errors import PyQtHandler
 
@@ -29,6 +29,9 @@ class MainController:
         logger.addHandler(self.pyqt_handler)
         logger.info("DEXBot {} on python {} {}".format(VERSION, sys.version[:6], sys.platform), extra={
                     'worker_name': 'NONE', 'account': 'NONE', 'market': 'NONE'})
+
+        # Configure orders logging
+        helper.initialize_orders_log()
 
     def set_info_handler(self, handler):
         self.pyqt_handler.set_info_handler(handler)

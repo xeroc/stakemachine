@@ -131,6 +131,7 @@ class Strategy(BaseStrategy):
 
         self['order_ids'] = order_ids
 
+        # Logger here as well
         self.log.info("Done placing orders")
 
         # Some orders weren't successfully created, redo them
@@ -141,6 +142,7 @@ class Strategy(BaseStrategy):
         """ Tests if the orders need updating
         """
         orders = self.fetch_orders()
+        order_check_flag = False
 
         if not orders:
             self.update_orders()
@@ -148,11 +150,15 @@ class Strategy(BaseStrategy):
             self.log.info("Orders correct on market")
             for order_id, order in orders.items():
                 # Looks up order from BitShares
-                current_order = self.get_order(order_id)
+                current_bitshares_order = self.get_order(order_id)
 
-                if not current_order:
-                    self.update_orders()
-                    break
+                if not current_bitshares_order:
+                    if not order_check_flag:
+                        order_check_flag = True
+                    self.write_order_log(order)
+
+            if order_check_flag:
+                self.update_orders()
 
         if self.view:
             self.update_gui_profit()

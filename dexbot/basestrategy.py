@@ -1,3 +1,4 @@
+import datetime
 import logging
 import collections
 import time
@@ -179,6 +180,10 @@ class BaseStrategy(Storage, StateMachine, Events):
              'account': self.worker['account'],
              'market': self.worker['market'],
              'is_disabled': lambda: self.disabled}
+        )
+
+        self.orders_log = logging.LoggerAdapter(
+            logging.getLogger('dexbot.orders_log'), {}
         )
 
     def calculate_center_price(self, suppress_errors=False):
@@ -391,6 +396,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         # By default, just call cancel_all(); strategies may override this method
         self.cancel_all()
+        self.clear_orders()
 
     def market_buy(self, amount, price, return_none=False, *args, **kwargs):
         symbol = self.market['base']['symbol']
@@ -586,3 +592,37 @@ class BaseStrategy(Storage, StateMachine, Events):
         """ Change the decimal point of a number without rounding
         """
         return math.floor(number * 10 ** decimals) / 10 ** decimals
+
+    def write_order_log(self, order):
+        # ID;
+        # operation_type;
+        # base_asset;
+        # base_amount;
+        # quote_asset;
+        # quote_amount;
+        # timestamp
+
+        if order['base']['symbol'] == self.market['base']['symbol']:
+            operation_type = 'BUY'
+            base_symbol = order['base']['symbol']
+            base_amount = -order['base']['amount']
+            quote_symbol = order['quote']['symbol']
+            quote_amount = order['quote']['amount']
+        else:
+            operation_type = 'SELL'
+            base_symbol = order['quote']['symbol']
+            base_amount = order['quote']['amount']
+            quote_symbol = order['base']['symbol']
+            quote_amount = -order['base']['amount']
+
+        message = '{};{};{};{};{};{};{}'.format(
+            order['id'],
+            operation_type,
+            base_symbol,
+            base_amount,
+            quote_symbol,
+            quote_amount,
+            datetime.datetime.now().isoformat()
+        )
+
+        self.orders_log.info(message)
