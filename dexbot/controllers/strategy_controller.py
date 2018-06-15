@@ -115,6 +115,14 @@ class StaggeredOrdersController:
         widget.lower_bound_input.setValue(worker_data.get('lower_bound', 0.000001))
         widget.upper_bound_input.setValue(worker_data.get('upper_bound', 1000000))
 
+        self.view.strategy_widget.center_price_input.setValue(worker_data.get('center_price', 0))
+
+        if worker_data.get('center_price_dynamic', True):
+            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(True)
+        else:
+            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
+            self.view.strategy_widget.center_price_input.setDisabled(False)
+
     @gui_error
     def on_value_change(self):
         base_asset = self.worker_controller.view.base_asset_input.currentText()
@@ -173,6 +181,8 @@ class StaggeredOrdersController:
         data = {
             'amount': self.view.strategy_widget.amount_input.value(),
             'spread': self.view.strategy_widget.spread_input.value(),
+            'center_price': self.view.strategy_widget.center_price_input.value(),
+            'center_price_dynamic': self.view.strategy_widget.center_price_dynamic_checkbox.isChecked(),
             'increment': self.view.strategy_widget.increment_input.value(),
             'lower_bound': self.view.strategy_widget.lower_bound_input.value(),
             'upper_bound': self.view.strategy_widget.upper_bound_input.value()
