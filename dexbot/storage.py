@@ -5,17 +5,16 @@ import queue
 import uuid
 from appdirs import user_data_dir
 
+from . import helper
+from dexbot import APP_NAME, AUTHOR
+
 from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from . import helper
-
 Base = declarative_base()
 
 # For dexbot.sqlite file
-appname = "dexbot"
-appauthor = "Codaone Oy"
 storageDatabase = "dexbot.sqlite"
 
 
@@ -98,6 +97,11 @@ class Storage(dict):
         if not worker:
             worker = self.category
         return db_worker.fetch_orders(worker)
+
+    @staticmethod
+    def clear_worker_data(worker):
+        db_worker.clear_orders(worker)
+        db_worker.clear(worker)
 
 
 class DatabaseWorker(threading.Thread):
@@ -278,7 +282,7 @@ class DatabaseWorker(threading.Thread):
 
 
 # Derive sqlite file directory
-data_dir = user_data_dir(appname, appauthor)
+data_dir = user_data_dir(APP_NAME, AUTHOR)
 sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
 
 # Create directory for sqlite file

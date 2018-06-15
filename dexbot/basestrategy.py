@@ -1,3 +1,4 @@
+import datetime
 import logging
 import collections
 import time
@@ -179,6 +180,10 @@ class BaseStrategy(Storage, StateMachine, Events):
              'account': self.worker['account'],
              'market': self.worker['market'],
              'is_disabled': lambda: self.disabled}
+        )
+
+        self.orders_log = logging.LoggerAdapter(
+            logging.getLogger('dexbot.orders_log'), {}
         )
 
     def calculate_center_price(self, suppress_errors=False):
@@ -395,6 +400,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         # By default, just call cancel_all(); strategies may override this method
         self.cancel_all()
+        self.clear_orders()
 
     def market_buy(self, amount, price, return_none=False, *args, **kwargs):
         symbol = self.market['base']['symbol']
@@ -489,6 +495,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.cancel_all()
         self.clear_orders()
         self.clear()
+
+    @staticmethod
+    def purge_worker_data(worker_name):
+        Storage.clear_worker_data(worker_name)
 
     @staticmethod
     def get_order_amount(order, asset_type):
@@ -590,3 +600,30 @@ class BaseStrategy(Storage, StateMachine, Events):
         """ Change the decimal point of a number without rounding
         """
         return math.floor(number * 10 ** decimals) / 10 ** decimals
+
+    def write_order_log(self, worker_name, order):
+        operation_type = 'TRADE'
+
+        if order['base']['symbol'] == self.market['base']['symbol']:
+            base_symbol = order['base']['symbol']
+            base_amount = -order['base']['amount']
+            quote_symbol = order['quote']['symbol']
+            quote_amount = order['quote']['amount']
+        else:
+            base_symbol = order['quote']['symbol']
+            base_amount = order['quote']['amount']
+            quote_symbol = order['base']['symbol']
+            quote_amount = -order['base']['amount']
+
+        message = '{};{};{};{};{};{};{};{}'.format(
+            worker_name,
+            order['id'],
+            operation_type,
+            base_symbol,
+            base_amount,
+            quote_symbol,
+            quote_amount,
+            datetime.datetime.now().isoformat()
+        )
+
+        self.orders_log.info(message)

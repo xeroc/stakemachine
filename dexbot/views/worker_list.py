@@ -87,6 +87,8 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         # User clicked save
         if return_value == 1:
             worker_name = create_worker_dialog.worker_name
+            self.main_ctrl.create_worker(worker_name)
+
             self.config.add_worker_config(worker_name, create_worker_dialog.worker_data)
             self.add_worker_widget(worker_name)
 

@@ -74,7 +74,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def start_worker(self):
         self.set_status("Starting worker")
         self._start_worker()
-        self.main_ctrl.create_worker(self.worker_name, self.worker_config, self.view)
+        self.main_ctrl.start_worker(self.worker_name, self.worker_config, self.view)
 
     def _start_worker(self):
         self.running = True

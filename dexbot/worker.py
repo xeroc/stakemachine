@@ -229,6 +229,10 @@ class WorkerInfrastructure(threading.Thread):
         strategy = BaseStrategy(worker_name, config, bitshares_instance=bitshares_instance)
         strategy.purge()
 
+    @staticmethod
+    def remove_offline_worker_data(worker_name):
+        BaseStrategy.purge_worker_data(worker_name)
+
     def do_next_tick(self, job):
         """ Add a callable to be executed on the next tick """
         self.jobs.add(job)
