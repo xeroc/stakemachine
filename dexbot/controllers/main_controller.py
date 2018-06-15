@@ -36,7 +36,7 @@ class MainController:
     def set_info_handler(self, handler):
         self.pyqt_handler.set_info_handler(handler)
 
-    def create_worker(self, worker_name, config, view):
+    def start_worker(self, worker_name, config, view):
         # Todo: Add some threading here so that the GUI doesn't freeze
         if self.worker_manager and self.worker_manager.is_alive():
             self.worker_manager.add_worker(worker_name, config)
@@ -63,4 +63,9 @@ class MainController:
             # Worker manager not running
             config = self.config.get_worker_config(worker_name)
             WorkerInfrastructure.remove_offline_worker(config, worker_name)
+
+    @staticmethod
+    def create_worker(worker_name):
+        # Deletes old worker's data
+        WorkerInfrastructure.remove_offline_worker_data_only(worker_name)
 

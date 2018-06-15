@@ -493,6 +493,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.clear()
 
     @staticmethod
+    def purge_database_only(worker_name):
+        Storage.clear_worker_data(worker_name)
+
+    @staticmethod
     def get_order_amount(order, asset_type):
         try:
             order_amount = order[asset_type]['amount']

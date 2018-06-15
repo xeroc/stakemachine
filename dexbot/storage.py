@@ -98,6 +98,11 @@ class Storage(dict):
             worker = self.category
         return db_worker.fetch_orders(worker)
 
+    @staticmethod
+    def clear_worker_data(worker):
+        db_worker.clear_orders(worker)
+        db_worker.clear(worker)
+
 
 class DatabaseWorker(threading.Thread):
     """ Thread safe database worker
