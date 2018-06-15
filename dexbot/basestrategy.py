@@ -181,7 +181,7 @@ class BaseStrategy(Storage, StateMachine, Events):
              'is_disabled': lambda: self.disabled}
         )
 
-    def calculate_center_price(self, suppress_errors=False):
+    def _calculate_center_price(self, suppress_errors=False):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
         lowest_ask = ticker.get("lowestAsk")
@@ -203,43 +203,47 @@ class BaseStrategy(Storage, StateMachine, Events):
         center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
         return center_price
 
-    def calculate_offset_center_price(self, spread, center_price=None, order_ids=None, manual_offset=0):
+    def calculate_center_price(self, center_price=None,
+                               asset_offset=False, spread=None, order_ids=None, manual_offset=0):
         """ Calculate center price which shifts based on available funds
         """
         if center_price is None:
             # No center price was given so we simply calculate the center price
-            calculated_center_price = self.calculate_center_price()
-            center_price = calculated_center_price
+            calculated_center_price = self._calculate_center_price()
         else:
             # Center price was given so we only use the calculated center price
             # for quote to base asset conversion
-            calculated_center_price = self.calculate_center_price(True)
+            calculated_center_price = self._calculate_center_price(True)
             if not calculated_center_price:
                 calculated_center_price = center_price
 
-        total_balance = self.total_balance(order_ids)
-        total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
+        if center_price:
+            calculated_center_price = center_price
 
-        if not total:  # Prevent division by zero
-            balance = 0
-        else:
-            # Returns a value between -1 and 1
-            balance = (total_balance['base'] / total) * 2 - 1
+        if asset_offset:
+            total_balance = self.total_balance(order_ids)
+            total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
 
-        if balance < 0:
-            # With less of base asset center price should be offset downward
-            offset_center_price = calculated_center_price / math.sqrt(1 + spread * (balance * -1))
-        elif balance > 0:
-            # With more of base asset center price will be offset upwards
-            offset_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
-        else:
-            offset_center_price = calculated_center_price
+            if not total:  # Prevent division by zero
+                balance = 0
+            else:
+                # Returns a value between -1 and 1
+                balance = (total_balance['base'] / total) * 2 - 1
+
+            if balance < 0:
+                # With less of base asset center price should be offset downward
+                calculated_center_price = calculated_center_price / math.sqrt(1 + spread * (balance * -1))
+            elif balance > 0:
+                # With more of base asset center price will be offset upwards
+                calculated_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
+            else:
+                calculated_center_price = calculated_center_price
 
         # Calculate final_offset_price if manual center price offset is given
         if manual_offset:
-            offset_center_price = center_price + (center_price * manual_offset)
+            calculated_center_price = calculated_center_price + (calculated_center_price * manual_offset)
 
-        return offset_center_price
+        return calculated_center_price
 
     @property
     def orders(self):
