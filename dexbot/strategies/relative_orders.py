@@ -106,10 +106,6 @@ class Strategy(BaseStrategy):
         self.cancel_all()
         self.clear_orders()
 
-        # Mark the orders empty
-        # self['buy_order'] = {}
-        # self['sell_order'] = {}
-
         order_ids = []
 
         amount_base = self.amount_base
@@ -118,20 +114,17 @@ class Strategy(BaseStrategy):
         # Buy Side
         buy_order = self.market_buy(amount_base, self.buy_price, True)
         if buy_order:
-            # self['buy_order'] = sell_order
             self.save_order(buy_order)
             order_ids.append(buy_order['id'])
 
         # Sell Side
         sell_order = self.market_sell(amount_quote, self.sell_price, True)
         if sell_order:
-            # self['sell_order'] = sell_order
             self.save_order(sell_order)
             order_ids.append(sell_order['id'])
 
         self['order_ids'] = order_ids
 
-        # Logger here as well
         self.log.info("Done placing orders")
 
         # Some orders weren't successfully created, redo them
@@ -149,10 +142,9 @@ class Strategy(BaseStrategy):
         else:
             self.log.info("Orders correct on market")
             for order_id, order in orders.items():
-                # Looks up order from BitShares
-                current_bitshares_order = self.get_order(order_id)
+                current_order = self.get_order(order_id)
 
-                if not current_bitshares_order:
+                if not current_order:
                     if not order_check_flag:
                         order_check_flag = True
                     self.write_order_log(self.worker_name, order)

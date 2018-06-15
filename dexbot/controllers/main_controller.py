@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from dexbot import VERSION, helper
+from dexbot import VERSION, helper ####
 from dexbot.worker import WorkerInfrastructure
 from dexbot.views.errors import PyQtHandler
 
@@ -67,5 +67,5 @@ class MainController:
     @staticmethod
     def create_worker(worker_name):
         # Deletes old worker's data
-        WorkerInfrastructure.remove_offline_worker_data_only(worker_name)
+        WorkerInfrastructure.remove_offline_worker_data(worker_name)
 

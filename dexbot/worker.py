@@ -228,7 +228,7 @@ class WorkerInfrastructure(threading.Thread):
         strategy.purge()
 
     @staticmethod
-    def remove_offline_worker_data_only(worker_name):
+    def remove_offline_worker_data(worker_name):
         BaseStrategy.purge_database_only(worker_name)
 
     def do_next_tick(self, job):
