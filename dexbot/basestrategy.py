@@ -597,7 +597,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         return math.floor(number * 10 ** decimals) / 10 ** decimals
 
-    def write_order_log(self, order):
+    def write_order_log(self, worker_name, order):
         operation_type = 'TRADE'
 
         if order['base']['symbol'] == self.market['base']['symbol']:
@@ -611,7 +611,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             quote_symbol = order['base']['symbol']
             quote_amount = -order['base']['amount']
 
-        message = '{};{};{};{};{};{};{}'.format(
+        message = '{};{};{};{};{};{};{};{}'.format(
+            worker_name,
             order['id'],
             operation_type,
             base_symbol,

@@ -155,7 +155,7 @@ class Strategy(BaseStrategy):
                 if not current_bitshares_order:
                     if not order_check_flag:
                         order_check_flag = True
-                    self.write_order_log(order)
+                    self.write_order_log(self.worker_name, order)
 
             if order_check_flag:
                 self.update_orders()

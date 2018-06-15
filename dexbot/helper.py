@@ -49,4 +49,4 @@ def initialize_orders_log():
     logger.setLevel(logging.INFO)
 
     if not file:
-        logger.info("ID;operation_type;base_asset;base_amount;quote_asset;quote_amount;timestamp")
+        logger.info("worker_name;ID;operation_type;base_asset;base_amount;quote_asset;quote_amount;timestamp")
