@@ -47,7 +47,7 @@ class Strategy(BaseStrategy):
 
         self.is_relative_order_size = self.worker['amount_relative']
         self.is_asset_offset = self.worker.get('center_price_offset', False)
-        self.manual_offset = self.worker.get('manual_offset', 0)
+        self.manual_offset = self.worker.get('manual_offset', 0) / 100
         self.order_size = float(self.worker['amount'])
         self.spread = self.worker.get('spread') / 100
 
