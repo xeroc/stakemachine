@@ -201,6 +201,8 @@ class Strategy(BaseStrategy):
         for order_id, order in orders.items():
             current_order = self.get_order(order_id)
             if not current_order:
+                # Write order to .csv log
+                self.write_order_log(self.worker_name, order)
                 self.place_reverse_order(order)
                 order_placed = True
 

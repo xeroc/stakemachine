@@ -1,6 +1,10 @@
 import os
 import shutil
 import errno
+import logging
+from appdirs import user_data_dir
+
+from dexbot import APP_NAME, AUTHOR
 
 
 def mkdir(d):
@@ -26,3 +30,23 @@ def remove(path):
             shutil.rmtree(path)
         except FileNotFoundError:
             return
+
+
+def initialize_orders_log():
+    """ Creates .csv log file, adds the headers first time only
+    """
+    data_dir = user_data_dir(APP_NAME, AUTHOR)
+    filename = os.path.join(data_dir, 'orders.csv')
+    file = os.path.isfile(filename)
+
+    formatter = logging.Formatter('%(message)s')
+    logger = logging.getLogger("dexbot.orders_log")
+
+    file_handler = logging.FileHandler(filename)
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.setLevel(logging.INFO)
+
+    if not file:
+        logger.info("worker_name;ID;operation_type;base_asset;base_amount;quote_asset;quote_amount;timestamp")

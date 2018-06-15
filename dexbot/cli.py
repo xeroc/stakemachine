@@ -6,6 +6,7 @@ import signal
 import sys
 
 from dexbot.config import Config, DEFAULT_CONFIG_FILE
+from dexbot.helper import initialize_orders_log
 from dexbot.ui import (
     verbose,
     chain,
@@ -30,6 +31,9 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(message)s'
 )
+
+# Configure orders logging
+initialize_orders_log()
 
 
 @click.group()
