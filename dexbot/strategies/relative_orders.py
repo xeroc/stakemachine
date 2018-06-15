@@ -22,7 +22,9 @@ class Strategy(BaseStrategy):
             ConfigElement('center_price_offset', 'bool', False,
                           'Center price offset based on asset balances', None),
             ConfigElement('spread', 'float', 5.0,
-                          'The percentage difference between buy and sell (Spread)', (0.0, 100.0))
+                          'The percentage difference between buy and sell (Spread)', (0.0, 100.0)),
+            ConfigElement('manual_offset', 'float', 0.0,
+                          'Manual center price offset', (-50.0, 100.0))
         ]
 
     def __init__(self, *args, **kwargs):

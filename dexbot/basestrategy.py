@@ -203,7 +203,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
         return center_price
 
-    def calculate_offset_center_price(self, spread, center_price=None, order_ids=None):
+    def calculate_offset_center_price(self, spread, center_price=None, order_ids=None, manual_offset=0):
         """ Calculate center price which shifts based on available funds
         """
         if center_price is None:
@@ -234,6 +234,10 @@ class BaseStrategy(Storage, StateMachine, Events):
             offset_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
         else:
             offset_center_price = calculated_center_price
+
+        # Calculate final_offset_price if manual center price offset is given
+        if manual_offset:
+            offset_center_price = center_price + (center_price * manual_offset)
 
         return offset_center_price
 
