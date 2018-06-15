@@ -1,0 +1,12 @@
+{
+    "files": [
+        ["dexbot/views/ui/*.ui", "dexbot/views/ui/"],
+        ["dexbot/views/ui/forms/*.ui", "dexbot/views/ui/forms"],
+        ["dexbot/resources/*.qrc", "dexbot/resources/"]
+    ],
+    "hooks": [],
+    "pyrcc": "pyrcc5",
+    "pyrcc_options": "",
+    "pyuic": "pyuic5",
+    "pyuic_options": "--import-from=dexbot.resources"
+}

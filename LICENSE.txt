@@ -1,6 +1,8 @@
 The MIT License (MIT)
 
-Copyright (c) 2017 ChainSquad GmbH
+Copyright for portions of project DEXBot are held by ChainSquad GmbH 2017
+as part of project stakemachine. All other copyright for project DEXBot
+are held by Codaone Oy 2018.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

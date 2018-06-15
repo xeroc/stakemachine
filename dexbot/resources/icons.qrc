@@ -1,0 +1,13 @@
+<RCC>
+  <qresource prefix="worker_widget">
+    <file>svg/modifystrategy.svg</file>
+    <file>svg/simplestrategy.svg</file>
+  </qresource>
+  <qresource prefix="general">
+    <file>img/dexbot.png</file>
+    <file>svg/dexbot.svg</file>
+  </qresource>
+  <qresource prefix="dialog">
+    <file>img/error.png</file>
+  </qresource>
+</RCC>
