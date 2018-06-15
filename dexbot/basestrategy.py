@@ -598,22 +598,14 @@ class BaseStrategy(Storage, StateMachine, Events):
         return math.floor(number * 10 ** decimals) / 10 ** decimals
 
     def write_order_log(self, order):
-        # ID;
-        # operation_type;
-        # base_asset;
-        # base_amount;
-        # quote_asset;
-        # quote_amount;
-        # timestamp
+        operation_type = 'TRADE'
 
         if order['base']['symbol'] == self.market['base']['symbol']:
-            operation_type = 'BUY'
             base_symbol = order['base']['symbol']
             base_amount = -order['base']['amount']
             quote_symbol = order['quote']['symbol']
             quote_amount = order['quote']['amount']
         else:
-            operation_type = 'SELL'
             base_symbol = order['quote']['symbol']
             base_amount = order['quote']['amount']
             quote_symbol = order['base']['symbol']
