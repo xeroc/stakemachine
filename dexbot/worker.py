@@ -229,7 +229,7 @@ class WorkerInfrastructure(threading.Thread):
 
     @staticmethod
     def remove_offline_worker_data(worker_name):
-        BaseStrategy.purge_database_only(worker_name)
+        BaseStrategy.purge_worker_data(worker_name)
 
     def do_next_tick(self, job):
         """ Add a callable to be executed on the next tick """

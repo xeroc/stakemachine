@@ -493,7 +493,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.clear()
 
     @staticmethod
-    def purge_database_only(worker_name):
+    def purge_worker_data(worker_name):
         Storage.clear_worker_data(worker_name)
 
     @staticmethod

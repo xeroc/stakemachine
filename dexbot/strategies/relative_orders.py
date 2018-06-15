@@ -135,22 +135,24 @@ class Strategy(BaseStrategy):
         """ Tests if the orders need updating
         """
         orders = self.fetch_orders()
-        order_check_flag = False
 
         if not orders:
             self.update_orders()
         else:
-            self.log.info("Orders correct on market")
+            orders_changed = False
+
+            # Loop trough the orders and look for changes
             for order_id, order in orders.items():
                 current_order = self.get_order(order_id)
 
                 if not current_order:
-                    if not order_check_flag:
-                        order_check_flag = True
+                    orders_changed = True
                     self.write_order_log(self.worker_name, order)
 
-            if order_check_flag:
+            if orders_changed:
                 self.update_orders()
+            else:
+                self.log.info("Orders correct on market")
 
         if self.view:
             self.update_gui_profit()
