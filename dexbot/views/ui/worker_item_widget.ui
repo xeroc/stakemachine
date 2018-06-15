@@ -113,7 +113,7 @@ border-radius: 20px;
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap resource="../../resources/icons.qrc">:/bot_widget/svg/simplestrategy.svg</pixmap>
+            <pixmap resource="../../resources/icons.qrc">:/worker_widget/svg/simplestrategy.svg</pixmap>
            </property>
            <property name="scaledContents">
             <bool>true</bool>
@@ -535,7 +535,7 @@ margin: 0px;</string>
               </property>
               <property name="icon">
                <iconset resource="../../resources/icons.qrc">
-                <normaloff>:/bot_widget/svg/modifystrategy.svg</normaloff>:/bot_widget/svg/modifystrategy.svg</iconset>
+                <normaloff>:/worker_widget/svg/modifystrategy.svg</normaloff>:/worker_widget/svg/modifystrategy.svg</iconset>
               </property>
               <property name="iconSize">
                <size>

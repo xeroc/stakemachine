@@ -12,9 +12,10 @@ from bitshares.instance import shared_bitshares_instance
 from bitshares.asset import Asset
 from bitshares.account import Account
 from bitsharesbase.account import PrivateKey
+from PyQt5 import QtGui
 
 
-class CreateWorkerController:
+class WorkerController:
 
     def __init__(self, view, bitshares_instance, mode):
         self.view = view
@@ -38,7 +39,7 @@ class CreateWorkerController:
     def get_strategies():
         """ Static method for getting the strategies
         """
-        controller = CreateWorkerController(None, None, None)
+        controller = WorkerController(None, None, None)
         return controller.strategies
 
     @property
@@ -246,3 +247,10 @@ class CreateWorkerController:
         }
         self.view.worker_name = self.view.worker_name_input.text()
         self.view.accept()
+
+
+class UppercaseValidator(QtGui.QValidator):
+
+    @staticmethod
+    def validate(string, pos):
+        return QtGui.QValidator.Acceptable, string.upper(), pos
