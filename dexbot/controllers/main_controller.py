@@ -59,14 +59,13 @@ class MainController:
             else:
                 # Worker not running
                 config = self.config.get_worker_config(worker_name)
-                WorkerInfrastructure.remove_offline_worker(config, worker_name)
+                WorkerInfrastructure.remove_offline_worker(config, worker_name, self.bitshares_instance)
         else:
             # Worker manager not running
             config = self.config.get_worker_config(worker_name)
-            WorkerInfrastructure.remove_offline_worker(config, worker_name)
+            WorkerInfrastructure.remove_offline_worker(config, worker_name, self.bitshares_instance)
 
     @staticmethod
     def create_worker(worker_name):
         # Deletes old worker's data
         WorkerInfrastructure.remove_offline_worker_data(worker_name)
-
