@@ -2,9 +2,7 @@ import os
 import logging
 import sys
 
-from dexbot import VERSION
-from dexbot import APP_NAME
-from dexbot import AUTHOR
+from dexbot import VERSION, APP_NAME, AUTHOR
 from dexbot.helper import initialize_orders_log
 from dexbot.worker import WorkerInfrastructure
 from dexbot.views.errors import PyQtHandler
