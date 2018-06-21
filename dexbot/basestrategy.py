@@ -496,8 +496,8 @@ class BaseStrategy(Storage, StateMachine, Events):
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
         """
-        self.cancel_all()
         self.clear_orders()
+        self.cancel_all()
         self.clear()
 
     @staticmethod

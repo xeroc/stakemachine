@@ -108,6 +108,9 @@ def run(ctx):
 
 @main.command()
 @click.pass_context
+@configfile
+@chain
+@unlock
 def configure(ctx):
     """ Interactively configure dexbot
     """
@@ -117,7 +120,7 @@ def configure(ctx):
         os.system('systemctl --user stop dexbot')
 
     config = Config(path=ctx.obj['configfile'])
-    configure_dexbot(config)
+    configure_dexbot(config, ctx)
     config.save_config()
 
     click.echo("New configuration saved")

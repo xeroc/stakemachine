@@ -179,7 +179,7 @@ def configure_worker(d, worker):
     return worker
 
 
-def configure_dexbot(config):
+def configure_dexbot(config, ctx):
     d = get_whiptail()
     workers = config.get('workers', {})
     if not workers:
@@ -190,21 +190,23 @@ def configure_dexbot(config):
                 break
         setup_systemd(d, config)
     else:
+        bitshares_instance = ctx.bitshares
         action = d.menu("You have an existing configuration.\nSelect an action:",
                         [('NEW', 'Create a new worker'),
                          ('DEL', 'Delete a worker'),
                          ('EDIT', 'Edit a worker'),
                          ('CONF', 'Redo general config')])
+
         if action == 'EDIT':
             worker_name = d.menu("Select worker to edit", [(i, i) for i in workers])
             config['workers'][worker_name] = configure_worker(d, config['workers'][worker_name])
-            bitshares_instance = BitShares(config['node'])
+
             strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance)
             strategy.purge()
         elif action == 'DEL':
             worker_name = d.menu("Select worker to delete", [(i, i) for i in workers])
             del config['workers'][worker_name]
-            bitshares_instance = BitShares(config['node'])
+
             strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance)
             strategy.purge()
         elif action == 'NEW':
