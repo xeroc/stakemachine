@@ -36,7 +36,7 @@ def initialize_orders_log():
     """ Creates .csv log file, adds the headers first time only
     """
     data_dir = user_data_dir(APP_NAME, AUTHOR)
-    filename = os.path.join(data_dir, 'orders.csv')
+    filename = os.path.join(data_dir, 'history.csv')
     file = os.path.isfile(filename)
 
     formatter = logging.Formatter('%(message)s')
