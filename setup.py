@@ -59,7 +59,7 @@ setup(
         'console_scripts': console_scripts
     },
     install_requires=[
-        "bitshares==0.1.16",
+        "bitshares==0.1.18",
         "uptick>=0.1.4",
         "click",
         "sqlalchemy",
