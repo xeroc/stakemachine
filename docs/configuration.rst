@@ -2,7 +2,7 @@
 Configuration
 *************
 
-The configuration of ``stakemachine`` happens through a YAML formated
+The configuration of ``dexbot`` happens through a YAML formated
 file and takes the following form:
 
 .. code-block:: yaml
@@ -18,7 +18,7 @@ file and takes the following form:
         NAME_OF_BOT:
 
             # Python module to look for the strategy (can be custom)
-            module: "stakemachine.strategies.echo"
+            module: "dexbot.strategies.echo"
 
             # The bot class in that module to use
             bot: Echo
