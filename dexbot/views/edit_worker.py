@@ -20,7 +20,7 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         validator = UppercaseValidator(self)
 
         # Todo: Using a model here would be more Qt like
-        # Populate the comboboxes
+        # Populate the combobox
         strategies = self.controller.strategies
         for strategy in strategies:
             self.strategy_input.addItem(strategies[strategy]['name'], strategy)
