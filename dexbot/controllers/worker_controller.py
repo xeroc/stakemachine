@@ -126,6 +126,10 @@ class WorkerController:
         return worker_data['module']
 
     @staticmethod
+    def get_strategy_mode(worker_data):
+        return worker_data['mode']
+
+    @staticmethod
     def get_assets(worker_data):
         return re.split("[/:]", worker_data['market'])
 
