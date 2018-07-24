@@ -257,6 +257,64 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
 
+    def get_buy_orders(self, sort=None, orders=None):
+        """ Return buy orders
+            :param str sort: DESC or ASC will sort the orders accordingly, default None.
+            :param list orders: List of orders. If None given get all orders from Blockchain.
+            :return list buy_orders: List of buy orders only.
+        """
+        buy_orders = []
+
+        if not orders:
+            orders = self.orders
+
+        # Find buy orders
+        for order in orders:
+            if order['base']['symbol'] == self.market['base']['symbol']:
+                buy_orders.append(order)
+        if sort:
+            buy_orders = self.sort_orders(buy_orders, sort)
+
+        return buy_orders
+
+    def get_sell_orders(self, sort=None, orders=None):
+        """ Return sell orders
+            :param str sort: DESC or ASC will sort the orders accordingly, default None.
+            :param list orders: List of orders. If None given get all orders from Blockchain.
+            :return list sell_orders: List of sell orders only.
+        """
+        sell_orders = []
+
+        if not orders:
+            orders = self.orders
+
+        # Find sell orders
+        for order in orders:
+            if order['base']['symbol'] != self.market['base']['symbol']:
+                sell_orders.append(order)
+
+        if sort:
+            sell_orders = self.sort_orders(sell_orders, sort)
+
+        return sell_orders
+
+    @staticmethod
+    def sort_orders(orders, sort='DESC'):
+        """ Return list of orders sorted ascending or descending
+            :param list orders: list of orders to be sorted
+            :param str sort: ASC or DESC. Default DESC
+            :return list: Sorted list of orders.
+        """
+        if sort.upper() == 'ASC':
+            reverse = False
+        elif sort.upper() == 'DESC':
+            reverse = True
+        else:
+            return None
+
+        # Sort orders by price
+        return sorted(orders, key=lambda order: order['price'], reverse=reverse)
+
     @staticmethod
     def get_order(order_id, return_none=True):
         """ Returns the Order object for the order_id
