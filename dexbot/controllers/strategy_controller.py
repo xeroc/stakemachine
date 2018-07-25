@@ -27,8 +27,7 @@ class StrategyController:
 
     @property
     def values(self):
-        data = {}
-        return data
+        return self.view.strategy_widget.values
 
 
 class RelativeOrdersController:
