@@ -35,12 +35,11 @@ class WorkerController:
         }
         return strategies
 
-    @staticmethod
-    def get_strategies():
-        """ Static method for getting the strategies
+    @classmethod
+    def get_strategies(cls):
+        """ Class method for getting the strategies
         """
-        controller = WorkerController(None, None, None)
-        return controller.strategies
+        return cls(None, None, None).strategies
 
     @property
     def base_assets(self):

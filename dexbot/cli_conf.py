@@ -24,8 +24,6 @@ import subprocess
 from dexbot.whiptail import get_whiptail
 from dexbot.basestrategy import BaseStrategy
 
-from bitshares import BitShares
-
 # FIXME: auto-discovery of strategies would be cool but can't figure out a way
 STRATEGIES = [
     {'tag': 'relative',
@@ -66,21 +64,26 @@ def process_config_element(elem, d, config):
         d: the Dialog object
         config: the config dictionary for this worker
     """
+    if elem.description:
+        title = '{} - {}'.format(elem.title, elem.description)
+    else:
+        title = elem.title
+
     if elem.type == "string":
-        txt = d.prompt(elem.description, config.get(elem.key, elem.default))
+        txt = d.prompt(title, config.get(elem.key, elem.default))
         if elem.extra:
             while not re.match(elem.extra, txt):
                 d.alert("The value is not valid")
                 txt = d.prompt(
-                    elem.description, config.get(
+                    title, config.get(
                         elem.key, elem.default))
         config[elem.key] = txt
     if elem.type == "bool":
         value = config.get(elem.key, elem.default)
         value = 'yes' if value else 'no'
-        config[elem.key] = d.confirm(elem.description, value)
+        config[elem.key] = d.confirm(title, value)
     if elem.type in ("float", "int"):
-        txt = d.prompt(elem.description, str(config.get(elem.key, elem.default)))
+        txt = d.prompt(title, str(config.get(elem.key, elem.default)))
         while True:
             try:
                 if elem.type == "int":
@@ -95,10 +98,10 @@ def process_config_element(elem, d, config):
                     break
             except ValueError:
                 d.alert("Not a valid value")
-            txt = d.prompt(elem.description, str(config.get(elem.key, elem.default)))
+            txt = d.prompt(title, str(config.get(elem.key, elem.default)))
         config[elem.key] = val
     if elem.type == "choice":
-        config[elem.key] = d.radiolist(elem.description, select_choice(
+        config[elem.key] = d.radiolist(title, select_choice(
             config.get(elem.key, elem.default), elem.extra))
 
 

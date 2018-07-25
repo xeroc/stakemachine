@@ -21,7 +21,7 @@ from bitshares.instance import shared_bitshares_instance
 
 MAX_TRIES = 3
 
-ConfigElement = collections.namedtuple('ConfigElement', 'key type default description extra')
+ConfigElement = collections.namedtuple('ConfigElement', 'key type default title description extra')
 # Bots need to specify their own configuration values
 # I want this to be UI-agnostic so a future web or GUI interface can use it too
 # so each bot can have a class method 'configure' which returns a list of ConfigElement
@@ -29,9 +29,11 @@ ConfigElement = collections.namedtuple('ConfigElement', 'key type default descri
 # Key: the key in the bot config dictionary that gets saved back to config.yml
 # Type: one of "int", "float", "bool", "string", "choice"
 # Default: the default value. must be right type.
+# Title: name shown to the user, preferably not too long
 # Description: comments to user, full sentences encouraged
 # Extra:
-#       For int & float: a (min, max) tuple
+#       For int: a (min, max, suffix) tuple
+#       For float: a (min, max, precision, suffix) tuple
 #       For string: a regular expression, entries must match it, can be None which equivalent to .*
 #       For bool, ignored
 #       For choice: a list of choices, choices are in turn (tag, label) tuples.
@@ -97,10 +99,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         NOTE: when overriding you almost certainly will want to call the ancestor
         and then add your config values to the list.
         """
-        # these configs are common to all bots
         return [
-            ConfigElement("account", "string", "", "BitShares account name for the bot to operate with", ""),
-            ConfigElement("market", "string", "USD:BTS",
+        # These configs are common to all bots
+            ConfigElement("account", "string", "", "Account", "BitShares account name for the bot to operate with", ""),
+            ConfigElement("market", "string", "USD:BTS", "Market",
                           "BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"",
                           r"[A-Z\.]+[:\/][A-Z\.]+")
         ]
