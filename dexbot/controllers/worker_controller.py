@@ -157,7 +157,7 @@ class WorkerController:
 
         # Resize the dialog to be minimum possible height
         width = self.view.geometry().width()
-        self.view.setMinimumSize(width, 0)
+        self.view.setMinimumHeight(0)
         self.view.resize(width, 1)
 
     def validate_worker_name(self, worker_name, old_worker_name=None):
