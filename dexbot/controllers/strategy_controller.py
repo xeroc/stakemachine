@@ -119,6 +119,9 @@ class StaggeredOrdersController:
             self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
             self.view.strategy_widget.center_price_input.setDisabled(False)
 
+        # Set allow instant order fill
+        self.view.strategy_widget.allow_instant_fill_checkbox.setChecked(worker_data.get('allow_instant_fill', True))
+
     def set_required_base(self, text):
         self.view.strategy_widget.required_base_text.setText(text)
 
@@ -144,7 +147,8 @@ class StaggeredOrdersController:
             'center_price_dynamic': self.view.strategy_widget.center_price_dynamic_checkbox.isChecked(),
             'increment': self.view.strategy_widget.increment_input.value(),
             'lower_bound': self.view.strategy_widget.lower_bound_input.value(),
-            'upper_bound': self.view.strategy_widget.upper_bound_input.value()
+            'upper_bound': self.view.strategy_widget.upper_bound_input.value(),
+            'allow_instant_fill': self.view.strategy_widget.allow_instant_fill_checkbox.isChecked()
         }
         return data
 

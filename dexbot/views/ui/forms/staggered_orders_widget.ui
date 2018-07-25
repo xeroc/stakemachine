@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>364</width>
-    <height>272</height>
+    <height>300</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -36,6 +36,9 @@
        <widget class="QLabel" name="mode_label">
         <property name="text">
          <string>Mode</string>
+        </property>
+        <property name="buddy">
+         <cstring>mode_input</cstring>
         </property>
        </widget>
       </item>
@@ -351,6 +354,16 @@
         </property>
         <property name="value">
          <double>1000000.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="1">
+       <widget class="QCheckBox" name="allow_instant_fill_checkbox">
+        <property name="text">
+         <string>Allow order instant fill</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
