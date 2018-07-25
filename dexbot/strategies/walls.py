@@ -10,13 +10,18 @@ class Strategy(BaseStrategy):
     """
 
     @classmethod
-    def configure(cls):
-        return BaseStrategy.configure()+[
-            ConfigElement("spread", "int", 5, "the spread between sell and buy as percentage", (0, 100)),
-            ConfigElement("threshold", "int", 5, "percentage the feed has to move before we change orders", (0, 100)),
-            ConfigElement("buy", "float", 0.0, "the default amount to buy", (0.0, None)),
-            ConfigElement("sell", "float", 0.0, "the default amount to sell", (0.0, None)),
-            ConfigElement("blocks", "int", 20, "number of blocks to wait before re-calculating", (0, 10000))
+    def configure(cls, return_base_config=True):
+        return BaseStrategy.configure(return_base_config) + [
+            ConfigElement("spread", "float", 5, "Spread",
+                          "The spread between sell and buy as percentage", (0, 100, 2, '%')),
+            ConfigElement("threshold", "float", 5, "Threshold",
+                          "Percentage the feed has to move before we change orders", (0, 100, 2, '%')),
+            ConfigElement("buy", "float", 0, "Buy",
+                          "The default amount to buy", (0, None, 8, '')),
+            ConfigElement("sell", "float", 0, "Sell",
+                          "The default amount to sell", (0, None, 8, '')),
+            ConfigElement("blocks", "int", 20, "Block num",
+                          "Number of blocks to wait before re-calculating", (0, 10000, ''))
         ]
 
     def __init__(self, *args, **kwargs):

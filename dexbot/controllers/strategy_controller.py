@@ -6,6 +6,31 @@ from bitshares.market import Market
 from bitshares.asset import AssetDoesNotExistsException
 
 
+class StrategyController:
+    """ General controller for strategies that don't have a custom controller
+    """
+
+    def __init__(self, view, worker_controller, worker_data):
+        self.view = view
+        self.worker_controller = worker_controller
+
+        if worker_data:
+            self.set_config_values(worker_data)
+
+    @gui_error
+    def set_config_values(self, worker_data):
+        pass
+
+    def validation_errors(self):
+        error_texts = []
+        return error_texts
+
+    @property
+    def values(self):
+        data = {}
+        return data
+
+
 class RelativeOrdersController:
 
     def __init__(self, view, worker_controller, worker_data):

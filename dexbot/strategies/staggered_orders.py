@@ -11,8 +11,8 @@ class Strategy(BaseStrategy):
     """
 
     @classmethod
-    def configure(cls):
-        return BaseStrategy.configure() + [
+    def configure(cls, return_base_config=True):
+        return BaseStrategy.configure(return_base_config) + [
             ConfigElement(
                 'amount', 'float', 1.0, 'Amount',
                 'Fixed order size, expressed in quote asset', (0, None, 8, '')),

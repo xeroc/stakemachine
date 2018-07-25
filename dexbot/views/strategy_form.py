@@ -1,6 +1,7 @@
 import importlib
 
 import dexbot.controllers.strategy_controller
+from dexbot.views.auto_strategy_form import AutoStrategyFormWidget
 
 from PyQt5 import QtWidgets
 
@@ -13,24 +14,34 @@ class StrategyFormWidget(QtWidgets.QWidget):
         self.module_name = strategy_module.split('.')[-1]
 
         form_module = controller.strategies[strategy_module]['form_module']
-        widget = getattr(
-            importlib.import_module(form_module),
-            'Ui_Form'
-        )
-        self.strategy_widget = widget()
-        self.strategy_widget.setupUi(self)
+        try:
+            widget = getattr(
+                importlib.import_module(form_module),
+                'Ui_Form'
+            )
+            self.strategy_widget = widget()
+            self.strategy_widget.setupUi(self)
+        except (ValueError, AttributeError):
+            self.strategy_widget = AutoStrategyFormWidget(self, strategy_module, config)
 
-        # Invoke the correct controller
-        class_name = ''
-        if self.module_name == 'relative_orders':
-            class_name = 'RelativeOrdersController'
-        elif self.module_name == 'staggered_orders':
-            class_name = 'StaggeredOrdersController'
+        # Assemble the controller class name
+        parts = self.module_name.split('_')
+        class_name = ''.join(map(str.capitalize, parts))
+        class_name = class_name + 'Controller'
 
-        strategy_controller = getattr(
-            dexbot.controllers.strategy_controller,
-            class_name
-        )
+        try:
+            # Try to get the controller
+            strategy_controller = getattr(
+                dexbot.controllers.strategy_controller,
+                class_name
+            )
+        except AttributeError:
+            # The controller doesn't exist, use the default controller
+            strategy_controller = getattr(
+                dexbot.controllers.strategy_controller,
+                'StrategyController'
+            )
+
         self.strategy_controller = strategy_controller(self, controller, config)
 
     @property
