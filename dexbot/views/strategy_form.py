@@ -73,8 +73,8 @@ class AutoStrategyFormGenerator:
         )
         configure = strategy.configure(False)
 
-        for config in configure:
-            self.add_element(config)
+        for option in configure:
+            self.add_element(option)
 
         self.set_values(configure, worker_config)
 
@@ -107,24 +107,29 @@ class AutoStrategyFormGenerator:
                 else:
                     element.setChecked(False)
             if option.type == 'choice':
-                pass
+                # Fill the combobox
+                for tag, label in option.extra:
+                    element.addItem(label, tag)
+                # Set the value
+                index = element.findData(value)
+                element.setCurrentIndex(index)
 
-    def add_element(self, config):
-        extra = config.extra
-        if config.type == 'float':
+    def add_element(self, option):
+        extra = option.extra
+        if option.type == 'float':
             self.add_double_spin_box(
-                config.key, config.title,
-                extra[0], extra[1], extra[2], extra[3], config.description)
-        elif config.type == 'int':
+                option.key, option.title,
+                extra[0], extra[1], extra[2], extra[3], option.description)
+        elif option.type == 'int':
             self.add_spin_box(
-                config.key, config.title,
-                extra[0], extra[1], extra[2], config.description)
-        elif config.type == 'string':
-            self.add_line_edit(config.key, config.title, config.description)
-        elif config.type == 'bool':
-            self.add_checkbox(config.key, config.title, config.description)
-        elif config.type == 'choice':
-            pass
+                option.key, option.title,
+                extra[0], extra[1], extra[2], option.description)
+        elif option.type == 'string':
+            self.add_line_edit(option.key, option.title, option.description)
+        elif option.type == 'bool':
+            self.add_checkbox(option.key, option.title, option.description)
+        elif option.type == 'choice':
+            self.add_combo_box(option.key, option.title, option.description)
 
     def _add_label_wrap(self):
         wrap = QtWidgets.QWidget(self.group_box)
@@ -138,7 +143,7 @@ class AutoStrategyFormGenerator:
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.LabelRole, wrap)
         return wrap
 
-    def add_tooltip(self, tooltip_text, container):
+    def _add_tooltip(self, tooltip_text, container):
         tooltip = QtWidgets.QLabel(container)
         font = QtGui.QFont()
         font.setBold(True)
@@ -154,7 +159,7 @@ class AutoStrategyFormGenerator:
         layout = container.layout()
         layout.addWidget(tooltip)
 
-    def _add_label(self, text, description=''):
+    def add_label(self, text, description=''):
         wrap = self._add_label_wrap()
         label = QtWidgets.QLabel(wrap)
         label.setWordWrap(True)
@@ -167,10 +172,10 @@ class AutoStrategyFormGenerator:
         label.setText(text)
 
         if description:
-            self.add_tooltip(description, wrap)
+            self._add_tooltip(description, wrap)
 
     def add_double_spin_box(self, key, text, minimum, maximum, precision, suffix='', description=''):
-        self._add_label(text, description)
+        self.add_label(text, description)
 
         input_field = QtWidgets.QDoubleSpinBox(self.group_box)
         input_field.setDecimals(precision)
@@ -191,7 +196,7 @@ class AutoStrategyFormGenerator:
         self.index += 1
 
     def add_spin_box(self, key, text, minimum, maximum, suffix='', description=''):
-        self._add_label(text, description)
+        self.add_label(text, description)
 
         input_field = QtWidgets.QSpinBox(self.group_box)
         if minimum is not None:
@@ -210,7 +215,7 @@ class AutoStrategyFormGenerator:
         self.index += 1
 
     def add_line_edit(self, key, text, description=''):
-        self._add_label(text, description)
+        self.add_label(text, description)
 
         input_field = QtWidgets.QLineEdit(self.group_box)
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
@@ -218,10 +223,22 @@ class AutoStrategyFormGenerator:
         self.index += 1
 
     def add_checkbox(self, key, text, description=''):
-        self._add_label('', description)
+        self.add_label('', description)
 
         input_field = QtWidgets.QCheckBox(self.group_box)
         input_field.setText(text)
+
+        self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
+        self.elements[key] = input_field
+        self.index += 1
+
+    def add_combo_box(self, key, text, description=''):
+        self.add_label(text, description)
+
+        input_field = QtWidgets.QComboBox(self.group_box)
+        size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        input_field.setSizePolicy(size_policy)
+        input_field.setMinimumSize(QtCore.QSize(151, 0))
 
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
         self.elements[key] = input_field
