@@ -7,7 +7,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 
 class StrategyFormWidget(QtWidgets.QWidget):
 
-    def __init__(self, controller, strategy_module, config=None):
+    def __init__(self, controller, strategy_module, worker_config=None):
         super().__init__()
         self.controller = controller
         self.module_name = strategy_module.split('.')[-1]
@@ -22,7 +22,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
             self.strategy_widget.setupUi(self)
         except (ValueError, AttributeError):
             # Generate the strategy form widget automatically
-            self.strategy_widget = AutoStrategyFormGenerator(self, strategy_module, config)
+            self.strategy_widget = AutoStrategyFormGenerator(self, strategy_module, worker_config)
 
         # Assemble the controller class name
         parts = self.module_name.split('_')
@@ -42,7 +42,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
                 'StrategyController'
             )
 
-        self.strategy_controller = strategy_controller(self, controller, config)
+        self.strategy_controller = strategy_controller(self, controller, worker_config)
 
     @property
     def values(self):
@@ -55,7 +55,7 @@ class AutoStrategyFormGenerator:
     """ Automatic strategy form UI generator
     """
 
-    def __init__(self, view, strategy_module, config):
+    def __init__(self, view, strategy_module, worker_config):
         self.index = 0
         self.elements = {}
 
@@ -76,20 +76,53 @@ class AutoStrategyFormGenerator:
         for config in configure:
             self.add_element(config)
 
+        self.set_values(configure, worker_config)
+
+    @property
+    def values(self):
+        data = {}
+        for key, element in self.elements.items():
+            class_name = element.__class__.__name__
+            if class_name in ('QDoubleSpinBox', 'QSpinBox', 'QLineEdit'):
+                data[key] = element.value()
+            elif class_name == 'QCheckBox':
+                data[key] = element.isChecked()
+            elif class_name == 'QComboBox':
+                data[key] = element.currentData()
+        return data
+
+    def set_values(self, configure, worker_config):
+        for option in configure:
+            if worker_config and worker_config.get(option.key) is not None:
+                value = worker_config[option.key]
+            else:
+                value = option.default
+
+            element = self.elements[option.key]
+            if option.type in ('int', 'float', 'string'):
+                element.setValue(value)
+            if option.type == 'bool':
+                if value:
+                    element.setChecked(True)
+                else:
+                    element.setChecked(False)
+            if option.type == 'choice':
+                pass
+
     def add_element(self, config):
         extra = config.extra
         if config.type == 'float':
             self.add_double_spin_box(
-                config.key, config.title, config.default,
+                config.key, config.title,
                 extra[0], extra[1], extra[2], extra[3], config.description)
         elif config.type == 'int':
             self.add_spin_box(
-                config.key, config.title, config.default,
+                config.key, config.title,
                 extra[0], extra[1], extra[2], config.description)
         elif config.type == 'string':
-            self.add_line_edit(config.key, config.title, config.default, config.description)
+            self.add_line_edit(config.key, config.title, config.description)
         elif config.type == 'bool':
-            self.add_checkbox(config.key, config.title, config.default, config.description)
+            self.add_checkbox(config.key, config.title, config.description)
         elif config.type == 'choice':
             pass
 
@@ -136,7 +169,7 @@ class AutoStrategyFormGenerator:
         if description:
             self.add_tooltip(description, wrap)
 
-    def add_double_spin_box(self, key, text, default, minimum, maximum, precision, suffix='', description=''):
+    def add_double_spin_box(self, key, text, minimum, maximum, precision, suffix='', description=''):
         self._add_label(text, description)
 
         input_field = QtWidgets.QDoubleSpinBox(self.group_box)
@@ -147,7 +180,6 @@ class AutoStrategyFormGenerator:
             input_field.setMaximum(maximum)
         if suffix:
             input_field.setSuffix(suffix)
-        input_field.setProperty('value', default)
 
         input_field.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
@@ -158,7 +190,7 @@ class AutoStrategyFormGenerator:
         self.elements[key] = input_field
         self.index += 1
 
-    def add_spin_box(self, key, text, default, minimum, maximum, suffix='', description=''):
+    def add_spin_box(self, key, text, minimum, maximum, suffix='', description=''):
         self._add_label(text, description)
 
         input_field = QtWidgets.QSpinBox(self.group_box)
@@ -168,7 +200,6 @@ class AutoStrategyFormGenerator:
             input_field.setMaximum(maximum)
         if suffix:
             input_field.setSuffix(suffix)
-        input_field.setProperty('value', default)
 
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         input_field.setSizePolicy(size_policy)
@@ -178,36 +209,20 @@ class AutoStrategyFormGenerator:
         self.elements[key] = input_field
         self.index += 1
 
-    def add_line_edit(self, key, text, default, description=''):
+    def add_line_edit(self, key, text, description=''):
         self._add_label(text, description)
 
         input_field = QtWidgets.QLineEdit(self.group_box)
-        input_field.setProperty('value', default)
-
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
         self.elements[key] = input_field
         self.index += 1
 
-    def add_checkbox(self, key, text, default, description=''):
+    def add_checkbox(self, key, text, description=''):
         self._add_label('', description)
 
         input_field = QtWidgets.QCheckBox(self.group_box)
         input_field.setText(text)
-        input_field.setChecked(default)
 
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
         self.elements[key] = input_field
         self.index += 1
-
-    @property
-    def values(self):
-        data = {}
-        for key, element in self.elements.items():
-            class_name = element.__class__.__name__
-            if class_name in ('QDoubleSpinBox', 'QSpinBox', 'QLineEdit'):
-                data[key] = element.value()
-            elif class_name == 'QCheckBox':
-                data[key] = element.isChecked()
-            elif class_name == 'QComboBox':
-                data[key] = element.currentData()
-        return data
