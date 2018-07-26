@@ -152,12 +152,15 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>140</width>
+          <width>170</width>
           <height>0</height>
          </size>
         </property>
         <property name="locale">
          <locale language="English" country="UnitedStates"/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
         <property name="decimals">
          <number>8</number>
@@ -362,12 +365,15 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>140</width>
+          <width>170</width>
           <height>0</height>
          </size>
         </property>
         <property name="locale">
          <locale language="English" country="UnitedStates"/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
         <property name="accelerated">
          <bool>false</bool>
@@ -582,12 +588,15 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>151</width>
+          <width>170</width>
           <height>0</height>
          </size>
         </property>
         <property name="locale">
          <locale language="English" country="UnitedStates"/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
         <property name="buttonSymbols">
          <enum>QAbstractSpinBox::UpDownArrows</enum>
@@ -809,12 +818,15 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>151</width>
+          <width>170</width>
           <height>0</height>
          </size>
         </property>
         <property name="locale">
          <locale language="English" country="UnitedStates"/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
         <property name="suffix">
          <string>%</string>

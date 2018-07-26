@@ -189,7 +189,8 @@ class AutoStrategyFormGenerator:
         input_field.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates))
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         input_field.setSizePolicy(size_policy)
-        input_field.setMinimumSize(QtCore.QSize(151, 0))
+        input_field.setMinimumSize(QtCore.QSize(170, 0))
+        input_field.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
 
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
         self.elements[key] = input_field
@@ -208,7 +209,8 @@ class AutoStrategyFormGenerator:
 
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         input_field.setSizePolicy(size_policy)
-        input_field.setMinimumSize(QtCore.QSize(151, 0))
+        input_field.setMinimumSize(QtCore.QSize(170, 0))
+        input_field.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTrailing | QtCore.Qt.AlignVCenter)
 
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
         self.elements[key] = input_field
@@ -238,7 +240,7 @@ class AutoStrategyFormGenerator:
         input_field = QtWidgets.QComboBox(self.group_box)
         size_policy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         input_field.setSizePolicy(size_policy)
-        input_field.setMinimumSize(QtCore.QSize(151, 0))
+        input_field.setMinimumSize(QtCore.QSize(170, 0))
 
         self.form_layout.setWidget(self.index, QtWidgets.QFormLayout.FieldRole, input_field)
         self.elements[key] = input_field
