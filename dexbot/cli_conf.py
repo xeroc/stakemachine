@@ -1,7 +1,7 @@
 """
 A module to provide an interactive text-based tool for dexbot configuration
 The result is dexbot can be run without having to hand-edit config files.
-If systemd is detected it will offer to install a user service unit (under ~/.local/share/systemd
+If systemd is detected it will offer to install a user service unit (under ~/.local/share/systemd)
 This requires a per-user systemd process to be running
 
 Requires the 'whiptail' tool for text-based configuration (so UNIX only)
@@ -166,7 +166,7 @@ def configure_worker(whiptail, worker):
     for i in STRATEGIES:
         if i['tag'] == worker['module']:
             worker['module'] = i['class']
-    # Import the worker class but we don't __init__ it here
+    # Import the strategy class but we don't __init__ it here
     strategy_class = getattr(
         importlib.import_module(worker["module"]),
         'Strategy'
