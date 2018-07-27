@@ -1,7 +1,7 @@
 """
 A module to provide an interactive text-based tool for dexbot configuration
 The result is dexbot can be run without having to hand-edit config files.
-If systemd is detected it will offer to install a user service unit (under ~/.local/share/systemd
+If systemd is detected it will offer to install a user service unit (under ~/.local/share/systemd)
 This requires a per-user systemd process to be running
 
 Requires the 'whiptail' tool for text-based configuration (so UNIX only)
@@ -23,7 +23,6 @@ import subprocess
 
 from dexbot.whiptail import get_whiptail
 from dexbot.basestrategy import BaseStrategy
-
 
 # FIXME: auto-discovery of strategies would be cool but can't figure out a way
 STRATEGIES = [
@@ -65,21 +64,26 @@ def process_config_element(elem, whiptail, config):
         d: the Dialog object
         config: the config dictionary for this worker
     """
+    if elem.description:
+        title = '{} - {}'.format(elem.title, elem.description)
+    else:
+        title = elem.title
+
     if elem.type == "string":
-        txt = whiptail.prompt(elem.description, config.get(elem.key, elem.default))
+        txt = whiptail.prompt(title, config.get(elem.key, elem.default))
         if elem.extra:
             while not re.match(elem.extra, txt):
                 whiptail.alert("The value is not valid")
                 txt = whiptail.prompt(
-                    elem.description, config.get(
+                    title, config.get(
                         elem.key, elem.default))
         config[elem.key] = txt
     if elem.type == "bool":
         value = config.get(elem.key, elem.default)
         value = 'yes' if value else 'no'
-        config[elem.key] = whiptail.confirm(elem.description, value)
+        config[elem.key] = whiptail.confirm(title, value)
     if elem.type in ("float", "int"):
-        txt = whiptail.prompt(elem.description, str(config.get(elem.key, elem.default)))
+        txt = whiptail.prompt(title, str(config.get(elem.key, elem.default)))
         while True:
             try:
                 if elem.type == "int":
@@ -94,10 +98,10 @@ def process_config_element(elem, whiptail, config):
                     break
             except ValueError:
                 whiptail.alert("Not a valid value")
-            txt = whiptail.prompt(elem.description, str(config.get(elem.key, elem.default)))
+            txt = whiptail.prompt(title, str(config.get(elem.key, elem.default)))
         config[elem.key] = val
     if elem.type == "choice":
-        config[elem.key] = whiptail.radiolist(elem.description, select_choice(
+        config[elem.key] = whiptail.radiolist(title, select_choice(
             config.get(elem.key, elem.default), elem.extra))
 
 
@@ -162,7 +166,7 @@ def configure_worker(whiptail, worker):
     for i in STRATEGIES:
         if i['tag'] == worker['module']:
             worker['module'] = i['class']
-    # Import the worker class but we don't __init__ it here
+    # Import the strategy class but we don't __init__ it here
     strategy_class = getattr(
         importlib.import_module(worker["module"]),
         'Strategy'
@@ -173,8 +177,9 @@ def configure_worker(whiptail, worker):
         for c in configs:
             process_config_element(c, whiptail, worker)
     else:
-        whiptail.alert("This worker type does not have configuration information. "
-                "You will have to check the worker code and add configuration values to config.yml if required")
+        whiptail.alert(
+            "This worker type does not have configuration information. "
+            "You will have to check the worker code and add configuration values to config.yml if required")
     return worker
 
 
@@ -190,11 +195,12 @@ def configure_dexbot(config, ctx):
         setup_systemd(whiptail, config)
     else:
         bitshares_instance = ctx.bitshares
-        action = whiptail.menu("You have an existing configuration.\nSelect an action:",
-                        [('NEW', 'Create a new worker'),
-                         ('DEL', 'Delete a worker'),
-                         ('EDIT', 'Edit a worker'),
-                         ('CONF', 'Redo general config')])
+        action = whiptail.menu(
+            "You have an existing configuration.\nSelect an action:",
+            [('NEW', 'Create a new worker'),
+             ('DEL', 'Delete a worker'),
+             ('EDIT', 'Edit a worker'),
+             ('CONF', 'Redo general config')])
 
         if action == 'EDIT':
             worker_name = whiptail.menu("Select worker to edit", [(i, i) for i in workers])
