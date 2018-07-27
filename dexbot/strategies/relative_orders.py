@@ -46,10 +46,10 @@ class Strategy(BaseStrategy):
         else:
             self.center_price = self.worker["center_price"]
 
-        self.is_relative_order_size = self.worker['amount_relative']
+        self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)
         self.manual_offset = self.worker.get('manual_offset', 0) / 100
-        self.order_size = float(self.worker['amount'])
+        self.order_size = float(self.worker.get('amount', 1))
         self.spread = self.worker.get('spread') / 100
 
         self.buy_price = None
