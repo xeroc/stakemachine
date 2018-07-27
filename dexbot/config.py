@@ -169,6 +169,7 @@ class Config(dict):
     def node_list(self):
         """ A pre-defined list of Bitshares nodes. """
         return [
+            "wss://status200.bitshares.apasia.tech/ws",
             "wss://eu.openledger.info/ws",
             "wss://bitshares.openledger.info/ws",
             "wss://dexnode.net/ws",
