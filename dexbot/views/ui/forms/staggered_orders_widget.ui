@@ -626,7 +626,7 @@
        </widget>
       </item>
       <item row="17" column="1">
-       <widget class="QCheckBox" name="center_price_dynamic_checkbox">
+       <widget class="QCheckBox" name="center_price_dynamic_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -733,37 +733,6 @@
         </layout>
        </widget>
       </item>
-      <item row="19" column="1">
-       <widget class="QDoubleSpinBox" name="upper_bound_input">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>170</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="locale">
-         <locale language="English" country="UnitedStates"/>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-        <property name="decimals">
-         <number>8</number>
-        </property>
-        <property name="maximum">
-         <double>1000000000.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>1000000.000000000000000</double>
-        </property>
-       </widget>
-      </item>
       <item row="17" column="0">
        <widget class="QWidget" name="center_price_dynamic_wrap" native="true">
         <property name="sizePolicy">
@@ -831,7 +800,7 @@
             <cursorShape>WhatsThisCursor</cursorShape>
            </property>
            <property name="toolTip">
-            <string>Always calculate the middle of the closest opposite market orders</string>
+            <string>Always calculate the middle from the closest market orders</string>
            </property>
            <property name="text">
             <string>?</string>
@@ -884,6 +853,37 @@
         </property>
         <property name="maximum">
          <double>999999999.998999953269958</double>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="1">
+       <widget class="QDoubleSpinBox" name="upper_bound_input">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>170</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="locale">
+         <locale language="English" country="UnitedStates"/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+        <property name="decimals">
+         <number>8</number>
+        </property>
+        <property name="maximum">
+         <double>1000000000.000000000000000</double>
+        </property>
+        <property name="value">
+         <double>1000000.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -948,5 +948,22 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>center_price_dynamic_input</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>center_price_input</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>281</x>
+     <y>272</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>217</x>
+     <y>236</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
