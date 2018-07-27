@@ -179,7 +179,7 @@ def configure_worker(whiptail, worker):
 
 
 def configure_dexbot(config, ctx):
-    whiptail = get_whiptail()
+    whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
     if not workers:
         while True:
