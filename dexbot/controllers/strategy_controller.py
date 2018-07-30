@@ -113,31 +113,6 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.amount_input.setMaximum(1000000000.000000)
         self.view.strategy_widget.amount_input.setValue(0.000000)
 
-    @gui_error
-    def set_config_values(self, worker_data):
-        if worker_data.get('amount_relative', False):
-            self.order_size_input_to_relative()
-            self.view.strategy_widget.relative_order_size_checkbox.setChecked(True)
-        else:
-            self.order_size_input_to_static()
-            self.view.strategy_widget.relative_order_size_checkbox.setChecked(False)
-
-        self.view.strategy_widget.amount_input.setValue(Decimal(worker_data.get('amount', 0)))
-        self.view.strategy_widget.center_price_input.setValue(worker_data.get('center_price', 0))
-        self.view.strategy_widget.spread_input.setValue(worker_data.get('spread', 5))
-        self.view.strategy_widget.manual_offset_input.setValue(worker_data.get('manual_offset', 0))
-
-        if worker_data.get('center_price_dynamic', True):
-            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(True)
-        else:
-            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
-            self.view.strategy_widget.center_price_input.setDisabled(False)
-
-        if worker_data.get('center_price_offset', True):
-            self.view.strategy_widget.center_price_offset_checkbox.setChecked(True)
-        else:
-            self.view.strategy_widget.center_price_offset_checkbox.setChecked(False)
-
     def validation_errors(self):
         error_texts = []
         if not self.view.strategy_widget.amount_input.value():
@@ -159,14 +134,11 @@ class StaggeredOrdersController(StrategyController):
             for strategy_mode in modes:
                 self.view.strategy_widget.mode_input.addItem(modes[strategy_mode], strategy_mode)
 
+            if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
+                self.view.strategy_widget.center_price_input.setDisabled(False)
+
         # Do this after the event connecting
         super().__init__(view, configure, worker_controller, worker_data)
-
-        if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
-            self.view.strategy_widget.center_price_input.setDisabled(False)
-
-        # Set allow instant order fill
-        self.view.strategy_widget.allow_instant_fill_checkbox.setChecked(worker_data.get('allow_instant_fill', True))
 
     def set_required_base(self, text):
         self.view.strategy_widget.required_base_text.setText(text)
@@ -176,8 +148,6 @@ class StaggeredOrdersController(StrategyController):
 
     def validation_errors(self):
         error_texts = []
-        if not self.view.strategy_widget.amount_input.value():
-            error_texts.append("Order size can't be 0")
         if not self.view.strategy_widget.spread_input.value():
             error_texts.append("Spread can't be 0")
         if not self.view.strategy_widget.increment_input.value():
@@ -185,20 +155,6 @@ class StaggeredOrdersController(StrategyController):
         if not self.view.strategy_widget.lower_bound_input.value():
             error_texts.append("Lower bound can't be 0")
         return error_texts
-
-    @property
-    def values(self):
-        data = {
-            'mode': self.view.strategy_widget.mode_input.currentData(),
-            'spread': self.view.strategy_widget.spread_input.value(),
-            'center_price': self.view.strategy_widget.center_price_input.value(),
-            'center_price_dynamic': self.view.strategy_widget.center_price_dynamic_checkbox.isChecked(),
-            'increment': self.view.strategy_widget.increment_input.value(),
-            'lower_bound': self.view.strategy_widget.lower_bound_input.value(),
-            'upper_bound': self.view.strategy_widget.upper_bound_input.value(),
-            'allow_instant_fill': self.view.strategy_widget.allow_instant_fill_checkbox.isChecked()
-        }
-        return data
 
     @property
     def strategy_modes(self):
@@ -215,5 +171,5 @@ class StaggeredOrdersController(StrategyController):
 
     @classmethod
     def strategy_modes_tuples(cls):
-        modes = cls(None, None, None).strategy_modes
+        modes = cls(None, [], None, {}).strategy_modes
         return [(key, value) for key, value in modes.items()]

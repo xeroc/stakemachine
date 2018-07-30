@@ -15,7 +15,7 @@ class Strategy(BaseStrategy):
         return BaseStrategy.configure(return_base_config) + [
             ConfigElement(
                 'strategy_mode', 'choice', 'mountain',
-                'Choose strategy mode', StaggeredOrdersController.strategy_modes_tuples()),
+                'Choose strategy mode', StaggeredOrdersController.strategy_modes_tuples(), (0, None, 0, '')),
             ConfigElement(
                 'spread', 'float', 6, 'Spread',
                 'The percentage difference between buy and sell', (0, None, 2, '%')),
@@ -33,7 +33,10 @@ class Strategy(BaseStrategy):
                 'The bottom price in the range', (0, None, 8, '')),
             ConfigElement(
                 'upper_bound', 'float', 1000000, 'Upper bound',
-                'The top price in the range', (0, None, 8, ''))
+                'The top price in the range', (0, None, 8, '')),
+            ConfigElement(
+                'allow_instant_fill', 'bool', True, 'Allow instant fill',
+                'Allows DEXBot to make orders, which instantly fill', None)
         ]
 
     def __init__(self, *args, **kwargs):
@@ -58,6 +61,7 @@ class Strategy(BaseStrategy):
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
+        self.instant_fill = self.worker['allow_instant_fill']
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
