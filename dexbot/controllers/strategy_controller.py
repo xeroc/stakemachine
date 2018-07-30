@@ -1,93 +1,135 @@
 import collections
 
+from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.views.errors import gui_error
+from dexbot.strategies.staggered_orders import Strategy as StaggeredOrdersStrategy
+
+from bitshares.market import Market
+from bitshares.asset import AssetDoesNotExistsException
+from PyQt5 import QtWidgets
 
 
-class RelativeOrdersController:
+class StrategyController:
+    """ Parent controller for strategies that don't have a custom controller
+    """
 
-    def __init__(self, view, worker_controller, worker_data):
+    def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
+        self.configure = configure
         self.worker_controller = worker_controller
-        self.view.strategy_widget.relative_order_size_checkbox.toggled.connect(
-            self.onchange_relative_order_size_checkbox
+
+        self.set_values(configure, worker_data)
+
+    def validation_errors(self):
+        return []
+
+    def set_values(self, configure, worker_config):
+        for option in configure:
+            if worker_config and worker_config.get(option.key) is not None:
+                value = worker_config[option.key]
+            else:
+                value = option.default
+
+            element = self.elements[option.key]
+            if not element:
+                continue
+
+            if option.type in ('int', 'float', 'string'):
+                element.setValue(value)
+            if option.type == 'bool':
+                if value:
+                    element.setChecked(True)
+                else:
+                    element.setChecked(False)
+            if option.type == 'choice':
+                # Fill the combobox
+                for tag, label in option.extra:
+                    element.addItem(label, tag)
+                # Set the value
+                index = element.findData(value)
+                element.setCurrentIndex(index)
+
+    @property
+    def values(self):
+        data = {}
+        for key, element in self.elements.items():
+            class_name = element.__class__.__name__
+            if class_name in ('QDoubleSpinBox', 'QSpinBox', 'QLineEdit'):
+                data[key] = element.value()
+            elif class_name == 'QCheckBox':
+                data[key] = element.isChecked()
+            elif class_name == 'QComboBox':
+                data[key] = element.currentData()
+        return data
+
+    @property
+    def elements(self):
+        """ Use ConfigElement of the strategy to find the elements
+        """
+        elements = {}
+        types = (
+            QtWidgets.QDoubleSpinBox,
+            QtWidgets.QSpinBox,
+            QtWidgets.QLineEdit,
+            QtWidgets.QCheckBox,
+            QtWidgets.QComboBox
         )
 
-        if worker_data:
-            self.set_config_values(worker_data)
+        for option in self.configure:
+            element_name = ''.join([option.key, '_input'])
+            elements[option.key] = self.view.findChild(types, element_name)
+        return elements
 
-    @gui_error
-    def onchange_relative_order_size_checkbox(self, checked):
+
+class RelativeOrdersController(StrategyController):
+
+    def __init__(self, view, configure, worker_controller, worker_data):
+        self.view = view
+        self.configure = configure
+        self.worker_controller = worker_controller
+        self.view.strategy_widget.relative_order_size_input.toggled.connect(
+            self.onchange_relative_order_size_input
+        )
+
+        # Do this after the event connecting
+        super().__init__(view, configure, worker_controller, worker_data)
+
+        if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
+            self.view.strategy_widget.center_price_input.setDisabled(False)
+
+    def onchange_relative_order_size_input(self, checked):
         if checked:
             self.order_size_input_to_relative()
         else:
             self.order_size_input_to_static()
 
-    @gui_error
     def order_size_input_to_relative(self):
         self.view.strategy_widget.amount_input.setSuffix('%')
         self.view.strategy_widget.amount_input.setDecimals(2)
         self.view.strategy_widget.amount_input.setMaximum(100.00)
-        self.view.strategy_widget.amount_input.setMinimumWidth(151)
+        self.view.strategy_widget.amount_input.setMinimumWidth(170)
         self.view.strategy_widget.amount_input.setValue(10.00)
 
-    @gui_error
     def order_size_input_to_static(self):
         self.view.strategy_widget.amount_input.setSuffix('')
         self.view.strategy_widget.amount_input.setDecimals(8)
         self.view.strategy_widget.amount_input.setMaximum(1000000000.000000)
         self.view.strategy_widget.amount_input.setValue(0.000000)
 
-    @gui_error
-    def set_config_values(self, worker_data):
-        if worker_data.get('amount_relative', False):
-            self.order_size_input_to_relative()
-            self.view.strategy_widget.relative_order_size_checkbox.setChecked(True)
-        else:
-            self.order_size_input_to_static()
-            self.view.strategy_widget.relative_order_size_checkbox.setChecked(False)
-
-        self.view.strategy_widget.amount_input.setValue(float(worker_data.get('amount', 0)))
-        self.view.strategy_widget.center_price_input.setValue(worker_data.get('center_price', 0))
-        self.view.strategy_widget.spread_input.setValue(worker_data.get('spread', 5))
-        self.view.strategy_widget.manual_offset_input.setValue(worker_data.get('manual_offset', 0))
-
-        if worker_data.get('center_price_dynamic', True):
-            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(True)
-        else:
-            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
-            self.view.strategy_widget.center_price_input.setDisabled(False)
-
-        if worker_data.get('center_price_offset', True):
-            self.view.strategy_widget.center_price_offset_checkbox.setChecked(True)
-        else:
-            self.view.strategy_widget.center_price_offset_checkbox.setChecked(False)
-
     def validation_errors(self):
         error_texts = []
         if not self.view.strategy_widget.amount_input.value():
-            error_texts.append("Amount can't be 0")
+            error_texts.append("Order size can't be 0")
         if not self.view.strategy_widget.spread_input.value():
             error_texts.append("Spread can't be 0")
         return error_texts
 
-    @property
-    def values(self):
-        data = {
-            'amount': self.view.strategy_widget.amount_input.value(),
-            'amount_relative': self.view.strategy_widget.relative_order_size_checkbox.isChecked(),
-            'center_price': self.view.strategy_widget.center_price_input.value(),
-            'center_price_dynamic': self.view.strategy_widget.center_price_dynamic_checkbox.isChecked(),
-            'center_price_offset': self.view.strategy_widget.center_price_offset_checkbox.isChecked(),
-            'spread': self.view.strategy_widget.spread_input.value(),
-            'manual_offset': self.view.strategy_widget.manual_offset_input.value()
-        }
-        return data
 
+class StaggeredOrdersController(StrategyController):
 
-class StaggeredOrdersController:
-
-    def __init__(self, view, worker_controller, worker_data):
+    def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
+        self.configure = configure
         self.worker_controller = worker_controller
 
         if view:
@@ -95,28 +137,10 @@ class StaggeredOrdersController:
             for strategy_mode in modes:
                 self.view.strategy_widget.mode_input.addItem(modes[strategy_mode], strategy_mode)
 
-        if worker_data:
-            self.set_config_values(worker_data)
+        # Do this after the event connecting
+        super().__init__(view, configure, worker_controller, worker_data)
 
-    @gui_error
-    def set_config_values(self, worker_data):
-        widget = self.view.strategy_widget
-
-        # Set strategy mode
-        index = widget.mode_input.findData(self.worker_controller.get_strategy_mode(worker_data))
-        widget.mode_input.setCurrentIndex(index)
-
-        widget.increment_input.setValue(worker_data.get('increment', 4))
-        widget.spread_input.setValue(worker_data.get('spread', 6))
-        widget.lower_bound_input.setValue(worker_data.get('lower_bound', 0.000001))
-        widget.upper_bound_input.setValue(worker_data.get('upper_bound', 1000000))
-
-        self.view.strategy_widget.center_price_input.setValue(worker_data.get('center_price', 0))
-
-        if worker_data.get('center_price_dynamic', True):
-            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(True)
-        else:
-            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
+        if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
             self.view.strategy_widget.center_price_input.setDisabled(False)
 
         # Set allow instant order fill
@@ -130,6 +154,8 @@ class StaggeredOrdersController:
 
     def validation_errors(self):
         error_texts = []
+        if not self.view.strategy_widget.amount_input.value():
+            error_texts.append("Order size can't be 0")
         if not self.view.strategy_widget.spread_input.value():
             error_texts.append("Spread can't be 0")
         if not self.view.strategy_widget.increment_input.value():

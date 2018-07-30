@@ -1,4 +1,5 @@
 import os
+import math
 import shutil
 import errno
 import logging
@@ -30,6 +31,12 @@ def remove(path):
             shutil.rmtree(path)
         except FileNotFoundError:
             return
+
+
+def truncate(number, decimals):
+    """ Change the decimal point of a number without rounding
+    """
+    return math.floor(number * 10 ** decimals) / 10 ** decimals
 
 
 def initialize_orders_log():
