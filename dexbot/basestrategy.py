@@ -261,6 +261,13 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
 
+    @property
+    def all_orders(self):
+        """ Return the worker's open accounts in all markets
+        """
+        self.account.refresh()
+        return [o for o in self.account.openorders]
+
     def get_buy_orders(self, sort=None, orders=None):
         """ Return buy orders
             :param str sort: DESC or ASC will sort the orders accordingly, default None.
