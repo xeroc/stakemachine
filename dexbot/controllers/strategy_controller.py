@@ -1,11 +1,8 @@
 import collections
+from decimal import *
 
-from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.views.errors import gui_error
-from dexbot.strategies.staggered_orders import Strategy as StaggeredOrdersStrategy
 
-from bitshares.market import Market
-from bitshares.asset import AssetDoesNotExistsException
 from PyQt5 import QtWidgets
 
 
@@ -115,6 +112,31 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.amount_input.setDecimals(8)
         self.view.strategy_widget.amount_input.setMaximum(1000000000.000000)
         self.view.strategy_widget.amount_input.setValue(0.000000)
+
+    @gui_error
+    def set_config_values(self, worker_data):
+        if worker_data.get('amount_relative', False):
+            self.order_size_input_to_relative()
+            self.view.strategy_widget.relative_order_size_checkbox.setChecked(True)
+        else:
+            self.order_size_input_to_static()
+            self.view.strategy_widget.relative_order_size_checkbox.setChecked(False)
+
+        self.view.strategy_widget.amount_input.setValue(Decimal(worker_data.get('amount', 0)))
+        self.view.strategy_widget.center_price_input.setValue(worker_data.get('center_price', 0))
+        self.view.strategy_widget.spread_input.setValue(worker_data.get('spread', 5))
+        self.view.strategy_widget.manual_offset_input.setValue(worker_data.get('manual_offset', 0))
+
+        if worker_data.get('center_price_dynamic', True):
+            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(True)
+        else:
+            self.view.strategy_widget.center_price_dynamic_checkbox.setChecked(False)
+            self.view.strategy_widget.center_price_input.setDisabled(False)
+
+        if worker_data.get('center_price_offset', True):
+            self.view.strategy_widget.center_price_offset_checkbox.setChecked(True)
+        else:
+            self.view.strategy_widget.center_price_offset_checkbox.setChecked(False)
 
     def validation_errors(self):
         error_texts = []
