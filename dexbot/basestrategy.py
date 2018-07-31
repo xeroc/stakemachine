@@ -618,6 +618,51 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         return {'quote': quote, 'base': base}
 
+    def asset_total_balance(self, return_asset):
+        """ Returns the whole value of the account as one asset only
+            :param str return_asset: Asset which is wanted as return
+            :return: float: Value of the account in one asset
+        """
+        total_value = 0
+
+        # Total balance calculation
+        for balance in self.balances:
+            if balance.asset['symbol'] != return_asset:
+                # Convert to asset if different
+                total_value += self.convert_asset(balance['amount'], balance['symbol'], return_asset)
+            else:
+                total_value += balance['amount']
+
+        # Orders balance calculation
+        for order in self.all_orders:
+            updated_order = self.get_updated_order(order['id'])
+
+            if not order:
+                continue
+            if updated_order['base']['symbol'] == return_asset:
+                total_value += updated_order['base']['amount']
+            else:
+                total_value += self.convert_asset(
+                    updated_order['quote']['amount'],
+                    updated_order['quote']['symbol'],
+                    return_asset
+                )
+
+        return total_value
+
+    @staticmethod
+    def convert_asset(from_value, from_asset, to_asset):
+        """Converts asset to another based on the latest market value
+            :param from_value: Amount of the input asset
+            :param from_asset: Symbol of the input asset
+            :param to_asset: Symbol of the output asset
+            :return: Asset converted to another asset as float value
+        """
+        market = Market('{}/{}'.format(from_asset, to_asset))
+        ticker = market.ticker()
+        latest_price = ticker.get('latest', {}).get('price', None)
+        return from_value * latest_price
+
     def orders_balance(self, order_ids, return_asset=False):
         if not order_ids:
             order_ids = []
