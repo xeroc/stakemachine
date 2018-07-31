@@ -194,7 +194,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
         lowest_ask = ticker.get("lowestAsk")
-        if not float(highest_bid):
+        if not highest_bid:
             if not suppress_errors:
                 self.log.critical(
                     "Cannot estimate center price, there is no highest bid."
@@ -594,15 +594,23 @@ class BaseStrategy(Storage, StateMachine, Events):
         quote_asset = self.market['quote']['id']
         base_asset = self.market['base']['id']
 
+        # Total balance calculation
         for balance in self.balances:
             if balance.asset['id'] == quote_asset:
                 quote += balance['amount']
             elif balance.asset['id'] == base_asset:
                 base += balance['amount']
 
-        orders_balance = self.orders_balance(order_ids)
-        quote += orders_balance['quote']
-        base += orders_balance['base']
+        if order_ids is None:
+            # Get all orders from Blockchain
+            order_ids = []
+
+            for order in self.orders:
+                order_ids.append(order['id'])
+        elif order_ids:
+            orders_balance = self.orders_balance(order_ids)
+            quote += orders_balance['quote']
+            base += orders_balance['base']
 
         if return_asset:
             quote = Amount(quote, quote_asset)
