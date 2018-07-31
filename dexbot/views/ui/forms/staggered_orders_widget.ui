@@ -83,7 +83,7 @@
             </size>
            </property>
            <property name="text">
-            <string>Order size</string>
+            <string>Mode</string>
            </property>
            <property name="wordWrap">
             <bool>true</bool>
@@ -108,7 +108,10 @@
             <cursorShape>WhatsThisCursor</cursorShape>
            </property>
            <property name="toolTip">
-            <string>Amount of sell/buy order</string>
+            <string>How to allocate funds and profits. Doesn't effect existing orders, only future ones</string>
+           </property>
+           <property name="statusTip">
+            <string/>
            </property>
            <property name="text">
             <string>?</string>
@@ -936,7 +939,7 @@
             <cursorShape>WhatsThisCursor</cursorShape>
            </property>
            <property name="toolTip">
-            <string>Allow orders that fill instantly</string>
+            <string>Allow bot to make orders which might fill immediately upon placement</string>
            </property>
            <property name="text">
             <string>?</string>

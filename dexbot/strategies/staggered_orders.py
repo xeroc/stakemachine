@@ -15,7 +15,8 @@ class Strategy(BaseStrategy):
         return BaseStrategy.configure(return_base_config) + [
             ConfigElement(
                 'strategy_mode', 'choice', 'mountain',
-                'Choose strategy mode', StaggeredOrdersController.strategy_modes_tuples(), (0, None, 0, '')),
+                'How to allocate funds and profits. Doesn\'t effect existing orders, only future ones',
+                StaggeredOrdersController.strategy_modes_tuples(), (0, None, 0, '')),
             ConfigElement(
                 'spread', 'float', 6, 'Spread',
                 'The percentage difference between buy and sell', (0, None, 2, '%')),
@@ -36,7 +37,7 @@ class Strategy(BaseStrategy):
                 'The top price in the range', (0, None, 8, '')),
             ConfigElement(
                 'allow_instant_fill', 'bool', True, 'Allow instant fill',
-                'Allows DEXBot to make orders, which instantly fill', None)
+                'Allow bot to make orders which might fill immediately upon placement', None)
         ]
 
     def __init__(self, *args, **kwargs):

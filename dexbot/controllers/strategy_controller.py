@@ -1,5 +1,4 @@
 import collections
-from decimal import *
 
 from dexbot.views.errors import gui_error
 
