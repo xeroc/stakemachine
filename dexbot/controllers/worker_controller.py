@@ -48,54 +48,6 @@ class WorkerController:
         ]
         return assets
 
-    @staticmethod
-    def is_worker_name_valid(worker_name):
-        worker_names = Config().workers_data.keys()
-        # Check that the name is unique
-        if worker_name in worker_names:
-            return False
-        return True
-
-    def is_asset_valid(self, asset):
-        try:
-            Asset(asset, bitshares_instance=self.bitshares)
-            return True
-        except bitshares.exceptions.AssetDoesNotExistsException:
-            return False
-
-    def account_exists(self, account):
-        try:
-            Account(account, bitshares_instance=self.bitshares)
-            return True
-        except bitshares.exceptions.AccountDoesNotExistsException:
-            return False
-
-    def is_account_valid(self, account, private_key):
-        if not private_key or not account:
-            return False
-
-        wallet = self.bitshares.wallet
-        try:
-            pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
-        except ValueError:
-            return False
-
-        accounts = wallet.getAllAccounts(pubkey)
-        account_names = [account['name'] for account in accounts]
-
-        if account in account_names:
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def is_account_in_use(account):
-        workers = Config().workers_data
-        for worker_name, worker in workers.items():
-            if worker['account'] == account:
-                return True
-        return False
-
     def add_private_key(self, private_key):
         wallet = self.bitshares.wallet
         try:
@@ -106,7 +58,8 @@ class WorkerController:
 
     @staticmethod
     def get_unique_worker_name():
-        """ Returns unique worker name "Worker %n", where %n is the next available index
+        """ Returns unique worker name "Worker %n"
+            %n is the next available index
         """
         index = 1
         workers = Config().workers_data.keys()
@@ -116,9 +69,6 @@ class WorkerController:
             index += 1
 
         return worker_name
-
-    def get_strategy_name(self, module):
-        return self.strategies[module]['name']
 
     @staticmethod
     def get_strategy_module(worker_data):
@@ -159,28 +109,73 @@ class WorkerController:
         self.view.setMinimumHeight(0)
         self.view.resize(width, 1)
 
-    def validate_worker_name(self, worker_name, old_worker_name=None):
-        if self.mode == 'add':
-            return self.is_worker_name_valid(worker_name)
-        elif self.mode == 'edit':
-            if old_worker_name != worker_name:
-                return self.is_worker_name_valid(worker_name)
+    @classmethod
+    def validate_worker_name(cls, worker_name, old_worker_name=None):
+        if old_worker_name != worker_name:
+            worker_names = Config().workers_data.keys()
+            # Check that the name is unique
+            if worker_name in worker_names:
+                return False
             return True
+        return True
 
     def validate_asset(self, asset):
-        return self.is_asset_valid(asset)
+        try:
+            Asset(asset, bitshares_instance=self.bitshares)
+            return True
+        except bitshares.exceptions.AssetDoesNotExistsException:
+            return False
 
-    def validate_market(self, base_asset, quote_asset):
+    @classmethod
+    def validate_market(cls, base_asset, quote_asset):
         return base_asset.lower() != quote_asset.lower()
 
     def validate_account_name(self, account):
-        return self.account_exists(account)
+        if not account:
+            return False
+        try:
+            Account(account, bitshares_instance=self.bitshares)
+            return True
+        except bitshares.exceptions.AccountDoesNotExistsException:
+            return False
 
-    def validate_account(self, account, private_key):
-        return self.is_account_valid(account, private_key)
+    def validate_private_key(self, account, private_key):
+        wallet = self.bitshares.wallet
+        if not private_key:
+            # Check if the private key is already in the database
+            accounts = wallet.getAccounts()
+            if any(account == d['name'] for d in accounts):
+                return True
+            return False
 
-    def validate_account_not_in_use(self, account):
-        return not self.is_account_in_use(account)
+        try:
+            pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
+        except ValueError:
+            return False
+
+        accounts = wallet.getAllAccounts(pubkey)
+        account_names = [account['name'] for account in accounts]
+
+        if account in account_names:
+            return True
+        else:
+            return False
+
+    def validate_private_key_type(self, account, private_key):
+        account = Account(account)
+        pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
+        key_type = self.bitshares.wallet.getKeyType(account, pubkey)
+        if key_type != 'active':
+            return False
+        return True
+
+    @classmethod
+    def validate_account_not_in_use(cls, account):
+        workers = Config().workers_data
+        for worker_name, worker in workers.items():
+            if worker['account'] == account:
+                return False
+        return True
 
     @gui_error
     def validate_form(self):
@@ -188,7 +183,11 @@ class WorkerController:
         base_asset = self.view.base_asset_input.currentText()
         quote_asset = self.view.quote_asset_input.text()
         worker_name = self.view.worker_name_input.text()
+        old_worker_name = None if self.mode == 'add' else self.view.worker_name
 
+        if not self.validate_worker_name(worker_name, old_worker_name):
+            error_texts.append(
+                'Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
         if not self.validate_asset(base_asset):
             error_texts.append('Field "Base Asset" does not have a valid asset.')
         if not self.validate_asset(quote_asset):
@@ -198,17 +197,14 @@ class WorkerController:
         if self.mode == 'add':
             account = self.view.account_input.text()
             private_key = self.view.private_key_input.text()
-            if not self.validate_worker_name(worker_name):
-                error_texts.append('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
             if not self.validate_account_name(account):
                 error_texts.append("Account doesn't exist.")
-            if not self.validate_account(account, private_key):
-                error_texts.append('Private key is invalid.')
             if not self.validate_account_not_in_use(account):
                 error_texts.append('Use a different account. "{}" is already in use.'.format(account))
-        elif self.mode == 'edit':
-            if not self.validate_worker_name(worker_name, self.view.worker_name):
-                error_texts.append('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
+            if not self.validate_private_key(account, private_key):
+                error_texts.append('Private key is invalid.')
+            elif not self.validate_private_key_type(account, private_key):
+                error_texts.append('Please use active private key.')
 
         error_texts.extend(self.view.strategy_widget.strategy_controller.validation_errors())
         error_text = '\n'.join(error_texts)
@@ -231,7 +227,7 @@ class WorkerController:
             self.add_private_key(private_key)
 
             account = self.view.account_input.text()
-        else:
+        else:  # Edit
             account = self.view.account_name.text()
 
         base_asset = self.view.base_asset_input.currentText()
