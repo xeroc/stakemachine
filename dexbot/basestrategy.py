@@ -212,13 +212,13 @@ class BaseStrategy(Storage, StateMachine, Events):
         center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
         return center_price
 
-    def calculate_center_price(self, center_price=None,
-                               asset_offset=False, spread=None, order_ids=None, manual_offset=0):
+    def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
+                               order_ids=None, manual_offset=0, suppress_errors=False):
         """ Calculate center price which shifts based on available funds
         """
         if center_price is None:
             # No center price was given so we simply calculate the center price
-            calculated_center_price = self._calculate_center_price()
+            calculated_center_price = self._calculate_center_price(suppress_errors)
         else:
             # Center price was given so we only use the calculated center price
             # for quote to base asset conversion
@@ -627,7 +627,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Total balance calculation
         for balance in self.balances:
-            if balance.asset['symbol'] != return_asset:
+            if balance['symbol'] != return_asset:
                 # Convert to asset if different
                 total_value += self.convert_asset(balance['amount'], balance['symbol'], return_asset)
             else:
@@ -643,8 +643,8 @@ class BaseStrategy(Storage, StateMachine, Events):
                 total_value += updated_order['base']['amount']
             else:
                 total_value += self.convert_asset(
-                    updated_order['quote']['amount'],
-                    updated_order['quote']['symbol'],
+                    updated_order['base']['amount'],
+                    updated_order['base']['symbol'],
                     return_asset
                 )
 
