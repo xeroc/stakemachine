@@ -3,7 +3,6 @@ from datetime import datetime
 from datetime import timedelta
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
-from dexbot.controllers.strategy_controller import StaggeredOrdersController
 from dexbot.qt_queue.idle_queue import idle_add
 
 
@@ -12,11 +11,20 @@ class Strategy(BaseStrategy):
 
     @classmethod
     def configure(cls, return_base_config=True):
+        # Todo: - Modes don't list in worker add / edit
+        # Todo: - Add other modes
+        modes = [
+            ('mountain', 'Mountain'),
+            # ('neutral', 'Neutral'),
+            # ('valley', 'Valley'),
+            # ('buy_slope', 'Buy Slope'),
+            # ('sell_slope', 'Sell Slope')
+        ]
+
         return BaseStrategy.configure(return_base_config) + [
             ConfigElement(
-                'strategy_mode', 'choice', 'mountain',
-                'How to allocate funds and profits. Doesn\'t effect existing orders, only future ones',
-                StaggeredOrdersController.strategy_modes_tuples(), (0, None, 0, '')),
+                'mode', 'choice', 'mountain', 'Strategy mode',
+                'How to allocate funds and profits. Doesn\'t effect existing orders, only future ones', modes),
             ConfigElement(
                 'spread', 'float', 6, 'Spread',
                 'The percentage difference between buy and sell', (0, None, 2, '%')),

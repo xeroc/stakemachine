@@ -26,7 +26,7 @@ class StrategyController:
             else:
                 value = option.default
 
-            element = self.elements[option.key]
+            element = self.elements.get(option.key)
             if not element:
                 continue
 
@@ -73,7 +73,9 @@ class StrategyController:
 
         for option in self.configure:
             element_name = ''.join([option.key, '_input'])
-            elements[option.key] = self.view.findChild(types, element_name)
+            element = self.view.findChild(types, element_name)
+            if element:
+                elements[option.key] = element
         return elements
 
 
@@ -129,10 +131,6 @@ class StaggeredOrdersController(StrategyController):
         self.worker_controller = worker_controller
 
         if view:
-            modes = self.strategy_modes
-            for strategy_mode in modes:
-                self.view.strategy_widget.mode_input.addItem(modes[strategy_mode], strategy_mode)
-
             if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
                 self.view.strategy_widget.center_price_input.setDisabled(False)
 
@@ -154,21 +152,3 @@ class StaggeredOrdersController(StrategyController):
         if not self.view.strategy_widget.lower_bound_input.value():
             error_texts.append("Lower bound can't be 0")
         return error_texts
-
-    @property
-    def strategy_modes(self):
-        # Todo: Activate rest of the modes once the logic is done
-        modes = collections.OrderedDict()
-
-        # modes['neutral'] = 'Neutral'
-        modes['mountain'] = 'Mountain'
-        # modes['valley'] = 'Valley'
-        # modes['buy_slope'] = 'Buy Slope'
-        # modes['sell_slope'] = 'Sell Slope'
-
-        return modes
-
-    @classmethod
-    def strategy_modes_tuples(cls):
-        modes = cls(None, [], None, {}).strategy_modes
-        return [(key, value) for key, value in modes.items()]
