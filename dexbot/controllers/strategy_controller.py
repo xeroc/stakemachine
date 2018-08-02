@@ -27,7 +27,8 @@ class StrategyController:
                 value = option.default
 
             element = self.elements.get(option.key)
-            if not element:
+
+            if element is None:
                 continue
 
             if option.type in ('int', 'float', 'string'):
@@ -60,7 +61,7 @@ class StrategyController:
 
     @property
     def elements(self):
-        """ Use ConfigElement of the strategy to find the elements
+        """ Use ConfigElements of the strategy to find the elements
         """
         elements = {}
         types = (
@@ -74,7 +75,7 @@ class StrategyController:
         for option in self.configure:
             element_name = ''.join([option.key, '_input'])
             element = self.view.findChild(types, element_name)
-            if element:
+            if element is not None:
                 elements[option.key] = element
         return elements
 
