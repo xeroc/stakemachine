@@ -17,7 +17,7 @@ class StrategyFormWidget(QtWidgets.QWidget):
             'Strategy'
         )
         configure = strategy_class.configure(False)
-        form_module = controller.strategies[strategy_module]['form_module']
+        form_module = controller.strategies[strategy_module].get('form_module')
         try:
             widget = getattr(
                 importlib.import_module(form_module),
