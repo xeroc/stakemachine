@@ -62,7 +62,7 @@ class StrategyController:
 
     @property
     def elements(self):
-        """ Use ConfigElements of the strategy to find the elements
+        """ Use ConfigElements of the strategy to find the input elements
         """
         elements = {}
         types = (
