@@ -87,8 +87,8 @@ class Strategy(BaseStrategy):
     def maintain_strategy(self, *args, **kwargs):
         """ Logic of the strategy
             :param args: Order which was added after the bot was started and if there was no market center price
+            :param args:
             :param kwargs:
-            :return:
         """
 
         # Calculate market center price
@@ -101,7 +101,7 @@ class Strategy(BaseStrategy):
         # Get orders
         orders = self.orders
 
-        # Sort buy and sell orders
+        # Sort buy and sell orders from biggest to smallest
         self.buy_orders = self.get_buy_orders('DESC', orders)
         self.sell_orders = self.get_sell_orders('DESC', orders)
 
@@ -112,7 +112,7 @@ class Strategy(BaseStrategy):
         if self.sell_orders:
             lowest_sell_order = self.sell_orders[-1]
 
-        # Get account balances
+        # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
 
         base_balance = account_balances['base']
@@ -133,15 +133,17 @@ class Strategy(BaseStrategy):
 
         # Base asset check
         if base_balance > base_asset_threshold:
+            # Allocate available funds
             self.allocate_base_asset(base_balance)
-        elif self.market_center_price > highest_buy_order['base']['amount'] * (1 + self.spread):
+        elif self.market_center_price > highest_buy_order['base']['price'] * (1 + self.spread):
             # Cancel lowest buy order
             self.shift_orders_up(self.buy_orders[-0])
 
         # Quote asset check
         if quote_balance > quote_asset_threshold:
+            # Allocate available funds
             self.allocate_quote_asset(quote_balance)
-        elif self.market_center_price < lowest_sell_order['base']['amount'] * (1 - self.spread):
+        elif self.market_center_price < lowest_sell_order['base']['price'] * (1 - self.spread):
             # Cancel highest sell order
             self.shift_orders_down(self.sell_orders[0])
 
@@ -155,131 +157,169 @@ class Strategy(BaseStrategy):
     def allocate_base_asset(self, base_balance, *args, **kwargs):
         """ Allocates base asset
             :param base_balance: Amount of the base asset available to use
-            :return:
         """
         # Todo: Work in progress
         if self.buy_orders:
             # Todo: Make order size check function
-            if self.order_size_correct():
-                pass
-                # if self.instant_fill:
-                #     if actual_spread >= self.spread + self.increment:
-                #         self.place_higher_buy_order(self.own_buy_orders[0])
-                #         return
-                # else:
-                #     if self.highest_buy + self.increment < self.lowest_ask:
-                #         pass
+            lowest_buy_order = self.buy_orders[-1]
+            highest_buy_order = self.buy_orders[0]
+
+            # Check if the order size is correct
+            # This check doesn't work at this moment.
+            if self.is_order_size_correct(lowest_buy_order, base_balance):
+                # Is bot allowed to make orders which might fill immediately
+                if self.instant_fill:
+                    if self.actual_spread >= self.target_spread + self.increment:
+                        self.place_higher_buy_order(highest_buy_order)
+                    else:
+                        # This was in the diagram, seems wrong.
+                        # Todo: Is highest_sell + increment > upper_bound?
+                        # YES -> increase_order_size()
+                        # NO -> place_higher_sell() // Should this be buy?
+                        pass
+                else:
+                    # This was in the diagram, is it ok?
+                    # Todo: Is highest_buy + increment < lowest_ask
+                    # YES -> Goes same place where "instant_fill" YES path
+                    # NO -> Goes same place where above mentioned commenting is
+                    pass
             else:
+                # Cancel highest buy order
                 self.cancel(self.buy_orders[0])
         else:
-            self.place_highest_buy_order(base_balance)
+            self.place_lowest_buy_order(base_balance)
 
     def allocate_quote_asset(self, quote_balance, *args, **kwargs):
         """ Allocates quote asset
         """
         # Todo: Work in progress
+        # Almost same as the allocate_base() with some differences, this is done after that
         if self.sell_orders:
             pass
         else:
-            self.place_lowest_sell_order(quote_balance)
+            self.place_highest_sell_order(quote_balance)
 
-    def is_order_size_correct(self):
+    def is_order_size_correct(self, order, balance):
         """ Checks if the order size is correct
-
             :return:
         """
-        # Todo: Work in progress
-        pass
+        # Todo: Work in progress.
+        order_size = (order['base']['amount'] + balance['amount']) * self.increment
+        if order_size == order['quote']['amount']:
+            return True
+        return False
 
     def shift_orders_up(self, order):
-        """ Removes lowest buy order and places higher buy order
-            :param order: Lowest buy order
-            :return:
+        """ Removes given order and places higher buy order
+            :param order: Order to be removed
         """
         self.cancel(order)
         self.place_higher_buy_order(order)
 
     def shift_orders_down(self, order):
-        """ Removes highest sell order and places lower sell order
-            :param order: Highest sell order
-            :return:
+        """ Removes given order and places lower sell order
+            :param order: Order to be removed
         """
         self.cancel(order)
         self.place_lower_sell_order(order)
 
     def place_higher_buy_order(self, order):
         """ Place higher buy order
-
+            Mode: MOUNTAIN
             amount (QUOTE) = lower_buy_order_amount * (1 + increment)
             price (BASE) = lower_buy_order_price * (1 + increment)
 
             :param order: Previously highest buy order
-            :return:
         """
-        amount = order['quote']['amount']
+        amount = order['quote']['amount'] * (1+ self.increment)
         price = order['base']['price'] * (1 + self.increment)
 
         self.market_buy(amount, price)
 
     def place_higher_sell_order(self, order):
         """ Place higher sell order
-
+            Mode: MOUNTAIN
             amount (QUOTE) = higher_sell_order_amount / (1 + increment)
             price (BASE) = higher_sell_order_price * (1 + increment)
 
             :param order: highest_sell_order
-            :return:
         """
         amount = order['quote']['amount'] / (1 + self.increment)
         price = order['base']['price'] * (1 + self.increment)
 
         self.market_sell(amount, price)
 
-    def place_highest_buy_order(self, base_balance):
-        """ Places buy order closest to the market center price
-            :param base_balance: Available BASE asset balance
-        """
-        amount = base_balance['amount'] * self.increment
-        price = self.market_center_price / math.sqrt(1 + self.spread)
-
-        self.market_buy(amount, price)
-
     def place_lower_buy_order(self, order):
         """ Place lower buy order
-
+            Mode: MOUNTAIN
             amount (QUOTE) = lowest_buy_order_amount / (1 + increment)
-            price (BASE) = lowest_buy_order_price / (1 + increment)
+            price (BASE) = Order's base price
 
             :param order: Previously lowest buy order
-            :return:
         """
         amount = order['quote']['amount'] / (1 + self.increment)
-        price = order['base']['price'] / (1 + self.increment)
+        price = order['base']['price']
 
         self.market_buy(amount, price)
 
     def place_lower_sell_order(self, order):
         """ Place lower sell order
-
+            Mode: MOUNTAIN
             amount (QUOTE) = higher_sell_order_amount * (1 + increment)
             price (BASE) = higher_sell_order_price / (1 + increment)
 
             :param order: Previously higher sell order
-            :return:
         """
         amount = order['quote']['amount'] * (1 + self.increment)
         price = order['base']['price'] / (1 + self.increment)
 
         self.market_sell(amount, price)
 
-    def place_lowest_sell_order(self, quote_balance):
-        """ Places sell order closest to the market center price
-            :param quote_balance: Available QUOTE asset balance
+    def place_highest_sell_order(self, quote_balance, place_order=True):
+        """ Places sell order furthest to the market center price
+            Mode: MOUNTAIN
+            :param Amount | quote_balance: Available QUOTE asset balance
+            :param bool | place_order: Default is True, use this to only calculate highest sell order
+            :return dict | order: Returns highest sell order
         """
-        amount = quote_balance['amount'] * self.increment
         price = self.market_center_price * math.sqrt(1 + self.spread)
+        previous_price = price
 
-        self.market_sell(amount, price)
+        while price <= self.upper_bound:
+            previous_price = price
+            price = price * (1 + self.increment)
+        else:
+            amount = quote_balance['amount'] * self.increment
+            price = previous_price
+            amount = amount / price
+
+            if place_order:
+                self.market_sell(amount, price)
+            else:
+                return {"amount": amount, "price": price}
+
+    def place_lowest_buy_order(self, base_balance, place_order=True):
+        """ Places buy order furthest to the market center price
+            Mode: MOUNTAIN
+            :param Amount | base_balance: Available BASE asset balance
+            :param bool | place_order: Default is True, use this to only calculate lowest buy order
+            :return dict | order: Returns lowest buy order
+        """
+        price = self.market_center_price / math.sqrt(1 + self.spread)
+        previous_price = price
+
+        while price >= self.lower_bound:
+            previous_price = price
+            price = price / (1 + self.increment)
+        else:
+            amount = base_balance['amount'] * self.increment
+            price = previous_price
+            amount = amount / price
+
+            if place_order:
+                self.market_buy(amount, price)
+            else:
+                return {"amount": amount, "price": price}
 
     def error(self, *args, **kwargs):
         self.disabled = True
