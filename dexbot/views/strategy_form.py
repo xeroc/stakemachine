@@ -111,8 +111,8 @@ class AutoStrategyFormGenerator:
 
     def _add_label_wrap(self, key):
         wrap = QtWidgets.QWidget(self.group_box)
-        wrap.setMinimumSize(QtCore.QSize(110, 0))
-        wrap.setMaximumSize(QtCore.QSize(110, 16777215))
+        wrap.setMinimumSize(QtCore.QSize(120, 0))
+        wrap.setMaximumSize(QtCore.QSize(120, 16777215))
 
         layout = QtWidgets.QHBoxLayout(wrap)
         layout.setContentsMargins(0, 0, 0, 0)
