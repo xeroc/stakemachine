@@ -659,10 +659,11 @@
   <tabstop>worker_name_input</tabstop>
   <tabstop>base_asset_input</tabstop>
   <tabstop>quote_asset_input</tabstop>
+  <tabstop>fee_asset_input</tabstop>
   <tabstop>account_input</tabstop>
   <tabstop>private_key_input</tabstop>
-  <tabstop>save_button</tabstop>
   <tabstop>cancel_button</tabstop>
+  <tabstop>save_button</tabstop>
  </tabstops>
  <resources/>
  <connections/>
