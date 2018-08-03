@@ -14,6 +14,7 @@ import bitsharesapi
 import bitsharesapi.exceptions
 import bitshares.exceptions
 from bitshares.amount import Amount
+from bitshares.amount import Asset
 from bitshares.market import Market
 from bitshares.account import Account
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
@@ -103,7 +104,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             ConfigElement("account", "string", "", "Account", "BitShares account name for the bot to operate with", ""),
             ConfigElement("market", "string", "USD:BTS", "Market",
                           "BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"",
-                          r"[A-Z\.]+[:\/][A-Z\.]+")
+                          r"[A-Z\.]+[:\/][A-Z\.]+"),
+            ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset', 'Asset to be used to pay transaction fees',
+                          r'[A-Z\.]+')
         ]
         if return_base_config:
             return base_config
@@ -169,6 +172,16 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
+
+        # Set fee asset
+        fee_asset_symbol = self.worker.get('fee_asset')
+        if fee_asset_symbol:
+            try:
+                self.fee_asset = Asset(fee_asset_symbol)
+            except bitshares.exceptions.AssetDoesNotExistsException:
+                self.fee_asset = Asset('1.3.0')
+        else:
+            self.fee_asset = Asset('1.3.0')
 
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
@@ -368,7 +381,10 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     def _cancel(self, orders):
         try:
-            self.retry_action(self.bitshares.cancel, orders, account=self.account)
+            self.retry_action(
+                self.bitshares.cancel,
+                orders, account=self.account, fee_asset=self.fee_asset
+            )
         except bitsharesapi.exceptions.UnhandledRPCError as e:
             if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
                 # The order(s) we tried to cancel doesn't exist
@@ -436,6 +452,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head",
+            fee_asset=self.fee_asset,
             *args,
             **kwargs
         )
@@ -475,6 +492,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head",
+            fee_asset=self.fee_asset,
             *args,
             **kwargs
         )
