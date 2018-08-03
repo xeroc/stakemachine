@@ -109,13 +109,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -129,40 +129,6 @@
       </item>
       <item row="0" column="1">
        <widget class="QLineEdit" name="account_input"/>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="private_key_label">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>110</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>110</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Private Active Key</string>
-        </property>
-        <property name="scaledContents">
-         <bool>false</bool>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-        <property name="buddy">
-         <cstring>private_key_input</cstring>
-        </property>
-       </widget>
       </item>
       <item row="1" column="1">
        <widget class="QLineEdit" name="private_key_input">
@@ -180,6 +146,98 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="0">
+       <widget class="QWidget" name="private_key_wrap" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="private_key_label">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>Private Active Key</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+           <property name="buddy">
+            <cstring>quote_asset_input</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="private_key_tooltip">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="cursor">
+            <cursorShape>WhatsThisCursor</cursorShape>
+           </property>
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Active private key of the account in WIF format.&lt;/p&gt;&lt;p&gt;This field is optional if it was previously saved.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="text">
+            <string>?</string>
+           </property>
+           <property name="margin">
+            <number>5</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -193,13 +251,13 @@
        <widget class="QLabel" name="strategy_label">
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -222,13 +280,13 @@
        <widget class="QLabel" name="worker_name_label">
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -294,13 +352,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -380,13 +438,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -469,13 +527,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -601,10 +659,11 @@
   <tabstop>worker_name_input</tabstop>
   <tabstop>base_asset_input</tabstop>
   <tabstop>quote_asset_input</tabstop>
+  <tabstop>fee_asset_input</tabstop>
   <tabstop>account_input</tabstop>
   <tabstop>private_key_input</tabstop>
-  <tabstop>save_button</tabstop>
   <tabstop>cancel_button</tabstop>
+  <tabstop>save_button</tabstop>
  </tabstops>
  <resources/>
  <connections/>

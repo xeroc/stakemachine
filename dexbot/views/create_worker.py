@@ -14,8 +14,6 @@ class CreateWorkerView(QtWidgets.QDialog, Ui_Dialog):
 
         self.setupUi(self)
 
-        validator = UppercaseValidator(self)
-
         # Todo: Using a model here would be more Qt like
         # Populate the comboboxes
         strategies = self.controller.strategies
@@ -27,9 +25,11 @@ class CreateWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.worker_name = controller.get_unique_worker_name()
         self.worker_name_input.setText(self.worker_name)
 
-        # Validating assets fields
+        # Force uppercase to the assets fields
+        validator = UppercaseValidator(self)
         self.base_asset_input.setValidator(validator)
         self.quote_asset_input.setValidator(validator)
+        self.fee_asset_input.setValidator(validator)
 
         # Set signals
         self.strategy_input.currentTextChanged.connect(lambda: controller.change_strategy_form())
