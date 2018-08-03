@@ -182,6 +182,7 @@ class WorkerController:
         error_texts = []
         base_asset = self.view.base_asset_input.currentText()
         quote_asset = self.view.quote_asset_input.text()
+        fee_asset = self.view.fee_asset_input.text()
         worker_name = self.view.worker_name_input.text()
         old_worker_name = None if self.mode == 'add' else self.view.worker_name
 
@@ -192,6 +193,8 @@ class WorkerController:
             error_texts.append('Field "Base Asset" does not have a valid asset.')
         if not self.validate_asset(quote_asset):
             error_texts.append('Field "Quote Asset" does not have a valid asset.')
+        if not self.validate_asset(fee_asset):
+            error_texts.append('Field "Fee Asset" does not have a valid asset.')
         if not self.validate_market(base_asset, quote_asset):
             error_texts.append("Market {}/{} doesn't exist.".format(base_asset, quote_asset))
         if self.mode == 'add':
@@ -232,12 +235,14 @@ class WorkerController:
 
         base_asset = self.view.base_asset_input.currentText()
         quote_asset = self.view.quote_asset_input.text()
+        fee_asset = self.view.fee_asset_input.text()
         strategy_module = self.view.strategy_input.currentData()
 
         self.view.worker_data = {
             'account': account,
             'market': '{}/{}'.format(quote_asset, base_asset),
             'module': strategy_module,
+            'fee_asset': fee_asset,
             **self.view.strategy_widget.values
         }
         self.view.worker_name = self.view.worker_name_input.text()
