@@ -206,7 +206,7 @@ class WorkerController:
                 error_texts.append('Use a different account. "{}" is already in use.'.format(account))
             if not self.validate_private_key(account, private_key):
                 error_texts.append('Private key is invalid.')
-            elif not self.validate_private_key_type(account, private_key):
+            elif private_key and not self.validate_private_key_type(account, private_key):
                 error_texts.append('Please use active private key.')
 
         error_texts.extend(self.view.strategy_widget.strategy_controller.validation_errors())
@@ -227,7 +227,8 @@ class WorkerController:
         if self.mode == 'add':
             # Add the private key to the database
             private_key = self.view.private_key_input.text()
-            self.add_private_key(private_key)
+            if private_key:
+                self.add_private_key(private_key)
 
             account = self.view.account_input.text()
         else:  # Edit
