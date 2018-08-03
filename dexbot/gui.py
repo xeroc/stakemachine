@@ -1,8 +1,5 @@
 import sys
 
-from PyQt5 import Qt
-from bitshares import BitShares
-
 from dexbot.config import Config
 from dexbot.controllers.main_controller import MainController
 from dexbot.views.worker_list import MainView
@@ -10,8 +7,11 @@ from dexbot.controllers.wallet_controller import WalletController
 from dexbot.views.unlock_wallet import UnlockWalletView
 from dexbot.views.create_wallet import CreateWalletView
 
+from PyQt5.Qt import QApplication
+from bitshares import BitShares
 
-class App(Qt.QApplication):
+
+class App(QApplication):
     def __init__(self, sys_argv):
         super(App, self).__init__(sys_argv)
 
