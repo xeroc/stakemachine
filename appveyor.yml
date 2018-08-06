@@ -8,7 +8,7 @@ environment:
     - PYTHON: "C:\\Python35-x64"
 
 #---------------------------------#
-#        build                    #
+#        Build                    #
 #---------------------------------#
 
 build: off
@@ -24,7 +24,6 @@ install:
 
 after_test:
   - make package
-  - '7z a DEXBot-cli-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-cli.exe'
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
 
 # @TODO: Run tests..
@@ -32,14 +31,11 @@ test_script:
   - "echo tests..."
 
 artifacts:
-  - path: DEXBot-cli-win64.zip
-    name: DEXBot-cli-win64.zip
-
   - path: DEXBot-gui-win64.zip
     name: DEXBot-gui-win64.zip
 
 #---------------------------------#
-#        deployment               #
+#        Deployment               #
 #---------------------------------#
 
 shallow_clone: false
@@ -57,7 +53,7 @@ deploy:
       appveyor_repo_tag: true     # deploy on tag push only
 
 #---------------------------------#
-#         notifications           #
+#         Notifications           #
 #---------------------------------#
 
 notifications:
