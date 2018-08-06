@@ -431,7 +431,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         precision = self.market['base']['precision']
         base_amount = truncate(price * amount, precision)
 
-        # Do not try to sell with 0 balance
+        # Do not try to buy with 0 balance
         if not base_amount:
             self.log.critical('Trying to buy 0')
             self.disabled = True
