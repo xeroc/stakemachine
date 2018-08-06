@@ -383,7 +383,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         try:
             self.retry_action(
                 self.bitshares.cancel,
-                orders, account=self.account, fee_asset=self.fee_asset
+                orders, account=self.account, fee_asset=self.fee_asset['id']
             )
         except bitsharesapi.exceptions.UnhandledRPCError as e:
             if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
@@ -452,7 +452,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head",
-            fee_asset=self.fee_asset,
+            fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
@@ -492,7 +492,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head",
-            fee_asset=self.fee_asset,
+            fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
