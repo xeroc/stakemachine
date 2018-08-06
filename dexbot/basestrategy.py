@@ -431,6 +431,12 @@ class BaseStrategy(Storage, StateMachine, Events):
         precision = self.market['base']['precision']
         base_amount = truncate(price * amount, precision)
 
+        # Do not try to sell with 0 balance
+        if not base_amount:
+            self.log.critical('Trying to buy 0')
+            self.disabled = True
+            return None
+
         # Make sure we have enough balance for the order
         if self.balance(self.market['base']) < base_amount:
             self.log.critical(
@@ -470,6 +476,12 @@ class BaseStrategy(Storage, StateMachine, Events):
         symbol = self.market['quote']['symbol']
         precision = self.market['quote']['precision']
         quote_amount = truncate(amount, precision)
+
+        # Do not try to sell with 0 balance
+        if not quote_amount:
+            self.log.critical('Trying to sell 0')
+            self.disabled = True
+            return None
 
         # Make sure we have enough balance for the order
         if self.balance(self.market['quote']) < quote_amount:
