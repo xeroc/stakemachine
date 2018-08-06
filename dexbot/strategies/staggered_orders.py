@@ -76,6 +76,8 @@ class Strategy(BaseStrategy):
         self.market_center_price = None
         self.buy_orders = []
         self.sell_orders = []
+        self.actual_spread = 0
+        self.market_spread = 0
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -92,6 +94,7 @@ class Strategy(BaseStrategy):
         """
 
         # Calculate market center price
+        # Todo: Move market_center_price to another place? It will be recalculated on each loop now.
         self.market_center_price = self.calculate_center_price(suppress_errors=True)
 
         # Loop until center price appears on the market
@@ -100,17 +103,35 @@ class Strategy(BaseStrategy):
 
         # Get orders
         orders = self.orders
+        market_orders = self.market.orderbook(1)
 
         # Sort buy and sell orders from biggest to smallest
         self.buy_orders = self.get_buy_orders('DESC', orders)
         self.sell_orders = self.get_sell_orders('DESC', orders)
 
         # Get highest buy and lowest sell prices from orders
+        highest_buy_price = None
+        lowest_sell_price = None
+
         if self.buy_orders:
             highest_buy_order = self.buy_orders[0]
+            highest_buy_price = self.buy_orders[0]['price']
 
         if self.sell_orders:
             lowest_sell_order = self.sell_orders[-1]
+            lowest_sell_price = self.sell_orders[-1].invert().get('price')
+
+        # Calculate actual spread
+        # Todo: Check the calculation for market_spread and actual_spread.
+        if lowest_sell_price and highest_buy_price:
+            self.actual_spread = 1 - (highest_buy_price / lowest_sell_price)
+
+        # Calculate market spread
+        highest_market_buy = market_orders['bids'][0]['price']
+        lowest_market_sell = market_orders['asks'][0]['price']
+
+        if highest_market_buy and lowest_market_sell:
+            self.market_spread = 1 - (highest_market_buy / lowest_market_sell)
 
         # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
@@ -169,7 +190,9 @@ class Strategy(BaseStrategy):
             if self.is_order_size_correct(lowest_buy_order, base_balance):
                 # Is bot allowed to make orders which might fill immediately
                 if self.instant_fill:
-                    if self.actual_spread >= self.target_spread + self.increment:
+                    # Todo: Check if actual_spread calculates correct
+                    if self.actual_spread >= self.spread + self.increment:
+                        # Todo: Places lower instead of higher, looks more valley than mountain
                         self.place_higher_buy_order(highest_buy_order)
                     else:
                         # This was in the diagram, seems wrong.
@@ -204,10 +227,13 @@ class Strategy(BaseStrategy):
             :return:
         """
         # Todo: Work in progress.
-        order_size = (order['base']['amount'] + balance['amount']) * self.increment
-        if order_size == order['quote']['amount']:
-            return True
-        return False
+        return True
+        # previous_order_size = (order['base']['amount'] + balance['amount']) * self.increment
+        # order_size = order['quote']['amount']
+        #
+        # if previous_order_size == order_size:
+        #     return True
+        # return False
 
     def shift_orders_up(self, order):
         """ Removes given order and places higher buy order
@@ -231,8 +257,8 @@ class Strategy(BaseStrategy):
 
             :param order: Previously highest buy order
         """
-        amount = order['quote']['amount'] * (1+ self.increment)
-        price = order['base']['price'] * (1 + self.increment)
+        amount = order['quote']['amount'] * (1 + self.increment)
+        price = order['price'] * (1 + self.increment)
 
         self.market_buy(amount, price)
 
