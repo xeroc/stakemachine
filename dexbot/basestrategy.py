@@ -386,7 +386,7 @@ class BaseStrategy(Storage, StateMachine, Events):
                 orders, account=self.account, fee_asset=self.fee_asset
             )
         except bitsharesapi.exceptions.UnhandledRPCError as e:
-            if str(e) == 'Assert Exception: maybe_found != nullptr: Unable to find Object':
+            if str(e).startswith('Assert Exception: maybe_found != nullptr: Unable to find Object'):
                 # The order(s) we tried to cancel doesn't exist
                 self.bitshares.txbuffer.clear()
                 return False
