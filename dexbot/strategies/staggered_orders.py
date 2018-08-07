@@ -32,11 +32,11 @@ class Strategy(BaseStrategy):
                 'increment', 'float', 4, 'Increment',
                 'The percentage difference between staggered orders', (0, None, 2, '%')),
             ConfigElement(
-                'center_price_dynamic', 'bool', True, 'Dynamic center price',
-                'Always calculate the middle from the closest market orders', None),
+                'center_price_dynamic', 'bool', True, 'Market center price',
+                'Begin strategy with center price obtained from the market. Use with mature markets', None),
             ConfigElement(
-                'center_price', 'float', 0, 'Center price',
-                'Fixed center price expressed in base asset: base/quote', (0, None, 8, '')),
+                'center_price', 'float', 0, 'Manual center price',
+                'In an immature market, give a center price manually to begin with. BASE/QUOTE', (0, None, 8, '')),
             ConfigElement(
                 'lower_bound', 'float', 1, 'Lower bound',
                 'The bottom price in the range', (0, None, 8, '')),
