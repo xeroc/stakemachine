@@ -612,11 +612,8 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         if order_ids is None:
             # Get all orders from Blockchain
-            order_ids = []
-
-            for order in self.orders:
-                order_ids.append(order['id'])
-        elif order_ids:
+            order_ids = [order['id'] for order in self.orders]
+        if order_ids:
             orders_balance = self.orders_balance(order_ids)
             quote += orders_balance['quote']
             base += orders_balance['base']
@@ -627,8 +624,8 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         return {'quote': quote, 'base': base}
 
-    def asset_total_balance(self, return_asset):
-        """ Returns the whole value of the account as one asset only
+    def account_total_value(self, return_asset):
+        """ Returns the total value of the account in given asset
             :param str return_asset: Asset which is wanted as return
             :return: float: Value of the account in one asset
         """
