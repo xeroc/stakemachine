@@ -140,12 +140,16 @@ class Strategy(BaseStrategy):
         base_balance = account_balances['base']
         quote_balance = account_balances['quote']
 
-        total_value_base = self.asset_total_balance(base_balance['symbol'])
-        total_value_quote = self.asset_total_balance(quote_balance['symbol'])
+        order_ids = [order['id'] for order in orders]
+        orders_balance = self.orders_balance(order_ids)
+
+        # Balance per asset from orders and account balance
+        quote_orders_balance = orders_balance['quote'] + quote_balance['amount']
+        base_orders_balance = orders_balance['base'] + base_balance['amount']
 
         # Calculate asset thresholds
-        base_asset_threshold = total_value_base / 20000
-        quote_asset_threshold = total_value_quote / 20000
+        base_asset_threshold = base_orders_balance / 20000
+        quote_asset_threshold = quote_orders_balance / 20000
 
         # Check boundaries
         if self.market_center_price > self.upper_bound:
