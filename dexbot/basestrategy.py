@@ -281,7 +281,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Find buy orders
         for order in orders:
-            if order['base']['symbol'] == self.market['base']['symbol']:
+            if not self.is_sell_order(order):
                 buy_orders.append(order)
         if sort:
             buy_orders = self.sort_orders(buy_orders, sort)
@@ -301,13 +301,22 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Find sell orders
         for order in orders:
-            if order['base']['symbol'] != self.market['base']['symbol']:
+            if self.is_sell_order(order):
                 sell_orders.append(order)
 
         if sort:
             sell_orders = self.sort_orders(sell_orders, sort)
 
         return sell_orders
+
+    def is_sell_order(self, order):
+        """ Checks if the order is Sell order. Returns False if Buy order
+            :param order: Buy / Sell order
+            :return: bool: True = Sell order, False = Buy order
+        """
+        if order['base']['symbol'] != self.market['base']['symbol']:
+            return True
+        return False
 
     @staticmethod
     def sort_orders(orders, sort='DESC'):
