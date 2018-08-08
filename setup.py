@@ -14,8 +14,7 @@ install_requires = [
     'ruamel.yaml>=0.15.37',
     'sdnotify',
     'appdirs>=1.4.3',
-    'pycryptodomex==3.6.4',
-    'cryptography>=2.3'
+    'pycryptodomex==3.6.4'
 ]
 
 

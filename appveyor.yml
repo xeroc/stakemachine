@@ -17,8 +17,6 @@ configuration: Release
 
 install:
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;C:\MinGW\bin
-  - SET LIB=C:\OpenSSL-Win64\lib;%LIB%
-  - SET INCLUDE=C:\OpenSSL-Win64\include;%INCLUDE%
   - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
   - copy c:\Python35-x64\python.exe c:\Python35-x64\python3.exe
   - python --version
