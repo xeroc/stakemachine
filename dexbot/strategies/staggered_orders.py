@@ -41,10 +41,7 @@ class Strategy(BaseStrategy):
                 'The bottom price in the range', (0, None, 8, '')),
             ConfigElement(
                 'upper_bound', 'float', 1000000, 'Upper bound',
-                'The top price in the range', (0, None, 8, '')),
-            ConfigElement(
-                'allow_instant_fill', 'bool', True, 'Allow instant fill',
-                'Allow bot to make orders which might fill immediately upon placement', None)
+                'The top price in the range', (0, None, 8, ''))
         ]
 
     def __init__(self, *args, **kwargs):
@@ -69,7 +66,6 @@ class Strategy(BaseStrategy):
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
-        self.instant_fill = self.worker['allow_instant_fill']
 
         # Strategy variables
         self.market_center_price = None
@@ -192,21 +188,13 @@ class Strategy(BaseStrategy):
             # Check if the order size is correct
             # Todo: This check doesn't work at this moment.
             if self.is_order_size_correct(highest_buy_order, base_balance):
-                # Is bot allowed to make orders which might fill immediately
-                if self.instant_fill:
-                    if self.actual_spread >= self.target_spread + self.increment:
-                        self.place_higher_buy_order(highest_buy_order)
-                    else:
-                        if lowest_buy_order + self.increment < self.lower_bound:
-                            self.increase_order_size(highest_buy_order)
-                        else:
-                            self.place_higher_buy_order(lowest_buy_order)
+                if self.actual_spread >= self.target_spread + self.increment:
+                    self.place_higher_buy_order(highest_buy_order)
                 else:
-                    # This was in the diagram, is it ok?
-                    # Todo: Is highest_buy + increment < lowest_ask
-                    # YES -> Goes same place where "instant_fill" YES path
-                    # NO -> Same place as inside instant fill "else"
-                    pass
+                    if lowest_buy_order['price'] + self.increment < self.lower_bound:
+                        self.increase_order_size(highest_buy_order)
+                    else:
+                        self.place_lower_buy_order(lowest_buy_order)
             else:
                 # Cancel highest buy order
                 self.cancel(self.buy_orders[0])
@@ -227,21 +215,13 @@ class Strategy(BaseStrategy):
             # Check if the order size is correct
             # This check doesn't work at this moment.
             if self.is_order_size_correct(lowest_sell_order, quote_balance):
-                # Is bot allowed to make orders which might fill immediately
-                if self.instant_fill:
-                    if self.actual_spread >= self.target_spread + self.increment:
-                        self.place_lower_sell_order(lowest_sell_order)
-                    else:
-                        if highest_sell_order['price'] + self.increment > self.upper_bound:
-                            self.increase_order_size(lowest_sell_order)
-                        else:
-                            self.place_higher_sell_order(highest_sell_order)
+                if self.actual_spread >= self.target_spread + self.increment:
+                    self.place_lower_sell_order(lowest_sell_order)
                 else:
-                    # Todo: Work in progress, seems wrong?
-                    # # Is lowest_sell - increment > highest_bid
-                    # YES -> Goes same place where "instant_fill" YES path
-                    # NO -> Goes same place where above mentioned commenting is
-                    pass
+                    if highest_sell_order['price'] + self.increment > self.upper_bound:
+                        self.increase_order_size(lowest_sell_order)
+                    else:
+                        self.place_higher_sell_order(highest_sell_order)
             else:
                 # Cancel lowest sell order
                 self.cancel(self.sell_orders[0])
