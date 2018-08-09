@@ -275,66 +275,82 @@ class Strategy(BaseStrategy):
         self.cancel(order)
         self.place_lower_sell_order(order)
 
-    def place_higher_buy_order(self, order):
+    def place_higher_buy_order(self, order, place_order=True):
         """ Place higher buy order
             Mode: MOUNTAIN
             amount (QUOTE) = lower_buy_order_amount
             price (BASE) = lower_buy_order_price * (1 + increment)
 
             :param order: Previously highest buy order
+            :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
 
-        self.market_buy(amount, price)
+        if place_order:
+            self.market_buy(amount, price)
+        else:
+            return {"amount": amount, "price": price}
 
-    def place_higher_sell_order(self, order):
+    def place_higher_sell_order(self, order, place_order=True):
         """ Place higher sell order
             Mode: MOUNTAIN
             amount (QUOTE) = higher_sell_order_amount / (1 + increment)
             price (BASE) = higher_sell_order_price * (1 + increment)
 
             :param order: highest_sell_order
+            :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
         # Todo: Work in progress.
         amount = order['quote']['amount'] / (1 + self.increment)
         price = order['price'] * (1 + self.increment)
 
-        self.market_sell(amount, price)
+        if place_order:
+            self.market_sell(amount, price)
+        else:
+            return {"amount": amount, "price": price}
 
-    def place_lower_buy_order(self, order):
+    def place_lower_buy_order(self, order, place_order=True):
         """ Place lower buy order
             Mode: MOUNTAIN
             amount (QUOTE) = lowest_buy_order_amount
             price (BASE) = Order's base price / (1 + increment)
 
             :param order: Previously lowest buy order
+            :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
         # Todo: Work in progress.
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
 
-        self.market_buy(amount, price)
+        if place_order:
+            self.market_buy(amount, price)
+        else:
+            return {"amount": amount, "price": price}
 
-    def place_lower_sell_order(self, order):
+    def place_lower_sell_order(self, order, place_order=True):
         """ Place lower sell order
             Mode: MOUNTAIN
             amount (QUOTE) = higher_sell_order_amount
             price (BASE) = higher_sell_order_price / (1 + increment)
 
             :param order: Previously higher sell order
+            :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
         # Todo: Work in progress.
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
 
-        self.market_sell(amount, price)
+        if place_order:
+            self.market_sell(amount, price)
+        else:
+            return {"amount": amount, "price": price}
 
     def place_highest_sell_order(self, quote_balance, place_order=True):
         """ Places sell order furthest to the market center price
             Mode: MOUNTAIN
             :param Amount | quote_balance: Available QUOTE asset balance
-            :param bool | place_order: Default is True, use this to only return highest sell order
+            :param bool | place_order: True = Places order to the market, False = returns amount and price
             :return dict | order: Returns highest sell order
         """
         # Todo: Fix edge case where CP is close to upper bound and will go over.
@@ -364,7 +380,7 @@ class Strategy(BaseStrategy):
         """ Places buy order furthest to the market center price
             Mode: MOUNTAIN
             :param Amount | base_balance: Available BASE asset balance
-            :param bool | place_order: Default is True, use this to only return lowest buy order
+            :param bool | place_order: True = Places order to the market, False = returns amount and price
             :return dict | order: Returns lowest buy order
         """
         # Todo: Fix edge case where CP is close to lower bound and will go over.
