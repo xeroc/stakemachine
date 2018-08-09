@@ -229,13 +229,13 @@ class BaseStrategy(Storage, StateMachine, Events):
         center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
         return center_price
 
-    def calculate_center_price(self, center_price=None,
-                               asset_offset=False, spread=None, order_ids=None, manual_offset=0):
+    def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
+                               order_ids=None, manual_offset=0, suppress_errors=False):
         """ Calculate center price which shifts based on available funds
         """
         if center_price is None:
             # No center price was given so we simply calculate the center price
-            calculated_center_price = self._calculate_center_price()
+            calculated_center_price = self._calculate_center_price(suppress_errors)
         else:
             # Center price was given so we only use the calculated center price
             # for quote to base asset conversion
@@ -277,6 +277,80 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
+
+    @property
+    def all_orders(self):
+        """ Return the worker's open accounts in all markets
+        """
+        self.account.refresh()
+        return [o for o in self.account.openorders]
+
+    def get_buy_orders(self, sort=None, orders=None):
+        """ Return buy orders
+            :param str sort: DESC or ASC will sort the orders accordingly, default None.
+            :param list orders: List of orders. If None given get all orders from Blockchain.
+            :return list buy_orders: List of buy orders only.
+        """
+        buy_orders = []
+
+        if not orders:
+            orders = self.orders
+
+        # Find buy orders
+        for order in orders:
+            if not self.is_sell_order(order):
+                buy_orders.append(order)
+        if sort:
+            buy_orders = self.sort_orders(buy_orders, sort)
+
+        return buy_orders
+
+    def get_sell_orders(self, sort=None, orders=None):
+        """ Return sell orders
+            :param str sort: DESC or ASC will sort the orders accordingly, default None.
+            :param list orders: List of orders. If None given get all orders from Blockchain.
+            :return list sell_orders: List of sell orders only.
+        """
+        sell_orders = []
+
+        if not orders:
+            orders = self.orders
+
+        # Find sell orders
+        for order in orders:
+            if self.is_sell_order(order):
+                sell_orders.append(order)
+
+        if sort:
+            sell_orders = self.sort_orders(sell_orders, sort)
+
+        return sell_orders
+
+    def is_sell_order(self, order):
+        """ Checks if the order is Sell order. Returns False if Buy order
+            :param order: Buy / Sell order
+            :return: bool: True = Sell order, False = Buy order
+        """
+        if order['base']['symbol'] != self.market['base']['symbol']:
+            return True
+        return False
+
+    @staticmethod
+    def sort_orders(orders, sort='DESC'):
+        """ Return list of orders sorted ascending or descending
+            :param list orders: list of orders to be sorted
+            :param str sort: ASC or DESC. Default DESC
+            :return list: Sorted list of orders.
+        """
+        if sort.upper() == 'ASC':
+            reverse = False
+        elif sort.upper() == 'DESC':
+            reverse = True
+        else:
+            return None
+
+        # Sort orders by price
+        return sorted(orders, key=lambda order: order['price'], reverse=reverse)
 
     @staticmethod
     def get_order(order_id, return_none=True):
@@ -589,21 +663,71 @@ class BaseStrategy(Storage, StateMachine, Events):
         quote_asset = self.market['quote']['id']
         base_asset = self.market['base']['id']
 
+        # Total balance calculation
         for balance in self.balances:
             if balance.asset['id'] == quote_asset:
                 quote += balance['amount']
             elif balance.asset['id'] == base_asset:
                 base += balance['amount']
 
-        orders_balance = self.orders_balance(order_ids)
-        quote += orders_balance['quote']
-        base += orders_balance['base']
+        if order_ids is None:
+            # Get all orders from Blockchain
+            order_ids = [order['id'] for order in self.orders]
+        if order_ids:
+            orders_balance = self.orders_balance(order_ids)
+            quote += orders_balance['quote']
+            base += orders_balance['base']
 
         if return_asset:
             quote = Amount(quote, quote_asset)
             base = Amount(base, base_asset)
 
         return {'quote': quote, 'base': base}
+
+    def account_total_value(self, return_asset):
+        """ Returns the total value of the account in given asset
+            :param str return_asset: Asset which is wanted as return
+            :return: float: Value of the account in one asset
+        """
+        total_value = 0
+
+        # Total balance calculation
+        for balance in self.balances:
+            if balance['symbol'] != return_asset:
+                # Convert to asset if different
+                total_value += self.convert_asset(balance['amount'], balance['symbol'], return_asset)
+            else:
+                total_value += balance['amount']
+
+        # Orders balance calculation
+        for order in self.all_orders:
+            updated_order = self.get_updated_order(order['id'])
+
+            if not order:
+                continue
+            if updated_order['base']['symbol'] == return_asset:
+                total_value += updated_order['base']['amount']
+            else:
+                total_value += self.convert_asset(
+                    updated_order['base']['amount'],
+                    updated_order['base']['symbol'],
+                    return_asset
+                )
+
+        return total_value
+
+    @staticmethod
+    def convert_asset(from_value, from_asset, to_asset):
+        """ Converts asset to another based on the latest market value
+            :param from_value: Amount of the input asset
+            :param from_asset: Symbol of the input asset
+            :param to_asset: Symbol of the output asset
+            :return: Asset converted to another asset as float value
+        """
+        market = Market('{}/{}'.format(from_asset, to_asset))
+        ticker = market.ticker()
+        latest_price = ticker.get('latest', {}).get('price', None)
+        return from_value * latest_price
 
     def orders_balance(self, order_ids, return_asset=False):
         if not order_ids:
