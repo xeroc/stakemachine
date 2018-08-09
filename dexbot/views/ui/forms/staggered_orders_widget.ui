@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>439</width>
-    <height>372</height>
+    <width>449</width>
+    <height>366</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,17 +32,17 @@
       <string>Worker Parameters</string>
      </property>
      <layout class="QFormLayout" name="formLayout">
-      <item row="2" column="0">
+      <item row="1" column="0">
        <widget class="QWidget" name="mode_wrap" native="true">
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -124,7 +124,7 @@
         </layout>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="1" column="1">
        <widget class="QComboBox" name="mode_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -140,7 +140,7 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="0">
+      <item row="5" column="0">
        <widget class="QWidget" name="spread_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -150,13 +150,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -235,7 +235,7 @@
         </layout>
        </widget>
       </item>
-      <item row="6" column="1">
+      <item row="5" column="1">
        <widget class="QDoubleSpinBox" name="spread_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -266,7 +266,7 @@
         </property>
        </widget>
       </item>
-      <item row="9" column="0">
+      <item row="8" column="0">
        <widget class="QWidget" name="increment_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -276,13 +276,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -361,7 +361,7 @@
         </layout>
        </widget>
       </item>
-      <item row="9" column="1">
+      <item row="8" column="1">
        <widget class="QDoubleSpinBox" name="increment_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -392,7 +392,7 @@
         </property>
        </widget>
       </item>
-      <item row="11" column="0">
+      <item row="10" column="0">
        <widget class="QWidget" name="lower_bound_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -402,13 +402,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -487,7 +487,7 @@
         </layout>
        </widget>
       </item>
-      <item row="11" column="1">
+      <item row="10" column="1">
        <widget class="QDoubleSpinBox" name="lower_bound_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -518,7 +518,7 @@
         </property>
        </widget>
       </item>
-      <item row="15" column="0">
+      <item row="14" column="0">
        <widget class="QWidget" name="center_price_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -528,13 +528,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -610,7 +610,7 @@
         </layout>
        </widget>
       </item>
-      <item row="15" column="1">
+      <item row="14" column="1">
        <widget class="QDoubleSpinBox" name="center_price_input">
         <property name="enabled">
          <bool>false</bool>
@@ -650,7 +650,7 @@
         </property>
        </widget>
       </item>
-      <item row="17" column="0">
+      <item row="16" column="0">
        <widget class="QWidget" name="center_price_dynamic_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -660,13 +660,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -733,7 +733,7 @@
         </layout>
        </widget>
       </item>
-      <item row="17" column="1">
+      <item row="16" column="1">
        <widget class="QCheckBox" name="center_price_dynamic_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -749,7 +749,7 @@
         </property>
        </widget>
       </item>
-      <item row="19" column="0">
+      <item row="18" column="0">
        <widget class="QWidget" name="upper_bound_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -759,13 +759,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -841,7 +841,7 @@
         </layout>
        </widget>
       </item>
-      <item row="19" column="1">
+      <item row="18" column="1">
        <widget class="QDoubleSpinBox" name="upper_bound_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -872,7 +872,7 @@
         </property>
        </widget>
       </item>
-      <item row="20" column="0">
+      <item row="19" column="0">
        <widget class="QWidget" name="allow_instant_fill_wraper" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -882,13 +882,13 @@
         </property>
         <property name="minimumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>110</width>
+          <width>120</width>
           <height>16777215</height>
          </size>
         </property>
@@ -955,7 +955,7 @@
         </layout>
        </widget>
       </item>
-      <item row="20" column="1">
+      <item row="19" column="1">
        <widget class="QCheckBox" name="allow_instant_fill_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -963,11 +963,32 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <property name="text">
-         <string>Allow instant fill</string>
+        <property name="minimumSize">
+         <size>
+          <width>170</width>
+          <height>0</height>
+         </size>
         </property>
-        <property name="checked">
-         <bool>true</bool>
+        <property name="locale">
+         <locale language="English" country="UnitedStates"/>
+        </property>
+        <property name="text">
+         <string>Allow order instant fill</string>
+        </property>
+        <property name="accelerated" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="showGroupSeparator" stdset="0">
+         <bool>false</bool>
+        </property>
+        <property name="decimals" stdset="0">
+         <number>8</number>
+        </property>
+        <property name="minimum" stdset="0">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="maximum" stdset="0">
+         <double>999999999.998999953269958</double>
         </property>
        </widget>
       </item>
