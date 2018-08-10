@@ -157,16 +157,15 @@ class Strategy(BaseStrategy):
             self.allocate_base_asset(base_balance)
         elif self.market_center_price > highest_buy_price * (1 + self.target_spread):
             # Cancel lowest buy order
-            self.shift_orders_up(self.buy_orders[-1])
+            self.cancel(self.buy_orders[-1])
 
         # QUOTE asset check
         if quote_balance > quote_asset_threshold:
             # Allocate available funds
             self.allocate_quote_asset(quote_balance)
-        elif lowest_sell_price:
-            if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
-                # Cancel highest sell order
-                self.shift_orders_down(self.sell_orders[-1])
+        if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
+            # Cancel highest sell order
+            self.cancel(self.sell_orders[-1])
 
     def maintain_mountain_mode(self):
         """ Mountain mode
@@ -261,19 +260,6 @@ class Strategy(BaseStrategy):
         #     return True
         # return False
 
-    def shift_orders_up(self, order):
-        """ Removes given order and places higher buy order
-            :param order: Order to be removed
-        """
-        self.cancel(order)
-        self.place_higher_buy_order(order)
-
-    def shift_orders_down(self, order):
-        """ Removes given order and places lower sell order
-            :param order: Order to be removed
-        """
-        self.cancel(order)
-        self.place_lower_sell_order(order)
 
     def place_higher_buy_order(self, order, place_order=True):
         """ Place higher buy order
