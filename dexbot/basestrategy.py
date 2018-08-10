@@ -347,9 +347,9 @@ class BaseStrategy(Storage, StateMachine, Events):
             :param str sort: ASC or DESC. Default DESC
             :return list: Sorted list of orders.
         """
-        if sort.upper() == 'ASC':
+        if sort == 'ASC':
             reverse = False
-        elif sort.upper() == 'DESC':
+        elif sort == 'DESC':
             reverse = True
         else:
             return None
