@@ -192,11 +192,10 @@ class Strategy(BaseStrategy):
             if self.is_order_size_correct(highest_buy_order, self.buy_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
                     self.place_higher_buy_order(highest_buy_order)
+                elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
+                    self.increase_order_sizes()
                 else:
-                    if lowest_buy_order['price'] + (1 + self.increment) < self.lower_bound:
-                        self.increase_order_size()
-                    else:
-                        self.place_lower_buy_order(lowest_buy_order)
+                    self.place_lower_buy_order(lowest_buy_order)
             else:
                 # Cancel highest buy order
                 self.cancel(self.buy_orders[0])
@@ -219,61 +218,94 @@ class Strategy(BaseStrategy):
             if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
                     self.place_lower_sell_order(lowest_sell_order)
+                elif highest_sell_order['price'] * (1 + self.increment) > self.upper_bound:
+                    self.increase_order_sizes('quote')
                 else:
-                    if highest_sell_order['price'] + (1 + self.increment) > self.upper_bound:
-                        self.increase_order_size()
-                    else:
-                        self.place_higher_sell_order(highest_sell_order)
+                    self.place_higher_sell_order(highest_sell_order)
             else:
                 # Cancel lowest sell order
                 self.cancel(self.sell_orders[0])
         else:
             self.place_highest_sell_order(quote_balance)
 
-    def increase_order_size(self):
+    # Todo: Check completely
+    def increase_order_sizes(self, asset):
+        """ Checks which order should be increased in size and replaces it
+            with a maximum size order, according to global limits. Logic
+            depends on mode in question
         """
-        Checks which order should be increased in size and replaces it
-        with a maximum size order, according to global limits. Logic
-        depends on mode in question
-        """
-        # Todo: Work in progress.
         pass
         # Mountain mode:
         # if self.mode == 'mountain':
-        #     asset = 0
-        #     quote = 0
-        #     base = 0
         #     if asset == quote:
-        #         """
-        #         Starting from lowest order, for each order, see if it is approximately
-        #         maximum size.
-        #         If it is, move on to next.
-        #         If not, cancel it and replace with maximum size order. Then return.
-        #         If highest_sell_order is reached, increase it to maximum size
+        #         """ Starting from lowest order, for each order, see if it is approximately
+        #             maximum size.
+        #             If it is, move on to next.
+        #             If not, cancel it and replace with maximum size order. Then return.
+        #             If highest_sell_order is reached, increase it to maximum size
         #
-        #         Maximum size is:
-        #         as many quote as the order below
-        #         and
-        #         as many quote * (1 + increment) as the order above
-        #         When making an order, it must not exceed either of these limits, but be
-        #         made according to the more limiting criteria.
+        #             Maximum size is:
+        #             as many quote as the order below
+        #             and
+        #             as many quote * (1 + increment) as the order above
+        #             When making an order, it must not exceed either of these limits, but be
+        #             made according to the more limiting criteria.
         #         """
+        #         # get orders and amounts to be compared
+        #         higher_order_number = 1
+        #         observe_order_number = 0
+        #         lower_order_number = 0
+        #
+        #         can_be_increased = False
+        #
+        #         # see if order size can be increased
+        #         while not can_be_increased:
+        #             higher_order = self.sell_orders[higher_order_number]
+        #             observe_order = self.sell_orders[observe_order_number]
+        #             if observe_order_number == 0:
+        #                 lower_order = self.buy_order[0]
+        #             else:
+        #                 lower_order = self.sell_orders[lower_order_number]
+        #             observe_order_amount = observe_order['quote']['amount']
+        #             limit_from_below = lower_order['quote']['amount']
+        #             limit_from_above = higher_order['quote']['amount'] * (1 + self.increment)
+        #
+        #             if limit_from_below >= observe_order_amount * (1 + self.increment / 10) <= limit_from_above:
+        #                 can_be_increased = True
+        #             else:
+        #                 observe_order_number += 1
+        #                 higher_order_number = observe_order_number + 1
+        #                 lower_order_number = observe_order_number - 1
+        #                 continue
+        #
+        #         # calculate new order size and make order
+        #
+        #         if limit_from_above > limit_from_below:
+        #             new_order_amount = limit_from_below
+        #         else:
+        #             new_order_amount = limit_from_above
+        #
+        #         if quote_balance - reserve_quote_amount < new_order_amount - observe_order_amount:
+        #             new_order_amount = observe_order_amount + quote_balance - reserve_quote_amount
+        #
+        #         price = observe_order['price']
+        #         self.cancel(observe_order)
+        #         self.market_sell(new_order_amount, price)
+        #
         #     elif asset == base:
-        #         """
-        #         Starting from highest order, for each order, see if it is approximately
-        #         maximum size.
-        #         If it is, move on to next.
-        #         If not, cancel it and replace with maximum size order. Then return.
-        #         If highest_sell_order is reached, increase it to maximum size
+        #         """ Starting from highest order, for each order, see if it is approximately
+        #             maximum size.
+        #             If it is, move on to next.
+        #             If not, cancel it and replace with maximum size order. Then return.
+        #             If highest_sell_order is reached, increase it to maximum size
         #
-        #         Maximum size is:
-        #         as many base as the order above
-        #         and
-        #         as many base * (1 + increment) as the order below
-        #         When making an order, it must not exceed either of these limits, but be
-        #         made according to the more limiting criteria.
+        #             Maximum size is:
+        #             as many base as the order above
+        #             and
+        #             as many base * (1 + increment) as the order below
+        #             When making an order, it must not exceed either of these limits, but be
+        #             made according to the more limiting criteria.
         #         """
-        #
         # elif self.mode == 'valley':
         #     pass
         # elif self.mode == 'neutral':
@@ -282,8 +314,8 @@ class Strategy(BaseStrategy):
         #     pass
         # elif self.mode == 'sell_slope':
         #     pass
+        # return None
 
-    def is_order_size_correct(self, order):
     def is_order_size_correct(self, order, orders):
         """ Checks if the order size is correct
 
@@ -391,13 +423,13 @@ class Strategy(BaseStrategy):
     def place_lower_buy_order(self, order, place_order=True):
         """ Place lower buy order
             Mode: MOUNTAIN
-            amount (QUOTE) = lowest_buy_order_amount * (1 + increment)
+            amount (QUOTE) = lowest_buy_order_amount
             price (BASE) = Order's base price / (1 + increment)
 
             :param order: Previously lowest buy order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
-        amount = order['quote']['amount'] * (1 + self.increment)
+        amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
 
         if place_order:
