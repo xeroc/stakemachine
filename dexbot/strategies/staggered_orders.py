@@ -189,7 +189,7 @@ class Strategy(BaseStrategy):
 
             # Check if the order size is correct
             # Todo: This check doesn't work at this moment.
-            if self.is_order_size_correct(highest_buy_order):
+            if self.is_order_size_correct(highest_buy_order, self.buy_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
                     self.place_higher_buy_order(highest_buy_order)
                 else:
@@ -216,7 +216,7 @@ class Strategy(BaseStrategy):
 
             # Check if the order size is correct
             # This check doesn't work at this moment.
-            if self.is_order_size_correct(lowest_sell_order):
+            if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
                     self.place_lower_sell_order(lowest_sell_order)
                 else:
@@ -284,29 +284,75 @@ class Strategy(BaseStrategy):
         #     pass
 
     def is_order_size_correct(self, order):
+    def is_order_size_correct(self, order, orders):
         """ Checks if the order size is correct
-            :return:
-        """
-        # Todo: Work in progress.
-        return True
 
-        # if self.is_sell_order(order):
-        #    # Order is the only sell order, and size must be calculated like initializing
-        #     if highest_sell_order == lowest_sell_order:
-        #         if order[size] =~ place_highest_sell_order(total_balance, place_order=False).[size]:  # accuracy 0.1%
-        #             return True
-        #         else:
-        #             return False
-        #     elif order == highest_sell_order:
-        #         if order[size] == place_higher_sell_order(order_index - 1, place_order=False).[size]  # accuracy 0.1%
-        #             return True
-        #         else:
-        #             return False
-        #     elif order == lowest_sell_order:
-        #         if order[size] == place_lower_sell_order(order_index + 1, place_order=False).[size]  # accuracy 0.1%
-        #             return True
-        # else:
-        #     return False
+            :param order: Order closest to the center price from buy or sell side
+            :param orders: List of buy or sell orders
+            :return: bool | True = Order is correct size or within the threshold
+                            False = Order is not right size
+        """
+        order_size = order['quote']['amount']
+        threshold = 0.001
+        upper_threshold = order_size * (1 + threshold)
+        lower_threshold = order_size - (1 + threshold)
+
+        if self.is_sell_order(order):
+            lowest_sell_order = orders[0]
+            highest_sell_order = orders[-1]
+
+            # Order is the only sell order, and size must be calculated like initializing
+            if lowest_sell_order == highest_sell_order:
+                total_balance = self.total_balance(orders)
+                highest_sell_order = self.place_highest_sell_order(total_balance, place_order=False)
+
+                # Check if the old order is same size with accuracy of 0.1%
+                if lower_threshold <= highest_sell_order['amount'] <= upper_threshold:
+                    return True
+                return False
+            elif order == highest_sell_order:
+                order_index = orders.index(order)
+                higher_sell_order = self.place_higher_sell_order(order_index - 1, place_order=False)
+
+                if lower_threshold <= higher_sell_order['amount'] <= upper_threshold:
+                    return True
+                return False
+            elif order == lowest_sell_order:
+                order_index = orders.index(order)
+                lower_sell_order = self.place_lower_sell_order(order_index + 1, place_order=False)
+
+                if lower_threshold <= lower_sell_order['amount'] <= upper_threshold:
+                    return True
+                return False
+        elif self.is_buy_order(order):
+            lowest_buy_order = orders[-1]
+            highest_buy_order = orders[0]
+
+            # Order is the only buy order, and size must be calculated like initializing
+            if highest_buy_order == lowest_buy_order:
+                total_balance = self.total_balance(orders)
+                lowest_buy_order = self.place_lowest_buy_order(total_balance, place_order=False)
+
+                # Check if the old order is same size with accuracy of 0.1%
+                if lower_threshold <= lowest_buy_order['amount'] <= upper_threshold:
+                    return True
+                return False
+            elif order == lowest_buy_order:
+                order_index = orders.index(order)
+                lower_buy_order = self.place_lower_buy_order(order_index - 1, place_order=False)
+
+                if lower_threshold <= lower_buy_order['amount'] <= upper_threshold:
+                    return True
+                return False
+            elif order == highest_buy_order:
+                order_index = orders.index(order)
+                higher_buy_order = self.place_higher_buy_order(order_index + 1, place_order=False)
+
+                if lower_threshold <= higher_buy_order['amount'] <= upper_threshold:
+                    return True
+                return False
+
+        return False
 
     def place_higher_buy_order(self, order, place_order=True):
         """ Place higher buy order
