@@ -90,6 +90,9 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.relative_order_size_input.toggled.connect(
             self.onchange_relative_order_size_input
         )
+        self.view.strategy_widget.center_price_dynamic_input.toggled.connect(
+            self.onchange_center_price_dynamic_input
+        )
 
         # Do this after the event connecting
         super().__init__(view, configure, worker_controller, worker_data)
@@ -102,6 +105,12 @@ class RelativeOrdersController(StrategyController):
             self.order_size_input_to_relative()
         else:
             self.order_size_input_to_static()
+
+    def onchange_center_price_dynamic_input(self, checked):
+        if checked:
+            self.view.strategy_widget.center_price_input.setDisabled(True)
+        else:
+            self.view.strategy_widget.center_price_input.setDisabled(False)
 
     def order_size_input_to_relative(self):
         self.view.strategy_widget.amount_input.setSuffix('%')

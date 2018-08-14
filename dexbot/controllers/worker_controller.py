@@ -27,7 +27,7 @@ class WorkerController:
         strategies = collections.OrderedDict()
         strategies['dexbot.strategies.relative_orders'] = {
             'name': 'Relative Orders',
-            'form_module': 'dexbot.views.ui.forms.relative_orders_widget_ui'
+            'form_module': ''
         }
         strategies['dexbot.strategies.staggered_orders'] = {
             'name': 'Staggered Orders',
