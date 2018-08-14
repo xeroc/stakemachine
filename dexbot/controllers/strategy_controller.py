@@ -93,12 +93,30 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.center_price_dynamic_input.toggled.connect(
             self.onchange_center_price_dynamic_input
         )
+        self.view.strategy_widget.reset_on_partial_fill_input.toggled.connect(
+            self.onchange_reset_on_partial_fill_input
+        )
+        self.view.strategy_widget.reset_on_price_change_input.toggled.connect(
+            self.onchange_reset_on_price_change_input
+        )
+        self.view.strategy_widget.custom_expiration_input.toggled.connect(
+            self.onchange_custom_expiration_input
+        )
 
         # Do this after the event connecting
         super().__init__(view, configure, worker_controller, worker_data)
 
         if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
             self.view.strategy_widget.center_price_input.setDisabled(False)
+
+        if not self.view.strategy_widget.reset_on_partial_fill_input.isChecked():
+            self.view.strategy_widget.partial_fill_threshold_input.setDisabled(True)
+
+        if not self.view.strategy_widget.reset_on_price_change_input.isChecked():
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+
+        if not self.view.strategy_widget.custom_expiration_input.isChecked():
+            self.view.strategy_widget.expiration_time_input.setDisabled(True)
 
     def onchange_relative_order_size_input(self, checked):
         if checked:
@@ -109,8 +127,31 @@ class RelativeOrdersController(StrategyController):
     def onchange_center_price_dynamic_input(self, checked):
         if checked:
             self.view.strategy_widget.center_price_input.setDisabled(True)
+            self.view.strategy_widget.reset_on_price_change_input.setDisabled(False)
+            if self.view.strategy_widget.reset_on_price_change_input.isChecked():
+                self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
         else:
             self.view.strategy_widget.center_price_input.setDisabled(False)
+            self.view.strategy_widget.reset_on_price_change_input.setDisabled(True)
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+
+    def onchange_reset_on_partial_fill_input(self, checked):
+        if checked:
+            self.view.strategy_widget.partial_fill_threshold_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.partial_fill_threshold_input.setDisabled(True)
+
+    def onchange_reset_on_price_change_input(self, checked):
+        if checked:
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+
+    def onchange_custom_expiration_input(self, checked):
+        if checked:
+            self.view.strategy_widget.expiration_time_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.expiration_time_input.setDisabled(True)
 
     def order_size_input_to_relative(self):
         self.view.strategy_widget.amount_input.setSuffix('%')
