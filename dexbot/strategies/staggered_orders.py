@@ -327,7 +327,7 @@ class Strategy(BaseStrategy):
         order_size = order['quote']['amount']
         threshold = self.increment / 10
         upper_threshold = order_size * (1 + threshold)
-        lower_threshold = order_size - (order_size * threshold)
+        lower_threshold = order_size / (1 + threshold)
 
         if self.is_sell_order(order):
             lowest_sell_order = orders[0]
