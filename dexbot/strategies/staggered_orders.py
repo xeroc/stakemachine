@@ -3,6 +3,7 @@ from datetime import datetime
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.qt_queue.idle_queue import idle_add
+from dexbot.helper import truncate
 
 
 class Strategy(BaseStrategy):
@@ -112,13 +113,9 @@ class Strategy(BaseStrategy):
             highest_buy_price = self.buy_orders[0].get('price')
 
         if self.sell_orders:
-            # Invert sell orders to match same asset as buy orders
-            sell_orders_inverted = []
-            for order in self.sell_orders:
-                sell_orders_inverted.append(order.invert())
-
-            self.sell_orders = self.sort_orders(sell_orders_inverted, 'ASC')
+            self.sell_orders[0].invert()
             lowest_sell_price = self.sell_orders[0].get('price')
+            self.sell_orders[0].invert()
 
         # Calculate actual spread
         if highest_buy_price and lowest_sell_price:
@@ -188,12 +185,12 @@ class Strategy(BaseStrategy):
             highest_buy_order = self.buy_orders[0]
 
             # Check if the order size is correct
-            # Todo: This check doesn't work at this moment.
             if self.is_order_size_correct(highest_buy_order, self.buy_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
                     self.place_higher_buy_order(highest_buy_order)
                 elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
-                    self.increase_order_sizes()
+                    # Todo: Work in progress.
+                    self.increase_order_sizes('base')
                 else:
                     self.place_lower_buy_order(lowest_buy_order)
             else:
@@ -208,17 +205,15 @@ class Strategy(BaseStrategy):
         """
         # Todo: Work in progress
         if self.sell_orders:
-            # Todo: Make order size check function
-            # Todo: Check that the orders are sorted right
             lowest_sell_order = self.sell_orders[0]
             highest_sell_order = self.sell_orders[-1]
 
             # Check if the order size is correct
-            # This check doesn't work at this moment.
             if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
-                    self.place_lower_sell_order(lowest_sell_order)
+                    self.place_lower_sell_order(lowest_sell_order.invert())
                 elif highest_sell_order['price'] * (1 + self.increment) > self.upper_bound:
+                    # Todo: Work in progress.
                     self.increase_order_sizes('quote')
                 else:
                     self.place_higher_sell_order(highest_sell_order)
@@ -324,19 +319,20 @@ class Strategy(BaseStrategy):
             :return: bool | True = Order is correct size or within the threshold
                             False = Order is not right size
         """
-        order_size = order['quote']['amount']
-        threshold = self.increment / 10
-        upper_threshold = order_size * (1 + threshold)
-        lower_threshold = order_size / (1 + threshold)
-
         if self.is_sell_order(order):
+            order_size = order['base']['amount']
+            threshold = self.increment / 10
+            upper_threshold = order_size * (1 + threshold)
+            lower_threshold = order_size / (1 + threshold)
+
             lowest_sell_order = orders[0]
             highest_sell_order = orders[-1]
 
             # Order is the only sell order, and size must be calculated like initializing
             if lowest_sell_order == highest_sell_order:
                 total_balance = self.total_balance(orders, return_asset=True)
-                highest_sell_order = self.place_highest_sell_order(total_balance, place_order=False)
+                # Todo: Take initial market_center_price here when making calculations
+                highest_sell_order = self.place_highest_sell_order(total_balance['quote'], place_order=False)
 
                 # Check if the old order is same size with accuracy of 0.1%
                 if lower_threshold <= highest_sell_order['amount'] <= upper_threshold:
@@ -357,12 +353,18 @@ class Strategy(BaseStrategy):
                     return True
                 return False
         elif self.is_buy_order(order):
+            order_size = order['quote']['amount']
+            threshold = self.increment / 10
+            upper_threshold = order_size * (1 + threshold)
+            lower_threshold = order_size / (1 + threshold)
+
             lowest_buy_order = orders[-1]
             highest_buy_order = orders[0]
 
             # Order is the only buy order, and size must be calculated like initializing
             if highest_buy_order == lowest_buy_order:
                 total_balance = self.total_balance(orders, return_asset=True)
+                # Todo: Take initial market_center_price here when making calculations
                 lowest_buy_order = self.place_lowest_buy_order(total_balance['base'], place_order=False)
 
                 # Check if the old order is same size with accuracy of 0.1%
@@ -454,7 +456,7 @@ class Strategy(BaseStrategy):
         else:
             return {"amount": amount, "price": price}
 
-    def place_highest_sell_order(self, quote_balance, place_order=True):
+    def place_highest_sell_order(self, quote_balance, place_order=True, market_center_price=None):
         """ Places sell order furthest to the market center price
             Mode: MOUNTAIN
             :param Amount | quote_balance: Available QUOTE asset balance
@@ -462,7 +464,10 @@ class Strategy(BaseStrategy):
             :return dict | order: Returns highest sell order
         """
         # Todo: Fix edge case where CP is close to upper bound and will go over.
-        price = self.market_center_price * math.sqrt(1 + self.target_spread)
+        if not market_center_price:
+            market_center_price = self.market_center_price
+
+        price = market_center_price * math.sqrt(1 + self.target_spread)
         previous_price = price
 
         amount = quote_balance['amount'] * self.increment
@@ -475,12 +480,15 @@ class Strategy(BaseStrategy):
             price = price * (1 + self.increment)
             amount = amount / (1 + self.increment)
         else:
-            amount = previous_amount
+            # Todo: Fix precision to match wanted asset
+            precision = self.market['quote']['precision']
+            amount = int(float(previous_amount) * 10 ** precision) / (10 ** precision)
             price = previous_price
 
             if place_order:
                 self.market_sell(amount, price)
             else:
+                amount = truncate(amount, precision)
                 return {"amount": amount, "price": price}
 
     def place_lowest_buy_order(self, base_balance, place_order=True):
@@ -504,7 +512,10 @@ class Strategy(BaseStrategy):
             price = price / (1 + self.increment)
             amount = amount / (1 + self.increment)
         else:
+            precision = self.market['base']['precision']
             amount = previous_amount / price
+            amount = int(float(amount) * 10 ** precision) / (10 ** precision)
+
             price = previous_price
 
             if place_order:
