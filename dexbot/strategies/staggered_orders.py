@@ -183,7 +183,6 @@ class Strategy(BaseStrategy):
         """ Allocates base asset
             :param base_balance: Amount of the base asset available to use
         """
-        # Todo: Work in progress
         if self.buy_orders:
             # Get currently the lowest and highest buy orders
             lowest_buy_order = self.buy_orders[-1]
@@ -192,6 +191,7 @@ class Strategy(BaseStrategy):
             # Check if the order size is correct
             if self.is_order_size_correct(highest_buy_order, self.buy_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
+                    # Place order closer to the center price
                     self.place_higher_buy_order(highest_buy_order)
                 elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
                     # Todo: Work in progress.
@@ -208,7 +208,6 @@ class Strategy(BaseStrategy):
     def allocate_quote_asset(self, quote_balance, *args, **kwargs):
         """ Allocates quote asset
         """
-        # Todo: Work in progress
         if self.sell_orders:
             lowest_sell_order = self.sell_orders[0]
             highest_sell_order = self.sell_orders[-1]
@@ -326,12 +325,16 @@ class Strategy(BaseStrategy):
             :return: bool | True = Order is correct size or within the threshold
                             False = Order is not right size
         """
+        # Calculate threshold
+        order_size = order['quote']['amount']
         if self.is_sell_order(order):
             order_size = order['base']['amount']
-            threshold = self.increment / 10
-            upper_threshold = order_size * (1 + threshold)
-            lower_threshold = order_size / (1 + threshold)
 
+        threshold = self.increment / 10
+        upper_threshold = order_size * (1 + threshold)
+        lower_threshold = order_size / (1 + threshold)
+
+        if self.is_sell_order(order):
             lowest_sell_order = orders[0]
             highest_sell_order = orders[-1]
 
@@ -361,11 +364,6 @@ class Strategy(BaseStrategy):
                     return True
                 return False
         elif self.is_buy_order(order):
-            order_size = order['quote']['amount']
-            threshold = self.increment / 10
-            upper_threshold = order_size * (1 + threshold)
-            lower_threshold = order_size / (1 + threshold)
-
             lowest_buy_order = orders[-1]
             highest_buy_order = orders[0]
 
@@ -411,25 +409,25 @@ class Strategy(BaseStrategy):
 
         if place_order:
             self.market_buy(amount, price)
-        else:
-            return {"amount": amount, "price": price}
+
+        return {"amount": amount, "price": price}
 
     def place_higher_sell_order(self, order, place_order=True):
         """ Place higher sell order
             Mode: MOUNTAIN
-            amount (QUOTE) = higher_sell_order_amount / (1 + increment)
+            amount (BASE) = higher_sell_order_amount / (1 + increment)
             price (BASE) = higher_sell_order_price * (1 + increment)
 
             :param order: highest_sell_order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
-        amount = order['quote']['amount'] / (1 + self.increment)
-        price = order['price'] * (1 + self.increment)
+        amount = order['base']['amount'] / (1 + self.increment)
+        price = (order['price'] ** -1) * (1 + self.increment)
 
         if place_order:
             self.market_sell(amount, price)
-        else:
-            return {"amount": amount, "price": price}
+
+        return {"amount": amount, "price": price}
 
     def place_lower_buy_order(self, order, place_order=True):
         """ Place lower buy order
@@ -451,25 +449,26 @@ class Strategy(BaseStrategy):
     def place_lower_sell_order(self, order, place_order=True):
         """ Place lower sell order
             Mode: MOUNTAIN
-            amount (QUOTE) = higher_sell_order_amount
+            amount (BASE) = higher_sell_order_amount
             price (BASE) = higher_sell_order_price / (1 + increment)
 
             :param order: Previously higher sell order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
-        amount = order['quote']['amount']
-        price = order['price'] / (1 + self.increment)
+        amount = order['base']['amount']
+        price = (order['price'] ** -1) / (1 + self.increment)
 
         if place_order:
             self.market_sell(amount, price)
-        else:
-            return {"amount": amount, "price": price}
+
+        return {"amount": amount, "price": price}
 
     def place_highest_sell_order(self, quote_balance, place_order=True, market_center_price=None):
         """ Places sell order furthest to the market center price
             Mode: MOUNTAIN
             :param Amount | quote_balance: Available QUOTE asset balance
             :param bool | place_order: True = Places order to the market, False = returns amount and price
+            :param float | market_center_price: Optional market center price, used to to check order
             :return dict | order: Returns highest sell order
         """
         # Todo: Fix edge case where CP is close to upper bound and will go over.
@@ -489,7 +488,6 @@ class Strategy(BaseStrategy):
             price = price * (1 + self.increment)
             amount = amount / (1 + self.increment)
         else:
-            # Todo: Fix precision to match wanted asset
             precision = self.market['quote']['precision']
             amount = int(float(previous_amount) * 10 ** precision) / (10 ** precision)
             price = previous_price
@@ -497,7 +495,6 @@ class Strategy(BaseStrategy):
             if place_order:
                 self.market_sell(amount, price)
             else:
-                amount = truncate(amount, precision)
                 return {"amount": amount, "price": price}
 
     def place_lowest_buy_order(self, base_balance, place_order=True, market_center_price=None):
