@@ -70,6 +70,7 @@ class Strategy(BaseStrategy):
 
         # Strategy variables
         self.market_center_price = None
+        self.initial_market_center_price = None
         self.buy_orders = []
         self.sell_orders = []
         self.actual_spread = self.target_spread + 1
@@ -96,6 +97,10 @@ class Strategy(BaseStrategy):
         # Loop until center price appears on the market
         if not self.market_center_price:
             return
+
+        # Save initial market center price, which is used to make sure that first order is still correct
+        if not self.initial_market_center_price:
+            self.initial_market_center_price = self.market_center_price
 
         # Get orders
         orders = self.orders
@@ -331,8 +336,9 @@ class Strategy(BaseStrategy):
             # Order is the only sell order, and size must be calculated like initializing
             if lowest_sell_order == highest_sell_order:
                 total_balance = self.total_balance(orders, return_asset=True)
-                # Todo: Take initial market_center_price here when making calculations
-                highest_sell_order = self.place_highest_sell_order(total_balance['quote'], place_order=False)
+                highest_sell_order = self.place_highest_sell_order(total_balance['quote'],
+                                                                   place_order=False,
+                                                                   market_center_price=self.initial_market_center_price)
 
                 # Check if the old order is same size with accuracy of 0.1%
                 if lower_threshold <= highest_sell_order['amount'] <= upper_threshold:
@@ -364,8 +370,9 @@ class Strategy(BaseStrategy):
             # Order is the only buy order, and size must be calculated like initializing
             if highest_buy_order == lowest_buy_order:
                 total_balance = self.total_balance(orders, return_asset=True)
-                # Todo: Take initial market_center_price here when making calculations
-                lowest_buy_order = self.place_lowest_buy_order(total_balance['base'], place_order=False)
+                lowest_buy_order = self.place_lowest_buy_order(total_balance['base'],
+                                                               place_order=False,
+                                                               market_center_price=self.initial_market_center_price)
 
                 # Check if the old order is same size with accuracy of 0.1%
                 if lower_threshold <= lowest_buy_order['amount'] <= upper_threshold:
@@ -491,15 +498,19 @@ class Strategy(BaseStrategy):
                 amount = truncate(amount, precision)
                 return {"amount": amount, "price": price}
 
-    def place_lowest_buy_order(self, base_balance, place_order=True):
+    def place_lowest_buy_order(self, base_balance, place_order=True, market_center_price=None):
         """ Places buy order furthest to the market center price
             Mode: MOUNTAIN
             :param Amount | base_balance: Available BASE asset balance
             :param bool | place_order: True = Places order to the market, False = returns amount and price
+            :param float | market_center_price: Optional market center price, used to to check order
             :return dict | order: Returns lowest buy order
         """
         # Todo: Fix edge case where CP is close to lower bound and will go over.
-        price = self.market_center_price / math.sqrt(1 + self.target_spread)
+        if not market_center_price:
+            market_center_price = self.market_center_price
+
+        price = market_center_price / math.sqrt(1 + self.target_spread)
         previous_price = price
 
         amount = base_balance['amount'] * self.increment
