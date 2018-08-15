@@ -11,19 +11,19 @@ class Strategy(BaseStrategy):
     @classmethod
     def configure(cls, return_base_config=True):
         return BaseStrategy.configure(return_base_config) + [
-            ConfigElement('relative_order_size', 'bool', False, 'Relative order size',
-                          'Amount is expressed as a percentage of the account balance of quote/base asset', None),
             ConfigElement('amount', 'float', 1, 'Amount',
                           'Fixed order size, expressed in quote asset, unless "relative order size" selected',
                           (0, None, 8, '')),
-            ConfigElement('center_price_dynamic', 'bool', True, 'Dynamic center price',
-                          'Always calculate the middle from the closest market orders', None),
-            ConfigElement('center_price', 'float', 0, 'Center price',
-                          'Fixed center price expressed in base asset: base/quote', (0, None, 8, '')),
-            ConfigElement('center_price_offset', 'bool', False, 'Center price offset based on asset balances',
-                          'Automatically adjust orders up or down based on the imbalance of your assets', None),
+            ConfigElement('relative_order_size', 'bool', False, 'Relative order size',
+                          'Amount is expressed as a percentage of the account balance of quote/base asset', None),
             ConfigElement('spread', 'float', 5, 'Spread',
                           'The percentage difference between buy and sell', (0, 100, 2, '%')),
+            ConfigElement('center_price', 'float', 0, 'Center price',
+                          'Fixed center price expressed in base asset: base/quote', (0, None, 8, '')),
+            ConfigElement('center_price_dynamic', 'bool', True, 'Update center price from closest market orders',
+                          'Always calculate the middle from the closest market orders', None),
+            ConfigElement('center_price_offset', 'bool', False, 'Center price offset based on asset balances',
+                          'Automatically adjust orders up or down based on the imbalance of your assets', None),
             ConfigElement('manual_offset', 'float', 0, 'Manual center price offset',
                           "Manually adjust orders up or down. "
                           "Works independently of other offsets and doesn't override them", (-50, 100, 2, '%'))

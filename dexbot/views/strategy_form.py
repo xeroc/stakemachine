@@ -116,7 +116,7 @@ class AutoStrategyFormGenerator:
 
         layout = QtWidgets.QHBoxLayout(wrap)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(6)
 
         element_name = ''.join([key, '_wrap'])
         wrap.setObjectName(element_name)
