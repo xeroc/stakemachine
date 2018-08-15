@@ -106,9 +106,9 @@ class Strategy(BaseStrategy):
         orders = self.orders
         market_orders = self.market.orderbook(1)
 
-        # Sort buy and sell orders from biggest to smallest
+        # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
         self.buy_orders = self.get_buy_orders('DESC', orders)
-        self.sell_orders = self.get_sell_orders('ASC', orders)
+        self.sell_orders = self.get_sell_orders('DESC', orders)
 
         # Get highest buy and lowest sell prices from orders
         highest_buy_price = None
@@ -118,13 +118,13 @@ class Strategy(BaseStrategy):
             highest_buy_price = self.buy_orders[0].get('price')
 
         if self.sell_orders:
-            self.sell_orders[0].invert()
             lowest_sell_price = self.sell_orders[0].get('price')
-            self.sell_orders[0].invert()
+            # Invert the sell price to BASE
+            lowest_sell_price = lowest_sell_price ** -1
 
         # Calculate actual spread
         if highest_buy_price and lowest_sell_price:
-            self.actual_spread = lowest_sell_price / highest_buy_price - 1
+            self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
         # Calculate market spread
         highest_market_buy = market_orders['bids'][0]['price']
