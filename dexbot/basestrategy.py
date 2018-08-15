@@ -273,7 +273,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     @property
     def orders(self):
-        """ Return the worker's open accounts in the current market
+        """ Return the account's open orders in the current market
         """
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
