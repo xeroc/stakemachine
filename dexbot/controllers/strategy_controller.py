@@ -90,6 +90,9 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.relative_order_size_input.toggled.connect(
             self.onchange_relative_order_size_input
         )
+        self.view.strategy_widget.center_price_dynamic_input.toggled.connect(
+            self.onchange_center_price_dynamic_input
+        )
 
         # Do this after the event connecting
         super().__init__(view, configure, worker_controller, worker_data)
@@ -103,18 +106,22 @@ class RelativeOrdersController(StrategyController):
         else:
             self.order_size_input_to_static()
 
+    def onchange_center_price_dynamic_input(self, checked):
+        if checked:
+            self.view.strategy_widget.center_price_input.setDisabled(True)
+        else:
+            self.view.strategy_widget.center_price_input.setDisabled(False)
+
     def order_size_input_to_relative(self):
         self.view.strategy_widget.amount_input.setSuffix('%')
         self.view.strategy_widget.amount_input.setDecimals(2)
         self.view.strategy_widget.amount_input.setMaximum(100.00)
         self.view.strategy_widget.amount_input.setMinimumWidth(170)
-        self.view.strategy_widget.amount_input.setValue(10.00)
 
     def order_size_input_to_static(self):
         self.view.strategy_widget.amount_input.setSuffix('')
         self.view.strategy_widget.amount_input.setDecimals(8)
         self.view.strategy_widget.amount_input.setMaximum(1000000000.000000)
-        self.view.strategy_widget.amount_input.setValue(0.000000)
 
     def validation_errors(self):
         error_texts = []
