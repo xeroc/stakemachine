@@ -212,12 +212,14 @@ class Strategy(BaseStrategy):
         if self.sell_orders:
             lowest_sell_order = self.sell_orders[0]
             highest_sell_order = self.sell_orders[-1]
+            highest_sell_order_price = (highest_sell_order['price'] ** -1)
 
             # Check if the order size is correct
             if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
                 if self.actual_spread >= self.target_spread + self.increment:
-                    self.place_lower_sell_order(lowest_sell_order.invert())
-                elif highest_sell_order['price'] * (1 + self.increment) > self.upper_bound:
+                    # Place order closer to the center price
+                    self.place_lower_sell_order(lowest_sell_order)
+                elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
                     # Todo: Work in progress.
                     self.increase_order_sizes('quote')
                 else:
