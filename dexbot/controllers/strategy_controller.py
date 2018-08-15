@@ -117,13 +117,11 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.amount_input.setDecimals(2)
         self.view.strategy_widget.amount_input.setMaximum(100.00)
         self.view.strategy_widget.amount_input.setMinimumWidth(170)
-        self.view.strategy_widget.amount_input.setValue(10.00)
 
     def order_size_input_to_static(self):
         self.view.strategy_widget.amount_input.setSuffix('')
         self.view.strategy_widget.amount_input.setDecimals(8)
         self.view.strategy_widget.amount_input.setMaximum(1000000000.000000)
-        self.view.strategy_widget.amount_input.setValue(0.000000)
 
     def validation_errors(self):
         error_texts = []
