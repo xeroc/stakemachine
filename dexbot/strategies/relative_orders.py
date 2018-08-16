@@ -167,28 +167,33 @@ class Strategy(BaseStrategy):
         self.clear_orders()
 
         order_ids = []
+        expected_num_orders = 0
 
         amount_base = self.amount_base
         amount_quote = self.amount_quote
 
         # Buy Side
-        buy_order = self.market_buy(amount_base, self.buy_price, True)
-        if buy_order:
-            self.save_order(buy_order)
-            order_ids.append(buy_order['id'])
+        if amount_base:
+            buy_order = self.market_buy(amount_base, self.buy_price, True)
+            if buy_order:
+                self.save_order(buy_order)
+                order_ids.append(buy_order['id'])
+            expected_num_orders += 1
 
         # Sell Side
-        sell_order = self.market_sell(amount_quote, self.sell_price, True)
-        if sell_order:
-            self.save_order(sell_order)
-            order_ids.append(sell_order['id'])
+        if amount_quote:
+            sell_order = self.market_sell(amount_quote, self.sell_price, True)
+            if sell_order:
+                self.save_order(sell_order)
+                order_ids.append(sell_order['id'])
+            expected_num_orders += 1
 
         self['order_ids'] = order_ids
 
         self.log.info("Done placing orders")
 
         # Some orders weren't successfully created, redo them
-        if len(order_ids) < 2 and not self.disabled:
+        if len(order_ids) < expected_num_orders and not self.disabled:
             self.update_orders()
 
     def check_orders(self, event, *args, **kwargs):
