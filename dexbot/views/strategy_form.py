@@ -35,17 +35,24 @@ class StrategyFormWidget(QtWidgets.QWidget):
         class_name = ''.join([class_name, 'Controller'])
 
         try:
-            # Try to get the controller
+            # Try to get the controller from the internal set
             strategy_controller = getattr(
                 dexbot.controllers.strategy_controller,
                 class_name
             )
         except AttributeError:
-            # The controller doesn't exist, use the default controller
-            strategy_controller = getattr(
-                dexbot.controllers.strategy_controller,
-                'StrategyController'
-            )
+            try:
+                # look in the strategy module itself (external strategies may do this)
+                strategy_controller = getattr(
+                    importlib.import_module(strategy_module),
+                    'StrategyController'
+                )
+            except AttributeError:
+                # The controller doesn't exist, use the default controller
+                strategy_controller = getattr(
+                    dexbot.controllers.strategy_controller,
+                    'StrategyController'
+                )
 
         self.strategy_controller = strategy_controller(self, configure, controller, worker_config)
 
