@@ -64,6 +64,7 @@ class Strategy(BaseStrategy):
         self.view = kwargs.get('view')
         self.mode = self.worker['mode']
         self.target_spread = self.worker['spread'] / 100
+        self.center_price = self.worker['center_price']
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
@@ -449,13 +450,13 @@ class Strategy(BaseStrategy):
     def place_lower_sell_order(self, order, place_order=True):
         """ Place lower sell order
             Mode: MOUNTAIN
-            amount (BASE) = higher_sell_order_amount
+            amount (BASE) = higher_sell_order_amount * (1 + increment)
             price (BASE) = higher_sell_order_price / (1 + increment)
 
             :param order: Previously higher sell order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
-        amount = order['base']['amount']
+        amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
 
         if place_order:
