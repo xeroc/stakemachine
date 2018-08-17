@@ -207,7 +207,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         ticker = self.market.ticker()
         highest_bid = ticker.get("highestBid")
         lowest_ask = ticker.get("lowestAsk")
-        if not highest_bid:
+        if highest_bid is None or highest_bid == 0.0:
             if not suppress_errors:
                 self.log.critical(
                     "Cannot estimate center price, there is no highest bid."
