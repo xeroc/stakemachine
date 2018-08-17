@@ -3,7 +3,6 @@ from datetime import datetime
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.qt_queue.idle_queue import idle_add
-from dexbot.helper import truncate
 
 
 class Strategy(BaseStrategy):
@@ -11,7 +10,6 @@ class Strategy(BaseStrategy):
 
     @classmethod
     def configure(cls, return_base_config=True):
-        # Todo: - Modes don't list in worker add / edit
         # Todo: - Add other modes
         modes = [
             ('mountain', 'Mountain'),
@@ -92,7 +90,6 @@ class Strategy(BaseStrategy):
         """
 
         # Calculate market center price
-        # Todo: Move market_center_price to another place? It will be recalculated on each loop now.
         self.market_center_price = self.calculate_center_price(suppress_errors=True)
 
         # Loop until center price appears on the market
@@ -143,7 +140,6 @@ class Strategy(BaseStrategy):
         order_ids = [order['id'] for order in orders]
         orders_balance = self.orders_balance(order_ids)
 
-        # Balance per asset from orders and account balance
         quote_orders_balance = orders_balance['quote'] + quote_balance['amount']
         base_orders_balance = orders_balance['base'] + base_balance['amount']
 
@@ -181,8 +177,10 @@ class Strategy(BaseStrategy):
         pass
 
     def allocate_base_asset(self, base_balance, *args, **kwargs):
-        """ Allocates base asset
+        """ Allocates available base asset as buy orders.
             :param base_balance: Amount of the base asset available to use
+            :param args:
+            :param kwargs:
         """
         if self.buy_orders:
             # Get currently the lowest and highest buy orders
@@ -203,15 +201,19 @@ class Strategy(BaseStrategy):
                 # Cancel highest buy order
                 self.cancel(self.buy_orders[0])
         else:
-            # Place first buy order to the market
+            # Place first buy order as close to the lower bound as possible
             self.place_lowest_buy_order(base_balance)
 
     def allocate_quote_asset(self, quote_balance, *args, **kwargs):
-        """ Allocates quote asset
+        """ Allocates available quote asset as sell orders.
+            :param quote_balance: Amount of the base asset available to use
+            :param args:
+            :param kwargs:
         """
         if self.sell_orders:
             lowest_sell_order = self.sell_orders[0]
             highest_sell_order = self.sell_orders[-1]
+            # Sell price is inverted so it can be compared to the upper bound
             highest_sell_order_price = (highest_sell_order['price'] ** -1)
 
             # Check if the order size is correct
@@ -228,6 +230,7 @@ class Strategy(BaseStrategy):
                 # Cancel lowest sell order
                 self.cancel(self.sell_orders[0])
         else:
+            # Place first order as close to the upper bound as possible
             self.place_highest_sell_order(quote_balance)
 
     # Todo: Check completely
