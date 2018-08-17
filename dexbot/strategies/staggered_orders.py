@@ -137,6 +137,17 @@ class Strategy(BaseStrategy):
         base_balance = account_balances['base']
         quote_balance = account_balances['quote']
 
+        # Reserve transaction fee equivalent in BTS
+        ticker = self.market.ticker()
+        core_exchange_rate = ticker['core_exchange_rate']
+        # Todo: order_creation_fee(BTS) = 0.01 for now
+        quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
+        base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
+
+        base_balance['amount'] = base_balance['amount'] - base_fee_reserve
+        quote_balance['amount'] = quote_balance['amount'] - quote_fee_reserve
+
+        # Balance per asset from orders and account balance
         order_ids = [order['id'] for order in orders]
         orders_balance = self.orders_balance(order_ids)
 
