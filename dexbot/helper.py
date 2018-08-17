@@ -3,7 +3,6 @@ import math
 import shutil
 import errno
 import logging
-import importlib
 from appdirs import user_data_dir
 
 from dexbot import APP_NAME, AUTHOR
@@ -61,7 +60,7 @@ def initialize_orders_log():
 
 
 try:
-    # unfortunately setuptools is only "kinda-sorta" a standard module
+    # Unfortunately setuptools is only "kinda-sorta" a standard module
     # it's available on pretty much any modern Python system, but some embedded Pythons may not have it
     # so we make it a soft-dependency
     import pkg_resources
@@ -78,6 +77,6 @@ try:
             yield (entry_point.name, entry_point.module_name)
 
 except ImportError:
-    # our system doesn't have setuptools, so no way to find external strategies
+    # Our system doesn't have setuptools, so no way to find external strategies
     def find_external_strategies():
         return []
