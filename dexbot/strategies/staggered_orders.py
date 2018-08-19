@@ -74,6 +74,8 @@ class Strategy(BaseStrategy):
         self.sell_orders = []
         self.actual_spread = self.target_spread + 1
         self.market_spread = 0
+        self.base_fee_reserve = None
+        self.quote_fee_reserve = None
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -142,11 +144,11 @@ class Strategy(BaseStrategy):
         ticker = self.market.ticker()
         core_exchange_rate = ticker['core_exchange_rate']
         # Todo: order_creation_fee(BTS) = 0.01 for now
-        quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
-        base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
+        self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
+        self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
 
-        base_balance['amount'] = base_balance['amount'] - base_fee_reserve
-        quote_balance['amount'] = quote_balance['amount'] - quote_fee_reserve
+        base_balance['amount'] = base_balance['amount'] - self.base_fee_reserve
+        quote_balance['amount'] = quote_balance['amount'] - self.quote_fee_reserve
 
         # Balance per asset from orders and account balance
         order_ids = [order['id'] for order in orders]
@@ -394,7 +396,8 @@ class Strategy(BaseStrategy):
             # Order is the only sell order, and size must be calculated like initializing
             if lowest_sell_order == highest_sell_order:
                 total_balance = self.total_balance(orders, return_asset=True)
-                highest_sell_order = self.place_highest_sell_order(total_balance['quote'],
+                quote_balance = total_balance['quote'] - self.quote_fee_reserve
+                highest_sell_order = self.place_highest_sell_order(quote_balance,
                                                                    place_order=False,
                                                                    market_center_price=self.initial_market_center_price)
 
@@ -423,7 +426,8 @@ class Strategy(BaseStrategy):
             # Order is the only buy order, and size must be calculated like initializing
             if highest_buy_order == lowest_buy_order:
                 total_balance = self.total_balance(orders, return_asset=True)
-                lowest_buy_order = self.place_lowest_buy_order(total_balance['base'],
+                base_balance = total_balance['base'] - self.base_fee_reserve
+                lowest_buy_order = self.place_lowest_buy_order(base_balance,
                                                                place_order=False,
                                                                market_center_price=self.initial_market_center_price)
 
