@@ -480,8 +480,10 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         return True
 
-    def cancel(self, orders):
+    def cancel(self, orders, batch_only=False):
         """ Cancel specific order(s)
+            :param list orders: list of orders to cancel
+            :param bool batch_only: try cancel orders only in batch mode without one-by-one fallback
         """
         if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
@@ -489,10 +491,13 @@ class BaseStrategy(Storage, StateMachine, Events):
         orders = [order['id'] for order in orders if 'id' in order]
 
         success = self._cancel(orders)
-        if not success and len(orders) > 1:
+        if not success and batch_only:
+            return False
+        if not success and len(orders) > 1 and not batch_only:
             # One of the order cancels failed, cancel the orders one by one
             for order in orders:
                 self._cancel(order)
+        return True
 
     def cancel_all(self):
         """ Cancel all orders of the worker's account
