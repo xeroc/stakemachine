@@ -636,7 +636,7 @@ class Strategy(BaseStrategy):
             previous_price = price
             previous_amount = amount
 
-            price = price  (1 + self.increment)
+            price = price / (1 + self.increment)
             amount = amount / (1 + self.increment)
 
         order_size = previous_amount * (self.base_orders_balance / orders_sum)
