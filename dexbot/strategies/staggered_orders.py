@@ -585,15 +585,15 @@ class Strategy(BaseStrategy):
 
             price = price * (1 + self.increment)
             amount = amount / (1 + self.increment)
-        else:
-            precision = self.market['quote']['precision']
-            amount = int(float(previous_amount) * 10 ** precision) / (10 ** precision)
-            price = previous_price
 
-            if place_order:
-                self.market_sell(amount, price)
-            else:
-                return {"amount": amount, "price": price}
+        precision = self.market['quote']['precision']
+        amount = int(float(previous_amount) * 10 ** precision) / (10 ** precision)
+        price = previous_price
+
+        if place_order:
+            self.market_sell(amount, price)
+        else:
+            return {"amount": amount, "price": price}
 
     def place_lowest_buy_order(self, base_balance, place_order=True, market_center_price=None):
         """ Places buy order furthest to the market center price
@@ -619,17 +619,17 @@ class Strategy(BaseStrategy):
 
             price = price / (1 + self.increment)
             amount = amount / (1 + self.increment)
+
+        precision = self.market['base']['precision']
+        amount = previous_amount / price
+        amount = int(float(amount) * 10 ** precision) / (10 ** precision)
+
+        price = previous_price
+
+        if place_order:
+            self.market_buy(amount, price)
         else:
-            precision = self.market['base']['precision']
-            amount = previous_amount / price
-            amount = int(float(amount) * 10 ** precision) / (10 ** precision)
-
-            price = previous_price
-
-            if place_order:
-                self.market_buy(amount, price)
-            else:
-                return {"amount": amount, "price": price}
+            return {"amount": amount, "price": price}
 
     def error(self, *args, **kwargs):
         self.disabled = True
