@@ -112,8 +112,8 @@ class Strategy(BaseStrategy):
         self.sell_orders = self.get_sell_orders('DESC', orders)
 
         # Get highest buy and lowest sell prices from orders
-        highest_buy_price = None
-        lowest_sell_price = None
+        highest_buy_price = 0
+        lowest_sell_price = 0
 
         if self.buy_orders:
             highest_buy_price = self.buy_orders[0].get('price')
@@ -122,10 +122,6 @@ class Strategy(BaseStrategy):
             lowest_sell_price = self.sell_orders[0].get('price')
             # Invert the sell price to BASE
             lowest_sell_price = lowest_sell_price ** -1
-
-        # Calculate actual spread
-        if highest_buy_price and lowest_sell_price:
-            self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
         # Calculate market spread
         highest_market_buy = market_orders['bids'][0]['price']
@@ -244,6 +240,11 @@ class Strategy(BaseStrategy):
 
             # Check if the order size is correct
             if self.is_order_size_correct(highest_buy_order, self.buy_orders):
+                # Calculate actual spread
+                lowest_sell_price = self.sell_orders[0]['price'] ** -1
+                highest_buy_price = highest_buy_order['price']
+                self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
+
                 if self.actual_spread >= self.target_spread + self.increment:
                     # Place order closer to the center price
                     self.place_higher_buy_order(highest_buy_order)
@@ -259,6 +260,12 @@ class Strategy(BaseStrategy):
             # Place first buy order as close to the lower bound as possible
             self.place_lowest_buy_order(base_balance)
 
+        # Finally get all the orders again, in case there has been changes
+        orders = self.orders
+
+        self.buy_orders = self.get_buy_orders('DESC', orders)
+        self.sell_orders = self.get_sell_orders('DESC', orders)
+
     def allocate_quote_asset(self, quote_balance, *args, **kwargs):
         """ Allocates available quote asset as sell orders.
             :param quote_balance: Amount of the base asset available to use
@@ -273,6 +280,11 @@ class Strategy(BaseStrategy):
 
             # Check if the order size is correct
             if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
+                # Calculate actual spread
+                lowest_sell_price = lowest_sell_order['price'] ** -1
+                highest_buy_price = self.buy_orders[0]['price']
+                self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
+
                 if self.actual_spread >= self.target_spread + self.increment:
                     # Place order closer to the center price
                     self.place_lower_sell_order(lowest_sell_order)
@@ -302,7 +314,7 @@ class Strategy(BaseStrategy):
         """
         # Mountain mode:
         if self.mode == 'mountain':
-            # Todo: Sell side works fine?
+            # Todo: Work in progress.
             if asset == 'quote':
                 """ Starting from the lowest SELL order. For each order, see if it is approximately
                     maximum size.
@@ -339,7 +351,7 @@ class Strategy(BaseStrategy):
 
                     higher_bound = higher_order['base']['amount'] * (1 + self.increment)
 
-                    if lower_bound >= order_amount * (1 + self.increment / 10) <= higher_bound:
+                    if lower_bound > order_amount * (1 + self.increment / 10) < higher_bound:
                         # Calculate new order size and place the order to the market
                         new_order_amount = higher_bound
 
@@ -376,10 +388,10 @@ class Strategy(BaseStrategy):
                     if order_index == 0:
                         # In case checking the first order, use lowest SELL order in comparison
                         higher_order = self.sell_orders[0]
-                        higher_bound = higher_order['base']['amount']
+                        higher_bound = higher_order['base']['amount'] * (1 + self.increment)
                     else:
                         higher_order = orders[order_index - 1]
-                        higher_bound = higher_order['quote']['amount']
+                        higher_bound = higher_order['quote']['amount'] * (1 + self.increment)
 
                     # Lower order
                     lower_order = orders[order_index]
@@ -388,19 +400,19 @@ class Strategy(BaseStrategy):
                     if order_index + 1 < len(orders):
                         lower_order = orders[order_index + 1]
 
-                    lower_bound = lower_order['quote']['amount'] * (1 + self.increment)
+                    lower_bound = lower_order['quote']['amount']
 
-                    if lower_bound >= order_amount * (1 + self.increment / 10) <= higher_bound:
+                    if lower_bound > order_amount * (1 + self.increment / 10) < higher_bound:
                         # Calculate new order size and place the order to the market
                         amount = higher_bound
+                        price = order['price']
 
                         if higher_bound > lower_bound:
                             amount = lower_bound
 
-                        if asset_balance < amount - order_amount:
-                            amount = order_amount + asset_balance
+                        if (asset_balance * price) < amount - order_amount:
+                            amount = order_amount + (asset_balance * price)
 
-                        price = order['price']
                         self.cancel(order)
                         self.market_buy(amount, price)
         elif self.mode == 'valley':
@@ -414,7 +426,7 @@ class Strategy(BaseStrategy):
         return None
 
     def is_order_size_correct(self, order, orders):
-        """ Checks if the order size is correct
+        """ Checks if the order is big enough. Oversized orders are allowed to enable manual manipulation
 
             :param order: Order closest to the center price from buy or sell side
             :param orders: List of buy or sell orders
