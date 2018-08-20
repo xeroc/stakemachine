@@ -74,6 +74,8 @@ class Strategy(BaseStrategy):
         self.sell_orders = []
         self.actual_spread = self.target_spread + 1
         self.market_spread = 0
+        self.base_fee_reserve = None
+        self.quote_fee_reserve = None
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -142,11 +144,11 @@ class Strategy(BaseStrategy):
         ticker = self.market.ticker()
         core_exchange_rate = ticker['core_exchange_rate']
         # Todo: order_creation_fee(BTS) = 0.01 for now
-        quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
-        base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
+        self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
+        self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
 
-        base_balance['amount'] = base_balance['amount'] - base_fee_reserve
-        quote_balance['amount'] = quote_balance['amount'] - quote_fee_reserve
+        base_balance['amount'] = base_balance['amount'] - self.base_fee_reserve
+        quote_balance['amount'] = quote_balance['amount'] - self.quote_fee_reserve
 
         # Balance per asset from orders and account balance
         order_ids = [order['id'] for order in orders]
@@ -165,6 +167,11 @@ class Strategy(BaseStrategy):
         elif self.market_center_price < self.lower_bound:
             self.lower_bound = self.market_center_price
 
+        # Remove orders that exceed boundaries
+        success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
+        if not success:
+            return
+
         # BASE asset check
         if base_balance > base_asset_threshold:
             # Allocate available funds
@@ -180,6 +187,42 @@ class Strategy(BaseStrategy):
         elif self.market_center_price < lowest_sell_price * (1 - self.target_spread):
             # Cancel highest sell order
             self.cancel(self.sell_orders[-1])
+
+    def remove_outside_orders(self, sell_orders, buy_orders):
+        """ Remove orders that exceed boundaries
+            :param list | sell_orders: our sell orders
+            :param list | buy_orders: our buy orders
+        """
+        orders_to_cancel = []
+
+        # Remove sell orders that exceed boundaries
+        for order in sell_orders:
+            order_price = order['price'] ** -1
+            if order_price > self.upper_bound:
+                self.log.debug('Cancelling sell order outside range: %s', order_price)
+                orders_to_cancel.append(order)
+
+        # Remove buy orders that exceed boundaries
+        for order in buy_orders:
+            order_price = order['price']
+            if order_price < self.lower_bound:
+                self.log.debug('Cancelling buy order outside range: %s', order_price)
+                orders_to_cancel.append(order)
+
+        if orders_to_cancel:
+            # We are trying to cancel all orders in one try
+            success = self.cancel(orders_to_cancel, batch_only=True)
+            # Batch cancel failed, repeat cancelling only one order
+            if success:
+                return True
+            else:
+                self.log.debug('Batch cancel failed, failing back to cancelling single order')
+                self.cancel(orders_to_cancel[0])
+                # To avoid GUI hanging cancel only one order and let switch to another worker
+                return False
+
+        else:
+            return True
 
     def maintain_mountain_mode(self):
         """ Mountain mode
@@ -394,7 +437,8 @@ class Strategy(BaseStrategy):
             # Order is the only sell order, and size must be calculated like initializing
             if lowest_sell_order == highest_sell_order:
                 total_balance = self.total_balance(orders, return_asset=True)
-                highest_sell_order = self.place_highest_sell_order(total_balance['quote'],
+                quote_balance = total_balance['quote'] - self.quote_fee_reserve
+                highest_sell_order = self.place_highest_sell_order(quote_balance,
                                                                    place_order=False,
                                                                    market_center_price=self.initial_market_center_price)
 
@@ -423,7 +467,8 @@ class Strategy(BaseStrategy):
             # Order is the only buy order, and size must be calculated like initializing
             if highest_buy_order == lowest_buy_order:
                 total_balance = self.total_balance(orders, return_asset=True)
-                lowest_buy_order = self.place_lowest_buy_order(total_balance['base'],
+                base_balance = total_balance['base'] - self.base_fee_reserve
+                lowest_buy_order = self.place_lowest_buy_order(base_balance,
                                                                place_order=False,
                                                                market_center_price=self.initial_market_center_price)
 
