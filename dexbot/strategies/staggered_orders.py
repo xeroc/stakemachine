@@ -76,6 +76,8 @@ class Strategy(BaseStrategy):
         self.market_spread = 0
         self.base_fee_reserve = None
         self.quote_fee_reserve = None
+        self.quote_orders_balance = 0
+        self.base_orders_balance = 0
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -150,12 +152,12 @@ class Strategy(BaseStrategy):
         order_ids = [order['id'] for order in orders]
         orders_balance = self.orders_balance(order_ids)
 
-        quote_orders_balance = orders_balance['quote'] + quote_balance['amount']
-        base_orders_balance = orders_balance['base'] + base_balance['amount']
+        self.quote_orders_balance = orders_balance['quote'] + quote_balance['amount']
+        self.base_orders_balance = orders_balance['base'] + base_balance['amount']
 
         # Calculate asset thresholds
-        base_asset_threshold = base_orders_balance / 20000
-        quote_asset_threshold = quote_orders_balance / 20000
+        base_asset_threshold = self.base_orders_balance / 20000
+        quote_asset_threshold = self.quote_orders_balance / 20000
 
         # Check boundaries
         if self.market_center_price > self.upper_bound:
@@ -400,7 +402,7 @@ class Strategy(BaseStrategy):
                     if order_index + 1 < len(orders):
                         lower_order = orders[order_index + 1]
 
-                    lower_bound = lower_order['quote']['amount']
+                    lower_bound = lower_order['quote']['amount'] * (1 + self.increment) * (1 + self.increment)
 
                     if lower_bound > order_amount * (1 + self.increment / 10) < higher_bound:
                         # Calculate new order size and place the order to the market
@@ -587,11 +589,13 @@ class Strategy(BaseStrategy):
 
         price = market_center_price * math.sqrt(1 + self.target_spread)
         previous_price = price
+        orders_sum = 0
 
         amount = quote_balance['amount'] * self.increment
         previous_amount = amount
 
         while price <= self.upper_bound:
+            orders_sum += previous_amount
             previous_price = price
             previous_amount = amount
 
@@ -599,7 +603,8 @@ class Strategy(BaseStrategy):
             amount = amount / (1 + self.increment)
 
         precision = self.market['quote']['precision']
-        amount = int(float(previous_amount) * 10 ** precision) / (10 ** precision)
+        order_size = previous_amount * (self.quote_orders_balance / orders_sum)
+        amount = int(float(order_size) * 10 ** precision) / (10 ** precision)
         price = previous_price
 
         if place_order:
@@ -621,21 +626,23 @@ class Strategy(BaseStrategy):
 
         price = market_center_price / math.sqrt(1 + self.target_spread)
         previous_price = price
+        orders_sum = 0
 
         amount = base_balance['amount'] * self.increment
         previous_amount = amount
 
         while price >= self.lower_bound:
+            orders_sum += previous_amount
             previous_price = price
             previous_amount = amount
 
             price = price / (1 + self.increment)
             amount = amount / (1 + self.increment)
 
+        order_size = previous_amount * (self.base_orders_balance / orders_sum)
         precision = self.market['base']['precision']
-        amount = previous_amount / price
+        amount = order_size / price
         amount = int(float(amount) * 10 ** precision) / (10 ** precision)
-
         price = previous_price
 
         if place_order:
