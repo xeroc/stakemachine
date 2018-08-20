@@ -152,8 +152,8 @@ class Strategy(BaseStrategy):
         order_ids = [order['id'] for order in orders]
         orders_balance = self.orders_balance(order_ids)
 
-        quote_orders_balance = orders_balance['quote'] + quote_balance['amount']
-        base_orders_balance = orders_balance['base'] + base_balance['amount']
+        self.quote_orders_balance = orders_balance['quote'] + quote_balance['amount']
+        self.base_orders_balance = orders_balance['base'] + base_balance['amount']
 
         # Calculate asset thresholds
         base_asset_threshold = base_orders_balance / 20000
@@ -530,19 +530,22 @@ class Strategy(BaseStrategy):
 
         price = market_center_price * math.sqrt(1 + self.target_spread)
         previous_price = price
+        orders_sum = 0
 
         amount = quote_balance['amount'] * self.increment
         previous_amount = amount
 
         while price <= self.upper_bound:
+            orders_sum += previous_amount
             previous_price = price
             previous_amount = amount
 
             price = price * (1 + self.increment)
             amount = amount / (1 + self.increment)
         else:
+            order_size = previous_amount * (self.quote_orders_balance / orders_sum)
             precision = self.market['quote']['precision']
-            amount = int(float(previous_amount) * 10 ** precision) / (10 ** precision)
+            amount = int(float(order_size) * 10 ** precision) / (10 ** precision)
             price = previous_price
 
             if place_order:
