@@ -376,10 +376,10 @@ class Strategy(BaseStrategy):
                     if order_index == 0:
                         # In case checking the first order, use lowest SELL order in comparison
                         higher_order = self.sell_orders[0]
-                        higher_bound = higher_order['base']['amount']
+                        higher_bound = higher_order['base']['amount'] * (1 + self.increment)
                     else:
                         higher_order = orders[order_index - 1]
-                        higher_bound = higher_order['quote']['amount']
+                        higher_bound = higher_order['quote']['amount'] * (1 + self.increment)
 
                     # Lower order
                     lower_order = orders[order_index]
@@ -388,19 +388,19 @@ class Strategy(BaseStrategy):
                     if order_index + 1 < len(orders):
                         lower_order = orders[order_index + 1]
 
-                    lower_bound = lower_order['quote']['amount'] * (1 + self.increment)
+                    lower_bound = lower_order['quote']['amount'] * (1 + self.increment) * (1 + self.increment)
 
                     if lower_bound >= order_amount * (1 + self.increment / 10) <= higher_bound:
                         # Calculate new order size and place the order to the market
                         amount = higher_bound
+                        price = order['price']
 
                         if higher_bound > lower_bound:
                             amount = lower_bound
 
-                        if asset_balance < amount - order_amount:
-                            amount = order_amount + asset_balance
+                        if (asset_balance * price) < amount - order_amount:
+                            amount = order_amount + (asset_balance * price)
 
-                        price = order['price']
                         self.cancel(order)
                         self.market_buy(amount, price)
         elif self.mode == 'valley':
@@ -612,19 +612,22 @@ class Strategy(BaseStrategy):
 
         price = market_center_price / math.sqrt(1 + self.target_spread)
         previous_price = price
+        orders_sum = 0
 
         amount = base_balance['amount'] * self.increment
         previous_amount = amount
 
         while price >= self.lower_bound:
+            orders_sum += previous_amount
             previous_price = price
             previous_amount = amount
 
             price = price / (1 + self.increment)
             amount = amount / (1 + self.increment)
         else:
+            order_size = previous_amount * (self.base_orders_balance / orders_sum)
             precision = self.market['base']['precision']
-            amount = previous_amount / price
+            amount = order_size / price
             amount = int(float(amount) * 10 ** precision) / (10 ** precision)
 
             price = previous_price
