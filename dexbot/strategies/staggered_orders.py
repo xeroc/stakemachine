@@ -522,6 +522,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
+        if amount / price > base_balance['amount']:
+            amount = base_balance['amount'] * price
 
         if place_order:
             self.market_buy(amount, price)
@@ -539,6 +541,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
+        if amount > quote_balance['amount']:
+            amount : quote_balance['amount']
 
         if place_order:
             self.market_sell(amount, price)
@@ -556,6 +560,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
+        if amount / price > base_balance['amount']:
+            amount = base_balance['amount'] * price
 
         if place_order:
             self.market_buy(amount, price)
@@ -573,6 +579,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
+        if amount > quote_balance['amount']:
+            amount = quote_balance['amount']
 
         if place_order:
             self.market_sell(amount, price)
