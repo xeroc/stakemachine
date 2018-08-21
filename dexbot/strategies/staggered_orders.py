@@ -128,6 +128,7 @@ class Strategy(BaseStrategy):
             lowest_sell_price = lowest_sell_price ** -1
 
         # Calculate market spread
+        # Todo: Market spread is calculated but never used. Is this needed?
         highest_market_buy = market_orders['bids'][0]['price']
         lowest_market_sell = market_orders['asks'][0]['price']
 
@@ -657,9 +658,10 @@ class Strategy(BaseStrategy):
             price = price / (1 + self.increment)
             amount = amount / (1 + self.increment)
 
-        order_size = previous_amount * (self.base_orders_balance / orders_sum)
-        precision = self.market['base']['precision']
-        amount = order_size * price
+        precision = self.market['quote']['precision']
+        amount = previous_amount * (self.base_orders_balance / orders_sum)
+        # amount / price = amount in QUOTE
+        amount = amount / price
         amount = int(float(amount) * 10 ** precision) / (10 ** precision)
         price = previous_price
 
