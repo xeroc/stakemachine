@@ -271,9 +271,15 @@ class Strategy(BaseStrategy):
                 self.log.debug('Order size is not correct, cancelling highest buy order in allocate_base_asset()')
                 # Cancel highest buy order and immediately replace it with new one.
                 self.cancel(highest_buy_order)
-                # Todo: This can be changed so that it creates new highest immediately. Balance needs to be recalculated
-                if len(self.buy_orders) > 0:
+                # We have several orders
+                if len(self.buy_orders) > 1:
                     self.place_higher_buy_order(self.buy_orders[1])
+                # Length is 1, we have only one order which is lowest_buy_order
+                else:
+                    # We need to obtain total available base balance
+                    total_balance = self.total_balance([], return_asset=True)
+                    base_balance = total_balance['base'] - self.base_fee_reserve
+                    self.place_lowest_buy_order(self.base_orders_balance)
         else:
             # Place first buy order as close to the lower bound as possible
             self.log.debug('Placing first buy order')
@@ -323,9 +329,14 @@ class Strategy(BaseStrategy):
                 # Cancel lowest sell order
                 self.log.debug('Order size is not correct, cancelling lowest sell order in allocate_quote_asset')
                 self.cancel(self.sell_orders[0])
-                # Todo: This can be changed so that it creates new lowest immediately. Balance needs to be recalculated
-                if len(self.sell_orders) > 0:
+                # We have several orders
+                if len(self.sell_orders) > 1:
                     self.place_lower_sell_order(self.sell_orders[1])
+                # Length is 1, we have only one order which is highest_sell_order
+                else:
+                    total_balance = self.total_balance([], return_asset=True)
+                    quote_balance = total_balance['quote'] - self.quote_fee_reserve
+                    self.place_highest_sell_order(quote_balance)
         else:
             # Place first order as close to the upper bound as possible
             self.place_highest_sell_order(quote_balance)
