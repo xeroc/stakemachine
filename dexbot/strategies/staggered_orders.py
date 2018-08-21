@@ -258,6 +258,8 @@ class Strategy(BaseStrategy):
             else:
                 # Cancel highest buy order
                 self.cancel(self.buy_orders[0])
+                self.place_higher_buy_order(self.buy_orders[0]) # Shouldn't [0] be the new "highest"?
+
         else:
             # Place first buy order as close to the lower bound as possible
             self.place_lowest_buy_order(base_balance)
@@ -298,6 +300,8 @@ class Strategy(BaseStrategy):
             else:
                 # Cancel lowest sell order
                 self.cancel(self.sell_orders[0])
+                self.place_lower_sell_order(self.sell_orders[0])
+
         else:
             # Place first order as close to the upper bound as possible
             self.place_highest_sell_order(quote_balance)
