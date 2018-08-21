@@ -514,10 +514,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         self.cancel_all()
         self.clear_orders()
 
-    def market_buy(self, amount, price, return_none=False, *args, **kwargs):
+    def market_buy(self, quote_amount, price, return_none=False, *args, **kwargs):
         symbol = self.market['base']['symbol']
         precision = self.market['base']['precision']
-        base_amount = truncate(price * amount, precision)
+        base_amount = truncate(price * quote_amount, precision)
 
         # Do not try to buy with 0 balance
         if not base_amount:
@@ -543,7 +543,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         buy_transaction = self.retry_action(
             self.market.buy,
             price,
-            Amount(amount=amount, asset=self.market["quote"]),
+            Amount(amount=quote_amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head",
             fee_asset=self.fee_asset['id'],
@@ -555,15 +555,15 @@ class BaseStrategy(Storage, StateMachine, Events):
         if buy_order and buy_order['deleted']:
             # The API doesn't return data on orders that don't exist
             # We need to calculate the data on our own
-            buy_order = self.calculate_order_data(buy_order, amount, price)
+            buy_order = self.calculate_order_data(buy_order, quote_amount, price)
             self.recheck_orders = True
 
         return buy_order
 
-    def market_sell(self, amount, price, return_none=False, *args, **kwargs):
+    def market_sell(self, quote_amount, price, return_none=False, *args, **kwargs):
         symbol = self.market['quote']['symbol']
         precision = self.market['quote']['precision']
-        quote_amount = truncate(amount, precision)
+        quote_amount = truncate(quote_amount, precision)
 
         # Do not try to sell with 0 balance
         if not quote_amount:
@@ -575,7 +575,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         if self.balance(self.market['quote']) < quote_amount:
             self.log.critical(
                 "Insufficient sell balance, needed {} {}".format(
-                    amount, symbol)
+                    quote_amount, symbol)
             )
             self.disabled = True
             return None
@@ -589,7 +589,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         sell_transaction = self.retry_action(
             self.market.sell,
             price,
-            Amount(amount=amount, asset=self.market["quote"]),
+            Amount(amount=quote_amount, asset=self.market["quote"]),
             account=self.account.name,
             returnOrderId="head",
             fee_asset=self.fee_asset['id'],
@@ -601,7 +601,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         if sell_order and sell_order['deleted']:
             # The API doesn't return data on orders that don't exist
             # We need to calculate the data on our own
-            sell_order = self.calculate_order_data(sell_order, amount, price)
+            sell_order = self.calculate_order_data(sell_order, quote_amount, price)
             sell_order.invert()
             self.recheck_orders = True
 
