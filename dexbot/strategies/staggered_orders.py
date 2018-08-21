@@ -349,7 +349,7 @@ class Strategy(BaseStrategy):
             depends on mode in question
 
             :param str | asset: 'base' or 'quote', depending if checking sell or buy
-            :param float | asset_balance: Balance of the account
+            :param Amount | asset_balance: Balance of the account
             :param list | orders: List of buy or sell orders
             :return None
         """
@@ -400,7 +400,7 @@ class Strategy(BaseStrategy):
                             new_order_amount = lower_bound
 
                         if asset_balance < new_order_amount - order_amount:
-                            new_order_amount = order_amount + asset_balance
+                            new_order_amount = order_amount + asset_balance['amount']
 
                         price = (order['price'] ** -1)
                         self.log.debug('Cancelling sell order in increase_order_sizes(), mode mountain')
