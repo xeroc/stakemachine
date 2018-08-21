@@ -78,6 +78,8 @@ class Strategy(BaseStrategy):
         self.quote_fee_reserve = None
         self.quote_orders_balance = 0
         self.base_orders_balance = 0
+        self.quote_balance = 0
+        self.base_balance = 0
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -135,8 +137,8 @@ class Strategy(BaseStrategy):
         # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
 
-        base_balance = account_balances['base']
-        quote_balance = account_balances['quote']
+        self.base_balance = account_balances['base']
+        self.quote_balance = account_balances['quote']
 
         # Reserve transaction fee equivalent in BTS
         ticker = self.market.ticker()
@@ -145,15 +147,15 @@ class Strategy(BaseStrategy):
         self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
         self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
 
-        base_balance['amount'] = base_balance['amount'] - self.base_fee_reserve
-        quote_balance['amount'] = quote_balance['amount'] - self.quote_fee_reserve
+        self.base_balance['amount'] = self.base_balance['amount'] - self.base_fee_reserve
+        self.quote_balance['amount'] = self.quote_balance['amount'] - self.quote_fee_reserve
 
         # Balance per asset from orders and account balance
         order_ids = [order['id'] for order in orders]
         orders_balance = self.orders_balance(order_ids)
 
-        self.quote_orders_balance = orders_balance['quote'] + quote_balance['amount']
-        self.base_orders_balance = orders_balance['base'] + base_balance['amount']
+        self.quote_orders_balance = orders_balance['quote'] + self.quote_balance['amount']
+        self.base_orders_balance = orders_balance['base'] + self.base_balance['amount']
 
         # Calculate asset thresholds
         base_asset_threshold = self.base_orders_balance / 20000
@@ -171,17 +173,17 @@ class Strategy(BaseStrategy):
             return
 
         # BASE asset check
-        if base_balance > base_asset_threshold:
+        if self.base_balance > base_asset_threshold:
             # Allocate available funds
-            self.allocate_base_asset(base_balance)
+            self.allocate_base_asset(self.base_balance)
         elif self.market_center_price > highest_buy_price * (1 + self.target_spread):
             # Cancel lowest buy order
             self.cancel(self.buy_orders[-1])
 
         # QUOTE asset check
-        if quote_balance > quote_asset_threshold:
+        if self.quote_balance > quote_asset_threshold:
             # Allocate available funds
-            self.allocate_quote_asset(quote_balance)
+            self.allocate_quote_asset(self.quote_balance)
         elif self.market_center_price < lowest_sell_price * (1 - self.target_spread):
             # Cancel highest sell order
             self.cancel(self.sell_orders[-1])
@@ -256,15 +258,17 @@ class Strategy(BaseStrategy):
                 else:
                     self.place_lower_buy_order(lowest_buy_order)
             else:
-                # Cancel highest buy order
-                self.cancel(self.buy_orders[0])
-                self.place_higher_buy_order(self.buy_orders[0]) # Shouldn't [0] be the new "highest"?
-
+                # Cancel highest buy order and immediately replace it with new one.
+                self.cancel(highest_buy_order)
+                # Todo: This can be changed so that it creates new highest immediately. Balance needs to be recalculated
+                if len(self.buy_orders) > 0:
+                    self.place_higher_buy_order(self.buy_orders[1])
         else:
             # Place first buy order as close to the lower bound as possible
             self.place_lowest_buy_order(base_balance)
 
         # Finally get all the orders again, in case there has been changes
+        # Todo: Is this necessary?
         orders = self.orders
 
         self.buy_orders = self.get_buy_orders('DESC', orders)
@@ -300,8 +304,10 @@ class Strategy(BaseStrategy):
             else:
                 # Cancel lowest sell order
                 self.cancel(self.sell_orders[0])
-                self.place_lower_sell_order(self.sell_orders[0])
-
+                self.place_lower_sell_order(lowest_sell_order)
+                # Todo: This can be changed so that it creates new lowest immediately. Balance needs to be recalculated
+                if len(self.sell_orders) > 0:
+                    self.place_lower_sell_order(self.sell_orders[1])
         else:
             # Place first order as close to the upper bound as possible
             self.place_highest_sell_order(quote_balance)
@@ -522,8 +528,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
-        if amount / price > base_balance['amount']:
-            amount = base_balance['amount'] * price
+        if amount / price > self.base_balance['amount']:
+            amount = self.base_balance['amount'] * price
 
         if place_order:
             self.market_buy(amount, price)
@@ -541,8 +547,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
-        if amount > quote_balance['amount']:
-            amount : quote_balance['amount']
+        if amount > self.quote_balance['amount']:
+            amount = self.quote_balance['amount']
 
         if place_order:
             self.market_sell(amount, price)
@@ -560,8 +566,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
-        if amount / price > base_balance['amount']:
-            amount = base_balance['amount'] * price
+        if amount / price > self.base_balance['amount']:
+            amount = self.base_balance['amount'] * price
 
         if place_order:
             self.market_buy(amount, price)
@@ -579,8 +585,8 @@ class Strategy(BaseStrategy):
         """
         amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
-        if amount > quote_balance['amount']:
-            amount = quote_balance['amount']
+        if amount > self.quote_balance['amount']:
+            amount = self.quote_balance['amount']
 
         if place_order:
             self.market_sell(amount, price)
