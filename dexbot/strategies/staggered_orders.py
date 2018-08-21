@@ -317,7 +317,6 @@ class Strategy(BaseStrategy):
                 # Cancel lowest sell order
                 self.log.debug('Order size is not correct, cancelling lowest sell order in allocate_quote_asset')
                 self.cancel(self.sell_orders[0])
-                self.place_lower_sell_order(lowest_sell_order)
                 # Todo: This can be changed so that it creates new lowest immediately. Balance needs to be recalculated
                 if len(self.sell_orders) > 0:
                     self.place_lower_sell_order(self.sell_orders[1])
