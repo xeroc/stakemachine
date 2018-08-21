@@ -564,9 +564,8 @@ class Strategy(BaseStrategy):
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
         if amount / price > self.base_balance['amount']:
-            amount = self.base_balance['amount'] * price
-            self.log.debug('Correcting order amount in place_higher_buy_order from: %s to %s',
-                           order['quote']['amount'], amount)
+            self.log.debug('Not enough balance to place_higher_buy_order')
+            place_order=False
 
         if place_order:
             self.market_buy(amount, price)
@@ -585,9 +584,8 @@ class Strategy(BaseStrategy):
         amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            amount = self.quote_balance['amount']
-            self.log.debug('Correcting order amount in place_higher_sell_order from: %s to %s',
-                           order['base']['amount'], amount)
+            self.log.debug('Not enough balance to place_higher_sell_order')
+            place_order=False
 
         if place_order:
             self.market_sell(amount, price)
@@ -606,9 +604,8 @@ class Strategy(BaseStrategy):
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
         if amount / price > self.base_balance['amount']:
-            amount = self.base_balance['amount'] * price
-            self.log.debug('Correcting order amount in place_lower_buy_order from: %s to %s',
-                           order['quote']['amount'], amount)
+            self.log.debug('Not enough balance to place_lower_buy_order')
+            place_order=False
 
         if place_order:
             self.market_buy(amount, price)
@@ -628,9 +625,8 @@ class Strategy(BaseStrategy):
         initial_amount = amount
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            amount = self.quote_balance['amount']
-            self.log.debug('Correcting order amount in place_lower_sell_order from: %s to %s',
-                           initial_amount, amount)
+            self.log.debug('Not enough balance to place_lower_sell_order')
+            place_order=False
 
         if place_order:
             self.market_sell(amount, price)
