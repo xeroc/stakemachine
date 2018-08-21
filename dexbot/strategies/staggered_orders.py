@@ -68,6 +68,7 @@ class Strategy(BaseStrategy):
         self.lower_bound = self.worker['lower_bound']
 
         # Strategy variables
+        self.bootstrapping = False  # Set default True / False?
         self.market_center_price = None
         self.initial_market_center_price = None
         self.buy_orders = []
@@ -178,16 +179,18 @@ class Strategy(BaseStrategy):
             # Allocate available funds
             self.allocate_base_asset(self.base_balance)
         elif self.market_center_price > highest_buy_price * (1 + self.target_spread):
-            # Cancel lowest buy order
-            self.cancel(self.buy_orders[-1])
+            if not self.bootstrapping:
+                # Cancel lowest buy order
+                self.cancel(self.buy_orders[-1])
 
         # QUOTE asset check
         if self.quote_balance > quote_asset_threshold:
             # Allocate available funds
             self.allocate_quote_asset(self.quote_balance)
         elif self.market_center_price < lowest_sell_price * (1 - self.target_spread):
-            # Cancel highest sell order
-            self.cancel(self.sell_orders[-1])
+            if not self.bootstrapping:
+                # Cancel highest sell order
+                self.cancel(self.sell_orders[-1])
 
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
