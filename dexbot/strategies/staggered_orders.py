@@ -402,7 +402,7 @@ class Strategy(BaseStrategy):
                     if order_index + 1 < len(orders):
                         lower_order = orders[order_index + 1]
 
-                    lower_bound = lower_order['quote']['amount'] * (1 + self.increment)
+                    lower_bound = lower_order['quote']['amount']
 
                     if lower_bound > order_amount * (1 + self.increment / 10) < higher_bound:
                         # Calculate new order size and place the order to the market
