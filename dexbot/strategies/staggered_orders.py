@@ -724,7 +724,7 @@ class Strategy(BaseStrategy):
             amount = amount / (1 + self.increment)
 
         precision = self.market['quote']['precision']
-        amount = previous_amount * (self.base_orders_balance / orders_sum)
+        amount = previous_amount * (self.base_total_balance / orders_sum)
         # We need to turn BASE amount into QUOTE amount (we will buy this QUOTE asset amount)
         amount = amount * price
 
