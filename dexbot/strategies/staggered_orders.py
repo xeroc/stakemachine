@@ -593,8 +593,9 @@ class Strategy(BaseStrategy):
         base_amount = amount * price
 
         if base_amount > self.base_balance['amount']:
-            self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'.format(
-                           base_amount, self.base_balance['amount']))
+            if place_order:
+                self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'.format(
+                               base_amount, self.base_balance['amount']))
             place_order = False
 
         if place_order:
@@ -614,8 +615,9 @@ class Strategy(BaseStrategy):
         amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'.format(
-                           amount, self.quote_balance['amount']))
+            if place_order:
+                self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'.format(
+                               amount, self.quote_balance['amount']))
             place_order = False
 
         if place_order:
@@ -638,8 +640,9 @@ class Strategy(BaseStrategy):
         base_amount = amount * price
 
         if base_amount > self.base_balance['amount']:
-            self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {}/{}'.format(
-                           base_amount, self.base_balance['amount']))
+            if place_order:
+                self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {}/{}'.format(
+                               base_amount, self.base_balance['amount']))
             place_order = False
 
         if place_order:
@@ -659,8 +662,9 @@ class Strategy(BaseStrategy):
         amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'.format(
-                           amount, self.quote_balance['amount']))
+            if place_order:
+                self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'.format(
+                               amount, self.quote_balance['amount']))
             place_order = False
 
         if place_order:
