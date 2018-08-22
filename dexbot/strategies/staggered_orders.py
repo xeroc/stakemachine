@@ -282,7 +282,7 @@ class Strategy(BaseStrategy):
                     # We need to obtain total available base balance
                     total_balance = self.total_balance([], return_asset=True)
                     base_balance = total_balance['base'] - self.base_fee_reserve
-                    self.place_lowest_buy_order(self.base_orders_balance)
+                    self.place_lowest_buy_order(base_balance)
         else:
             # Place first buy order as close to the lower bound as possible
             self.log.debug('Placing first buy order')
