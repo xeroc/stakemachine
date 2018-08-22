@@ -181,6 +181,7 @@ class Strategy(BaseStrategy):
         elif self.market_center_price > highest_buy_price * (1 + self.target_spread):
             if not self.bootstrapping:
                 # Cancel lowest buy order
+                self.log.debug('Cancelling lowest buy order in maintain_strategy')
                 self.cancel(self.buy_orders[-1])
 
         # QUOTE asset check
@@ -190,6 +191,7 @@ class Strategy(BaseStrategy):
         elif self.market_center_price < lowest_sell_price * (1 - self.target_spread):
             if not self.bootstrapping:
                 # Cancel highest sell order
+                self.log.debug('Cancelling highest sell order in maintain_strategy')
                 self.cancel(self.sell_orders[-1])
 
     def remove_outside_orders(self, sell_orders, buy_orders):
@@ -241,7 +243,11 @@ class Strategy(BaseStrategy):
             :param args:
             :param kwargs:
         """
-        if self.buy_orders:
+        self.log.debug('Need to allocate base: %s', base_balance)
+        if self.buy_orders and not self.sell_orders:
+            self.log.debug('Buy orders without sell orders')
+            return
+        elif self.buy_orders:
             # Get currently the lowest and highest buy orders
             lowest_buy_order = self.buy_orders[-1]
             highest_buy_order = self.buy_orders[0]
@@ -255,20 +261,32 @@ class Strategy(BaseStrategy):
 
                 if self.actual_spread >= self.target_spread + self.increment:
                     # Place order closer to the center price
+                    self.log.debug('Placing higher buy order; actaul spread: %s, target + increment: %s',
+                                   self.actual_spread, self.target_spread + self.increment)
                     self.place_higher_buy_order(highest_buy_order)
                 elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
                     # Lower bound has been reached and now will start allocating rest of the base balance.
+                    self.log.debug('Increasing orders sizes for base asset')
                     self.increase_order_sizes('base', base_balance, self.buy_orders)
                 else:
+                    self.log.debug('Placing lower order than lowest_buy_order')
                     self.place_lower_buy_order(lowest_buy_order)
             else:
+                self.log.debug('Order size is not correct, cancelling highest buy order in allocate_base_asset()')
                 # Cancel highest buy order and immediately replace it with new one.
                 self.cancel(highest_buy_order)
-                # Todo: This can be changed so that it creates new highest immediately. Balance needs to be recalculated
-                if len(self.buy_orders) > 0:
+                # We have several orders
+                if len(self.buy_orders) > 1:
                     self.place_higher_buy_order(self.buy_orders[1])
+                # Length is 1, we have only one order which is lowest_buy_order
+                else:
+                    # We need to obtain total available base balance
+                    total_balance = self.total_balance([], return_asset=True)
+                    base_balance = total_balance['base'] - self.base_fee_reserve
+                    self.place_lowest_buy_order(self.base_orders_balance)
         else:
             # Place first buy order as close to the lower bound as possible
+            self.log.debug('Placing first buy order')
             self.place_lowest_buy_order(base_balance)
 
         # Finally get all the orders again, in case there has been changes
@@ -284,7 +302,11 @@ class Strategy(BaseStrategy):
             :param args:
             :param kwargs:
         """
-        if self.sell_orders:
+        self.log.debug('Need to allocate quote: %s', quote_balance)
+        if self.sell_orders and not self.buy_orders:
+            self.log.debug('Sell orders without buy orders')
+            return
+        elif self.sell_orders:
             lowest_sell_order = self.sell_orders[0]
             highest_sell_order = self.sell_orders[-1]
             # Sell price is inverted so it can be compared to the upper bound
@@ -299,6 +321,8 @@ class Strategy(BaseStrategy):
 
                 if self.actual_spread >= self.target_spread + self.increment:
                     # Place order closer to the center price
+                    self.log.debug('Placing lower sell order; actaul spread: %s, target + increment: %s',
+                                   self.actual_spread, self.target_spread + self.increment)
                     self.place_lower_sell_order(lowest_sell_order)
                 elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
                     # Upper bound has been reached and now will start allocating rest of the quote balance.
@@ -307,11 +331,16 @@ class Strategy(BaseStrategy):
                     self.place_higher_sell_order(highest_sell_order)
             else:
                 # Cancel lowest sell order
+                self.log.debug('Order size is not correct, cancelling lowest sell order in allocate_quote_asset')
                 self.cancel(self.sell_orders[0])
-                self.place_lower_sell_order(lowest_sell_order)
-                # Todo: This can be changed so that it creates new lowest immediately. Balance needs to be recalculated
-                if len(self.sell_orders) > 0:
+                # We have several orders
+                if len(self.sell_orders) > 1:
                     self.place_lower_sell_order(self.sell_orders[1])
+                # Length is 1, we have only one order which is highest_sell_order
+                else:
+                    total_balance = self.total_balance([], return_asset=True)
+                    quote_balance = total_balance['quote'] - self.quote_fee_reserve
+                    self.place_highest_sell_order(quote_balance)
         else:
             # Place first order as close to the upper bound as possible
             self.place_highest_sell_order(quote_balance)
@@ -324,7 +353,7 @@ class Strategy(BaseStrategy):
             depends on mode in question
 
             :param str | asset: 'base' or 'quote', depending if checking sell or buy
-            :param float | asset_balance: Balance of the account
+            :param Amount | asset_balance: Balance of the account
             :param list | orders: List of buy or sell orders
             :return None
         """
@@ -375,9 +404,10 @@ class Strategy(BaseStrategy):
                             new_order_amount = lower_bound
 
                         if asset_balance < new_order_amount - order_amount:
-                            new_order_amount = order_amount + asset_balance
+                            new_order_amount = order_amount + asset_balance['amount']
 
                         price = (order['price'] ** -1)
+                        self.log.debug('Cancelling sell order in increase_order_sizes(), mode mountain')
                         self.cancel(order)
                         self.market_sell(new_order_amount, price)
             elif asset == 'base':
@@ -430,6 +460,7 @@ class Strategy(BaseStrategy):
                             amount = order_amount + (asset_balance * price)
 
                         self.cancel(order)
+                        self.log.debug('Cancelling buy order in increase_order_sizes(), mode mountain')
                         self.market_buy(amount, price)
         elif self.mode == 'valley':
             pass
@@ -457,6 +488,7 @@ class Strategy(BaseStrategy):
         threshold = self.increment / 10
         upper_threshold = order_size * (1 + threshold)
         lower_threshold = order_size / (1 + threshold)
+        # self.log.debug('lower_threshold: %s, upper_threshold: %s', lower_threshold, upper_threshold)
 
         if self.is_sell_order(order):
             lowest_sell_order = orders[0]
@@ -473,20 +505,30 @@ class Strategy(BaseStrategy):
                 # Check if the old order is same size with accuracy of 0.1%
                 if lower_threshold <= highest_sell_order['amount'] <= upper_threshold:
                     return True
-                return False
+                else:
+                    self.log.debug('lower_threshold <= highest_sell_order <= upper_threshold: %s <= %s <= %s',
+                                   lower_threshold, highest_sell_order['amount'], upper_threshold)
+                    return False
             elif order == highest_sell_order:
                 order_index = orders.index(order)
                 higher_sell_order = self.place_higher_sell_order(orders[order_index - 1], place_order=False)
 
                 if lower_threshold <= higher_sell_order['amount'] <= upper_threshold:
                     return True
-                return False
+                else:
+                    self.log.debug('lower_threshold <= higher_sell_order <= upper_threshold: %s <= %s <= %s',
+                                   lower_threshold, higher_sell_order['amount'], upper_threshold)
+                    return False
             elif order == lowest_sell_order:
                 order_index = orders.index(order)
                 lower_sell_order = self.place_lower_sell_order(orders[order_index + 1], place_order=False)
 
                 if lower_threshold <= lower_sell_order['amount'] <= upper_threshold:
                     return True
+                else:
+                    self.log.debug('lower_threshold <= lower_sell_order <= upper_threshold: %s <= %s <= %s',
+                                   lower_threshold, lower_sell_order['amount'], upper_threshold)
+                    return False
                 return False
         elif self.is_buy_order(order):
             lowest_buy_order = orders[-1]
@@ -503,21 +545,30 @@ class Strategy(BaseStrategy):
                 # Check if the old order is same size with accuracy of 0.1%
                 if lower_threshold <= lowest_buy_order['amount'] <= upper_threshold:
                     return True
-                return False
+                else:
+                    self.log.debug('lower_threshold <= lowest_buy_order <= upper_threshold: %s <= %s <= %s',
+                                   lower_threshold, lowest_buy_order['amount'], upper_threshold)
+                    return False
             elif order == lowest_buy_order:
                 order_index = orders.index(order)
                 lower_buy_order = self.place_lower_buy_order(orders[order_index - 1], place_order=False)
 
                 if lower_threshold <= lower_buy_order['amount'] <= upper_threshold:
                     return True
-                return False
+                else:
+                    self.log.debug('lower_threshold <= lower_buy_order <= upper_threshold: %s <= %s <=%s',
+                                   lower_threshold, lower_buy_order['amount'], upper_threshold)
+                    return False
             elif order == highest_buy_order:
                 order_index = orders.index(order)
                 higher_buy_order = self.place_higher_buy_order(orders[order_index + 1], place_order=False)
 
                 if lower_threshold <= higher_buy_order['amount'] <= upper_threshold:
                     return True
-                return False
+                else:
+                    self.log.debug('lower_threshold <= higher_buy_order <= upper_threshold: %s <= %s <=%s',
+                                   lower_threshold, higher_buy_order['amount'], upper_threshold)
+                    return False
 
         return False
 
@@ -533,7 +584,8 @@ class Strategy(BaseStrategy):
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
         if amount / price > self.base_balance['amount']:
-            amount = self.base_balance['amount'] * price
+            self.log.debug('Not enough balance to place_higher_buy_order')
+            place_order = False
 
         if place_order:
             self.market_buy(amount, price)
@@ -552,7 +604,8 @@ class Strategy(BaseStrategy):
         amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            amount = self.quote_balance['amount']
+            self.log.debug('Not enough balance to place_higher_sell_order')
+            place_order = False
 
         if place_order:
             self.market_sell(amount, price)
@@ -571,7 +624,8 @@ class Strategy(BaseStrategy):
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
         if amount / price > self.base_balance['amount']:
-            amount = self.base_balance['amount'] * price
+            self.log.debug('Not enough balance to place_lower_buy_order')
+            place_order = False
 
         if place_order:
             self.market_buy(amount, price)
@@ -588,9 +642,11 @@ class Strategy(BaseStrategy):
             :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
         amount = order['base']['amount'] * (1 + self.increment)
+        initial_amount = amount
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            amount = self.quote_balance['amount']
+            self.log.debug('Not enough balance to place_lower_sell_order')
+            place_order = False
 
         if place_order:
             self.market_sell(amount, price)
@@ -605,6 +661,7 @@ class Strategy(BaseStrategy):
             :param float | market_center_price: Optional market center price, used to to check order
             :return dict | order: Returns highest sell order
         """
+        self.log.debug('quote_balance in place_highest_sell_order: %s', quote_balance)
         # Todo: Fix edge case where CP is close to upper bound and will go over.
         if not market_center_price:
             market_center_price = self.market_center_price
@@ -642,6 +699,7 @@ class Strategy(BaseStrategy):
             :param float | market_center_price: Optional market center price, used to to check order
             :return dict | order: Returns lowest buy order
         """
+        self.log.debug('base_balance in place_highest_sell_order: %s', base_balance)
         # Todo: Fix edge case where CP is close to lower bound and will go over.
         if not market_center_price:
             market_center_price = self.market_center_price
