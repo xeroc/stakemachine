@@ -260,10 +260,12 @@ class Strategy(BaseStrategy):
                                    self.actual_spread, self.target_spread + self.increment))
                     self.place_higher_buy_order(highest_buy_order)
                 elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
+                    self.bootstrapping = False
                     # Lower bound has been reached and now will start allocating rest of the base balance.
                     self.log.debug('Increasing orders sizes for base asset')
                     self.increase_order_sizes('base', base_balance, self.buy_orders)
                 else:
+                    self.bootstrapping = False
                     self.log.debug('Placing lower order than lowest_buy_order')
                     self.place_lower_buy_order(lowest_buy_order)
             else:
@@ -320,9 +322,11 @@ class Strategy(BaseStrategy):
                                    self.actual_spread, self.target_spread + self.increment))
                     self.place_lower_sell_order(lowest_sell_order)
                 elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
+                    self.bootstrapping = False
                     # Upper bound has been reached and now will start allocating rest of the quote balance.
                     self.increase_order_sizes('quote', quote_balance, self.sell_orders)
                 else:
+                    self.bootstrapping = False
                     self.place_higher_sell_order(highest_sell_order)
             else:
                 # Cancel lowest sell order
