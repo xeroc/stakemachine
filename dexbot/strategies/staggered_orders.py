@@ -181,7 +181,8 @@ class Strategy(BaseStrategy):
             self.allocate_base_asset(self.base_balance)
         elif self.market_center_price > highest_buy_price * (1 + self.target_spread):
             if not self.bootstrapping:
-                # Cancel lowest buy order
+                # Cancel lowest buy order because center price moved up.
+                # On the next run there will be placed next buy order closer to the new center
                 self.log.debug('Cancelling lowest buy order in maintain_strategy')
                 self.cancel(self.buy_orders[-1])
 
@@ -191,7 +192,8 @@ class Strategy(BaseStrategy):
             self.allocate_quote_asset(self.quote_balance)
         elif self.market_center_price < lowest_sell_price * (1 - self.target_spread):
             if not self.bootstrapping:
-                # Cancel highest sell order
+                # Cancel highest sell order because center price moved down.
+                # On the next run there will be placed next sell closer to the new center
                 self.log.debug('Cancelling highest sell order in maintain_strategy')
                 self.cancel(self.sell_orders[-1])
 
