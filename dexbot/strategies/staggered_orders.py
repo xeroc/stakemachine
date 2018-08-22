@@ -335,9 +335,11 @@ class Strategy(BaseStrategy):
                 else:
                     total_balance = self.total_balance([], return_asset=True)
                     quote_balance = total_balance['quote'] - self.quote_fee_reserve
+                    self.bootstrapping = True
                     self.place_highest_sell_order(quote_balance)
         else:
             # Place first order as close to the upper bound as possible
+            self.bootstrapping = True
             self.place_highest_sell_order(quote_balance)
 
     # Todo: Check completely
