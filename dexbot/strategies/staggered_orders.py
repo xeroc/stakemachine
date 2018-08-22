@@ -95,19 +95,15 @@ class Strategy(BaseStrategy):
             :param kwargs:
         """
 
-        # Calculate market center price
-        # Todo: Use user's center price if included
-        self.market_center_price = self.calculate_center_price(suppress_errors=True)
-
-        # Loop until center price appears on the market
+        # Check if market center price is calculated
         if not self.market_center_price:
+            self.market_center_price = self.calculate_center_price(suppress_errors=True)
             return
-
-        # Save initial market center price, which is used to make sure that first order is still correct
-        if not self.initial_market_center_price:
+        elif self.market_center_price and not self.initial_market_center_price:
+            # Save initial market center price
             self.initial_market_center_price = self.market_center_price
 
-        # Get orders
+        # Get all user's orders on current market
         orders = self.orders
         market_orders = self.market.orderbook(1)
 
