@@ -226,7 +226,6 @@ class Strategy(BaseStrategy):
                 self.cancel(orders_to_cancel[0])
                 # To avoid GUI hanging cancel only one order and let switch to another worker
                 return False
-
         else:
             return True
 
@@ -488,7 +487,6 @@ class Strategy(BaseStrategy):
         threshold = self.increment / 10
         upper_threshold = order_size * (1 + threshold)
         lower_threshold = order_size / (1 + threshold)
-        # self.log.debug('lower_threshold: {}, upper_threshold: {}'.format(lower_threshold, upper_threshold))
 
         if self.is_sell_order(order):
             lowest_sell_order = orders[0]
@@ -505,30 +503,29 @@ class Strategy(BaseStrategy):
                 # Check if the old order is same size with accuracy of 0.1%
                 if lower_threshold <= highest_sell_order['amount'] <= upper_threshold:
                     return True
-                else:
-                    self.log.debug('lower_threshold <= highest_sell_order <= upper_threshold: {} <= {} <= {}'.format(
-                                   lower_threshold, highest_sell_order['amount'], upper_threshold))
-                    return False
+
+                self.log.debug('lower_threshold <= highest_sell_order <= upper_threshold: {} <= {} <= {}'.format(
+                               lower_threshold, highest_sell_order['amount'], upper_threshold))
+                return False
             elif order == highest_sell_order:
                 order_index = orders.index(order)
                 higher_sell_order = self.place_higher_sell_order(orders[order_index - 1], place_order=False)
 
                 if lower_threshold <= higher_sell_order['amount'] <= upper_threshold:
                     return True
-                else:
-                    self.log.debug('lower_threshold <= higher_sell_order <= upper_threshold: {} <= {} <= {}'.format(
-                                   lower_threshold, higher_sell_order['amount'], upper_threshold))
-                    return False
+
+                self.log.debug('lower_threshold <= higher_sell_order <= upper_threshold: {} <= {} <= {}'.format(
+                               lower_threshold, higher_sell_order['amount'], upper_threshold))
+                return False
             elif order == lowest_sell_order:
                 order_index = orders.index(order)
                 lower_sell_order = self.place_lower_sell_order(orders[order_index + 1], place_order=False)
 
                 if lower_threshold <= lower_sell_order['amount'] <= upper_threshold:
                     return True
-                else:
-                    self.log.debug('lower_threshold <= lower_sell_order <= upper_threshold: {} <= {} <= {}'.format(
-                                   lower_threshold, lower_sell_order['amount'], upper_threshold))
-                    return False
+
+                self.log.debug('lower_threshold <= lower_sell_order <= upper_threshold: {} <= {} <= {}'.format(
+                               lower_threshold, lower_sell_order['amount'], upper_threshold))
                 return False
         elif self.is_buy_order(order):
             lowest_buy_order = orders[-1]
@@ -545,30 +542,30 @@ class Strategy(BaseStrategy):
                 # Check if the old order is same size with accuracy of 0.1%
                 if lower_threshold <= lowest_buy_order['amount'] <= upper_threshold:
                     return True
-                else:
-                    self.log.debug('lower_threshold <= lowest_buy_order <= upper_threshold: {} <= {} <= {}'.format(
-                                   lower_threshold, lowest_buy_order['amount'], upper_threshold))
-                    return False
+
+                self.log.debug('lower_threshold <= lowest_buy_order <= upper_threshold: {} <= {} <= {}'.format(
+                               lower_threshold, lowest_buy_order['amount'], upper_threshold))
+                return False
             elif order == lowest_buy_order:
                 order_index = orders.index(order)
                 lower_buy_order = self.place_lower_buy_order(orders[order_index - 1], place_order=False)
 
                 if lower_threshold <= lower_buy_order['amount'] <= upper_threshold:
                     return True
-                else:
-                    self.log.debug('lower_threshold <= lower_buy_order <= upper_threshold: {} <= {} <= {}'.format(
-                                   lower_threshold, lower_buy_order['amount'], upper_threshold))
-                    return False
+
+                self.log.debug('lower_threshold <= lower_buy_order <= upper_threshold: {} <= {} <= {}'.format(
+                               lower_threshold, lower_buy_order['amount'], upper_threshold))
+                return False
             elif order == highest_buy_order:
                 order_index = orders.index(order)
                 higher_buy_order = self.place_higher_buy_order(orders[order_index + 1], place_order=False)
 
                 if lower_threshold <= higher_buy_order['amount'] <= upper_threshold:
                     return True
-                else:
-                    self.log.debug('lower_threshold <= higher_buy_order <= upper_threshold: {} <= {} <= {}'.format(
-                                   lower_threshold, higher_buy_order['amount'], upper_threshold))
-                    return False
+
+                self.log.debug('lower_threshold <= higher_buy_order <= upper_threshold: {} <= {} <= {}'.format(
+                               lower_threshold, higher_buy_order['amount'], upper_threshold))
+                return False
 
         return False
 
@@ -585,7 +582,7 @@ class Strategy(BaseStrategy):
         price = order['price'] * (1 + self.increment)
         if amount / price > self.base_balance['amount']:
             self.log.debug('Not enough balance to place_higher_buy_order')
-            place_order = False
+            return
 
         if place_order:
             self.market_buy(amount, price)
@@ -605,7 +602,7 @@ class Strategy(BaseStrategy):
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
             self.log.debug('Not enough balance to place_higher_sell_order')
-            place_order = False
+            return
 
         if place_order:
             self.market_sell(amount, price)
@@ -625,7 +622,7 @@ class Strategy(BaseStrategy):
         price = order['price'] / (1 + self.increment)
         if amount / price > self.base_balance['amount']:
             self.log.debug('Not enough balance to place_lower_buy_order')
-            place_order = False
+            return
 
         if place_order:
             self.market_buy(amount, price)
@@ -642,11 +639,10 @@ class Strategy(BaseStrategy):
             :param bool | place_order: True = Places order to the market, False = returns amount and price
         """
         amount = order['base']['amount'] * (1 + self.increment)
-        initial_amount = amount
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
             self.log.debug('Not enough balance to place_lower_sell_order')
-            place_order = False
+            return
 
         if place_order:
             self.market_sell(amount, price)
