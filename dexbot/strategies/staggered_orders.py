@@ -582,7 +582,7 @@ class Strategy(BaseStrategy):
         price = order['price'] * (1 + self.increment)
         if amount / price > self.base_balance['amount']:
             self.log.debug('Not enough balance to place_higher_buy_order')
-            return
+            place_order = False
 
         if place_order:
             self.market_buy(amount, price)
@@ -602,7 +602,7 @@ class Strategy(BaseStrategy):
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
             self.log.debug('Not enough balance to place_higher_sell_order')
-            return
+            place_order = False
 
         if place_order:
             self.market_sell(amount, price)
@@ -622,7 +622,7 @@ class Strategy(BaseStrategy):
         price = order['price'] / (1 + self.increment)
         if amount / price > self.base_balance['amount']:
             self.log.debug('Not enough balance to place_lower_buy_order')
-            return
+            place_order = False
 
         if place_order:
             self.market_buy(amount, price)
@@ -642,7 +642,7 @@ class Strategy(BaseStrategy):
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
             self.log.debug('Not enough balance to place_lower_sell_order')
-            return
+            place_order = False
 
         if place_order:
             self.market_sell(amount, price)
