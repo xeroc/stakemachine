@@ -68,7 +68,7 @@ class Strategy(BaseStrategy):
         self.lower_bound = self.worker['lower_bound']
 
         # Strategy variables
-        self.bootstrapping = False  # Set default True / False?
+        self.bootstrapping = False  # Todo: Set default True / False?
         self.market_center_price = None
         self.initial_market_center_price = None
         self.buy_orders = []
@@ -91,7 +91,6 @@ class Strategy(BaseStrategy):
 
     def maintain_strategy(self, *args, **kwargs):
         """ Logic of the strategy
-            :param args: Order which was added after the bot was started and if there was no market center price
             :param args:
             :param kwargs:
         """
