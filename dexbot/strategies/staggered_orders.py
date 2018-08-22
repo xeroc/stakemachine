@@ -695,14 +695,14 @@ class Strategy(BaseStrategy):
             amount = amount / (1 + self.increment)
 
         precision = self.market['quote']['precision']
-        order_size = previous_amount * (self.quote_total_balance / orders_sum)
-        amount = int(float(order_size) * 10 ** precision) / (10 ** precision)
+        amount_quote = previous_amount * (self.quote_total_balance / orders_sum)
+        amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
         price = previous_price
 
         if place_order:
-            self.market_sell(amount, price)
+            self.market_sell(amount_quote, price)
         else:
-            return {"amount": amount, "price": price}
+            return {"amount": amount_quote, "price": price}
 
     def place_lowest_buy_order(self, base_balance, place_order=True, market_center_price=None):
         """ Places buy order furthest to the market center price
@@ -733,17 +733,17 @@ class Strategy(BaseStrategy):
             amount = amount / (1 + self.increment)
 
         precision = self.market['quote']['precision']
-        amount = previous_amount * (self.base_total_balance / orders_sum)
+        amount_base = previous_amount * (self.base_total_balance / orders_sum)
         price = previous_price
         # We need to turn BASE amount into QUOTE amount (we will buy this QUOTE asset amount)
         # QUOTE = BASE / price
-        amount = amount / price
-        amount = int(float(amount) * 10 ** precision) / (10 ** precision)
+        amount_quote = amount_base / price
+        amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
-            self.market_buy(amount, price)
+            self.market_buy(amount_quote, price)
         else:
-            return {"amount": amount, "price": price}
+            return {"amount": amount_quote, "price": price}
 
     def error(self, *args, **kwargs):
         self.disabled = True
