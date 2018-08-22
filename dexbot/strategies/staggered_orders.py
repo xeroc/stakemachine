@@ -423,7 +423,7 @@ class Strategy(BaseStrategy):
 
                         price = (order['price'] ** -1)
                         self.log.debug('Cancelling sell order in increase_order_sizes(); '
-                            'mode: mountain, base: {}, price: {}'.format(
+                            'mode: mountain, quote: {}, price: {}'.format(
                             order_amount, order['price']))
                         self.cancel(order)
                         self.market_sell(new_order_amount, price)
