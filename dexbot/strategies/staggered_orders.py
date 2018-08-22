@@ -579,8 +579,12 @@ class Strategy(BaseStrategy):
         """
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
-        if amount / price > self.base_balance['amount']:
-            self.log.debug('Not enough balance to place_higher_buy_order')
+        # How many BASE we need to buy QUOTE `amount`
+        base_amount = amount * price
+
+        if base_amount > self.base_balance['amount']:
+            self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'.format(
+                           base_amount, self.base_balance['amount']))
             place_order = False
 
         if place_order:
@@ -600,7 +604,8 @@ class Strategy(BaseStrategy):
         amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            self.log.debug('Not enough balance to place_higher_sell_order')
+            self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'.format(
+                           amount, self.quote_balance['amount']))
             place_order = False
 
         if place_order:
@@ -619,8 +624,12 @@ class Strategy(BaseStrategy):
         """
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
-        if amount / price > self.base_balance['amount']:
-            self.log.debug('Not enough balance to place_lower_buy_order')
+        # How many BASE we need to buy QUOTE `amount`
+        base_amount = amount * price
+
+        if base_amount > self.base_balance['amount']:
+            self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {}/{}'.format(
+                           base_amount, self.base_balance['amount']))
             place_order = False
 
         if place_order:
@@ -640,7 +649,8 @@ class Strategy(BaseStrategy):
         amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            self.log.debug('Not enough balance to place_lower_sell_order')
+            self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'.format(
+                           amount, self.quote_balance['amount']))
             place_order = False
 
         if place_order:
@@ -716,8 +726,8 @@ class Strategy(BaseStrategy):
 
         precision = self.market['quote']['precision']
         amount = previous_amount * (self.base_orders_balance / orders_sum)
-        # amount / price = amount in QUOTE
-        amount = amount / price
+        # We need to turn BASE amount into QUOTE amount (we will buy this QUOTE asset amount)
+        amount = amount * price
         amount = int(float(amount) * 10 ** precision) / (10 ** precision)
         price = previous_price
 
