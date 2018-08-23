@@ -436,7 +436,7 @@ class Strategy(BaseStrategy):
                         price = (order['price'] ** -1)
                         self.log.debug('Cancelling sell order in increase_order_sizes(); '
                             'mode: mountain, quote: {}, price: {}'.format(
-                            order_amount, order['price']))
+                            order_amount, price))
                         self.cancel(order)
                         self.market_sell(new_order_amount, price)
                         # Only one increase at a time. This prevents running more than one increaement round
