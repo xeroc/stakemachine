@@ -177,7 +177,7 @@ class Strategy(BaseStrategy):
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders
         # Measure which price is closer to the center
         buy_distance = self.market_center_price - highest_buy_price
-        sell_distance = self.market_center_price - lowest_sell_price
+        sell_distance = lowest_sell_price - self.market_center_price
 
         if buy_distance > sell_distance:
             if self.market_center_price > highest_buy_price * (1 + self.target_spread):
