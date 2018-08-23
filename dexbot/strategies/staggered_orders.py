@@ -171,7 +171,7 @@ class Strategy(BaseStrategy):
 
         # Do not continue whether assets is not fully allocated
         if not base_allocated and not quote_allocated:
-            # Futher checks should be performed on next maintenance
+            # Further checks should be performed on next maintenance
             return
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders
@@ -193,6 +193,9 @@ class Strategy(BaseStrategy):
                 self.cancel(self.sell_orders[-1])
 
     def refresh_balances(self):
+        """ This function is used to refresh account balances
+            :return:
+        """
         # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
 
@@ -209,11 +212,11 @@ class Strategy(BaseStrategy):
         self.quote_balance['amount'] = self.quote_balance['amount'] - self.quote_fee_reserve
         self.base_balance['amount'] = self.base_balance['amount'] - self.base_fee_reserve
 
-        # Balance per asset from orders and account balance
+        # Balance per asset from orders
         order_ids = [order['id'] for order in self.orders]
         orders_balance = self.orders_balance(order_ids)
 
-        # Todo: These are more xxx_total_balance
+        # Total balance per asset (orders balance and available balance)
         self.quote_total_balance = orders_balance['quote'] + self.quote_balance['amount']
         self.base_total_balance = orders_balance['base'] + self.base_balance['amount']
 
@@ -249,8 +252,8 @@ class Strategy(BaseStrategy):
                 self.cancel(orders_to_cancel[0])
                 # To avoid GUI hanging cancel only one order and let switch to another worker
                 return False
-        else:
-            return True
+
+        return True
 
     def maintain_mountain_mode(self):
         """ Mountain mode
@@ -275,7 +278,7 @@ class Strategy(BaseStrategy):
             highest_buy_order = self.buy_orders[0]
 
             # Check if the order size is correct
-            if self.is_order_size_correct(highest_buy_order, self.buy_orders) or True:
+            if self.is_order_size_correct(highest_buy_order, self.buy_orders):
                 # Calculate actual spread
                 lowest_sell_price = self.sell_orders[0]['price'] ** -1
                 highest_buy_price = highest_buy_order['price']
@@ -288,7 +291,7 @@ class Strategy(BaseStrategy):
                     if self.bootstrapping:
                         self.place_higher_buy_order(highest_buy_order)
                     else:
-                        # Allow to place partial order whether we are not in boostrapping
+                        # Allow to place partial order whether we are not in bootstrapping
                         self.place_higher_buy_order(highest_buy_order, allow_partial=True)
                 elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
                     self.bootstrapping = False
@@ -342,7 +345,7 @@ class Strategy(BaseStrategy):
             highest_sell_order_price = (highest_sell_order['price'] ** -1)
 
             # Check if the order size is correct
-            if self.is_order_size_correct(lowest_sell_order, self.sell_orders) or True:
+            if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
                 # Calculate actual spread
                 lowest_sell_price = lowest_sell_order['price'] ** -1
                 highest_buy_price = self.buy_orders[0]['price']
@@ -452,12 +455,11 @@ class Strategy(BaseStrategy):
                                 new_order_amount))
 
                         price = (order['price'] ** -1)
-                        self.log.debug('Cancelling sell order in increase_order_sizes(); '
-                            'mode: mountain, quote: {}, price: {}'.format(
-                            order_amount, price))
+                        self.log.debug('Cancelling sell order in increase_order_sizes(); ' 
+                                       'mode: mountain, quote: {}, price: {}'.format(order_amount, price))
                         self.cancel(order)
                         self.market_sell(new_order_amount, price)
-                        # Only one increase at a time. This prevents running more than one increaement round
+                        # Only one increase at a time. This prevents running more than one increment round
                         # simultaneously
                         return
             elif asset == 'base':
@@ -518,9 +520,8 @@ class Strategy(BaseStrategy):
                                 new_base_amount))
 
                         new_order_amount = new_base_amount / price
-                        self.log.debug('Cancelling buy order in increase_order_sizes(); '
-                            'mode: mountain, base: {}, price: {}'.format(
-                            order_amount, order['price']))
+                        self.log.debug('Cancelling buy order in increase_order_sizes(); ' 
+                                       'mode: mountain, base: {}, price: {}'.format(order_amount, order['price']))
                         self.cancel(order)
                         self.market_buy(new_order_amount, price)
                         # Only one increase at a time. This prevents running more than one increaement round
@@ -651,12 +652,11 @@ class Strategy(BaseStrategy):
 
         if base_amount > self.base_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'.format(
-                               base_amount, self.base_balance['amount']))
+                self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'
+                               .format(base_amount, self.base_balance['amount']))
                 place_order = False
             elif allow_partial:
-                self.log.debug('Limiting order amount to avail balance: {}'.format(
-                    self.base_balance['amount']))
+                self.log.debug('Limiting order amount to available balance: {}'.format(self.base_balance['amount']))
                 amount = self.base_balance['amount'] / price
 
         if place_order:
@@ -678,12 +678,11 @@ class Strategy(BaseStrategy):
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'.format(
-                               amount, self.quote_balance['amount']))
+                self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'
+                               .format(amount, self.quote_balance['amount']))
                 place_order = False
             elif allow_partial:
-                self.log.debug('Limiting order amount to avail balance: {}'.format(
-                    self.quote_balance['amount']))
+                self.log.debug('Limiting order amount to available balance: {}'.format(self.quote_balance['amount']))
                 amount = self.quote_balance['amount']
 
         if place_order:
@@ -708,12 +707,11 @@ class Strategy(BaseStrategy):
 
         if base_amount > self.base_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {}/{}'.format(
-                               base_amount, self.base_balance['amount']))
+                self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {}/{}'
+                               .format(base_amount, self.base_balance['amount']))
                 place_order = False
             elif allow_partial:
-                self.log.debug('Limiting order amount to avail balance: {}'.format(
-                    self.base_balance['amount']))
+                self.log.debug('Limiting order amount to available balance: {}'.format(self.base_balance['amount']))
                 amount = self.base_balance['amount'] / price
 
         if place_order:
@@ -735,12 +733,11 @@ class Strategy(BaseStrategy):
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'.format(
-                               amount, self.quote_balance['amount']))
+                self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'
+                               .format(amount, self.quote_balance['amount']))
                 place_order = False
             elif allow_partial:
-                self.log.debug('Limiting order amount to avail balance: {}'.format(
-                    self.quote_balance['amount']))
+                self.log.debug('Limiting order amount to available balance: {}'.format(self.quote_balance['amount']))
                 amount = self.quote_balance['amount']
 
         if place_order:
@@ -757,7 +754,7 @@ class Strategy(BaseStrategy):
             :return dict | order: Returns highest sell order
         """
         self.log.debug('quote_balance in place_highest_sell_order: {}'.format(quote_balance))
-        # Todo: Fix edge case where CP is close to upper bound and will go over.
+
         if not market_center_price:
             market_center_price = self.market_center_price
 
@@ -777,9 +774,9 @@ class Strategy(BaseStrategy):
             amount = amount / (1 + self.increment)
 
         precision = self.market['quote']['precision']
+        price = previous_price
         amount_quote = previous_amount * (self.quote_total_balance / orders_sum)
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
-        price = previous_price
 
         if place_order:
             self.market_sell(amount_quote, price)
@@ -788,6 +785,10 @@ class Strategy(BaseStrategy):
 
     def place_lowest_buy_order(self, base_balance, place_order=True, market_center_price=None):
         """ Places buy order furthest to the market center price
+
+            Turn BASE amount into QUOTE amount (we will buy this QUOTE amount).
+            QUOTE = BASE / price
+
             Mode: MOUNTAIN
             :param Amount | base_balance: Available BASE asset balance
             :param bool | place_order: True = Places order to the market, False = returns amount and price
@@ -795,7 +796,7 @@ class Strategy(BaseStrategy):
             :return dict | order: Returns lowest buy order
         """
         self.log.debug('base_balance in place_highest_sell_order: {}'.format(base_balance))
-        # Todo: Fix edge case where CP is close to lower bound and will go over.
+
         if not market_center_price:
             market_center_price = self.market_center_price
 
@@ -817,8 +818,6 @@ class Strategy(BaseStrategy):
         precision = self.market['quote']['precision']
         amount_base = previous_amount * (self.base_total_balance / orders_sum)
         price = previous_price
-        # We need to turn BASE amount into QUOTE amount (we will buy this QUOTE asset amount)
-        # QUOTE = BASE / price
         amount_quote = amount_base / price
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
