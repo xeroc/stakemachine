@@ -604,7 +604,7 @@ class Strategy(BaseStrategy):
 
         return False
 
-    def place_higher_buy_order(self, order, place_order=True):
+    def place_higher_buy_order(self, order, place_order=True, allow_partial=False):
         """ Place higher buy order
             Mode: MOUNTAIN
             amount (QUOTE) = lower_buy_order_amount
@@ -612,6 +612,7 @@ class Strategy(BaseStrategy):
 
             :param order: Previously highest buy order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
+            :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
         """
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
@@ -619,17 +620,21 @@ class Strategy(BaseStrategy):
         base_amount = amount * price
 
         if base_amount > self.base_balance['amount']:
-            if place_order:
+            if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'.format(
                                base_amount, self.base_balance['amount']))
-            place_order = False
+                place_order = False
+            elif allow_partial:
+                self.log.debug('Limiting order amount to avail balance: {}'.format(
+                    self.base_balance['amount']))
+                amount = self.base_balance['amount'] / price
 
         if place_order:
             self.market_buy(amount, price)
 
         return {"amount": amount, "price": price}
 
-    def place_higher_sell_order(self, order, place_order=True):
+    def place_higher_sell_order(self, order, place_order=True, allow_partial=False):
         """ Place higher sell order
             Mode: MOUNTAIN
             amount (BASE) = higher_sell_order_amount / (1 + increment)
@@ -637,21 +642,26 @@ class Strategy(BaseStrategy):
 
             :param order: highest_sell_order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
+            :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
         """
         amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            if place_order:
+            if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'.format(
                                amount, self.quote_balance['amount']))
-            place_order = False
+                place_order = False
+            elif allow_partial:
+                self.log.debug('Limiting order amount to avail balance: {}'.format(
+                    self.quote_balance['amount']))
+                amount = self.quote_balance['amount']
 
         if place_order:
             self.market_sell(amount, price)
 
         return {"amount": amount, "price": price}
 
-    def place_lower_buy_order(self, order, place_order=True):
+    def place_lower_buy_order(self, order, place_order=True, allow_partial=False):
         """ Place lower buy order
             Mode: MOUNTAIN
             amount (QUOTE) = lowest_buy_order_amount
@@ -659,6 +669,7 @@ class Strategy(BaseStrategy):
 
             :param order: Previously lowest buy order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
+            :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
         """
         amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
@@ -666,17 +677,21 @@ class Strategy(BaseStrategy):
         base_amount = amount * price
 
         if base_amount > self.base_balance['amount']:
-            if place_order:
+            if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {}/{}'.format(
                                base_amount, self.base_balance['amount']))
-            place_order = False
+                place_order = False
+            elif allow_partial:
+                self.log.debug('Limiting order amount to avail balance: {}'.format(
+                    self.base_balance['amount']))
+                amount = self.base_balance['amount'] / price
 
         if place_order:
             self.market_buy(amount, price)
         else:
             return {"amount": amount, "price": price}
 
-    def place_lower_sell_order(self, order, place_order=True):
+    def place_lower_sell_order(self, order, place_order=True, allow_partial=False):
         """ Place lower sell order
             Mode: MOUNTAIN
             amount (BASE) = higher_sell_order_amount * (1 + increment)
@@ -684,14 +699,19 @@ class Strategy(BaseStrategy):
 
             :param order: Previously higher sell order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
+            :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
         """
         amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
-            if place_order:
+            if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'.format(
                                amount, self.quote_balance['amount']))
-            place_order = False
+                place_order = False
+            elif allow_partial:
+                self.log.debug('Limiting order amount to avail balance: {}'.format(
+                    self.quote_balance['amount']))
+                amount = self.quote_balance['amount']
 
         if place_order:
             self.market_sell(amount, price)
