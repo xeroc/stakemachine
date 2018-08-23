@@ -403,6 +403,7 @@ class Strategy(BaseStrategy):
                     # This check prevents choosing order with index lower than the list length
                     if order_index == 0:
                         # In case checking the first order, use highest BUY order in comparison
+                        # This means our highest-sized order will not exceed our highest BUY order
                         lower_order = self.buy_orders[0]
                         lower_bound = lower_order['quote']['amount']
                     else:
