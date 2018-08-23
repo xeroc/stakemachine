@@ -275,7 +275,7 @@ class Strategy(BaseStrategy):
             highest_buy_order = self.buy_orders[0]
 
             # Check if the order size is correct
-            if self.is_order_size_correct(highest_buy_order, self.buy_orders):
+            if self.is_order_size_correct(highest_buy_order, self.buy_orders) or True:
                 # Calculate actual spread
                 lowest_sell_price = self.sell_orders[0]['price'] ** -1
                 highest_buy_price = highest_buy_order['price']
@@ -342,7 +342,7 @@ class Strategy(BaseStrategy):
             highest_sell_order_price = (highest_sell_order['price'] ** -1)
 
             # Check if the order size is correct
-            if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
+            if self.is_order_size_correct(lowest_sell_order, self.sell_orders) or True:
                 # Calculate actual spread
                 lowest_sell_price = lowest_sell_order['price'] ** -1
                 highest_buy_price = self.buy_orders[0]['price']
