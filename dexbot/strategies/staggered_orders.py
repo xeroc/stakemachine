@@ -155,21 +155,38 @@ class Strategy(BaseStrategy):
 
         # BASE asset check
         if self.base_balance > base_asset_threshold:
+            base_allocated = False
             # Allocate available funds
             self.allocate_base_asset(self.base_balance)
-        elif self.market_center_price > highest_buy_price * (1 + self.target_spread):
-            if not self.bootstrapping:
+        else:
+            base_allocated = True
+
+        # QUOTE asset check
+        if self.quote_balance > quote_asset_threshold:
+            quote_allocated = False
+            # Allocate available funds
+            self.allocate_quote_asset(self.quote_balance)
+        else:
+            quote_allocated = True
+
+        # Do not continue whether assets is not fully allocated
+        if not base_allocated and not quote_allocated:
+            # Futher checks should be performed on next maintenance
+            return
+
+        # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders
+        # Measure which price is closer to the center
+        buy_distance = self.market_center_price - highest_buy_price
+        sell_distance = self.market_center_price - lowest_sell_price
+
+        if buy_distance > sell_distance:
+            if self.market_center_price > highest_buy_price * (1 + self.target_spread):
                 # Cancel lowest buy order because center price moved up.
                 # On the next run there will be placed next buy order closer to the new center
                 self.log.debug('Cancelling lowest buy order in maintain_strategy')
                 self.cancel(self.buy_orders[-1])
-
-        # QUOTE asset check
-        if self.quote_balance > quote_asset_threshold:
-            # Allocate available funds
-            self.allocate_quote_asset(self.quote_balance)
-        elif self.market_center_price < lowest_sell_price * (1 - self.target_spread):
-            if not self.bootstrapping:
+        else:
+            if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
                 # Cancel highest sell order because center price moved down.
                 # On the next run there will be placed next sell closer to the new center
                 self.log.debug('Cancelling highest sell order in maintain_strategy')
