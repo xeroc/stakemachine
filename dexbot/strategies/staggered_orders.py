@@ -68,7 +68,7 @@ class Strategy(BaseStrategy):
         self.lower_bound = self.worker['lower_bound']
 
         # Strategy variables
-        self.bootstrapping = False  # Todo: Set default True / False?
+        self.bootstrapping = True  # Todo: Set default True / False?
         self.market_center_price = None
         self.initial_market_center_price = None
         self.buy_orders = []
@@ -96,8 +96,11 @@ class Strategy(BaseStrategy):
         """
 
         # Check if market center price is calculated
-        if not self.market_center_price:
+        if not self.bootstrapping:
             self.market_center_price = self.calculate_center_price(suppress_errors=True)
+        elif not self.market_center_price:
+            # On empty market we have to pass the user specified center price
+            self.market_center_price = self.calculate_center_price(center_price=self.center_price, suppress_errors=True)
             return
         elif self.market_center_price and not self.initial_market_center_price:
             # Save initial market center price
@@ -125,11 +128,13 @@ class Strategy(BaseStrategy):
 
         # Calculate market spread
         # Todo: Market spread is calculated but never used. Is this needed?
-        highest_market_buy = market_orders['bids'][0]['price']
-        lowest_market_sell = market_orders['asks'][0]['price']
+        # if there is no orders in both side spread cannot be calculated
+        if len(market_orders['bids']) and len(market_orders['asks']):
+            highest_market_buy = market_orders['bids'][0]['price']
+            lowest_market_sell = market_orders['asks'][0]['price']
 
-        if highest_market_buy and lowest_market_sell:
-            self.market_spread = lowest_market_sell / highest_market_buy - 1
+            if highest_market_buy and lowest_market_sell:
+                self.market_spread = lowest_market_sell / highest_market_buy - 1
 
         # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
