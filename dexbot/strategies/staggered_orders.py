@@ -136,29 +136,7 @@ class Strategy(BaseStrategy):
             if highest_market_buy and lowest_market_sell:
                 self.market_spread = lowest_market_sell / highest_market_buy - 1
 
-        # Get current account balances
-        account_balances = self.total_balance(order_ids=[], return_asset=True)
-
-        self.base_balance = account_balances['base']
-        self.quote_balance = account_balances['quote']
-
-        # Reserve transaction fee equivalent in BTS
-        ticker = self.market.ticker()
-        core_exchange_rate = ticker['core_exchange_rate']
-        # Todo: order_creation_fee(BTS) = 0.01 for now
-        self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
-        self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
-
-        self.quote_balance['amount'] = self.quote_balance['amount'] - self.quote_fee_reserve
-        self.base_balance['amount'] = self.base_balance['amount'] - self.base_fee_reserve
-
-        # Balance per asset from orders and account balance
-        order_ids = [order['id'] for order in orders]
-        orders_balance = self.orders_balance(order_ids)
-
-        # Todo: These are more xxx_total_balance
-        self.quote_total_balance = orders_balance['quote'] + self.quote_balance['amount']
-        self.base_total_balance = orders_balance['base'] + self.base_balance['amount']
+        self.refresh_balances()
 
         # Calculate asset thresholds
         quote_asset_threshold = self.quote_total_balance / 20000
@@ -196,6 +174,31 @@ class Strategy(BaseStrategy):
                 # On the next run there will be placed next sell closer to the new center
                 self.log.debug('Cancelling highest sell order in maintain_strategy')
                 self.cancel(self.sell_orders[-1])
+
+    def refresh_balances(self):
+        # Get current account balances
+        account_balances = self.total_balance(order_ids=[], return_asset=True)
+
+        self.base_balance = account_balances['base']
+        self.quote_balance = account_balances['quote']
+
+        # Reserve transaction fee equivalent in BTS
+        ticker = self.market.ticker()
+        core_exchange_rate = ticker['core_exchange_rate']
+        # Todo: order_creation_fee(BTS) = 0.01 for now
+        self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
+        self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
+
+        self.quote_balance['amount'] = self.quote_balance['amount'] - self.quote_fee_reserve
+        self.base_balance['amount'] = self.base_balance['amount'] - self.base_fee_reserve
+
+        # Balance per asset from orders and account balance
+        order_ids = [order['id'] for order in self.orders]
+        orders_balance = self.orders_balance(order_ids)
+
+        # Todo: These are more xxx_total_balance
+        self.quote_total_balance = orders_balance['quote'] + self.quote_balance['amount']
+        self.base_total_balance = orders_balance['base'] + self.base_balance['amount']
 
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
