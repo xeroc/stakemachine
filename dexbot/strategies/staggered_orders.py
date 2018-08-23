@@ -268,7 +268,11 @@ class Strategy(BaseStrategy):
                     # Place order closer to the center price
                     self.log.debug('Placing higher buy order; actual spread: {}, target + increment: {}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
-                    self.place_higher_buy_order(highest_buy_order)
+                    if self.bootstrapping:
+                        self.place_higher_buy_order(highest_buy_order)
+                    else:
+                        # Allow to place partial order whether we are not in boostrapping
+                        self.place_higher_buy_order(highest_buy_order, allow_partial=True)
                 elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
                     self.bootstrapping = False
                     # Lower bound has been reached and now will start allocating rest of the base balance.
@@ -277,14 +281,15 @@ class Strategy(BaseStrategy):
                 else:
                     self.bootstrapping = False
                     self.log.debug('Placing lower order than lowest_buy_order')
-                    self.place_lower_buy_order(lowest_buy_order)
+                    self.place_lower_buy_order(lowest_buy_order, allow_partial=True)
             else:
                 self.log.debug('Order size is not correct, cancelling highest buy order in allocate_base_asset()')
                 # Cancel highest buy order and immediately replace it with new one.
                 self.cancel(highest_buy_order)
+                self.refresh_balances()
                 # We have several orders
                 if len(self.buy_orders) > 1:
-                    self.place_higher_buy_order(self.buy_orders[1])
+                    self.place_higher_buy_order(self.buy_orders[1], allow_partial=True)
                 # Length is 1, we have only one order which is lowest_buy_order
                 else:
                     # We need to obtain total available base balance
@@ -330,7 +335,10 @@ class Strategy(BaseStrategy):
                     # Place order closer to the center price
                     self.log.debug('Placing lower sell order; actual spread: {}, target + increment: {}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
-                    self.place_lower_sell_order(lowest_sell_order)
+                    if self.bootstrapping:
+                        self.place_lower_sell_order(lowest_sell_order)
+                    else:
+                        self.place_lower_sell_order(lowest_sell_order, allow_partial=True)
                 elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
                     self.bootstrapping = False
                     # Upper bound has been reached and now will start allocating rest of the quote balance.
@@ -343,9 +351,10 @@ class Strategy(BaseStrategy):
                 # Cancel lowest sell order
                 self.log.debug('Order size is not correct, cancelling lowest sell order in allocate_quote_asset')
                 self.cancel(self.sell_orders[0])
+                self.refresh_balances()
                 # We have several orders
                 if len(self.sell_orders) > 1:
-                    self.place_lower_sell_order(self.sell_orders[1])
+                    self.place_lower_sell_order(self.sell_orders[1], allow_partial=True)
                 # Length is 1, we have only one order which is highest_sell_order
                 else:
                     total_balance = self.total_balance([], return_asset=True)
