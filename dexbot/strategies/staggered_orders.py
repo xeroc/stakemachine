@@ -346,7 +346,7 @@ class Strategy(BaseStrategy):
                     self.increase_order_sizes('quote', quote_balance, self.sell_orders)
                 else:
                     self.bootstrapping = False
-                    self.place_higher_sell_order(highest_sell_order)
+                    self.place_higher_sell_order(highest_sell_order, allow_partial=True)
             else:
                 # Cancel lowest sell order
                 self.log.debug('Order size is not correct, cancelling lowest sell order in allocate_quote_asset')
