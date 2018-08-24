@@ -1,5 +1,6 @@
 import math
 from datetime import datetime
+from datetime import timedelta
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.qt_queue.idle_queue import idle_add
@@ -87,6 +88,8 @@ class Strategy(BaseStrategy):
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
         self.last_check = datetime.now()
+        # Minimal check interval is needed to prevent event queue accumulation
+        self.min_check_interval = 0.05
 
         if self.view:
             self.update_gui_slider()
@@ -96,6 +99,12 @@ class Strategy(BaseStrategy):
             :param args:
             :param kwargs:
         """
+        delta = datetime.now() - self.last_check
+
+        # Only allow to maintain whether minimal time passed.
+        if delta < timedelta(seconds=self.min_check_interval):
+            self.log.debug('Ignoring event as min_check_interval has not passed')
+            return
 
         # Get all user's orders on current market
         self.refresh_orders()
@@ -178,6 +187,7 @@ class Strategy(BaseStrategy):
         # Do not continue whether assets is not fully allocated
         if not base_allocated and not quote_allocated:
             # Further checks should be performed on next maintenance
+            self.last_check = datetime.now()
             return
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders
@@ -197,6 +207,8 @@ class Strategy(BaseStrategy):
                 # On the next run there will be placed next sell closer to the new center
                 self.log.debug('Cancelling highest sell order in maintain_strategy')
                 self.cancel(self.sell_orders[-1])
+
+        self.last_check = datetime.now()
 
     def refresh_balances(self):
         """ This function is used to refresh account balances
