@@ -417,6 +417,10 @@ class Strategy(BaseStrategy):
             :param list | orders: List of buy or sell orders
             :return None
         """
+        # Disable size increase during boostrapping, may happen with one-sided start
+        if self.bootstrapping:
+            return
+
         # Mountain mode:
         if self.mode == 'mountain':
             # Todo: Work in progress.
