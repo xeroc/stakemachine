@@ -658,7 +658,7 @@ class Strategy(BaseStrategy):
 
         return False
 
-    def place_higher_buy_order(self, order, place_order=True, allow_partial=False):
+    def place_higher_buy_order(self, order, place_order=True, allow_partial=False, base_limit=None):
         """ Place higher buy order
             Mode: MOUNTAIN
             amount (QUOTE) = lower_buy_order_amount
@@ -667,11 +667,16 @@ class Strategy(BaseStrategy):
             :param order: Previously highest buy order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
+            :param float | base_limit: order should be limited in size by this BASE amount
         """
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
         # How many BASE we need to buy QUOTE `amount`
         base_amount = amount * price
+
+        if base_limit and base_limit < base_amount:
+            base_amount = base_limit
+            amount = base_limit / price
 
         if base_amount > self.base_balance['amount']:
             if place_order and not allow_partial:
@@ -742,7 +747,7 @@ class Strategy(BaseStrategy):
         else:
             return {"amount": amount, "price": price}
 
-    def place_lower_sell_order(self, order, place_order=True, allow_partial=False):
+    def place_lower_sell_order(self, order, place_order=True, allow_partial=False, limit=None):
         """ Place lower sell order
             Mode: MOUNTAIN
             amount (BASE) = higher_sell_order_amount * (1 + increment)
@@ -751,8 +756,11 @@ class Strategy(BaseStrategy):
             :param order: Previously higher sell order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
+            :param float | limit: order should be limited in size by this QUOTE amount
         """
         amount = order['base']['amount'] * (1 + self.increment)
+        if limit and limit < amount:
+            amount = limit
         price = (order['price'] ** -1) / (1 + self.increment)
         if amount > self.quote_balance['amount']:
             if place_order and not allow_partial:
