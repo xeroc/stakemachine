@@ -68,7 +68,8 @@ class Strategy(BaseStrategy):
         self.lower_bound = self.worker['lower_bound']
 
         # Strategy variables
-        self.bootstrapping = True  # Todo: Set default True / False?
+        # Bootstrap is turned on whether there will no buy or sell orders at all
+        self.bootstrapping = False
         self.market_center_price = None
         self.initial_market_center_price = None
         self.buy_orders = []
@@ -95,6 +96,13 @@ class Strategy(BaseStrategy):
             :param kwargs:
         """
 
+        # Get all user's orders on current market
+        self.refresh_orders()
+        # market_orders = self.market.orderbook(1)
+
+        if not self.buy_orders or not self.sell_orders:
+            self.bootstrapping = True
+
         # Check if market center price is calculated
         if not self.bootstrapping:
             self.market_center_price = self.calculate_center_price(suppress_errors=True)
@@ -105,10 +113,6 @@ class Strategy(BaseStrategy):
         elif self.market_center_price and not self.initial_market_center_price:
             # Save initial market center price
             self.initial_market_center_price = self.market_center_price
-
-        # Get all user's orders on current market
-        self.refresh_orders()
-        # market_orders = self.market.orderbook(1)
 
         # Get highest buy and lowest sell prices from orders
         highest_buy_price = 0
@@ -329,6 +333,7 @@ class Strategy(BaseStrategy):
                     self.place_lowest_buy_order(base_balance)
         else:
             # Place first buy order as close to the lower bound as possible
+            self.bootstrapping = True
             self.log.debug('Placing first buy order')
             self.place_lowest_buy_order(base_balance)
 
