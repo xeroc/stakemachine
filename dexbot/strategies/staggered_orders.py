@@ -307,8 +307,11 @@ class Strategy(BaseStrategy):
                     if self.bootstrapping:
                         self.place_higher_buy_order(highest_buy_order)
                     else:
-                        # Allow to place partial order whether we are not in bootstrapping
-                        self.place_higher_buy_order(highest_buy_order, allow_partial=True)
+                        # Place order limited by size of the opposite-side order
+                        lowest_sell_order = self.sell_orders[0]['quote']['amount']
+                        limit = lowest_sell_order / (1 + self.increment)
+                        self.log.debug('Limiting buy order base by opposite order quote: {}'.format(limit))
+                        self.place_higher_buy_order(highest_buy_order, base_limit=limit)
                 elif lowest_buy_order_price / (1 + self.increment) < self.lower_bound:
                     if self.buy_orders and self.sell_orders:
                         self.bootstrapping = False
@@ -373,7 +376,11 @@ class Strategy(BaseStrategy):
                     if self.bootstrapping:
                         self.place_lower_sell_order(lowest_sell_order)
                     else:
-                        self.place_lower_sell_order(lowest_sell_order, allow_partial=True)
+                        # Place order limited by opposite-side order
+                        highest_buy_order = self.buy_orders[0]['quote']['amount']
+                        limit = highest_buy_order / (1 + self.increment)
+                        self.log.debug('Limiting sell order by opposite order quote: {}'.format(limit))
+                        self.place_lower_sell_order(lowest_sell_order, limit=limit)
                 elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
                     if self.buy_orders and self.sell_orders:
                         self.bootstrapping = False
