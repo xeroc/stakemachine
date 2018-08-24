@@ -460,10 +460,10 @@ class Strategy(BaseStrategy):
 
                     # This check prevents choosing order with index lower than the list length
                     if order_index == 0:
-                        # In case checking the first order, use highest BUY order in comparison
-                        # This means our highest-sized order will not exceed our highest BUY order
-                        lower_order = self.buy_orders[0]
-                        lower_bound = lower_order['quote']['amount']
+                        # In case checking the first order, use the same order, but increased by 1 increment
+                        # This allows our lowest sell order amount exceed highest buy order
+                        lower_order = order
+                        lower_bound = lower_order['base']['amount'] * (1 + self.increment)
                     else:
                         lower_order = orders[order_index - 1]
                         lower_bound = lower_order['base']['amount']
@@ -523,9 +523,10 @@ class Strategy(BaseStrategy):
 
                     # This check prevents choosing order with index lower than the list length
                     if order_index == 0:
-                        # In case checking the first order, use lowest SELL order in comparison
-                        higher_order = self.sell_orders[0]
-                        higher_bound = higher_order['quote']['amount']
+                        # In case checking the first order, use the same order, but increased by 1 increment
+                        # This allows our highest buy order amount exceed lowest sell order
+                        higher_order = order
+                        higher_bound = higher_order['base']['amount'] * (1 + self.increment)
                     else:
                         higher_order = orders[order_index - 1]
                         higher_bound = higher_order['base']['amount']
