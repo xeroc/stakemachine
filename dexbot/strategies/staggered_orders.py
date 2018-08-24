@@ -322,10 +322,10 @@ class Strategy(BaseStrategy):
                         self.place_higher_buy_order(highest_buy_order)
                     else:
                         # Place order limited by size of the opposite-side order
-                        lowest_sell_order = self.sell_orders[0]['quote']['amount']
+                        lowest_sell_order = self.sell_orders[0]['base']['amount']
                         limit = lowest_sell_order / (1 + self.increment)
-                        self.log.debug('Limiting buy order base by opposite order quote: {}'.format(limit))
-                        self.place_higher_buy_order(highest_buy_order, base_limit=limit)
+                        self.log.debug('Limiting buy order base by opposite order: {}'.format(limit))
+                        self.place_higher_buy_order(highest_buy_order, limit=limit, allow_partial=True)
                 elif not self.sell_orders:
                     # Do not try to do anything than placing higher buy whether there is no sell orders
                     return
@@ -389,10 +389,10 @@ class Strategy(BaseStrategy):
                         self.place_lower_sell_order(lowest_sell_order)
                     else:
                         # Place order limited by opposite-side order
-                        highest_buy_order = self.buy_orders[0]['quote']['amount']
+                        highest_buy_order = self.buy_orders[0]['base']['amount']
                         limit = highest_buy_order / (1 + self.increment)
                         self.log.debug('Limiting sell order by opposite order quote: {}'.format(limit))
-                        self.place_lower_sell_order(lowest_sell_order, limit=limit)
+                        self.place_lower_sell_order(lowest_sell_order, base_limit=limit, allow_partial=True)
                 elif not self.buy_orders:
                     # Do not try to do anything than placing lower sell whether there is no buy orders
                     return
@@ -692,7 +692,7 @@ class Strategy(BaseStrategy):
 
         return False
 
-    def place_higher_buy_order(self, order, place_order=True, allow_partial=False, base_limit=None):
+    def place_higher_buy_order(self, order, place_order=True, allow_partial=False, base_limit=None, limit=None):
         """ Place higher buy order
             Mode: MOUNTAIN
             amount (QUOTE) = lower_buy_order_amount
@@ -702,7 +702,13 @@ class Strategy(BaseStrategy):
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
             :param float | base_limit: order should be limited in size by this BASE amount
+            :param float | limit: order should be limited in size by this QUOTE amount
         """
+        if base_limit and limit:
+            self.log.error('Only base_limit or limit should be specified')
+            self.disabled = True
+            return None
+
         amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
         # How many BASE we need to buy QUOTE `amount`
@@ -711,6 +717,9 @@ class Strategy(BaseStrategy):
         if base_limit and base_limit < base_amount:
             base_amount = base_limit
             amount = base_limit / price
+        elif limit:
+            base_amount = limit * price
+            amount = limit
 
         if base_amount > self.base_balance['amount']:
             if place_order and not allow_partial:
@@ -783,7 +792,7 @@ class Strategy(BaseStrategy):
         else:
             return {"amount": amount, "price": price}
 
-    def place_lower_sell_order(self, order, place_order=True, allow_partial=False, limit=None):
+    def place_lower_sell_order(self, order, place_order=True, allow_partial=False, base_limit=None, limit=None):
         """ Place lower sell order
             Mode: MOUNTAIN
             amount (BASE) = higher_sell_order_amount * (1 + increment)
@@ -792,12 +801,22 @@ class Strategy(BaseStrategy):
             :param order: Previously higher sell order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
+            :param float | base_limit: order should be limited in size by this BASE amount
             :param float | limit: order should be limited in size by this QUOTE amount
         """
+        if base_limit and limit:
+            self.log.error('Only base_limit or limit should be specified')
+            self.disabled = True
+            return None
+
         amount = order['base']['amount'] * (1 + self.increment)
-        if limit and limit < amount:
-            amount = limit
         price = (order['price'] ** -1) / (1 + self.increment)
+
+        if base_limit:
+            amount = base_limit / price
+        elif limit and limit < amount:
+            amount = limit
+
         if amount > self.quote_balance['amount']:
             if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'
