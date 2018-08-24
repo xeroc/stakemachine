@@ -185,12 +185,13 @@ class Strategy(BaseStrategy):
             quote_allocated = True
 
         # Do not continue whether assets is not fully allocated
-        if not base_allocated and not quote_allocated:
+        if (not base_allocated and not quote_allocated) or self.bootstrapping:
             # Further checks should be performed on next maintenance
             self.last_check = datetime.now()
             return
 
-        # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders
+        # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders.
+        # This is a fallback logic.
         # Measure which price is closer to the center
         buy_distance = self.market_center_price - highest_buy_price
         sell_distance = lowest_sell_price - self.market_center_price
