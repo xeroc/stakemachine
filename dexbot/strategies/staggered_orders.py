@@ -303,7 +303,7 @@ class Strategy(BaseStrategy):
 
                 if self.actual_spread >= self.target_spread + self.increment:
                     # Place order closer to the center price
-                    self.log.debug('Placing higher buy order; actual spread: {}, target + increment: {}'.format(
+                    self.log.debug('Placing higher buy order; actual spread: {:.8f}, target + increment: {}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
                     if self.bootstrapping:
                         self.place_higher_buy_order(highest_buy_order)
@@ -370,7 +370,7 @@ class Strategy(BaseStrategy):
 
                 if self.actual_spread >= self.target_spread + self.increment:
                     # Place order closer to the center price
-                    self.log.debug('Placing lower sell order; actual spread: {}, target + increment: {}'.format(
+                    self.log.debug('Placing lower sell order; actual spread: {:.8f}, target + increment: {}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
                     if self.bootstrapping:
                         self.place_lower_sell_order(lowest_sell_order)
@@ -480,7 +480,7 @@ class Strategy(BaseStrategy):
 
                         price = (order['price'] ** -1)
                         self.log.debug('Cancelling sell order in increase_order_sizes(); ' 
-                                       'mode: mountain, quote: {}, price: {}'.format(order_amount, price))
+                                       'mode: mountain, quote: {}, price: {:.8f}'.format(order_amount, price))
                         self.cancel(order)
                         self.market_sell(new_order_amount, price)
                         # Only one increase at a time. This prevents running more than one increment round
@@ -545,7 +545,7 @@ class Strategy(BaseStrategy):
 
                         new_order_amount = new_base_amount / price
                         self.log.debug('Cancelling buy order in increase_order_sizes(); ' 
-                                       'mode: mountain, base: {}, price: {}'.format(order_amount, order['price']))
+                                       'mode: mountain, base: {}, price: {:.8f}'.format(order_amount, order['price']))
                         self.cancel(order)
                         self.market_buy(new_order_amount, price)
                         # Only one increase at a time. This prevents running more than one increaement round
