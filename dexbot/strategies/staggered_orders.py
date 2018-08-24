@@ -185,7 +185,7 @@ class Strategy(BaseStrategy):
             quote_allocated = True
 
         # Do not continue whether assets is not fully allocated
-        if (not base_allocated and not quote_allocated) or self.bootstrapping:
+        if (not base_allocated or not quote_allocated) or self.bootstrapping:
             # Further checks should be performed on next maintenance
             self.last_check = datetime.now()
             return
