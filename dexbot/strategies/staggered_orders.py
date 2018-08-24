@@ -903,7 +903,7 @@ class Strategy(BaseStrategy):
 
     def tick(self, d):
         """ Ticks come in on every block """
-        if not (self.counter or 0) % 5:
+        if not (self.counter or 0) % 3:
             self.maintain_strategy()
         self.counter += 1
 
