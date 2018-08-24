@@ -285,6 +285,7 @@ class Strategy(BaseStrategy):
             # Get currently the lowest and highest buy orders
             lowest_buy_order = self.buy_orders[-1]
             highest_buy_order = self.buy_orders[0]
+            lowest_buy_order_price = lowest_buy_order['price']
 
             # Check if the order size is correct
             if self.is_order_size_correct(highest_buy_order, self.buy_orders):
@@ -302,8 +303,9 @@ class Strategy(BaseStrategy):
                     else:
                         # Allow to place partial order whether we are not in bootstrapping
                         self.place_higher_buy_order(highest_buy_order, allow_partial=True)
-                elif lowest_buy_order['price'] / (1 + self.increment) < self.lower_bound:
-                    self.bootstrapping = False
+                elif lowest_buy_order_price / (1 + self.increment) < self.lower_bound:
+                    if self.buy_orders and self.sell_orders:
+                        self.bootstrapping = False
                     # Lower bound has been reached and now will start allocating rest of the base balance.
                     self.log.debug('Increasing orders sizes for BASE asset')
                     self.increase_order_sizes('base', base_balance, self.buy_orders)
@@ -365,7 +367,8 @@ class Strategy(BaseStrategy):
                     else:
                         self.place_lower_sell_order(lowest_sell_order, allow_partial=True)
                 elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
-                    self.bootstrapping = False
+                    if self.buy_orders and self.sell_orders:
+                        self.bootstrapping = False
                     # Upper bound has been reached and now will start allocating rest of the quote balance.
                     self.log.debug('Increasing orders sizes for QUOTE asset')
                     self.increase_order_sizes('quote', quote_balance, self.sell_orders)
