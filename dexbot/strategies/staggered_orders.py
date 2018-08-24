@@ -107,11 +107,7 @@ class Strategy(BaseStrategy):
             self.initial_market_center_price = self.market_center_price
 
         # Get all user's orders on current market
-        orders = self.orders
-
-        # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
-        self.buy_orders = self.get_buy_orders('DESC', orders)
-        self.sell_orders = self.get_sell_orders('DESC', orders)
+        self.refresh_orders()
         # market_orders = self.market.orderbook(1)
 
         # Get highest buy and lowest sell prices from orders
@@ -123,7 +119,7 @@ class Strategy(BaseStrategy):
 
         if self.sell_orders:
             lowest_sell_price = self.sell_orders[0].get('price')
-            # Invert the sell price to BASE
+            # Invert the sell price to BASE so it can be used in comparison
             lowest_sell_price = lowest_sell_price ** -1
 
         # Todo: Market spread is calculated but never used, can this be removed?
@@ -135,13 +131,15 @@ class Strategy(BaseStrategy):
         #
         #     if highest_market_buy and lowest_market_sell:
         #         self.market_spread = lowest_market_sell / highest_market_buy - 1
+
+        # Calculate balances
         self.refresh_balances()
 
         # Calculate asset thresholds
         quote_asset_threshold = self.quote_total_balance / 20000
         base_asset_threshold = self.base_total_balance / 20000
 
-        # Check boundaries
+        # Check market's price boundaries
         if self.market_center_price > self.upper_bound:
             self.upper_bound = self.market_center_price
         elif self.market_center_price < self.lower_bound:
@@ -149,13 +147,17 @@ class Strategy(BaseStrategy):
 
         # Remove orders that exceed boundaries
         success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
-        if not success:
+        if success:
+            # Refresh orders to prevent orders outside boundaries being in the future comparisons
+            self.refresh_orders()
+        else:
+            # Return back to beginning
             return
 
         # BASE asset check
         if self.base_balance > base_asset_threshold:
             base_allocated = False
-            # Allocate available funds
+            # Allocate available BASE funds
             self.allocate_base_asset(self.base_balance)
         else:
             base_allocated = True
@@ -163,7 +165,7 @@ class Strategy(BaseStrategy):
         # QUOTE asset check
         if self.quote_balance > quote_asset_threshold:
             quote_allocated = False
-            # Allocate available funds
+            # Allocate available QUOTE funds
             self.allocate_quote_asset(self.quote_balance)
         else:
             quote_allocated = True
@@ -193,7 +195,6 @@ class Strategy(BaseStrategy):
 
     def refresh_balances(self):
         """ This function is used to refresh account balances
-            :return:
         """
         # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
@@ -219,10 +220,19 @@ class Strategy(BaseStrategy):
         self.quote_total_balance = orders_balance['quote'] + self.quote_balance['amount']
         self.base_total_balance = orders_balance['base'] + self.base_balance['amount']
 
+    def refresh_orders(self):
+        """ Updates buy and sell orders
+        """
+        orders = self.orders
+
+        # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
+        self.buy_orders = self.get_buy_orders('DESC', orders)
+        self.sell_orders = self.get_sell_orders('DESC', orders)
+
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
-            :param list | sell_orders: our sell orders
-            :param list | buy_orders: our buy orders
+            :param list | sell_orders: User's sell orders
+            :param list | buy_orders: User's buy orders
         """
         orders_to_cancel = []
 
@@ -320,12 +330,8 @@ class Strategy(BaseStrategy):
             self.log.debug('Placing first buy order')
             self.place_lowest_buy_order(base_balance)
 
-        # Finally get all the orders again, in case there has been changes
-        # Todo: Is this necessary?
-        orders = self.orders
-
-        self.buy_orders = self.get_buy_orders('DESC', orders)
-        self.sell_orders = self.get_sell_orders('DESC', orders)
+        # Get latest orders
+        self.refresh_orders()
 
     def allocate_quote_asset(self, quote_balance, *args, **kwargs):
         """ Allocates available quote asset as sell orders.
@@ -384,6 +390,9 @@ class Strategy(BaseStrategy):
             # Place first order as close to the upper bound as possible
             self.bootstrapping = True
             self.place_highest_sell_order(quote_balance)
+
+        # Get latest orders
+        self.refresh_orders()
 
     # Todo: Check completely
     def increase_order_sizes(self, asset, asset_balance, orders):
