@@ -282,10 +282,7 @@ class Strategy(BaseStrategy):
             :param kwargs:
         """
         self.log.debug('Need to allocate base: {}'.format(base_balance))
-        if self.buy_orders and not self.sell_orders:
-            self.log.debug('Buy orders without sell orders')
-            return
-        elif self.buy_orders:
+        if self.buy_orders:
             # Get currently the lowest and highest buy orders
             lowest_buy_order = self.buy_orders[-1]
             highest_buy_order = self.buy_orders[0]
@@ -347,10 +344,7 @@ class Strategy(BaseStrategy):
             :param kwargs:
         """
         self.log.debug('Need to allocate quote: {}'.format(quote_balance))
-        if self.sell_orders and not self.buy_orders:
-            self.log.debug('Sell orders without buy orders')
-            return
-        elif self.sell_orders:
+        if self.sell_orders:
             lowest_sell_order = self.sell_orders[0]
             highest_sell_order = self.sell_orders[-1]
             # Sell price is inverted so it can be compared to the upper bound
