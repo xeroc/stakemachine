@@ -66,6 +66,7 @@ class Strategy(BaseStrategy):
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
+        self.partial_fill_threshold = self.increment / 10
 
         # Strategy variables
         # Bootstrap is turned on whether there will no buy or sell orders at all
@@ -289,7 +290,7 @@ class Strategy(BaseStrategy):
             lowest_buy_order_price = lowest_buy_order['price']
 
             # Check if the order size is correct
-            if self.is_order_size_correct(highest_buy_order, self.buy_orders):
+            if self.check_partial_fill(highest_buy_order):
                 # Calculate actual spread
                 if self.sell_orders:
                     lowest_sell_price = self.sell_orders[0]['price'] ** -1
@@ -325,19 +326,15 @@ class Strategy(BaseStrategy):
                     self.log.debug('Placing lower order than lowest_buy_order')
                     self.place_lower_buy_order(lowest_buy_order, allow_partial=True)
             else:
-                self.log.debug('Order size is not correct, cancelling highest buy order in allocate_base_asset()')
-                # Cancel highest buy order and immediately replace it with new one.
-                self.cancel(highest_buy_order)
-                self.refresh_balances()
-                # We have several orders
-                if len(self.buy_orders) > 1:
-                    self.place_higher_buy_order(self.buy_orders[1], allow_partial=True)
-                # Length is 1, we have only one order which is lowest_buy_order
+                # Make sure we have enough balance to replace partially filled order
+                if base_balance + highest_buy_order['for_sale']['amount'] >= highest_buy_order['base']['amount']:
+                    # Cancel highest buy order and immediately replace it with new one.
+                    self.log.info('Replacing partially filled buy order')
+                    self.cancel(highest_buy_order)
+                    self.market_buy(highest_buy_order['quote']['amount'], highest_buy_order['price'])
+                    self.refresh_balances()
                 else:
-                    # We need to obtain total available base balance
-                    total_balance = self.total_balance([], return_asset=True)
-                    base_balance = total_balance['base'] - self.base_fee_reserve
-                    self.place_lowest_buy_order(base_balance)
+                    self.log.debug('Not replacing partially filled order because there is not enough funds')
         else:
             # Place first buy order as close to the lower bound as possible
             self.bootstrapping = True
@@ -361,7 +358,7 @@ class Strategy(BaseStrategy):
             highest_sell_order_price = (highest_sell_order['price'] ** -1)
 
             # Check if the order size is correct
-            if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
+            if self.check_partial_fill(lowest_sell_order):
                 # Calculate actual spread
                 if self.buy_orders:
                     highest_buy_price = self.buy_orders[0]['price']
@@ -395,19 +392,16 @@ class Strategy(BaseStrategy):
                     self.bootstrapping = False
                     self.place_higher_sell_order(highest_sell_order, allow_partial=True)
             else:
-                # Cancel lowest sell order
-                self.log.debug('Order size is not correct, cancelling lowest sell order in allocate_quote_asset')
-                self.cancel(self.sell_orders[0])
-                self.refresh_balances()
-                # We have several orders
-                if len(self.sell_orders) > 1:
-                    self.place_lower_sell_order(self.sell_orders[1], allow_partial=True)
-                # Length is 1, we have only one order which is highest_sell_order
+                # Make sure we have enough balance to replace partially filled order
+                if quote_balance + lowest_sell_order['for_sale']['amount'] >= lowest_sell_order['base']['amount']:
+                    # Cancel lowest sell order and immediately replace it with new one.
+                    self.log.info('Replacing partially filled sell order')
+                    self.cancel(lowest_sell_order)
+                    price = lowest_sell_order['price'] ** -1
+                    self.market_sell(lowest_sell_order['base']['amount'], price)
+                    self.refresh_balances()
                 else:
-                    total_balance = self.total_balance([], return_asset=True)
-                    quote_balance = total_balance['quote'] - self.quote_fee_reserve
-                    self.bootstrapping = True
-                    self.place_highest_sell_order(quote_balance)
+                    self.log.debug('Not replacing partially filled order because there is not enough funds')
         else:
             # Place first order as close to the upper bound as possible
             self.bootstrapping = True
@@ -567,8 +561,26 @@ class Strategy(BaseStrategy):
             pass
         return None
 
+    def check_partial_fill(self, order):
+        """ Checks whether order was partially filled it needs to be replaced
+
+            :param order: Order closest to the center price from buy or sell side
+            :return: bool | True = Order is correct size or within the threshold
+                            False = Order is not right size
+        """
+        if order['for_sale']['amount'] != order['base']['amount']:
+            diff_abs = order['base']['amount'] - order['for_sale']['amount']
+            diff_rel = diff_abs / order['base']['amount']
+            if diff_rel >= self.partial_fill_threshold:
+                self.log.debug('Partially filled order: {} @ {:.8f}, filled: {:.2%}'.format(
+                               order['base']['amount'], order['price'], diff_rel))
+                return False
+        return True
+
     def is_order_size_correct(self, order, orders):
         """ Checks if the order is big enough. Oversized orders are allowed to enable manual manipulation
+
+            This is old version of check_partial_fill()
 
             :param order: Order closest to the center price from buy or sell side
             :param orders: List of buy or sell orders
