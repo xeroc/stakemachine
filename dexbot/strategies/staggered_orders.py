@@ -312,9 +312,11 @@ class Strategy(BaseStrategy):
                         limit = lowest_sell_order / (1 + self.increment)
                         self.log.debug('Limiting buy order base by opposite order quote: {}'.format(limit))
                         self.place_higher_buy_order(highest_buy_order, base_limit=limit)
+                elif not self.sell_orders:
+                    # Do not try to do anything than placing higher buy whether there is no sell orders
+                    return
                 elif lowest_buy_order_price / (1 + self.increment) < self.lower_bound:
-                    if self.buy_orders and self.sell_orders:
-                        self.bootstrapping = False
+                    self.bootstrapping = False
                     # Lower bound has been reached and now will start allocating rest of the base balance.
                     self.log.debug('Increasing orders sizes for BASE asset')
                     self.increase_order_sizes('base', base_balance, self.buy_orders)
@@ -381,9 +383,11 @@ class Strategy(BaseStrategy):
                         limit = highest_buy_order / (1 + self.increment)
                         self.log.debug('Limiting sell order by opposite order quote: {}'.format(limit))
                         self.place_lower_sell_order(lowest_sell_order, limit=limit)
+                elif not self.buy_orders:
+                    # Do not try to do anything than placing lower sell whether there is no buy orders
+                    return
                 elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
-                    if self.buy_orders and self.sell_orders:
-                        self.bootstrapping = False
+                    self.bootstrapping = False
                     # Upper bound has been reached and now will start allocating rest of the quote balance.
                     self.log.debug('Increasing orders sizes for QUOTE asset')
                     self.increase_order_sizes('quote', quote_balance, self.sell_orders)
@@ -424,10 +428,6 @@ class Strategy(BaseStrategy):
             :param list | orders: List of buy or sell orders
             :return None
         """
-        # Disable size increase during boostrapping, may happen with one-sided start
-        if self.bootstrapping:
-            return
-
         # Mountain mode:
         if self.mode == 'mountain':
             # Todo: Work in progress.
