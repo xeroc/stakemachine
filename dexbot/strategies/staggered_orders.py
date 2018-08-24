@@ -291,7 +291,12 @@ class Strategy(BaseStrategy):
             # Check if the order size is correct
             if self.is_order_size_correct(highest_buy_order, self.buy_orders):
                 # Calculate actual spread
-                lowest_sell_price = self.sell_orders[0]['price'] ** -1
+                if self.sell_orders:
+                    lowest_sell_price = self.sell_orders[0]['price'] ** -1
+                else:
+                    # For one-sided start, calculate lowest_sell_price empirically
+                    lowest_sell_price = self.market_center_price * (1 + self.target_spread / 2)
+
                 highest_buy_price = highest_buy_order['price']
                 self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
@@ -353,8 +358,12 @@ class Strategy(BaseStrategy):
             # Check if the order size is correct
             if self.is_order_size_correct(lowest_sell_order, self.sell_orders):
                 # Calculate actual spread
+                if self.buy_orders:
+                    highest_buy_price = self.buy_orders[0]['price']
+                else:
+                    # For one-sided start, calculate highest_buy_price empirically
+                    highest_buy_price = self.market_center_price / (1 + self.target_spread / 2)
                 lowest_sell_price = lowest_sell_order['price'] ** -1
-                highest_buy_price = self.buy_orders[0]['price']
                 self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
                 if self.actual_spread >= self.target_spread + self.increment:
