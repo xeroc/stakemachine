@@ -74,7 +74,7 @@ class Strategy(BaseStrategy):
         self.buy_orders = []
         self.sell_orders = []
         self.actual_spread = self.target_spread + 1
-        self.market_spread = 0
+        # self.market_spread = 0
         self.base_fee_reserve = None
         self.quote_fee_reserve = None
         self.quote_total_balance = 0
@@ -108,11 +108,11 @@ class Strategy(BaseStrategy):
 
         # Get all user's orders on current market
         orders = self.orders
-        market_orders = self.market.orderbook(1)
 
         # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
         self.buy_orders = self.get_buy_orders('DESC', orders)
         self.sell_orders = self.get_sell_orders('DESC', orders)
+        # market_orders = self.market.orderbook(1)
 
         # Get highest buy and lowest sell prices from orders
         highest_buy_price = 0
@@ -126,16 +126,15 @@ class Strategy(BaseStrategy):
             # Invert the sell price to BASE
             lowest_sell_price = lowest_sell_price ** -1
 
+        # Todo: Market spread is calculated but never used, can this be removed?
         # Calculate market spread
-        # Todo: Market spread is calculated but never used. Is this needed?
-        # if there is no orders in both side spread cannot be calculated
-        if len(market_orders['bids']) and len(market_orders['asks']):
-            highest_market_buy = market_orders['bids'][0]['price']
-            lowest_market_sell = market_orders['asks'][0]['price']
-
-            if highest_market_buy and lowest_market_sell:
-                self.market_spread = lowest_market_sell / highest_market_buy - 1
-
+        # if there are no orders in both side spread cannot be calculated
+        # if len(market_orders['bids']) and len(market_orders['asks']):
+        #     highest_market_buy = market_orders['bids'][0]['price']
+        #     lowest_market_sell = market_orders['asks'][0]['price']
+        #
+        #     if highest_market_buy and lowest_market_sell:
+        #         self.market_spread = lowest_market_sell / highest_market_buy - 1
         self.refresh_balances()
 
         # Calculate asset thresholds
