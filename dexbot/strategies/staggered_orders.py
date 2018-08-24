@@ -405,6 +405,7 @@ class Strategy(BaseStrategy):
         else:
             # Place first order as close to the upper bound as possible
             self.bootstrapping = True
+            self.log.debug('Placing first sell order')
             self.place_highest_sell_order(quote_balance)
 
         # Get latest orders
