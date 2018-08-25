@@ -841,8 +841,6 @@ class Strategy(BaseStrategy):
             :param float | market_center_price: Optional market center price, used to to check order
             :return dict | order: Returns highest sell order
         """
-        self.log.debug('quote_balance in place_highest_sell_order: {}'.format(quote_balance))
-
         if not market_center_price:
             market_center_price = self.market_center_price
 
@@ -883,8 +881,6 @@ class Strategy(BaseStrategy):
             :param float | market_center_price: Optional market center price, used to to check order
             :return dict | order: Returns lowest buy order
         """
-        self.log.debug('base_balance in place_highest_sell_order: {}'.format(base_balance))
-
         if not market_center_price:
             market_center_price = self.market_center_price
 
