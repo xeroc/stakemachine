@@ -861,7 +861,7 @@ class Strategy(BaseStrategy):
 
         precision = self.market['quote']['precision']
         price = previous_price
-        amount_quote = previous_amount * (self.quote_total_balance / orders_sum)
+        amount_quote = previous_amount * (self.quote_total_balance / orders_sum) * (1 + self.increment * 0.75)
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
@@ -900,7 +900,7 @@ class Strategy(BaseStrategy):
             amount = amount / (1 + self.increment)
 
         precision = self.market['quote']['precision']
-        amount_base = previous_amount * (self.base_total_balance / orders_sum)
+        amount_base = previous_amount * (self.base_total_balance / orders_sum) * (1 + self.increment * 0.75)
         price = previous_price
         amount_quote = amount_base / price
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
