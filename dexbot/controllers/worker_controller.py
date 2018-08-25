@@ -32,7 +32,7 @@ class WorkerController:
         }
         strategies['dexbot.strategies.staggered_orders'] = {
             'name': 'Staggered Orders',
-            'form_module': 'dexbot.views.ui.forms.staggered_orders_widget_ui'
+            'form_module': ''
         }
         for desc, module in find_external_strategies():
             strategies[module] = {'name': desc, 'form_module': module}
