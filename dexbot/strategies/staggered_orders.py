@@ -99,7 +99,8 @@ class Strategy(BaseStrategy):
             :param args:
             :param kwargs:
         """
-        delta = datetime.now() - self.last_check
+        start = datetime.now()
+        delta = start - self.last_check
 
         # Only allow to maintain whether minimal time passed.
         if delta < timedelta(seconds=self.min_check_interval):
@@ -187,7 +188,10 @@ class Strategy(BaseStrategy):
         # Do not continue whether assets is not fully allocated
         if (not base_allocated or not quote_allocated) or self.bootstrapping:
             # Further checks should be performed on next maintenance
-            self.last_check = datetime.now()
+            now = datetime.now()
+            self.last_check = now
+            delta = now - start
+            self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
             return
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders.
