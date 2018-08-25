@@ -66,12 +66,16 @@ class Strategy(BaseStrategy):
         self.view = kwargs.get('view')
         self.mode = self.worker['mode']
         self.target_spread = self.worker['spread'] / 100
-        self.center_price = self.worker['center_price']
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
         self.partial_fill_threshold = self.increment / 10
         self.is_instant_fill_enabled = self.worker.get('instant_fill', True)
+        self.is_center_price_dynamic = self.worker['center_price_dynamic']
+        if self.is_center_price_dynamic:
+            self.center_price = None
+        else:
+            self.center_price = self.worker['center_price']
 
         # Strategy variables
         # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
