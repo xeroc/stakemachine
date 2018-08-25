@@ -754,8 +754,6 @@ class Strategy(BaseStrategy):
                 self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'
                                .format(base_amount, self.base_balance['amount']))
                 place_order = False
-                # Turn bootstrap off, maybe we will be able to place limited order
-                self.bootstrapping = False
             elif allow_partial:
                 self.log.debug('Limiting order amount to available balance: {}'.format(self.base_balance['amount']))
                 amount = self.base_balance['amount'] / price
@@ -850,8 +848,6 @@ class Strategy(BaseStrategy):
                 self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'
                                .format(amount, self.quote_balance['amount']))
                 place_order = False
-                # Turn bootstrap off, maybe we will be able to place limited order
-                self.bootstrapping = False
             elif allow_partial:
                 self.log.debug('Limiting order amount to available balance: {}'.format(self.quote_balance['amount']))
                 amount = self.quote_balance['amount']
