@@ -511,12 +511,15 @@ class Strategy(BaseStrategy):
                             # To reduce allocation rounds, increase furthest order more
                             new_order_amount = order_amount * (self.quote_total_balance / new_orders_sum) \
                                 * (1 + self.increment * 0.75)
+
                             if new_order_amount < lower_bound:
-                                """ Use partial-increment increase, so we'll got at least one full increase round.
-                                    Whether we will just use `new_order_amount = lower_bound`, we will get less than
-                                    one full allocation round, thus leaving lowest sell order not increased.
+                                """ This is for situations when calculated new_order_amount is not big enough to
+                                    allocate all funds. Use partial-increment increase, so we'll got at least one full
+                                    increase round.  Whether we will just use `new_order_amount = lower_bound`, we will
+                                    get less than one full allocation round, thus leaving lowest sell order not
+                                    increased.
                                 """
-                                new_order_amount = lower_bound * (1 - self.increment * 0.2)
+                                new_order_amount = lower_bound / (1 + self.increment * 0.2)
 
                         # Limit sell order to available balance
                         if asset_balance < new_order_amount - order_amount:
@@ -593,7 +596,7 @@ class Strategy(BaseStrategy):
                             new_base_amount = order_amount * (self.base_total_balance / new_orders_sum) \
                                 * (1 + self.increment * 0.75)
                             if new_base_amount < higher_bound:
-                                new_base_amount = higher_bound * (1 - self.increment * 0.2)
+                                new_base_amount = higher_bound / (1 + self.increment * 0.2)
 
                         # Limit buy order to available balance
                         if (asset_balance / price) < (new_base_amount - order_amount) / price:
