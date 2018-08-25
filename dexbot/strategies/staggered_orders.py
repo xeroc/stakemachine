@@ -234,8 +234,8 @@ class Strategy(BaseStrategy):
         self.quote_balance = account_balances['quote']
 
         # Reserve transaction fee equivalent in BTS
-        ticker = self.market.ticker()
-        core_exchange_rate = ticker['core_exchange_rate']
+        self.ticker = self.market.ticker()
+        core_exchange_rate = self.ticker['core_exchange_rate']
         # Todo: order_creation_fee(BTS) = 0.01 for now
         self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
         self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
@@ -968,8 +968,7 @@ class Strategy(BaseStrategy):
         self.counter += 1
 
     def update_gui_slider(self):
-        ticker = self.market.ticker()
-        latest_price = ticker.get('latest', {}).get('price', None)
+        latest_price = self.ticker.get('latest', {}).get('price', None)
 
         if not latest_price:
             return
