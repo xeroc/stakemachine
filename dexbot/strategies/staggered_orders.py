@@ -41,7 +41,10 @@ class Strategy(BaseStrategy):
                 'The bottom price in the range', (0, None, 8, '')),
             ConfigElement(
                 'upper_bound', 'float', 1000000, 'Upper bound',
-                'The top price in the range', (0, None, 8, ''))
+                'The top price in the range', (0, None, 8, '')),
+            ConfigElement(
+                'instant_fill', 'bool', True, 'Allow instant fill',
+                'Allow to execute orders by market', None)
         ]
 
     def __init__(self, *args, **kwargs):
@@ -68,6 +71,7 @@ class Strategy(BaseStrategy):
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
         self.partial_fill_threshold = self.increment / 10
+        self.is_instant_fill_enabled = self.worker.get('instant_fill', True)
 
         # Strategy variables
         # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
@@ -84,6 +88,7 @@ class Strategy(BaseStrategy):
         self.base_total_balance = 0
         self.quote_balance = 0
         self.base_balance = 0
+        self.ticker = None
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -748,6 +753,10 @@ class Strategy(BaseStrategy):
         # How many BASE we need to buy QUOTE `amount`
         base_amount = amount * price
 
+        if not self.is_instant_fill_enabled and price > float(self.ticker['lowestAsk']):
+            self.log.info('Refusing to place an order which crosses lowestAsk')
+            return None
+
         if base_limit and base_limit < base_amount:
             base_amount = base_limit
             amount = base_limit / price
@@ -844,6 +853,10 @@ class Strategy(BaseStrategy):
 
         amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
+
+        if not self.is_instant_fill_enabled and price < float(self.ticker['highestBid']):
+            self.log.info('Refusing to place an order which crosses highestBid')
+            return None
 
         if base_limit:
             amount = base_limit / price
