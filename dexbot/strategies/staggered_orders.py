@@ -447,11 +447,11 @@ class Strategy(BaseStrategy):
                     If highest_sell_order is reached, increase it to maximum size
 
                     Maximum size is:
-                    as many quote as the order below
-                    and
-                    as many quote * (1 + increment) as the order above
-                    When making an order, it must not exceed either of these limits, but be 
-                    made according to the more limiting criteria.
+                    1. As many "quote * (1 + increment)" as the order below (higher_bound)
+                    AND
+                    2. As many "quote as the order above (lower_bound)
+
+                    Also when making an order it's size always will be limited by available free balance
                 """
                 # Get orders and amounts to be compared. Note: orders are sorted from low price to high
                 for order in orders:
@@ -468,11 +468,13 @@ class Strategy(BaseStrategy):
                         lower_order = orders[order_index - 1]
                         lower_bound = lower_order['base']['amount']
 
-                    higher_order = orders[order_index]
-
                     # This check prevents choosing order with index higher than the list length
                     if order_index + 1 < len(orders):
                         higher_order = orders[order_index + 1]
+                        is_least_order = False
+                    else:
+                        higher_order = orders[order_index]
+                        is_least_order = True
 
                     higher_bound = higher_order['base']['amount'] * (1 + self.increment)
 
@@ -483,8 +485,21 @@ class Strategy(BaseStrategy):
                         # Calculate new order size and place the order to the market
                         new_order_amount = higher_bound
 
-                        if higher_bound > lower_bound:
-                            new_order_amount = lower_bound
+                        if is_least_order:
+                            new_orders_sum = 0
+                            amount = order_amount
+                            for o in orders:
+                                amount = amount * (1 + self.increment)
+                                new_orders_sum += amount
+                            # To reduce allocation rounds, increase furthest order more
+                            new_order_amount = order_amount * (self.quote_total_balance / new_orders_sum) \
+                                * (1 + self.increment * 0.75)
+                            if new_order_amount < lower_bound:
+                                """ Use partial-increment increase, so we'll got at least one full increase round.
+                                    Whether we will just use `new_order_amount = lower_bound`, we will get less than
+                                    one full allocation round, thus leaving lowest sell order not increased.
+                                """
+                                new_order_amount = lower_bound * (1 - self.increment * 0.2)
 
                         # Limit sell order to available balance
                         if asset_balance < new_order_amount - order_amount:
@@ -510,9 +525,9 @@ class Strategy(BaseStrategy):
                     If lowest_buy_order is reached, increase it to maximum size.
 
                     Maximum size is:
-                    1. As many BASE as the order above (higher order)
+                    1. As many "base * (1 + increment)" as the order below (lower_bound)
                     AND
-                    2. As many BASE * (1 + increment) as the order below (lower order)
+                    2. As many "base" as the order above (higher_bound)
 
                     Also when making an order it's size always will be limited by available free balance
                 """
@@ -531,13 +546,15 @@ class Strategy(BaseStrategy):
                         higher_order = orders[order_index - 1]
                         higher_bound = higher_order['base']['amount']
 
-                    # Initially set lower order to the current
-                    lower_order = orders[order_index]
-
                     # This check prevents choosing order with index higher than the list length
                     if order_index + 1 < len(orders):
                         # If this is not a lowest_buy_order, lower order is a next order down
                         lower_order = orders[order_index + 1]
+                        is_least_order = False
+                    else:
+                        # Current order
+                        lower_order = orders[order_index]
+                        is_least_order = True
 
                     lower_bound = lower_order['base']['amount'] * (1 + self.increment)
 
@@ -549,8 +566,17 @@ class Strategy(BaseStrategy):
                         new_base_amount = lower_bound
                         price = order['price']
 
-                        if lower_bound > higher_bound:
-                            new_base_amount = higher_bound
+                        if is_least_order:
+                            # To reduce allocation rounds, increase furthest order more
+                            new_orders_sum = 0
+                            amount = order_amount
+                            for o in orders:
+                                amount = amount * (1 + self.increment)
+                                new_orders_sum += amount
+                            new_base_amount = order_amount * (self.base_total_balance / new_orders_sum) \
+                                * (1 + self.increment * 0.75)
+                            if new_base_amount < higher_bound:
+                                new_base_amount = higher_bound * (1 - self.increment * 0.2)
 
                         # Limit buy order to available balance
                         if (asset_balance / price) < (new_base_amount - order_amount) / price:
