@@ -70,8 +70,8 @@ class Strategy(BaseStrategy):
         self.partial_fill_threshold = self.increment / 10
 
         # Strategy variables
-        # Bootstrap is turned on whether there will no buy or sell orders at all
-        self.bootstrapping = False
+        # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
+        self.bootstrapping = True
         self.market_center_price = None
         self.initial_market_center_price = None
         self.buy_orders = []
@@ -110,9 +110,6 @@ class Strategy(BaseStrategy):
         # Get all user's orders on current market
         self.refresh_orders()
         # market_orders = self.market.orderbook(1)
-
-        if not self.buy_orders or not self.sell_orders:
-            self.bootstrapping = True
 
         # Check if market center price is calculated
         if not self.bootstrapping:
