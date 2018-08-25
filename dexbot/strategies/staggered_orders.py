@@ -743,7 +743,8 @@ class Strategy(BaseStrategy):
         if base_limit and base_limit < base_amount:
             base_amount = base_limit
             amount = base_limit / price
-        elif limit:
+        elif limit and limit < amount:
+            # Limit order amount only when is lower than amount
             base_amount = limit * price
             amount = limit
 
