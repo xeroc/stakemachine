@@ -99,8 +99,8 @@ class Strategy(BaseStrategy):
             :param args:
             :param kwargs:
         """
-        start = datetime.now()
-        delta = start - self.last_check
+        self.start = datetime.now()
+        delta = self.start - self.last_check
 
         # Only allow to maintain whether minimal time passed.
         if delta < timedelta(seconds=self.min_check_interval):
@@ -117,6 +117,7 @@ class Strategy(BaseStrategy):
         elif not self.market_center_price:
             # On empty market we have to pass the user specified center price
             self.market_center_price = self.calculate_center_price(center_price=self.center_price, suppress_errors=True)
+            self.log_maintenance_time()
             return
         elif self.market_center_price and not self.initial_market_center_price:
             # Save initial market center price
@@ -164,6 +165,7 @@ class Strategy(BaseStrategy):
             self.refresh_orders()
         else:
             # Return back to beginning
+            self.log_maintenance_time()
             return
 
         # BASE asset check
@@ -185,10 +187,8 @@ class Strategy(BaseStrategy):
         # Do not continue whether assets is not fully allocated
         if (not base_allocated or not quote_allocated) or self.bootstrapping:
             # Further checks should be performed on next maintenance
-            now = datetime.now()
-            self.last_check = now
-            delta = now - start
-            self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
+            self.last_check = datetime.now()
+            self.log_maintenance_time()
             return
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders.
@@ -211,6 +211,13 @@ class Strategy(BaseStrategy):
                 self.cancel(self.sell_orders[-1])
 
         self.last_check = datetime.now()
+        self.log_maintenance_time()
+
+    def log_maintenance_time(self):
+        """ Measure time from self.start and print a log message
+        """
+        delta = datetime.now() - self.start
+        self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
 
     def refresh_balances(self):
         """ This function is used to refresh account balances
