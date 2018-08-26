@@ -368,10 +368,10 @@ class Strategy(BaseStrategy):
                         self.place_higher_buy_order(highest_buy_order)
                     else:
                         # Place order limited by size of the opposite-side order
-                        lowest_sell_order = self.sell_orders[0]['base']['amount']
-                        limit = lowest_sell_order / (1 + self.increment)
+                        lowest_sell_order = self.sell_orders[0]
+                        limit = lowest_sell_order['quote']['amount']
                         self.log.debug('Limiting buy order base by opposite order: {}'.format(limit))
-                        self.place_higher_buy_order(highest_buy_order, limit=limit, allow_partial=False)
+                        self.place_higher_buy_order(highest_buy_order, base_limit=limit, allow_partial=False)
                 elif not self.sell_orders:
                     # Do not try to do anything than placing higher buy whether there is no sell orders
                     return
@@ -440,10 +440,10 @@ class Strategy(BaseStrategy):
                         self.place_lower_sell_order(lowest_sell_order)
                     else:
                         # Place order limited by opposite-side order
-                        highest_buy_order = self.buy_orders[0]['base']['amount']
-                        limit = highest_buy_order / (1 + self.increment)
+                        highest_buy_order = self.buy_orders[0]
+                        limit = self.buy_orders[0]['quote']['amount']
                         self.log.debug('Limiting sell order by opposite order quote: {}'.format(limit))
-                        self.place_lower_sell_order(lowest_sell_order, base_limit=limit, allow_partial=False)
+                        self.place_lower_sell_order(lowest_sell_order, limit=limit, allow_partial=False)
                 elif not self.buy_orders:
                     # Do not try to do anything than placing lower sell whether there is no buy orders
                     return
