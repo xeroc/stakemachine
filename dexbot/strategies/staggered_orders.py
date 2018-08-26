@@ -352,6 +352,7 @@ class Strategy(BaseStrategy):
                     self.log.debug('Increasing orders sizes for BASE asset')
                     self.increase_order_sizes('base', base_balance, self.buy_orders)
                 else:
+                    # Lower bound is not reached, we need to add additional orders at the extremes
                     self.bootstrapping = False
                     self.log.debug('Placing lower order than lowest_buy_order')
                     self.place_lower_buy_order(lowest_buy_order, allow_partial=True)
@@ -419,6 +420,7 @@ class Strategy(BaseStrategy):
                     self.log.debug('Increasing orders sizes for QUOTE asset')
                     self.increase_order_sizes('quote', quote_balance, self.sell_orders)
                 else:
+                    # Higher bound is not reached, we need to add additional orders at the extremes
                     self.bootstrapping = False
                     self.place_higher_sell_order(highest_sell_order, allow_partial=True)
             else:
