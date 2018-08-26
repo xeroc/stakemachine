@@ -93,6 +93,8 @@ class Strategy(BaseStrategy):
         self.quote_balance = 0
         self.base_balance = 0
         self.ticker = None
+        self.quote_asset_threshold = 0
+        self.base_asset_threshold = 0
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -158,8 +160,8 @@ class Strategy(BaseStrategy):
         self.refresh_balances()
 
         # Calculate asset thresholds
-        quote_asset_threshold = self.quote_total_balance / 20000
-        base_asset_threshold = self.base_total_balance / 20000
+        self.quote_asset_threshold = self.quote_total_balance / 20000
+        self.base_asset_threshold = self.base_total_balance / 20000
 
         # Check market's price boundaries
         if self.market_center_price > self.upper_bound:
@@ -178,7 +180,7 @@ class Strategy(BaseStrategy):
             return
 
         # BASE asset check
-        if self.base_balance > base_asset_threshold:
+        if self.base_balance > self.base_asset_threshold:
             base_allocated = False
             # Allocate available BASE funds
             self.allocate_base_asset(self.base_balance)
@@ -186,7 +188,7 @@ class Strategy(BaseStrategy):
             base_allocated = True
 
         # QUOTE asset check
-        if self.quote_balance > quote_asset_threshold:
+        if self.quote_balance > self.quote_asset_threshold:
             quote_allocated = False
             # Allocate available QUOTE funds
             self.allocate_quote_asset(self.quote_balance)
@@ -332,6 +334,33 @@ class Strategy(BaseStrategy):
                 self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
                 if self.actual_spread >= self.target_spread + self.increment:
+                    if self.quote_balance <= self.quote_asset_threshold and self.bootstrapping:
+                        """ During the bootstrap we're fist placing orders of some amounts, than we are reaching target
+                            spread and then turning bootstrap flag off and starting to allocate remaining balance by
+                            gradually increasing order sizes. After bootstrap is complete and following order size
+                            increase is complete too, we will not have available balance.
+
+                            When we have a different amount of assets (for example, 100 USD for base and 1 BTC for
+                            quote), the orders on the one size will be bigger than at the opposite.
+
+                            During the bootstrap we are not allowing to place orders with limited amount by opposite
+                            order. Bootstrap is designed to place orders of the same size. But, when the bootstrap is
+                            done, we are beginning to limit new orders by opposite side orders. We need this to stay in
+                            game when orders on the lower side gets filled. Because they are less than big-side orders,
+                            we cannot just place another big order on the big side. So we are limiting the big-side
+                            order to amount of a low-side one!
+
+                            Normally we are turning bootstrap off after initial allocation is done and we're biginning
+                            to distribute remaining funds. But, whether we will restart the bot after size increase was
+                            done, we have no chance to know if bootsrap was done or not. This is where this check comes
+                            in! The situation when the target spread is not reached, but we have some available balance
+                            on the one side and not have any free balance of the other side, clearly says to us that an
+                            order from lower-side was filled! Thus, we can safely turn bootstrap off and thus place an
+                            order limited in size by opposite-side order.
+                        """
+                        self.log.debug('Turning bootstrapping off: actual_spread > target_spread, and not having '
+                                       'opposite-side balance')
+                        self.bootstrapping = False
                     # Place order closer to the center price
                     self.log.debug('Placing higher buy order; actual spread: {:.8f}, target + increment: {}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
@@ -400,6 +429,10 @@ class Strategy(BaseStrategy):
                 self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
                 if self.actual_spread >= self.target_spread + self.increment:
+                    if self.base_balance <= self.base_asset_threshold and self.bootstrapping:
+                        self.log.debug('Turning bootstrapping off: actual_spread > target_spread, and not having '
+                                       'opposite-side balance')
+                        self.bootstrapping = False
                     # Place order closer to the center price
                     self.log.debug('Placing lower sell order; actual spread: {:.8f}, target + increment: {}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
