@@ -100,7 +100,7 @@ class Strategy(BaseStrategy):
         self.expiration = 60 * 60 * 24 * 365 * 5
         self.last_check = datetime.now()
         # Minimal check interval is needed to prevent event queue accumulation
-        self.min_check_interval = 0.05
+        self.min_check_interval = 1
 
         if self.view:
             self.update_gui_slider()
