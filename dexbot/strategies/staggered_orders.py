@@ -77,6 +77,10 @@ class Strategy(BaseStrategy):
         else:
             self.center_price = self.worker['center_price']
 
+        if self.target_spread < self.increment:
+            self.log.error('Spread is more than increment, refusing to work because worker will make losses')
+            self.disabled = True
+
         # Strategy variables
         # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
         self.bootstrapping = True
