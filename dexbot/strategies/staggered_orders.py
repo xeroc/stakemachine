@@ -370,7 +370,7 @@ class Strategy(BaseStrategy):
                         # Place order limited by size of the opposite-side order
                         lowest_sell_order = self.sell_orders[0]
                         limit = lowest_sell_order['quote']['amount']
-                        self.log.debug('Limiting buy order base by opposite order: {}'.format(limit))
+                        self.log.debug('Limiting buy order base by opposite order base asset amount: {}'.format(limit))
                         self.place_higher_buy_order(highest_buy_order, base_limit=limit, allow_partial=False)
                 elif not self.sell_orders:
                     # Do not try to do anything than placing higher buy whether there is no sell orders
