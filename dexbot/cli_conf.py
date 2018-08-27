@@ -23,8 +23,8 @@ import subprocess
 
 from dexbot.whiptail import get_whiptail
 from dexbot.basestrategy import BaseStrategy
+import dexbot.helper
 
-# FIXME: auto-discovery of strategies would be cool but can't figure out a way
 STRATEGIES = [
     {'tag': 'relative',
      'class': 'dexbot.strategies.relative_orders',
@@ -32,6 +32,17 @@ STRATEGIES = [
     {'tag': 'stagger',
      'class': 'dexbot.strategies.staggered_orders',
      'name': 'Staggered Orders'}]
+
+tags_so_far = {'stagger', 'relative'}
+for desc, module in dexbot.helper.find_external_strategies():
+    tag = desc.split()[0].lower()
+    # make sure tag is unique
+    i = 1
+    while tag in tags_so_far:
+        tag = tag+str(i)
+        i += 1
+    tags_so_far.add(tag)
+    STRATEGIES.append({'tag': tag, 'class': module, 'name': desc})
 
 SYSTEMD_SERVICE_NAME = os.path.expanduser(
     "~/.local/share/systemd/user/dexbot.service")

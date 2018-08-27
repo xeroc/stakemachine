@@ -3,6 +3,7 @@ import logging
 import collections
 import time
 import math
+import copy
 
 from .storage import Storage
 from .statemachine import StateMachine
@@ -190,6 +191,9 @@ class BaseStrategy(Storage, StateMachine, Events):
         # will be reset to False after reset only
         self.disabled = False
 
+        # Order expiration time in seconds
+        self.expiration = 60 * 60 * 24 * 365 * 5
+
         # A private logger that adds worker identify data to the LogRecord
         self.log = logging.LoggerAdapter(
             logging.getLogger('dexbot.per_worker'),
@@ -269,7 +273,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     @property
     def orders(self):
-        """ Return the worker's open accounts in the current market
+        """ Return the account's open orders in the current market
         """
         self.account.refresh()
         return [o for o in self.account.openorders if self.worker["market"] == o.market and self.account.openorders]
@@ -362,7 +366,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         """ Returns the Order object for the order_id
 
             :param str|dict order_id: blockchain object id of the order
-                can be a dict with the id key in it
+                can be an order dict with the id key in it
             :param bool return_none: return None instead of an empty
                 Order object when the order doesn't exist
         """
@@ -375,42 +379,63 @@ class BaseStrategy(Storage, StateMachine, Events):
             return None
         return order
 
-    def get_updated_order(self, order):
+    def get_updated_order(self, order_id):
         """ Tries to get the updated order from the API
             returns None if the order doesn't exist
+
+            :param str|dict order_id: blockchain object id of the order
+                can be an order dict with the id key in it
         """
-        if not order:
-            return None
-        if isinstance(order, str):
-            order = {'id': order}
-        for updated_order in self.updated_open_orders:
-            if updated_order['id'] == order['id']:
-                return updated_order
-        return None
+        if isinstance(order_id, dict):
+            order_id = order_id['id']
+
+        # Get the limited order by id
+        order = None
+        for limit_order in self.account['limit_orders']:
+            if order_id == limit_order['id']:
+                order = limit_order
+                break
+        else:
+            return order
+
+        order = self.get_updated_limit_order(order)
+        return Order(order, bitshares_instance=self.bitshares)
 
     @property
-    def updated_open_orders(self):
-        """
-        Returns updated open Orders.
-        account.openorders doesn't return updated values for the order so we calculate the values manually
+    def updated_orders(self):
+        """ Returns all open orders as updated orders
         """
         self.account.refresh()
-        self.account.ensure_full()
 
-        limit_orders = self.account['limit_orders'][:]
-        for o in limit_orders:
-            base_amount = float(o['for_sale'])
-            price = float(o['sell_price']['base']['amount']) / float(o['sell_price']['quote']['amount'])
-            quote_amount = base_amount / price
-            o['sell_price']['base']['amount'] = base_amount
-            o['sell_price']['quote']['amount'] = quote_amount
+        limited_orders = []
+        for order in self.account['limit_orders']:
+            base_asset_id = order['sell_price']['base']['asset_id']
+            quote_asset_id = order['sell_price']['quote']['asset_id']
+            # Check if the order is in the current market
+            if not self.is_current_market(base_asset_id, quote_asset_id):
+                continue
 
-        orders = [
+            limited_orders.append(self.get_updated_limit_order(order))
+
+        return [
             Order(o, bitshares_instance=self.bitshares)
-            for o in limit_orders
+            for o in limited_orders
         ]
 
-        return [o for o in orders if self.worker["market"] == o.market]
+    @staticmethod
+    def get_updated_limit_order(limit_order):
+        """ Returns a modified limit_order so that when passed to Order class,
+            will return an Order object with updated amount values
+            :param limit_order: an item of Account['limit_orders']
+            :return: dict
+        """
+        o = copy.deepcopy(limit_order)
+        price = o['sell_price']['base']['amount'] / o['sell_price']['quote']['amount']
+        base_amount = o['for_sale']
+        quote_amount = base_amount / price
+        o['sell_price']['base']['amount'] = base_amount
+        o['sell_price']['quote']['amount'] = quote_amount
+        return o
 
     @property
     def market(self):
@@ -430,10 +455,6 @@ class BaseStrategy(Storage, StateMachine, Events):
         """ Return the balance of your worker's account for a specific asset
         """
         return self._account.balance(asset)
-
-    @property
-    def test_mode(self):
-        return self.config['node'] == "wss://node.testnet.bitshares.eu"
 
     @property
     def balances(self):
@@ -519,7 +540,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         precision = self.market['base']['precision']
         base_amount = truncate(price * quote_amount, precision)
 
-        # Do not try to buy with 0 balance
+        # Don't try to place an order of size 0
         if not base_amount:
             self.log.critical('Trying to buy 0')
             self.disabled = True
@@ -545,11 +566,13 @@ class BaseStrategy(Storage, StateMachine, Events):
             price,
             Amount(amount=quote_amount, asset=self.market["quote"]),
             account=self.account.name,
+            expiration=self.expiration,
             returnOrderId="head",
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
+
         self.log.debug('Placed buy order {}'.format(buy_transaction))
         buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
         if buy_order and buy_order['deleted']:
@@ -565,7 +588,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         precision = self.market['quote']['precision']
         quote_amount = truncate(quote_amount, precision)
 
-        # Do not try to sell with 0 balance
+        # Don't try to place an order of size 0
         if not quote_amount:
             self.log.critical('Trying to sell 0')
             self.disabled = True
@@ -591,11 +614,13 @@ class BaseStrategy(Storage, StateMachine, Events):
             price,
             Amount(amount=quote_amount, asset=self.market["quote"]),
             account=self.account.name,
+            expiration=self.expiration,
             returnOrderId="head",
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
+
         self.log.debug('Placed sell order {}'.format(sell_transaction))
         sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
         if sell_order and sell_order['deleted']:
@@ -615,6 +640,19 @@ class BaseStrategy(Storage, StateMachine, Events):
         order['base'] = base_asset
         return order
 
+    def is_current_market(self, base_asset_id, quote_asset_id):
+        """ Returns True if given asset id's are of the current market
+        """
+        if quote_asset_id == self.market['quote']['id']:
+            if base_asset_id == self.market['base']['id']:
+                return True
+            return False
+        if quote_asset_id == self.market['base']['id']:
+            if base_asset_id == self.market['quote']['id']:
+                return True
+            return False
+        return False
+
     def purge(self):
         """ Clear all the worker data from the database and cancel all orders
         """
@@ -625,14 +663,6 @@ class BaseStrategy(Storage, StateMachine, Events):
     @staticmethod
     def purge_worker_data(worker_name):
         Storage.clear_worker_data(worker_name)
-
-    @staticmethod
-    def get_order_amount(order, asset_type):
-        try:
-            order_amount = order[asset_type]['amount']
-        except (KeyError, TypeError):
-            order_amount = 0
-        return order_amount
 
     def total_balance(self, order_ids=None, return_asset=False):
         """ Returns the combined balance of the given order ids and the account balance

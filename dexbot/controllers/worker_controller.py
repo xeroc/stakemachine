@@ -3,6 +3,7 @@ import re
 
 from dexbot.views.errors import gui_error
 from dexbot.config import Config
+from dexbot.helper import find_external_strategies
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.confirmation import ConfirmationDialog
 from dexbot.views.strategy_form import StrategyFormWidget
@@ -27,12 +28,15 @@ class WorkerController:
         strategies = collections.OrderedDict()
         strategies['dexbot.strategies.relative_orders'] = {
             'name': 'Relative Orders',
-            'form_module': 'dexbot.views.ui.forms.relative_orders_widget_ui'
+            'form_module': ''
         }
         strategies['dexbot.strategies.staggered_orders'] = {
             'name': 'Staggered Orders',
             'form_module': 'dexbot.views.ui.forms.staggered_orders_widget_ui'
         }
+        for desc, module in find_external_strategies():
+            strategies[module] = {'name': desc, 'form_module': module}
+            # if there is no UI form in the module then GUI will gracefully revert to auto-ui
         return strategies
 
     @classmethod
