@@ -368,7 +368,7 @@ class Strategy(BaseStrategy):
                                        'opposite-side balance')
                         self.bootstrapping = False
                     # Place order closer to the center price
-                    self.log.debug('Placing higher buy order; actual spread: {:.8f}, target + increment: {}'.format(
+                    self.log.debug('Placing higher buy order; actual spread: {:.4%}, target + increment: {:.4%}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
                     if self.bootstrapping:
                         self.place_higher_buy_order(highest_buy_order)
@@ -440,7 +440,7 @@ class Strategy(BaseStrategy):
                                        'opposite-side balance')
                         self.bootstrapping = False
                     # Place order closer to the center price
-                    self.log.debug('Placing lower sell order; actual spread: {:.8f}, target + increment: {}'.format(
+                    self.log.debug('Placing lower sell order; actual spread: {:.4%}, target + increment: {:.4%}'.format(
                                    self.actual_spread, self.target_spread + self.increment))
                     if self.bootstrapping:
                         self.place_lower_sell_order(lowest_sell_order)
