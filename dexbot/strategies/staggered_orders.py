@@ -212,13 +212,15 @@ class Strategy(BaseStrategy):
             if self.market_center_price > highest_buy_price * (1 + self.target_spread):
                 # Cancel lowest buy order because center price moved up.
                 # On the next run there will be placed next buy order closer to the new center
-                self.log.debug('Cancelling lowest buy order in maintain_strategy')
+                self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
+                               'Cancelling lowest buy order as a fallback.')
                 self.cancel(self.buy_orders[-1])
         else:
             if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
                 # Cancel highest sell order because center price moved down.
                 # On the next run there will be placed next sell closer to the new center
-                self.log.debug('Cancelling highest sell order in maintain_strategy')
+                self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
+                               'Cancelling highest sell order as a fallback.')
                 self.cancel(self.sell_orders[-1])
 
         self.last_check = datetime.now()
@@ -277,14 +279,14 @@ class Strategy(BaseStrategy):
         for order in sell_orders:
             order_price = order['price'] ** -1
             if order_price > self.upper_bound:
-                self.log.debug('Cancelling sell order outside range: {}'.format(order_price))
+                self.log.info('Cancelling sell order outside range: {}'.format(order_price))
                 orders_to_cancel.append(order)
 
         # Remove buy orders that exceed boundaries
         for order in buy_orders:
             order_price = order['price']
             if order_price < self.lower_bound:
-                self.log.debug('Cancelling buy order outside range: {}'.format(order_price))
+                self.log.info('Cancelling buy order outside range: {}'.format(order_price))
                 orders_to_cancel.append(order)
 
         if orders_to_cancel:
@@ -559,7 +561,7 @@ class Strategy(BaseStrategy):
                         # Limit sell order to available balance
                         if asset_balance < new_order_amount - order_amount:
                             new_order_amount = order_amount + asset_balance['amount']
-                            self.log.debug('Limiting new sell order to avail asset balance: {}'.format(
+                            self.log.info('Limiting new sell order to avail asset balance: {}'.format(
                                 new_order_amount))
 
                         price = (order['price'] ** -1)
@@ -636,7 +638,7 @@ class Strategy(BaseStrategy):
                         # Limit buy order to available balance
                         if (asset_balance / price) < (new_base_amount - order_amount) / price:
                             new_base_amount = order_amount + asset_balance['amount']
-                            self.log.debug('Limiting new buy order to avail asset balance: {}'.format(
+                            self.log.info('Limiting new buy order to avail asset balance: {}'.format(
                                 new_base_amount))
 
                         new_order_amount = new_base_amount / price
