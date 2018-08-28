@@ -91,6 +91,7 @@ class Strategy(BaseStrategy):
         self.partial_fill_threshold = self.increment / 10
         self.is_instant_fill_enabled = self.worker.get('instant_fill', True)
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
+
         if self.is_center_price_dynamic:
             self.center_price = None
         else:
@@ -120,7 +121,9 @@ class Strategy(BaseStrategy):
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
+        self.start = datetime.now()
         self.last_check = datetime.now()
+
         # Minimal check interval is needed to prevent event queue accumulation
         self.min_check_interval = 1
 
@@ -224,14 +227,14 @@ class Strategy(BaseStrategy):
                 # Cancel lowest buy order because center price moved up.
                 # On the next run there will be placed next buy order closer to the new center
                 self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
-                               'Cancelling lowest buy order as a fallback.')
+                              'Cancelling lowest buy order as a fallback.')
                 self.cancel(self.buy_orders[-1])
         else:
             if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
                 # Cancel highest sell order because center price moved down.
                 # On the next run there will be placed next sell closer to the new center
                 self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
-                               'Cancelling highest sell order as a fallback.')
+                              'Cancelling highest sell order as a fallback.')
                 self.cancel(self.sell_orders[-1])
 
         self.last_check = datetime.now()
@@ -482,9 +485,7 @@ class Strategy(BaseStrategy):
         # Get latest orders
         self.refresh_orders()
 
-    # Todo: Check completely
     def increase_order_sizes(self, asset, asset_balance, orders):
-        # Todo: Change asset or separate buy / sell in different functions?
         """ Checks which order should be increased in size and replaces it
             with a maximum size order, according to global limits. Logic
             depends on mode in question
@@ -496,7 +497,6 @@ class Strategy(BaseStrategy):
         """
         # Mountain mode:
         if self.mode == 'mountain':
-            # Todo: Work in progress.
             if asset == 'quote':
                 """ Starting from the lowest SELL order. For each order, see if it is approximately
                     maximum size.
@@ -577,7 +577,6 @@ class Strategy(BaseStrategy):
                         # simultaneously
                         return
             elif asset == 'base':
-                # Todo: Work in progress
                 """ Starting from the highest BUY order, for each order, see if it is approximately
                     maximum size.
                     If it is, move on to next.
@@ -650,8 +649,7 @@ class Strategy(BaseStrategy):
                                        'mode: mountain, base: {}, price: {:.8f}'.format(order_amount, order['price']))
                         self.cancel(order)
                         self.market_buy(new_order_amount, price)
-                        # Only one increase at a time. This prevents running more than one increaement round
-                        # simultaneously
+                        # One increase at a time. This prevents running more than one increment round simultaneously.
                         return
         elif self.mode == 'valley':
             pass
@@ -911,7 +909,7 @@ class Strategy(BaseStrategy):
 
     def purge(self):
         """ We are not cancelling orders on save/remove worker from the GUI
-            TODO: don't work yet because worker removal is happening via Basestrategy staticmethod
+            TODO: don't work yet because worker removal is happening via BaseStrategy staticmethod
         """
         pass
 
