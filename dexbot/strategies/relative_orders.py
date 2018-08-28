@@ -207,7 +207,7 @@ class Strategy(BaseStrategy):
         delta = datetime.now() - self.last_check
 
         # Only allow to check orders whether minimal time passed
-        if delta < timedelta(seconds=self.min_check_interval):
+        if delta < timedelta(seconds=self.min_check_interval) and not self.initializing:
             self.log.debug('Ignoring market_update event as min_check_interval is not passed')
             return
 
