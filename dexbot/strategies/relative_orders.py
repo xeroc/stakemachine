@@ -101,8 +101,13 @@ class Strategy(BaseStrategy):
             self.disabled = True
             return
 
-        # Old orders from previous run may still be on market, so let's check them
-        self.check_orders('init')
+        # Check old orders from previous run (from force-interruption) only whether we are not using "Reset orders on
+        # center price change" option
+        if self.is_reset_on_price_change:
+            self.log.info('"Reset orders on center price change" is active, placing fresh orders')
+            self.update_orders()
+        else:
+            self.check_orders('init')
 
     def error(self, *args, **kwargs):
         self.cancel_all()
