@@ -89,6 +89,7 @@ class Strategy(BaseStrategy):
 
         self.buy_price = None
         self.sell_price = None
+        self.initializing = True
 
         self.initial_balance = self['initial_balance'] or 0
         self.worker_name = kwargs.get('name')
@@ -257,9 +258,10 @@ class Strategy(BaseStrategy):
 
         if need_update:
             self.update_orders()
-        else:
-            pass
-            #self.log.debug("Orders correct on market")
+        elif self.initializing:
+            self.log.info("Orders correct on market")
+
+        self.initializing = False
 
         if self.view:
             self.update_gui_profit()
