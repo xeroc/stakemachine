@@ -314,13 +314,6 @@ class Strategy(BaseStrategy):
 
         return True
 
-    def maintain_mountain_mode(self):
-        """ Mountain mode
-            This structure is not final, but an idea was that each mode has separate function which runs the loop.
-        """
-        # Todo: Work in progress
-        pass
-
     def allocate_base_asset(self, base_balance, *args, **kwargs):
         """ Allocates available base asset as buy orders.
             :param base_balance: Amount of the base asset available to use
