@@ -100,7 +100,9 @@ class Strategy(BaseStrategy):
             self.log.error('"Reset orders on center price change" requires "Dynamic Center Price"')
             self.disabled = True
             return
-        self.update_orders()
+
+        # Old orders from previous run may still be on market, so let's check them
+        self.check_orders('init')
 
     def error(self, *args, **kwargs):
         self.cancel_all()
