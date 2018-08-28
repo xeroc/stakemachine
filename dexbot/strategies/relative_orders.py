@@ -97,7 +97,7 @@ class Strategy(BaseStrategy):
 
         # Check for conflicting settings
         if self.is_reset_on_price_change and not self.is_center_price_dynamic:
-            self.log.error('reset_on_price_change requires Dynamic Center Price')
+            self.log.error('"Reset orders on center price change" requires "Dynamic Center Price"')
             self.disabled = True
         self.update_orders()
 
