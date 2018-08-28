@@ -11,6 +11,25 @@ class Strategy(BaseStrategy):
 
     @classmethod
     def configure(cls, return_base_config=True):
+        """ Modes description:
+
+            Mountain:
+            - Buy orders same QUOTE
+            - Sell orders same BASE
+
+            Neutral:
+            - All orders lower_order_quote / sqrt(1 + increment)
+
+            Valley:
+            - Buy orders same BASE
+            - Sell orders same QUOTE
+
+            Buy slope:
+            - All orders same BASE (profit comes in QUOTE)
+
+            Sell slope:
+            - All orders same QUOTE (profit made in BASE)
+        """
         # Todo: - Add other modes
         modes = [
             ('mountain', 'Mountain'),
