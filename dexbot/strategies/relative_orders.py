@@ -158,7 +158,7 @@ class Strategy(BaseStrategy):
         self.sell_price = self.center_price * math.sqrt(1 + self.spread)
 
     def update_orders(self):
-        #self.log.debug('Change detected, updating orders')
+        self.log.debug('Starting to update orders')
 
         # Recalculate buy and sell order prices
         self.calculate_order_prices()
