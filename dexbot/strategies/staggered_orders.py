@@ -108,7 +108,6 @@ class Strategy(BaseStrategy):
         self.buy_orders = []
         self.sell_orders = []
         self.actual_spread = self.target_spread + 1
-        # self.market_spread = 0
         self.base_fee_reserve = None
         self.quote_fee_reserve = None
         self.quote_total_balance = 0
@@ -143,7 +142,6 @@ class Strategy(BaseStrategy):
 
         # Get all user's orders on current market
         self.refresh_orders()
-        # market_orders = self.market.orderbook(1)
 
         # Check if market center price is calculated
         if not self.bootstrapping:
@@ -168,16 +166,6 @@ class Strategy(BaseStrategy):
             lowest_sell_price = self.sell_orders[0].get('price')
             # Invert the sell price to BASE so it can be used in comparison
             lowest_sell_price = lowest_sell_price ** -1
-
-        # Todo: Market spread is calculated but never used, can this be removed?
-        # Calculate market spread
-        # if there are no orders in both side spread cannot be calculated
-        # if len(market_orders['bids']) and len(market_orders['asks']):
-        #     highest_market_buy = market_orders['bids'][0]['price']
-        #     lowest_market_sell = market_orders['asks'][0]['price']
-        #
-        #     if highest_market_buy and lowest_market_sell:
-        #         self.market_spread = lowest_market_sell / highest_market_buy - 1
 
         # Calculate balances
         self.refresh_balances()
