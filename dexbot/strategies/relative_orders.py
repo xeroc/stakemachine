@@ -33,8 +33,6 @@ class Strategy(BaseStrategy):
                           'Reset orders when buy or sell order is partially filled', None),
             ConfigElement('partial_fill_threshold', 'float', 30, 'Fill threshold',
                           'Order fill threshold to reset orders', (0, 100, 2, '%')),
-            ConfigElement('reset_on_market_trade', 'bool', False, 'Reset orders on market trade',
-                          'Reset orders when detected a market trade', None),
             ConfigElement('reset_on_price_change', 'bool', False, 'Reset orders on center price change',
                           'Reset orders when center price is changed more than threshold', None),
             ConfigElement('price_change_threshold', 'float', 2, 'Price change threshold',
@@ -75,7 +73,6 @@ class Strategy(BaseStrategy):
         self.spread = self.worker.get('spread') / 100
         self.is_reset_on_partial_fill = self.worker.get('reset_on_partial_fill', True)
         self.partial_fill_threshold = self.worker.get('partial_fill_threshold', 30) / 100
-        self.is_reset_on_market_trade = self.worker.get('reset_on_market_trade', False)
         self.is_reset_on_price_change = self.worker.get('reset_on_price_change', False)
         self.price_change_threshold = self.worker.get('price_change_threshold', 2) / 100
         self.is_custom_expiration = self.worker.get('custom_expiration', False)
@@ -106,7 +103,7 @@ class Strategy(BaseStrategy):
             self.log.info('"Reset orders on center price change" is active, placing fresh orders')
             self.update_orders()
         else:
-            self.check_orders('init')
+            self.check_orders()
 
     def error(self, *args, **kwargs):
         self.cancel_all()
@@ -119,7 +116,7 @@ class Strategy(BaseStrategy):
         if (self.is_reset_on_price_change and not
             self.counter % 8):
             self.log.debug('Checking orders by tick threshold')
-            self.check_orders('tick')
+            self.check_orders()
         self.counter += 1
 
     @property
@@ -204,7 +201,7 @@ class Strategy(BaseStrategy):
         if len(order_ids) < expected_num_orders and not self.disabled:
             self.update_orders()
 
-    def check_orders(self, event, *args, **kwargs):
+    def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
         delta = datetime.now() - self.last_check
@@ -244,11 +241,6 @@ class Strategy(BaseStrategy):
                             # FIXME: need to write trade operation; possible race condition may occur: while
                             #        we're updating order it may be filled futher so trade log entry will not
                             #        be correct
-
-        if (self.is_reset_on_market_trade and
-            isinstance(event, FilledOrder)):
-            self.log.debug('Market trade detected, updating orders')
-            need_update = True
 
         if self.is_reset_on_price_change:
             center_price = self.calculate_center_price(
