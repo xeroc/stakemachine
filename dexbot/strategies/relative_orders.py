@@ -114,7 +114,7 @@ class Strategy(BaseStrategy):
         """
         if (self.is_reset_on_price_change and not
             self.counter % 8):
-            self.log.debug('checking orders by tick threshold')
+            self.log.debug('Checking orders by tick threshold')
             self.check_orders('tick')
         self.counter += 1
 
