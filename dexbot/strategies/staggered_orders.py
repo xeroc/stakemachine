@@ -488,7 +488,23 @@ class Strategy(BaseStrategy):
     def increase_order_sizes(self, asset, asset_balance, orders):
         """ Checks which order should be increased in size and replaces it
             with a maximum size order, according to global limits. Logic
-            depends on mode in question
+            depends on mode in question.
+
+            Mountain:
+            Maximize order size as close to center as possible
+
+            Neutral:
+            Try to flatten everything by increasing order sizes to neutral. When everything is correct, maximize closest
+            orders and then increase other orders to match that.
+
+            Valley:
+            Maximize order sizes as far as possible from center
+
+            Buy slope:
+            Maximize order size as low as possible. Buy orders as far, and sell orders as close as possible to cp.
+
+            Sell slope:
+            Maximize order size as high as possible. Buy orders as close, and sell orders as far as possible from cp
 
             :param str | asset: 'base' or 'quote', depending if checking sell or buy
             :param Amount | asset_balance: Balance of the account
@@ -864,6 +880,33 @@ class Strategy(BaseStrategy):
 
             Turn BASE amount into QUOTE amount (we will buy this QUOTE amount).
             QUOTE = BASE / price
+
+            Furthest order amount calculations:
+            -----------------------------------
+
+            Mountain:
+            For asset to be allocated (base for buy and quote for sell orders)
+            First order = balance * increment
+            Next order = previous order / (1 + increment)
+            Repeat until last order.
+
+            Neutral:
+            For asset to be allocated (base for buy and quote for sell orders)
+            First order = balance * (sqrt(1 + increment) - 1)
+            Next order = previous order / sqrt(1 + increment)
+            Repeat until last order
+
+            Valley:
+            For asset to be allocated (base for buy and quote for sell orders)
+            All orders = balance / number of orders (per side)
+
+            Buy slope:
+            Buy orders same as valley
+            Sell orders same asmountain
+
+            Sell slope:
+            Buy orders same as mountain
+            Sell orders same as valley
 
             Mode: MOUNTAIN
             :param Amount | base_balance: Available BASE asset balance
