@@ -363,9 +363,9 @@ class Strategy(BaseStrategy):
                             we cannot just place another big order on the big side. So we are limiting the big-side
                             order to amount of a low-side one!
 
-                            Normally we are turning bootstrap off after initial allocation is done and we're biginning
+                            Normally we are turning bootstrap off after initial allocation is done and we're beginning
                             to distribute remaining funds. But, whether we will restart the bot after size increase was
-                            done, we have no chance to know if bootsrap was done or not. This is where this check comes
+                            done, we have no chance to know if bootstrap was done or not. This is where this check comes
                             in! The situation when the target spread is not reached, but we have some available balance
                             on the one side and not have any free balance of the other side, clearly says to us that an
                             order from lower-side was filled! Thus, we can safely turn bootstrap off and thus place an
