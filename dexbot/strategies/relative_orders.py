@@ -32,7 +32,7 @@ class Strategy(BaseStrategy):
             ConfigElement('reset_on_partial_fill', 'bool', True, 'Reset orders on partial fill',
                           'Reset orders when buy or sell order is partially filled', None),
             ConfigElement('partial_fill_threshold', 'float', 30, 'Fill threshold',
-                          'Fill threshold to reset orders', (0, 100, 2, '%')),
+                          'Order fill threshold to reset orders', (0, 100, 2, '%')),
             ConfigElement('reset_on_market_trade', 'bool', False, 'Reset orders on market trade',
                           'Reset orders when detected a market trade', None),
             ConfigElement('reset_on_price_change', 'bool', False, 'Reset orders on center price change',
