@@ -139,7 +139,7 @@ class RelativeOrdersController(StrategyController):
             self.view.strategy_widget.partial_fill_threshold_input.setDisabled(True)
 
     def onchange_reset_on_price_change_input(self, checked):
-        if checked:
+        if checked and self.view.strategy_widget.center_price_dynamic_input.isChecked():
             self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
         else:
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
