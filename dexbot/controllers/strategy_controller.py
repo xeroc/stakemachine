@@ -52,7 +52,7 @@ class StrategyController:
         data = {}
         for key, element in self.elements.items():
             class_name = element.__class__.__name__
-            if class_name in ('QDoubleSpinBox', 'QSpinBox', 'QLineEdit'):
+            if class_name in ('QDoubleSpinBox', 'QSpinBox', 'QLineEdit', 'QSlider'):
                 data[key] = element.value()
             elif class_name == 'QCheckBox':
                 data[key] = element.isChecked()
@@ -70,7 +70,8 @@ class StrategyController:
             QtWidgets.QSpinBox,
             QtWidgets.QLineEdit,
             QtWidgets.QCheckBox,
-            QtWidgets.QComboBox
+            QtWidgets.QComboBox,
+            QtWidgets.QSlider
         )
 
         for option in self.configure:
@@ -89,24 +90,29 @@ class RelativeOrdersController(StrategyController):
         self.view = view
         self.configure = configure
         self.worker_controller = worker_controller
+
+        # Refresh center price market label
+        self.onchange_asset_labels()
+
+        # Refresh center price market label every time the text changes is base or quote asset input fields
+        worker_controller.view.base_asset_input.textChanged.connect(self.onchange_asset_labels)
+        worker_controller.view.quote_asset_input.textChanged.connect(self.onchange_asset_labels)
+
         widget = self.view.strategy_widget
 
         # Event connecting
-        widget.relative_order_size_input.clicked.connect(
-            self.onchange_relative_order_size_input
-        )
-        widget.center_price_dynamic_input.clicked.connect(
-            self.onchange_center_price_dynamic_input
-        )
-        widget.reset_on_partial_fill_input.clicked.connect(
-            self.onchange_reset_on_partial_fill_input
-        )
-        widget.reset_on_price_change_input.clicked.connect(
-            self.onchange_reset_on_price_change_input
-        )
-        widget.custom_expiration_input.clicked.connect(
-            self.onchange_custom_expiration_input
-        )
+        widget.relative_order_size_input.clicked.connect(self.onchange_relative_order_size_input)
+        widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
+        widget.manual_offset_input.valueChanged.connect(self.onchange_manual_offset_input)
+
+        # QSlider uses (int) values and manual_offset is stored as (float) with 0.1 precision.
+        # This reverts it so QSlider can handle the number, when fetching from config.
+        if worker_data:
+            worker_data['manual_offset'] = worker_data['manual_offset'] * 10
+
+        widget.reset_on_partial_fill_input.clicked.connect(self.onchange_reset_on_partial_fill_input)
+        widget.reset_on_price_change_input.clicked.connect(self.onchange_reset_on_price_change_input)
+        widget.custom_expiration_input.clicked.connect(self.onchange_custom_expiration_input)
 
         # Trigger the onchange events once
         self.onchange_relative_order_size_input(widget.relative_order_size_input.isChecked())
@@ -114,6 +120,18 @@ class RelativeOrdersController(StrategyController):
         self.onchange_reset_on_partial_fill_input(widget.reset_on_partial_fill_input.isChecked())
         self.onchange_reset_on_price_change_input(widget.reset_on_price_change_input.isChecked())
         self.onchange_custom_expiration_input(widget.custom_expiration_input.isChecked())
+
+    @property
+    def values(self):
+        # This turns the int value of manual_offset from QSlider to float with desired precision.
+        values = super().values
+        values['manual_offset'] = values['manual_offset'] / 10
+        return values
+
+    def onchange_manual_offset_input(self):
+        value = self.view.strategy_widget.manual_offset_input.value() / 10
+        text = "{}%".format(value)
+        self.view.strategy_widget.manual_offset_amount_label.setText(text)
 
     def onchange_relative_order_size_input(self, checked):
         if checked:
@@ -150,6 +168,21 @@ class RelativeOrdersController(StrategyController):
         else:
             self.view.strategy_widget.expiration_time_input.setDisabled(True)
 
+    def onchange_asset_labels(self):
+        base_symbol = self.worker_controller.view.base_asset_input.text()
+        quote_symbol = self.worker_controller.view.quote_asset_input.text()
+
+        if quote_symbol:
+            self.set_amount_asset_label(quote_symbol)
+        else:
+            self.set_amount_asset_label('')
+
+        if base_symbol and quote_symbol:
+            text = '{} / {}'.format(base_symbol, quote_symbol)
+            self.set_center_price_market_label(text)
+        else:
+            self.set_center_price_market_label('')
+
     def order_size_input_to_relative(self):
         self.view.strategy_widget.amount_input.setSuffix('%')
         self.view.strategy_widget.amount_input.setDecimals(2)
@@ -160,6 +193,12 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.amount_input.setSuffix('')
         self.view.strategy_widget.amount_input.setDecimals(8)
         self.view.strategy_widget.amount_input.setMaximum(1000000000.000000)
+
+    def set_center_price_market_label(self, text):
+        self.view.strategy_widget.center_price_market_label.setText(text)
+
+    def set_amount_asset_label(self, text):
+        self.view.strategy_widget.amount_input_asset_label.setText(text)
 
     def validation_errors(self):
         error_texts = []
@@ -177,7 +216,7 @@ class StaggeredOrdersController(StrategyController):
         self.configure = configure
         self.worker_controller = worker_controller
 
-        worker_controller.view.base_asset_input.editTextChanged.connect(lambda: self.on_value_change())
+        worker_controller.view.base_asset_input.textChanged.connect(lambda: self.on_value_change())
         worker_controller.view.quote_asset_input.textChanged.connect(lambda: self.on_value_change())
         widget = self.view.strategy_widget
         widget.amount_input.valueChanged.connect(lambda: self.on_value_change())
@@ -197,7 +236,7 @@ class StaggeredOrdersController(StrategyController):
 
     @gui_error
     def on_value_change(self):
-        base_asset = self.worker_controller.view.base_asset_input.currentText()
+        base_asset = self.worker_controller.view.base_asset_input.text()
         quote_asset = self.worker_controller.view.quote_asset_input.text()
         try:
             market = Market('{}:{}'.format(quote_asset, base_asset))

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>428</width>
-    <height>378</height>
+    <height>388</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -323,25 +323,6 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="base_asset_input">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>170</width>
-          <height>0</height>
-         </size>
-        </property>
-        <property name="editable">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="0">
        <widget class="QWidget" name="base_asset_wrap" native="true">
         <property name="sizePolicy">
@@ -631,6 +612,28 @@
         </property>
        </widget>
       </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="base_asset_input">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>145</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -657,7 +660,6 @@
  <tabstops>
   <tabstop>strategy_input</tabstop>
   <tabstop>worker_name_input</tabstop>
-  <tabstop>base_asset_input</tabstop>
   <tabstop>quote_asset_input</tabstop>
   <tabstop>fee_asset_input</tabstop>
   <tabstop>account_input</tabstop>
