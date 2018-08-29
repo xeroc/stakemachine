@@ -857,6 +857,12 @@ class Strategy(BaseStrategy):
         amount = quote_balance['amount'] * self.increment
         previous_amount = amount
 
+        if price > self.upper_bound:
+            self.log.info('Not placing highest sell order because price will exceed higher bound. Market center '
+                          'price: {:.8f}, closest order price: {:.8f}, higher_bound: {}'.format(market_center_price,
+                          price, self.higher_bound))
+            return
+
         while price <= self.upper_bound:
             orders_sum += previous_amount
             previous_price = price
@@ -923,6 +929,12 @@ class Strategy(BaseStrategy):
 
         amount = base_balance['amount'] * self.increment
         previous_amount = amount
+
+        if price < self.lower_bound:
+            self.log.info('Not placing lowest buy order because price will exceed lower bound. Market center price: '
+                          '{:.8f}, closest order price: {:.8f}, lower bound: {}'.format(market_center_price, price,
+                          self.lower_bound))
+            return
 
         while price >= self.lower_bound:
             orders_sum += previous_amount
