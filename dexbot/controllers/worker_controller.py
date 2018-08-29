@@ -45,13 +45,6 @@ class WorkerController:
         """
         return cls(None, None, None).strategies
 
-    @property
-    def base_assets(self):
-        assets = [
-            'USD', 'OPEN.BTC', 'CNY', 'BTS', 'BTC'
-        ]
-        return assets
-
     def add_private_key(self, private_key):
         wallet = self.bitshares.wallet
         try:
