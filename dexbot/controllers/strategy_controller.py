@@ -85,6 +85,8 @@ class StrategyController:
 class RelativeOrdersController(StrategyController):
 
     def __init__(self, view, configure, worker_controller, worker_data):
+        super().__init__(view, configure, worker_controller, worker_data)
+
         self.view = view
         self.configure = configure
         self.worker_controller = worker_controller
@@ -96,26 +98,28 @@ class RelativeOrdersController(StrategyController):
         worker_controller.view.base_asset_input.textChanged.connect(self.onchange_asset_labels)
         worker_controller.view.quote_asset_input.textChanged.connect(self.onchange_asset_labels)
 
-        self.view.strategy_widget.relative_order_size_input.toggled.connect(
-            self.onchange_relative_order_size_input
-        )
-        self.view.strategy_widget.center_price_dynamic_input.toggled.connect(
-            self.onchange_center_price_dynamic_input
-        )
-        self.view.strategy_widget.manual_offset_input.valueChanged.connect(
-            self.onchange_manual_offset_input
-        )
+        widget = self.view.strategy_widget
+
+        # Event connecting
+        widget.relative_order_size_input.clicked.connect(self.onchange_relative_order_size_input)
+        widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
+        widget.manual_offset_input.valueChanged.connect(self.onchange_manual_offset_input)
 
         # QSlider uses (int) values and manual_offset is stored as (float) with 0.1 precision.
         # This reverts it so QSlider can handle the number, when fetching from config.
         if worker_data:
             worker_data['manual_offset'] = worker_data['manual_offset'] * 10
 
-        # Do this after the event connecting
-        super().__init__(view, configure, worker_controller, worker_data)
+        widget.reset_on_partial_fill_input.clicked.connect(self.onchange_reset_on_partial_fill_input)
+        widget.reset_on_price_change_input.clicked.connect(self.onchange_reset_on_price_change_input)
+        widget.custom_expiration_input.clicked.connect(self.onchange_custom_expiration_input)
 
-        if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
-            self.view.strategy_widget.center_price_input.setDisabled(False)
+        # Trigger the onchange events once
+        self.onchange_relative_order_size_input(widget.relative_order_size_input.isChecked())
+        self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+        self.onchange_reset_on_partial_fill_input(widget.reset_on_partial_fill_input.isChecked())
+        self.onchange_reset_on_price_change_input(widget.reset_on_price_change_input.isChecked())
+        self.onchange_custom_expiration_input(widget.custom_expiration_input.isChecked())
 
     @property
     def values(self):
@@ -138,8 +142,31 @@ class RelativeOrdersController(StrategyController):
     def onchange_center_price_dynamic_input(self, checked):
         if checked:
             self.view.strategy_widget.center_price_input.setDisabled(True)
+            self.view.strategy_widget.reset_on_price_change_input.setDisabled(False)
+            if self.view.strategy_widget.reset_on_price_change_input.isChecked():
+                self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
         else:
             self.view.strategy_widget.center_price_input.setDisabled(False)
+            self.view.strategy_widget.reset_on_price_change_input.setDisabled(True)
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+
+    def onchange_reset_on_partial_fill_input(self, checked):
+        if checked:
+            self.view.strategy_widget.partial_fill_threshold_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.partial_fill_threshold_input.setDisabled(True)
+
+    def onchange_reset_on_price_change_input(self, checked):
+        if checked and self.view.strategy_widget.center_price_dynamic_input.isChecked():
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+
+    def onchange_custom_expiration_input(self, checked):
+        if checked:
+            self.view.strategy_widget.expiration_time_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.expiration_time_input.setDisabled(True)
 
     def onchange_asset_labels(self):
         base_symbol = self.worker_controller.view.base_asset_input.text()
