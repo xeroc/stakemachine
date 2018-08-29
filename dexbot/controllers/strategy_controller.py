@@ -52,7 +52,7 @@ class StrategyController:
         data = {}
         for key, element in self.elements.items():
             class_name = element.__class__.__name__
-            if class_name in ('QDoubleSpinBox', 'QSpinBox', 'QLineEdit'):
+            if class_name in ('QDoubleSpinBox', 'QSpinBox', 'QLineEdit', 'QSlider'):
                 data[key] = element.value()
             elif class_name == 'QCheckBox':
                 data[key] = element.isChecked()
@@ -70,7 +70,8 @@ class StrategyController:
             QtWidgets.QSpinBox,
             QtWidgets.QLineEdit,
             QtWidgets.QCheckBox,
-            QtWidgets.QComboBox
+            QtWidgets.QComboBox,
+            QtWidgets.QSlider
         )
 
         for option in self.configure:
