@@ -139,7 +139,7 @@ class StaggeredOrdersController(StrategyController):
         self.configure = configure
         self.worker_controller = worker_controller
 
-        worker_controller.view.base_asset_input.editTextChanged.connect(lambda: self.on_value_change())
+        worker_controller.view.base_asset_input.textChanged.connect(lambda: self.on_value_change())
         worker_controller.view.quote_asset_input.textChanged.connect(lambda: self.on_value_change())
         widget = self.view.strategy_widget
         widget.amount_input.valueChanged.connect(lambda: self.on_value_change())
@@ -159,7 +159,7 @@ class StaggeredOrdersController(StrategyController):
 
     @gui_error
     def on_value_change(self):
-        base_asset = self.worker_controller.view.base_asset_input.currentText()
+        base_asset = self.worker_controller.view.base_asset_input.text()
         quote_asset = self.worker_controller.view.quote_asset_input.text()
         try:
             market = Market('{}:{}'.format(quote_asset, base_asset))

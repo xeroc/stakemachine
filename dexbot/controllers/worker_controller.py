@@ -28,7 +28,7 @@ class WorkerController:
         strategies = collections.OrderedDict()
         strategies['dexbot.strategies.relative_orders'] = {
             'name': 'Relative Orders',
-            'form_module': ''
+            'form_module': 'dexbot.views.ui.forms.relative_orders_widget_ui'
         }
         strategies['dexbot.strategies.staggered_orders'] = {
             'name': 'Staggered Orders',
@@ -184,7 +184,7 @@ class WorkerController:
     @gui_error
     def validate_form(self):
         error_texts = []
-        base_asset = self.view.base_asset_input.currentText()
+        base_asset = self.view.base_asset_input.text()
         quote_asset = self.view.quote_asset_input.text()
         fee_asset = self.view.fee_asset_input.text()
         worker_name = self.view.worker_name_input.text()
@@ -238,7 +238,7 @@ class WorkerController:
         else:  # Edit
             account = self.view.account_name.text()
 
-        base_asset = self.view.base_asset_input.currentText()
+        base_asset = self.view.base_asset_input.text()
         quote_asset = self.view.quote_asset_input.text()
         fee_asset = self.view.fee_asset_input.text()
         strategy_module = self.view.strategy_input.currentData()
