@@ -85,6 +85,10 @@ class StrategyController:
 class RelativeOrdersController(StrategyController):
 
     def __init__(self, view, configure, worker_controller, worker_data):
+        # QSlider uses (int) values and manual_offset is stored as (float) with 0.1 precision.
+        # This reverts it so QSlider can handle the number, when fetching from config.
+        worker_data['manual_offset'] = worker_data['manual_offset'] * 10
+
         super().__init__(view, configure, worker_controller, worker_data)
 
         self.view = view
@@ -104,12 +108,6 @@ class RelativeOrdersController(StrategyController):
         widget.relative_order_size_input.clicked.connect(self.onchange_relative_order_size_input)
         widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
         widget.manual_offset_input.valueChanged.connect(self.onchange_manual_offset_input)
-
-        # QSlider uses (int) values and manual_offset is stored as (float) with 0.1 precision.
-        # This reverts it so QSlider can handle the number, when fetching from config.
-        if worker_data:
-            worker_data['manual_offset'] = worker_data['manual_offset'] * 10
-
         widget.reset_on_partial_fill_input.clicked.connect(self.onchange_reset_on_partial_fill_input)
         widget.reset_on_price_change_input.clicked.connect(self.onchange_reset_on_price_change_input)
         widget.custom_expiration_input.clicked.connect(self.onchange_custom_expiration_input)
@@ -120,6 +118,7 @@ class RelativeOrdersController(StrategyController):
         self.onchange_reset_on_partial_fill_input(widget.reset_on_partial_fill_input.isChecked())
         self.onchange_reset_on_price_change_input(widget.reset_on_price_change_input.isChecked())
         self.onchange_custom_expiration_input(widget.custom_expiration_input.isChecked())
+        self.onchange_manual_offset_input()
 
     @property
     def values(self):
