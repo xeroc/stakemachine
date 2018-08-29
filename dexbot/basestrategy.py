@@ -280,7 +280,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     @property
     def all_orders(self):
-        """ Return the worker's open accounts in all markets
+        """ Return the accounts's open orders in all markets
         """
         self.account.refresh()
         return [o for o in self.account.openorders]
