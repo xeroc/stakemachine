@@ -280,7 +280,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     @property
     def all_orders(self):
-        """ Return the worker's open accounts in all markets
+        """ Return the accounts's open orders in all markets
         """
         self.account.refresh()
         return [o for o in self.account.openorders]
@@ -430,7 +430,7 @@ class BaseStrategy(Storage, StateMachine, Events):
             :return: dict
         """
         o = copy.deepcopy(limit_order)
-        price = o['sell_price']['base']['amount'] / o['sell_price']['quote']['amount']
+        price = float(o['sell_price']['base']['amount']) / float(o['sell_price']['quote']['amount'])
         base_amount = o['for_sale']
         quote_amount = base_amount / price
         o['sell_price']['base']['amount'] = base_amount
