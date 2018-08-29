@@ -102,12 +102,32 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.center_price_dynamic_input.toggled.connect(
             self.onchange_center_price_dynamic_input
         )
+        self.view.strategy_widget.manual_offset_input.valueChanged.connect(
+            self.onchange_manual_offset_input
+        )
+
+        # QSlider uses (int) values and manual_offset is stored as (float) with 0.1 precision.
+        # This reverts it so QSlider can handle the number, when fetching from config.
+        if worker_data:
+            worker_data['manual_offset'] = worker_data['manual_offset'] * 10
 
         # Do this after the event connecting
         super().__init__(view, configure, worker_controller, worker_data)
 
         if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
             self.view.strategy_widget.center_price_input.setDisabled(False)
+
+    @property
+    def values(self):
+        # This turns the int value of manual_offset from QSlider to float with desired precision.
+        values = super().values
+        values['manual_offset'] = values['manual_offset'] / 10
+        return values
+
+    def onchange_manual_offset_input(self):
+        value = self.view.strategy_widget.manual_offset_input.value() / 10
+        text = "{}%".format(value)
+        self.view.strategy_widget.manual_offset_amount_label.setText(text)
 
     def onchange_relative_order_size_input(self, checked):
         if checked:
