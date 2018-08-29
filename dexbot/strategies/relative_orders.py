@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.qt_queue.idle_queue import idle_add
 
-from bitshares.price import FilledOrder
 
 class Strategy(BaseStrategy):
     """ Relative Orders strategy
@@ -106,7 +105,6 @@ class Strategy(BaseStrategy):
             self.check_orders()
 
     def error(self, *args, **kwargs):
-        self.cancel_all()
         self.disabled = True
 
     def tick(self, d):
@@ -114,7 +112,7 @@ class Strategy(BaseStrategy):
             do not triggers a market_update event
         """
         if (self.is_reset_on_price_change and not
-            self.counter % 8):
+                self.counter % 8):
             self.log.debug('Checking orders by tick threshold')
             self.check_orders()
         self.counter += 1
@@ -238,11 +236,11 @@ class Strategy(BaseStrategy):
                         if diff_rel >= self.partial_fill_threshold:
                             need_update = True
                             self.log.info('Partially filled order detected, filled {:.2%}'.format(diff_rel))
-                            # FIXME: need to write trade operation; possible race condition may occur: while
-                            #        we're updating order it may be filled futher so trade log entry will not
+                            # FIXME: Need to write trade operation; possible race condition may occur: while
+                            #        we're updating order it may be filled further so trade log entry will not
                             #        be correct
 
-        if self.is_reset_on_price_change:
+        if self.is_reset_on_price_change and not self.is_center_price_dynamic:
             center_price = self.calculate_center_price(
                 None,
                 self.is_asset_offset,
@@ -250,8 +248,7 @@ class Strategy(BaseStrategy):
                 self['order_ids'],
                 self.manual_offset
             )
-            diff = (self.center_price - center_price) / self.center_price
-            diff = abs(diff)
+            diff = abs((self.center_price - center_price) / self.center_price)
             if diff >= self.price_change_threshold:
                 self.log.debug('Center price changed, updating orders. Diff: {:.2%}'.format(diff))
                 need_update = True
@@ -264,7 +261,6 @@ class Strategy(BaseStrategy):
         self.initializing = False
 
         if self.view:
-            self.update_gui_profit()
             self.update_gui_slider()
 
         self.last_check = datetime.now()

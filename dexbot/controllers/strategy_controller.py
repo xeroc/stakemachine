@@ -84,39 +84,36 @@ class StrategyController:
 class RelativeOrdersController(StrategyController):
 
     def __init__(self, view, configure, worker_controller, worker_data):
+        super().__init__(view, configure, worker_controller, worker_data)
+
         self.view = view
         self.configure = configure
         self.worker_controller = worker_controller
-        self.view.strategy_widget.relative_order_size_input.toggled.connect(
+        widget = self.view.strategy_widget
+
+        # Event connecting
+        widget.relative_order_size_input.clicked.connect(
             self.onchange_relative_order_size_input
         )
-        self.view.strategy_widget.center_price_dynamic_input.toggled.connect(
+        widget.center_price_dynamic_input.clicked.connect(
             self.onchange_center_price_dynamic_input
         )
-        self.view.strategy_widget.reset_on_partial_fill_input.toggled.connect(
+        widget.reset_on_partial_fill_input.clicked.connect(
             self.onchange_reset_on_partial_fill_input
         )
-        self.view.strategy_widget.reset_on_price_change_input.toggled.connect(
+        widget.reset_on_price_change_input.clicked.connect(
             self.onchange_reset_on_price_change_input
         )
-        self.view.strategy_widget.custom_expiration_input.toggled.connect(
+        widget.custom_expiration_input.clicked.connect(
             self.onchange_custom_expiration_input
         )
 
-        # Do this after the event connecting
-        super().__init__(view, configure, worker_controller, worker_data)
-
-        if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
-            self.view.strategy_widget.center_price_input.setDisabled(False)
-
-        if not self.view.strategy_widget.reset_on_partial_fill_input.isChecked():
-            self.view.strategy_widget.partial_fill_threshold_input.setDisabled(True)
-
-        if not self.view.strategy_widget.reset_on_price_change_input.isChecked():
-            self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
-
-        if not self.view.strategy_widget.custom_expiration_input.isChecked():
-            self.view.strategy_widget.expiration_time_input.setDisabled(True)
+        # Trigger the onchange events once
+        self.onchange_relative_order_size_input(widget.relative_order_size_input.isChecked())
+        self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+        self.onchange_reset_on_partial_fill_input(widget.reset_on_partial_fill_input.isChecked())
+        self.onchange_reset_on_price_change_input(widget.reset_on_price_change_input.isChecked())
+        self.onchange_custom_expiration_input(widget.custom_expiration_input.isChecked())
 
     def onchange_relative_order_size_input(self, checked):
         if checked:
