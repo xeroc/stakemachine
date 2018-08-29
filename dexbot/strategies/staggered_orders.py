@@ -516,14 +516,16 @@ class Strategy(BaseStrategy):
             depends on mode in question.
 
             Mountain:
-            Maximize order size as close to center as possible
+            Maximize order size as close to center as possible. When all orders are max, the new increase round is
+            started from the furthest order.
 
             Neutral:
             Try to flatten everything by increasing order sizes to neutral. When everything is correct, maximize closest
             orders and then increase other orders to match that.
 
             Valley:
-            Maximize order sizes as far as possible from center
+            Maximize order sizes as far as possible from center first. When all orders are max, the new increase round
+            is started from the closest-to-center order.
 
             Buy slope:
             Maximize order size as low as possible. Buy orders as far, and sell orders as close as possible to cp.
@@ -693,7 +695,7 @@ class Strategy(BaseStrategy):
                         # One increase at a time. This prevents running more than one increment round simultaneously.
                         return
         elif self.mode == 'valley':
-            """ Starting from the closest-to-center order, for each order, see if it is approximately
+            """ Starting from the furthest order, for each order, see if it is approximately
                 maximum size.
                 If it is, move on to next.
                 If not, cancel it and replace with maximum size order. Maximum order size will be a
@@ -701,7 +703,7 @@ class Strategy(BaseStrategy):
                 If furthest is reached, increase it to maximum size.
 
                 Maximum size is (example for buy orders):
-                1. As many "base" as the order below (further_bound)
+                1. As many "base" as the order below (closer_order_bound)
             """
             if asset == 'quote':
                 total_balance = self.quote_total_balance
@@ -711,30 +713,32 @@ class Strategy(BaseStrategy):
                 order_type = 'buy'
 
             orders_count = len(orders)
+            orders = list(reversed(orders))
 
             for order in orders:
                 order_index = orders.index(order)
                 order_amount = order['base']['amount']
 
                 if order_index + 1 < orders_count:
-                    further_order = orders[order_index + 1]
-                    further_bound = further_order['base']['amount']
+                    # Closer order is an order which one-step closer to the center
+                    closer_order = orders[order_index + 1]
+                    closer_order_bound = closer_order['base']['amount']
                 else:
-                    """ Special processing for least order.
+                    """ Special processing for the closest order.
 
                         Calculte new order amount based on orders count, but do not allow to perform too small increase
                         rounds. New lowest buy / highest sell should be higher by at least one increment.
                     """
-                    further_bound = order_amount * (1 + self.increment)
+                    closer_order_bound = order_amount * (1 + self.increment)
                     new_amount = (total_balance / orders_count) / (1 + self.increment / 1000)
-                    if new_amount > further_bound:
-                        # Maximize order whether we can break further_bound limit
-                        further_bound = new_amount
+                    if new_amount > closer_order_bound:
+                        # Maximize order up to max possible amount if we can
+                        closer_order_bound = new_amount
 
-                if (order_amount * (1 + self.increment / 10) < further_bound and
-                    asset_balance + order_amount >= further_bound):
+                if (order_amount * (1 + self.increment / 10) < closer_order_bound and
+                    asset_balance + order_amount >= closer_order_bound):
                     # Replace order only when we have the balance to place new full-sized order
-                    amount_base = further_bound
+                    amount_base = closer_order_bound
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
