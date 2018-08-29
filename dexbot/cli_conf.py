@@ -217,13 +217,13 @@ def configure_dexbot(config, ctx):
             worker_name = whiptail.menu("Select worker to edit", [(i, i) for i in workers])
             config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name])
 
-            strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance)
+            strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance, config=config)
             strategy.purge()
         elif action == 'DEL':
             worker_name = whiptail.menu("Select worker to delete", [(i, i) for i in workers])
             del config['workers'][worker_name]
 
-            strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance)
+            strategy = BaseStrategy(worker_name, bitshares_instance=bitshares_instance, config=config)
             strategy.purge()
         elif action == 'NEW':
             txt = whiptail.prompt("Your name for the new worker")
