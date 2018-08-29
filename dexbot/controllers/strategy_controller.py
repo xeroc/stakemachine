@@ -87,6 +87,14 @@ class RelativeOrdersController(StrategyController):
         self.view = view
         self.configure = configure
         self.worker_controller = worker_controller
+
+        # Refresh center price market label
+        self.onchange_asset_labels()
+
+        # Refresh center price market label every time the text changes is base or quote asset input fields
+        worker_controller.view.base_asset_input.textChanged.connect(self.onchange_asset_labels)
+        worker_controller.view.quote_asset_input.textChanged.connect(self.onchange_asset_labels)
+
         self.view.strategy_widget.relative_order_size_input.toggled.connect(
             self.onchange_relative_order_size_input
         )
@@ -112,6 +120,21 @@ class RelativeOrdersController(StrategyController):
         else:
             self.view.strategy_widget.center_price_input.setDisabled(False)
 
+    def onchange_asset_labels(self):
+        base_symbol = self.worker_controller.view.base_asset_input.text()
+        quote_symbol = self.worker_controller.view.quote_asset_input.text()
+
+        if quote_symbol:
+            self.set_amount_asset_label(quote_symbol)
+        else:
+            self.set_amount_asset_label('')
+
+        if base_symbol and quote_symbol:
+            text = '{} / {}'.format(base_symbol, quote_symbol)
+            self.set_center_price_market_label(text)
+        else:
+            self.set_center_price_market_label('')
+
     def order_size_input_to_relative(self):
         self.view.strategy_widget.amount_input.setSuffix('%')
         self.view.strategy_widget.amount_input.setDecimals(2)
@@ -122,6 +145,12 @@ class RelativeOrdersController(StrategyController):
         self.view.strategy_widget.amount_input.setSuffix('')
         self.view.strategy_widget.amount_input.setDecimals(8)
         self.view.strategy_widget.amount_input.setMaximum(1000000000.000000)
+
+    def set_center_price_market_label(self, text):
+        self.view.strategy_widget.center_price_market_label.setText(text)
+
+    def set_amount_asset_label(self, text):
+        self.view.strategy_widget.amount_input_asset_label.setText(text)
 
     def validation_errors(self):
         error_texts = []
