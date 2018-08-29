@@ -34,7 +34,7 @@ class Strategy(BaseStrategy):
         modes = [
             ('mountain', 'Mountain'),
             # ('neutral', 'Neutral'),
-            # ('valley', 'Valley'),
+            ('valley', 'Valley'),
             # ('buy_slope', 'Buy Slope'),
             # ('sell_slope', 'Sell Slope')
         ]
@@ -693,7 +693,66 @@ class Strategy(BaseStrategy):
                         # One increase at a time. This prevents running more than one increment round simultaneously.
                         return
         elif self.mode == 'valley':
-            pass
+            """ Starting from the closest-to-center order, for each order, see if it is approximately
+                maximum size.
+                If it is, move on to next.
+                If not, cancel it and replace with maximum size order. Maximum order size will be a
+                size of higher order. Then return.
+                If furthest is reached, increase it to maximum size.
+
+                Maximum size is (example for buy orders):
+                1. As many "base" as the order below (further_bound)
+            """
+            if asset == 'quote':
+                total_balance = self.quote_total_balance
+                order_type = 'sell'
+            elif asset == 'base':
+                total_balance = self.base_total_balance
+                order_type = 'buy'
+
+            orders_count = len(orders)
+
+            for order in orders:
+                order_index = orders.index(order)
+                order_amount = order['base']['amount']
+
+                if order_index + 1 < orders_count:
+                    further_order = orders[order_index + 1]
+                    further_bound = further_order['base']['amount']
+                else:
+                    """ Special processing for least order.
+
+                        Calculte new order amount based on orders count, but do not allow to perform too small increase
+                        rounds. New lowest buy / highest sell should be higher by at least one increment.
+                    """
+                    further_bound = order_amount * (1 + self.increment)
+                    new_amount = (total_balance / orders_count) / (1 + self.increment / 1000)
+                    if new_amount > further_bound:
+                        # Maximize order whether we can break further_bound limit
+                        further_bound = new_amount
+
+                if (order_amount * (1 + self.increment / 10) < further_bound and
+                    asset_balance + order_amount >= further_bound):
+                    # Replace order only when we have the balance to place new full-sized order
+                    amount_base = further_bound
+
+                    if asset == 'quote':
+                        price = (order['price'] ** -1)
+                    elif asset == 'base':
+                        price = order['price']
+                    self.log.debug('Cancelling {} order in increase_order_sizes(); '
+                                   'mode: {}, amount: {}, price: {:.8f}'.format(order_type, self.mode, order_amount,
+                                    price))
+                    self.cancel(order)
+
+                    if asset == 'quote':
+                        self.market_sell(amount_base, price)
+                    elif asset == 'base':
+                        amount_quote = amount_base / price
+                        self.market_buy(amount_quote, price)
+                    # One increase at a time. This prevents running more than one increment round simultaneously.
+                    return
+
         elif self.mode == 'neutral':
             pass
         elif self.mode == 'buy_slope':
@@ -720,9 +779,6 @@ class Strategy(BaseStrategy):
 
     def place_higher_buy_order(self, order, place_order=True, allow_partial=False, base_limit=None, limit=None):
         """ Place higher buy order
-            Mode: MOUNTAIN
-            amount (QUOTE) = lower_buy_order_amount
-            price (BASE) = lower_buy_order_price * (1 + increment)
 
             :param order: Previously highest buy order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
@@ -735,14 +791,19 @@ class Strategy(BaseStrategy):
             self.disabled = True
             return None
 
-        amount = order['quote']['amount']
         price = order['price'] * (1 + self.increment)
-        # How many BASE we need to buy QUOTE `amount`
-        base_amount = amount * price
 
         if not self.is_instant_fill_enabled and price > float(self.ticker['lowestAsk']):
             self.log.info('Refusing to place an order which crosses lowestAsk')
             return None
+
+        if self.mode == 'mountain':
+            amount = order['quote']['amount']
+            # How many BASE we need to buy QUOTE `amount`
+            base_amount = amount * price
+        elif self.mode == 'valley':
+            base_amount = order['base']['amount']
+            amount = base_amount / price
 
         if base_limit and base_limit < base_amount:
             base_amount = base_limit
@@ -768,16 +829,18 @@ class Strategy(BaseStrategy):
 
     def place_higher_sell_order(self, order, place_order=True, allow_partial=False):
         """ Place higher sell order
-            Mode: MOUNTAIN
-            amount (BASE) = higher_sell_order_amount / (1 + increment)
-            price (BASE) = higher_sell_order_price * (1 + increment)
 
             :param order: highest_sell_order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
         """
-        amount = order['base']['amount'] / (1 + self.increment)
         price = (order['price'] ** -1) * (1 + self.increment)
+
+        if self.mode == 'mountain':
+            amount = order['base']['amount'] / (1 + self.increment)
+        elif self.mode == 'valley':
+            amount = order['base']['amount']
+
         if amount > self.quote_balance['amount']:
             if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'
@@ -794,16 +857,18 @@ class Strategy(BaseStrategy):
 
     def place_lower_buy_order(self, order, place_order=True, allow_partial=False):
         """ Place lower buy order
-            Mode: MOUNTAIN
-            amount (QUOTE) = lowest_buy_order_amount
-            price (BASE) = Order's base price / (1 + increment)
 
             :param order: Previously lowest buy order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
         """
-        amount = order['quote']['amount']
         price = order['price'] / (1 + self.increment)
+
+        if self.mode == 'mountain':
+            amount = order['quote']['amount']
+        elif self.mode == 'valley':
+            amount = order['base']['amount'] / price
+
         # How many BASE we need to buy QUOTE `amount`
         base_amount = amount * price
 
@@ -823,9 +888,6 @@ class Strategy(BaseStrategy):
 
     def place_lower_sell_order(self, order, place_order=True, allow_partial=False, base_limit=None, limit=None):
         """ Place lower sell order
-            Mode: MOUNTAIN
-            amount (BASE) = higher_sell_order_amount * (1 + increment)
-            price (BASE) = higher_sell_order_price / (1 + increment)
 
             :param order: Previously higher sell order
             :param bool | place_order: True = Places order to the market, False = returns amount and price
@@ -838,14 +900,20 @@ class Strategy(BaseStrategy):
             self.disabled = True
             return None
 
-        amount = order['base']['amount'] * (1 + self.increment)
         price = (order['price'] ** -1) / (1 + self.increment)
+
+        if self.mode == 'mountain':
+            amount = order['base']['amount'] * (1 + self.increment)
+        elif self.mode == 'valley':
+            amount = order['base']['amount']
+
+        base_amount = amount * price
 
         if not self.is_instant_fill_enabled and price < float(self.ticker['highestBid']):
             self.log.info('Refusing to place an order which crosses highestBid')
             return None
 
-        if base_limit:
+        if base_limit and base_limit < base_amount:
             amount = base_limit / price
         elif limit and limit < amount:
             amount = limit
@@ -866,7 +934,7 @@ class Strategy(BaseStrategy):
 
     def place_highest_sell_order(self, quote_balance, place_order=True, market_center_price=None):
         """ Places sell order furthest to the market center price
-            Mode: MOUNTAIN
+
             :param Amount | quote_balance: Available QUOTE asset balance
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param float | market_center_price: Optional market center price, used to to check order
@@ -876,29 +944,43 @@ class Strategy(BaseStrategy):
             market_center_price = self.market_center_price
 
         price = market_center_price * math.sqrt(1 + self.target_spread)
-        previous_price = price
-        orders_sum = 0
-
-        amount = quote_balance['amount'] * self.increment
-        previous_amount = amount
 
         if price > self.upper_bound:
-            self.log.info('Not placing highest sell order because price will exceed higher bound. Market center '
-                          'price: {:.8f}, closest order price: {:.8f}, higher_bound: {}'.format(market_center_price,
-                          price, self.higher_bound))
+            self.log.info(
+                'Not placing highest sell order because price will exceed higher bound. Market center '
+                'price: {:.8f}, closest order price: {:.8f}, higher_bound: {}'.format(market_center_price,
+                price, self.higher_bound))
             return
 
-        while price <= self.upper_bound:
-            orders_sum += previous_amount
+        if self.mode == 'mountain':
             previous_price = price
+            orders_sum = 0
+            amount = quote_balance['amount'] * self.increment
             previous_amount = amount
 
-            price = price * (1 + self.increment)
-            amount = amount / (1 + self.increment)
+            while price <= self.upper_bound:
+                orders_sum += previous_amount
+                previous_price = price
+                previous_amount = amount
+                price = price * (1 + self.increment)
+                amount = amount / (1 + self.increment)
+
+            price = previous_price
+            amount_quote = previous_amount * (self.quote_total_balance / orders_sum) * (1 + self.increment * 0.75)
+
+        elif self.mode == 'valley':
+            orders_count = 0
+            while price <= self.upper_bound:
+                previous_price = price
+                orders_count += 1
+                price = price * (1 + self.increment)
+
+            price = previous_price
+            amount_quote = quote_balance / orders_count
+            # Slightly reduce order amount to avoid rounding issues
+            amount_quote = amount_quote / (1 + self.increment / 1000)
 
         precision = self.market['quote']['precision']
-        price = previous_price
-        amount_quote = previous_amount * (self.quote_total_balance / orders_sum) * (1 + self.increment * 0.75)
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
@@ -939,7 +1021,6 @@ class Strategy(BaseStrategy):
             Buy orders same as mountain
             Sell orders same as valley
 
-            Mode: MOUNTAIN
             :param Amount | base_balance: Available BASE asset balance
             :param bool | place_order: True = Places order to the market, False = returns amount and price
             :param float | market_center_price: Optional market center price, used to to check order
@@ -949,30 +1030,44 @@ class Strategy(BaseStrategy):
             market_center_price = self.market_center_price
 
         price = market_center_price / math.sqrt(1 + self.target_spread)
-        previous_price = price
-        orders_sum = 0
-
-        amount = base_balance['amount'] * self.increment
-        previous_amount = amount
 
         if price < self.lower_bound:
-            self.log.info('Not placing lowest buy order because price will exceed lower bound. Market center price: '
-                          '{:.8f}, closest order price: {:.8f}, lower bound: {}'.format(market_center_price, price,
-                          self.lower_bound))
+            self.log.info(
+                'Not placing lowest buy order because price will exceed lower bound. Market center price: '
+                '{:.8f}, closest order price: {:.8f}, lower bound: {}'.format(market_center_price, price,
+                self.lower_bound))
             return
 
-        while price >= self.lower_bound:
-            orders_sum += previous_amount
+        if self.mode == 'mountain':
             previous_price = price
+            orders_sum = 0
+            amount = base_balance['amount'] * self.increment
             previous_amount = amount
 
-            price = price / (1 + self.increment)
-            amount = amount / (1 + self.increment)
+            while price >= self.lower_bound:
+                orders_sum += previous_amount
+                previous_price = price
+                previous_amount = amount
+                price = price / (1 + self.increment)
+                amount = amount / (1 + self.increment)
+
+            amount_base = previous_amount * (self.base_total_balance / orders_sum) * (1 + self.increment * 0.75)
+            price = previous_price
+            amount_quote = amount_base / price
+        elif self.mode == 'valley':
+            orders_count = 0
+            while price >= self.lower_bound:
+                previous_price = price
+                price = price / (1 + self.increment)
+                orders_count += 1
+
+            price = previous_price
+            amount_base = self.base_total_balance / orders_count
+            amount_quote = amount_base / price
+            # Slightly reduce order amount to avoid rounding issues
+            amount_quote = amount_quote / (1 + self.increment / 1000)
 
         precision = self.market['quote']['precision']
-        amount_base = previous_amount * (self.base_total_balance / orders_sum) * (1 + self.increment * 0.75)
-        price = previous_price
-        amount_quote = amount_base / price
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
