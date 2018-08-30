@@ -54,13 +54,16 @@ class Strategy(BaseStrategy):
                 'Begin strategy with center price obtained from the market. Use with mature markets', None),
             ConfigElement(
                 'center_price', 'float', 0, 'Manual center price',
-                'In an immature market, give a center price manually to begin with. BASE/QUOTE', (0, None, 8, '')),
+                'In an immature market, give a center price manually to begin with. BASE/QUOTE',
+                (0, 1000000000, 8, '')),
             ConfigElement(
                 'lower_bound', 'float', 1, 'Lower bound',
-                'The bottom price in the range', (0, None, 8, '')),
+                'The bottom price in the range',
+                (0, 1000000000, 8, '')),
             ConfigElement(
                 'upper_bound', 'float', 1000000, 'Upper bound',
-                'The top price in the range', (0, None, 8, '')),
+                'The top price in the range',
+                (0, 1000000000, 8, '')),
             ConfigElement(
                 'instant_fill', 'bool', True, 'Allow instant fill',
                 'Allow to execute orders by market', None)
