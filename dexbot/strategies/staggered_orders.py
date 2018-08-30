@@ -1,5 +1,6 @@
 import math
 from datetime import datetime, timedelta
+from bitshares.market import Market
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.qt_queue.idle_queue import idle_add
@@ -259,7 +260,15 @@ class Strategy(BaseStrategy):
 
         # Reserve transaction fee equivalent in BTS
         self.ticker = self.market.ticker()
-        core_exchange_rate = self.ticker['core_exchange_rate']
+
+        # FIXME: this is a temporal workaround for https://github.com/bitshares/python-bitshares/issues/138
+        if self.market['quote']['id'] == '1.3.0':
+            temp_market = Market(base=self.market['quote'], quote=self.market['base'],
+                                 bitshare_instance=self.bitshares)
+            ticker = temp_market.ticker()
+            core_exchange_rate = ticker['core_exchange_rate'].invert()
+        else:
+            core_exchange_rate = self.ticker['core_exchange_rate']
         # Todo: order_creation_fee(BTS) = 0.01 for now
         self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
         self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
