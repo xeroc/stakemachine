@@ -388,10 +388,21 @@ class Strategy(BaseStrategy):
                     # Do not try to do anything than placing higher buy whether there is no sell orders
                     return
                 elif lowest_buy_order_price / (1 + self.increment) < self.lower_bound:
-                    self.bootstrapping = False
                     # Lower bound has been reached and now will start allocating rest of the base balance.
+                    self.bootstrapping = False
                     self.log.debug('Increasing orders sizes for BASE asset')
-                    self.increase_order_sizes('base', base_balance, self.buy_orders)
+                    lowest_sell_order = self.sell_orders[0]
+                    if not self.check_partial_fill(lowest_sell_order):
+                        """ Detect partially filled order on the opposite side and reserve appropriate amount to place
+                            higher buy order
+                        """
+                        higher_buy_order = self.place_higher_buy_order(highest_buy_order, place_order=False)
+                        funds_to_reserve = higher_buy_order['amount'] * higher_buy_order['price']
+                        self.log.debug('Partially filled order on opposite side, reserving funds for next buy order: '
+                                       '{:.8f} {}'.format(funds_to_reserve, self.market['base']['symbol']))
+                        base_balance -= funds_to_reserve
+                    if base_balance > self.base_asset_threshold:
+                        self.increase_order_sizes('base', base_balance, self.buy_orders)
                 else:
                     # Lower bound is not reached, we need to add additional orders at the extremes
                     self.bootstrapping = False
@@ -460,10 +471,21 @@ class Strategy(BaseStrategy):
                     # Do not try to do anything than placing lower sell whether there is no buy orders
                     return
                 elif highest_sell_order_price * (1 + self.increment) > self.upper_bound:
-                    self.bootstrapping = False
                     # Upper bound has been reached and now will start allocating rest of the quote balance.
+                    self.bootstrapping = False
                     self.log.debug('Increasing orders sizes for QUOTE asset')
-                    self.increase_order_sizes('quote', quote_balance, self.sell_orders)
+                    highest_buy_order = self.buy_orders[0]
+                    if not self.check_partial_fill(highest_buy_order):
+                        """ Detect partially filled order on the opposite side and reserve appropriate amount to place
+                            lower sell order
+                        """
+                        # Base amount of sell order is actually QUOTE
+                        funds_to_reserve = lowest_sell_order['base']['amount']
+                        self.log.debug('Partially filled order on opposite side, reserving funds for next sell order: '
+                                       '{:.8f} {}'.format(funds_to_reserve, self.market['quote']['symbol']))
+                        quote_balance -= funds_to_reserve
+                    if quote_balance > self.quote_asset_threshold:
+                        self.increase_order_sizes('quote', quote_balance, self.sell_orders)
                 else:
                     # Higher bound is not reached, we need to add additional orders at the extremes
                     self.bootstrapping = False
