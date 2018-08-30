@@ -431,7 +431,7 @@ class BaseStrategy(Storage, StateMachine, Events):
         """
         o = copy.deepcopy(limit_order)
         price = float(o['sell_price']['base']['amount']) / float(o['sell_price']['quote']['amount'])
-        base_amount = o['for_sale']
+        base_amount = float(o['for_sale'])
         quote_amount = base_amount / price
         o['sell_price']['base']['amount'] = base_amount
         o['sell_price']['quote']['amount'] = quote_amount
