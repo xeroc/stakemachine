@@ -84,9 +84,11 @@ class StrategyController:
 class RelativeOrdersController(StrategyController):
 
     def __init__(self, view, configure, worker_controller, worker_data):
-        # QSlider uses (int) values and manual_offset is stored as (float) with 0.1 precision.
-        # This reverts it so QSlider can handle the number, when fetching from config.
-        worker_data['manual_offset'] = worker_data['manual_offset'] * 10
+        # Check if there is worker data. This prevents error when multiplying None type when creating worker.
+        if worker_data:
+            # QSlider uses (int) values and manual_offset is stored as (float) with 0.1 precision.
+            # This reverts it so QSlider can handle the number, when fetching from config.
+            worker_data['manual_offset'] = worker_data['manual_offset'] * 10
 
         super().__init__(view, configure, worker_controller, worker_data)
 

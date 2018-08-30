@@ -1223,7 +1223,7 @@ QSlider::handle:horizontal {
          <string>%</string>
         </property>
         <property name="maximum">
-         <double>100000.000000000000000</double>
+         <double>100.000000000000000</double>
         </property>
         <property name="value">
          <double>0.000000000000000</double>
@@ -1664,6 +1664,21 @@ QSlider::handle:horizontal {
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>amount_input</tabstop>
+  <tabstop>relative_order_size_input</tabstop>
+  <tabstop>spread_input</tabstop>
+  <tabstop>center_price_input</tabstop>
+  <tabstop>center_price_dynamic_input</tabstop>
+  <tabstop>center_price_offset_input</tabstop>
+  <tabstop>manual_offset_input</tabstop>
+  <tabstop>reset_on_partial_fill_input</tabstop>
+  <tabstop>partial_fill_threshold_input</tabstop>
+  <tabstop>reset_on_price_change_input</tabstop>
+  <tabstop>price_change_threshold_input</tabstop>
+  <tabstop>custom_expiration_input</tabstop>
+  <tabstop>expiration_time_input</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
