@@ -735,10 +735,13 @@ class Strategy(BaseStrategy):
                         # Maximize order up to max possible amount if we can
                         closer_order_bound = new_amount
 
-                if (order_amount * (1 + self.increment / 10) < closer_order_bound and
-                    asset_balance + order_amount >= closer_order_bound):
-                    # Replace order only when we have the balance to place new full-sized order
+                if order_amount * (1 + self.increment / 10) < closer_order_bound:
                     amount_base = closer_order_bound
+
+                    # Limit order to available balance
+                    if asset_balance < amount_base - order_amount:
+                        amount_base = order_amount + asset_balance['amount']
+                        self.log.info('Limiting new order to avail asset balance: {}'.format(amount_base))
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
