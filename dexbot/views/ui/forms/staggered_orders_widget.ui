@@ -959,6 +959,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>amount_input</tabstop>
+  <tabstop>spread_input</tabstop>
+  <tabstop>increment_input</tabstop>
+  <tabstop>lower_bound_input</tabstop>
+  <tabstop>center_price_input</tabstop>
+  <tabstop>center_price_dynamic_input</tabstop>
+  <tabstop>upper_bound_input</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
