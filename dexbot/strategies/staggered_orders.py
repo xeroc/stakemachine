@@ -730,7 +730,7 @@ class Strategy(BaseStrategy):
                         rounds. New lowest buy / highest sell should be higher by at least one increment.
                     """
                     closer_order_bound = order_amount * (1 + self.increment)
-                    new_amount = (total_balance / orders_count) / (1 + self.increment / 1000)
+                    new_amount = (total_balance / orders_count) / (1 + self.increment / 100)
                     if new_amount > closer_order_bound:
                         # Maximize order up to max possible amount if we can
                         closer_order_bound = new_amount
@@ -982,7 +982,7 @@ class Strategy(BaseStrategy):
             price = previous_price
             amount_quote = quote_balance / orders_count
             # Slightly reduce order amount to avoid rounding issues
-            amount_quote = amount_quote / (1 + self.increment / 1000)
+            amount_quote = amount_quote / (1 + self.increment / 100)
 
         precision = self.market['quote']['precision']
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
@@ -1068,8 +1068,10 @@ class Strategy(BaseStrategy):
             price = previous_price
             amount_base = self.base_total_balance / orders_count
             amount_quote = amount_base / price
-            # Slightly reduce order amount to avoid rounding issues
-            amount_quote = amount_quote / (1 + self.increment / 1000)
+            """ Slightly reduce order amount to avoid rounding issues AND to leave some free balance after initial
+                allocation to not turn bootstrap off prematurely
+            """
+            amount_quote = amount_quote / (1 + self.increment / 100)
 
         precision = self.market['quote']['precision']
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
