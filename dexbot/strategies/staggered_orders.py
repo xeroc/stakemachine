@@ -1,6 +1,7 @@
 import math
 from datetime import datetime, timedelta
 from bitshares.market import Market
+from bitshares.asset import Asset
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.qt_queue.idle_queue import idle_add
@@ -112,8 +113,6 @@ class Strategy(BaseStrategy):
         self.buy_orders = []
         self.sell_orders = []
         self.actual_spread = self.target_spread + 1
-        self.base_fee_reserve = None
-        self.quote_fee_reserve = None
         self.quote_total_balance = 0
         self.base_total_balance = 0
         self.quote_balance = 0
@@ -196,6 +195,9 @@ class Strategy(BaseStrategy):
             self.log_maintenance_time()
             return
 
+        # Get ticker data
+        self.ticker = self.market.ticker()
+
         # BASE asset check
         if self.base_balance > self.base_asset_threshold:
             base_allocated = False
@@ -258,23 +260,23 @@ class Strategy(BaseStrategy):
         self.base_balance = account_balances['base']
         self.quote_balance = account_balances['quote']
 
-        # Reserve transaction fee equivalent in BTS
-        self.ticker = self.market.ticker()
-
-        # FIXME: this is a temporal workaround for https://github.com/bitshares/python-bitshares/issues/138
-        if self.market['quote']['id'] == '1.3.0':
-            temp_market = Market(base=self.market['quote'], quote=self.market['base'],
-                                 bitshare_instance=self.bitshares)
-            ticker = temp_market.ticker()
-            core_exchange_rate = ticker['core_exchange_rate'].invert()
+        # Todo: order_creation_fee(BTS) = 0.01 for now. Reserve fee for 200 orders
+        fee_reserve = 0.01 * 200
+        if self.fee_asset['id'] == '1.3.0':
+            fee_reserve = fee_reserve
         else:
-            core_exchange_rate = self.ticker['core_exchange_rate']
-        # Todo: order_creation_fee(BTS) = 0.01 for now
-        self.quote_fee_reserve = 0.01 * core_exchange_rate['quote']['amount'] * 100
-        self.base_fee_reserve = 0.01 * core_exchange_rate['base']['amount'] * 100
+            temp_market = Market(base=Asset('1.3.0'), quote=self.fee_asset)
+            ticker = temp_market.ticker()
+            """ Inverted CER gives us Price like 10 BTS/FEE_ASSET, where BTS is quote
+                We're using invert() as workaround for https://github.com/bitshares/python-bitshares/issues/138
+            """
+            core_exchange_rate = ticker['core_exchange_rate'].invert()
+            fee_reserve = fee_reserve * core_exchange_rate['base']['amount']
 
-        self.quote_balance['amount'] = self.quote_balance['amount'] - self.quote_fee_reserve
-        self.base_balance['amount'] = self.base_balance['amount'] - self.base_fee_reserve
+        if self.fee_asset['id'] == self.market['base']['id']:
+            self.base_balance['amount'] = self.base_balance['amount'] - fee_reserve
+        elif self.fee_asset['id'] == self.market['quote']['id']:
+            self.quote_balance['amount'] = self.quote_balance['amount'] - fee_reserve
 
         # Balance per asset from orders
         order_ids = [order['id'] for order in self.orders]
