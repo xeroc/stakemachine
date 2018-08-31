@@ -354,7 +354,7 @@ class Strategy(BaseStrategy):
                 self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
                 if self.actual_spread >= self.target_spread + self.increment:
-                    if self.quote_balance <= self.quote_asset_threshold and self.bootstrapping:
+                    if self.quote_balance <= self.quote_asset_threshold and self.bootstrapping and self.sell_orders:
                         """ During the bootstrap we're fist placing orders of some amounts, than we are reaching target
                             spread and then turning bootstrap flag off and starting to allocate remaining balance by
                             gradually increasing order sizes. After bootstrap is complete and following order size
@@ -460,7 +460,7 @@ class Strategy(BaseStrategy):
                 self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
 
                 if self.actual_spread >= self.target_spread + self.increment:
-                    if self.base_balance <= self.base_asset_threshold and self.bootstrapping:
+                    if self.base_balance <= self.base_asset_threshold and self.bootstrapping and self.buy_orders:
                         self.log.debug('Turning bootstrapping off: actual_spread > target_spread, and not having '
                                        'opposite-side balance')
                         self.bootstrapping = False
