@@ -830,7 +830,7 @@ class Strategy(BaseStrategy):
 
         if base_amount > self.base_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {}/{}'
+                self.log.debug('Not enough balance to place_higher_buy_order; need/avail: {:.8f}/{:.8f}'
                                .format(base_amount, self.base_balance['amount']))
                 place_order = False
             elif allow_partial:
@@ -858,7 +858,7 @@ class Strategy(BaseStrategy):
 
         if amount > self.quote_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {}/{}'
+                self.log.debug('Not enough balance to place_higher_sell_order; need/avail: {:.8f}/{:.8f}'
                                .format(amount, self.quote_balance['amount']))
                 place_order = False
             elif allow_partial:
@@ -889,7 +889,7 @@ class Strategy(BaseStrategy):
 
         if base_amount > self.base_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {}/{}'
+                self.log.debug('Not enough balance to place_lower_buy_order; need/avail: {:.8f}/{:.8f}'
                                .format(base_amount, self.base_balance['amount']))
                 place_order = False
             elif allow_partial:
@@ -935,7 +935,7 @@ class Strategy(BaseStrategy):
 
         if amount > self.quote_balance['amount']:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {}/{}'
+                self.log.debug('Not enough balance to place_lower_sell_order; need/avail: {:.8f}/{:.8f}'
                                .format(amount, self.quote_balance['amount']))
                 place_order = False
             elif allow_partial:
