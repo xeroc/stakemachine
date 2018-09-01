@@ -391,9 +391,20 @@ class Strategy(BaseStrategy):
                     else:
                         # Place order limited by size of the opposite-side order
                         lowest_sell_order = self.sell_orders[0]
-                        limit = lowest_sell_order['quote']['amount']
-                        self.log.debug('Limiting buy order base by opposite order base asset amount: {}'.format(limit))
-                        self.place_higher_buy_order(highest_buy_order, base_limit=limit, allow_partial=False)
+                        if self.mode == 'mountain':
+                            limit = lowest_sell_order['quote']['amount']
+                            self.place_higher_buy_order(highest_buy_order, base_limit=limit, allow_partial=False)
+                            self.log.debug('Limiting buy order base by opposite order BASE asset amount: {}'.format(
+                                           limit))
+                        elif self.mode == 'valley':
+                            limit = lowest_sell_order['base']['amount']
+                            self.log.debug('Limiting buy order base by opposite order QUOTE asset amount: {}'.format(
+                                           limit))
+                            self.place_higher_buy_order(highest_buy_order, limit=limit, allow_partial=False)
+                        else:
+                            self.log.warning('Using fallback order limiting')
+                            limit = lowest_sell_order['quote']['amount']
+                            self.place_higher_buy_order(highest_buy_order, base_limit=limit, allow_partial=False)
                 elif not self.sell_orders:
                     # Do not try to do anything than placing higher buy whether there is no sell orders
                     return
@@ -474,9 +485,18 @@ class Strategy(BaseStrategy):
                     else:
                         # Place order limited by opposite-side order
                         highest_buy_order = self.buy_orders[0]
-                        limit = self.buy_orders[0]['quote']['amount']
-                        self.log.debug('Limiting sell order by opposite order quote: {}'.format(limit))
-                        self.place_lower_sell_order(lowest_sell_order, limit=limit, allow_partial=False)
+                        if self.mode == 'mountain':
+                            limit = highest_buy_order['quote']['amount']
+                            self.log.debug('Limiting sell order by opposite order QUOTE asset amount: {}'.format(limit))
+                            self.place_lower_sell_order(lowest_sell_order, limit=limit, allow_partial=False)
+                        elif self.mode == 'valley':
+                            limit = highest_buy_order['base']['amount']
+                            self.log.debug('Limiting sell order by opposite order BASE asset amount: {}'.format(limit))
+                            self.place_lower_sell_order(lowest_sell_order, base_limit=limit, allow_partial=False)
+                        else:
+                            self.log.warning('Using fallback order limiting')
+                            limit = highest_buy_order['quote']['amount']
+                            self.place_lower_sell_order(lowest_sell_order, limit=limit, allow_partial=False)
                 elif not self.buy_orders:
                     # Do not try to do anything than placing lower sell whether there is no buy orders
                     return
