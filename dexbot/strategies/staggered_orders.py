@@ -530,8 +530,8 @@ class Strategy(BaseStrategy):
                         """ Detect partially filled order on the opposite side and reserve appropriate amount to place
                             lower sell order
                         """
-                        # Base amount of sell order is actually QUOTE
-                        funds_to_reserve = lowest_sell_order['base']['amount']
+                        lower_sell_order = self.place_lower_sell_order(lowest_sell_order, place_order=False)
+                        funds_to_reserve = lower_sell_order['amount']
                         self.log.debug('Partially filled order on opposite side, reserving funds for next sell order: '
                                        '{:.8f} {}'.format(funds_to_reserve, self.market['quote']['symbol']))
                         quote_balance -= funds_to_reserve
