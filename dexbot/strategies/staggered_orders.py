@@ -155,9 +155,8 @@ class Strategy(BaseStrategy):
         elif not self.market_center_price:
             # On empty market we have to pass the user specified center price
             self.market_center_price = self.calculate_center_price(center_price=self.center_price, suppress_errors=True)
-            self.log_maintenance_time()
-            return
-        elif self.market_center_price and not self.initial_market_center_price:
+
+        if self.market_center_price and not self.initial_market_center_price:
             # Save initial market center price
             self.initial_market_center_price = self.market_center_price
 
