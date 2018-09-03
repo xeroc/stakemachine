@@ -128,6 +128,8 @@ class Strategy(BaseStrategy):
 
         # Minimal check interval is needed to prevent event queue accumulation
         self.min_check_interval = 1
+        self.max_check_interval = 120
+        self.current_check_interval = self.min_check_interval
 
         if self.view:
             self.update_gui_slider()
@@ -141,8 +143,7 @@ class Strategy(BaseStrategy):
         delta = self.start - self.last_check
 
         # Only allow to maintain whether minimal time passed.
-        if delta < timedelta(seconds=self.min_check_interval):
-            self.log.debug('Ignoring event as min_check_interval has not passed')
+        if delta < timedelta(seconds=self.current_check_interval):
             return
 
         # Get all user's orders on current market
@@ -174,6 +175,11 @@ class Strategy(BaseStrategy):
 
         # Calculate balances
         self.refresh_balances()
+
+        # Save current balances for futher checks. Save exactly key value instead of full key because it may be modified
+        # later on
+        previous_base_balance = self.base_balance['amount']
+        previous_quote_balance = self.quote_balance['amount']
 
         # Calculate asset thresholds
         self.quote_asset_threshold = self.quote_total_balance / 20000
@@ -213,6 +219,24 @@ class Strategy(BaseStrategy):
             self.allocate_quote_asset(self.quote_balance)
         else:
             quote_allocated = True
+
+        # Greatly increase check interval to lower CPU load whether there is no funds to allocate or we cannot
+        # allocate funds for some reason
+        self.refresh_balances()
+        if (self.current_check_interval == self.min_check_interval and
+            previous_base_balance == self.base_balance['amount'] and
+            previous_quote_balance == self.quote_balance['amount']):
+            # Balance didn't changed, so we can reduce maintenance frequency
+            self.log.debug('Raising check interval up to {} seconds to reduce CPU usage'.format(
+                           self.max_check_interval))
+            self.current_check_interval = self.max_check_interval
+        elif (self.current_check_interval == self.max_check_interval and
+            (previous_base_balance != self.base_balance['amount'] or
+            previous_quote_balance != self.quote_balance['amount'])):
+            # Balance changed, increase maintenance frequency to allocate more quickly
+            self.log.debug('Reducing check interval to {} seconds because of changed '
+                           'balances'.format(self.min_check_interval))
+            self.current_check_interval = self.min_check_interval
 
         # Do not continue whether assets is not fully allocated
         if (not base_allocated or not quote_allocated) or self.bootstrapping:
