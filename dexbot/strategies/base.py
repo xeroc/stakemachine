@@ -38,7 +38,7 @@ MAX_TRIES = 3
               :string: a regular expression, entries must match it, can be None which equivalent to .*
               :bool, ignored
               :choice: a list of choices, choices are in turn (tag, label) tuples.
-              labels get presented to user, and tag is used as the value saved back to the config dict
+              NOTE: 'labels' get presented to user, and 'tag' is used as the value saved back to the config dict!
 """
 ConfigElement = collections.namedtuple('ConfigElement', 'key type default title description extra')
 
@@ -184,6 +184,9 @@ class StrategyBase(Storage, StateMachine, Events):
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
 
+        # Count of orders to be fetched from the API
+        self.fetch_depth = 8
+
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
 
@@ -323,10 +326,12 @@ class StrategyBase(Storage, StateMachine, Events):
     def balance(self, asset, fee_reservation=False):
         """ Return the balance of your worker's account for a specific asset
 
+            :param string | asset:
             :param bool | fee_reservation:
             :return: Balance of specific asset
         """
         # Todo: Add documentation
+        # Todo: Add logic here, fee_reservation
         return self._account.balance(asset)
 
     def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
@@ -492,73 +497,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return {'quote': quote, 'base': base}
 
-    def get_lowest_market_sell(self):
-        """ Returns the lowest sell order that is not own, regardless of order size.
-
-            :return: order or None: Lowest market sell order.
-        """
-        orders = self.market.orderbook(1)
-
-        try:
-            order = orders['asks'][0]
-            self.log.info('Lowest market ask @ {}'.format(order.get('price')))
-        except IndexError:
-            self.log.info('Market has no lowest ask.')
-            return None
-
-        return order
-
-    def get_highest_market_buy(self):
-        """ Returns the highest buy order that is not own, regardless of order size.
-
-            :return: order or None: Highest market buy order.
-        """
-        orders = self.market.orderbook(1)
-
-        try:
-            order = orders['bids'][0]
-            self.log.info('Highest market bid @ {}'.format(order.get('price')))
-        except IndexError:
-            self.log.info('Market has no highest bid.')
-            return None
-
-        return order
-
-    def get_lowest_own_sell(self, refresh=False):
-        """ Returns lowest own sell order.
-
-            :param refresh:
-            :return:
-        """
-        # Todo: Insert logic here
-
-    def get_highest_own_buy(self, refresh=False):
-        """ Returns highest own buy order.
-
-            :param refresh:
-            :return:
-        """
-        # Todo: Insert logic here
-
-    def get_price_for_amount_buy(self, amount=None, refresh=False):
-        """ Returns the cumulative price for which you could buy the specified amount of QUOTE.
-            This method must take into account market fee.
-
-            :param amount:
-            :param refresh:
-            :return:
-        """
-        # Todo: Insert logic here
-
-    def get_price_for_amount_sell(self, amount=None, refresh=False):
-        """ Returns the cumulative price for which you could sell the specified amount of QUOTE
-
-            :param amount:
-            :param refresh:
-            :return:
-        """
-        # Todo: Insert logic here
-
     def get_external_price(self, source):
         """ Returns the center price of market including own orders.
 
@@ -567,72 +505,275 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         # Todo: Insert logic here
 
-    def get_market_ask(self, depth=0, moving_average=0, weighted_moving_average=0, refresh=False):
-        """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with moving average
-            or weighted moving average
+    def get_market_fee(self):
+        """ Returns the fee percentage for buying specified asset
 
-            :param float | depth:
-            :param float | moving_average:
-            :param float | weighted_moving_average:
-            :param bool | refresh:
-            :return:
+            :return: Fee percentage in decimal form (0.025)
         """
-        # Todo: Insert logic here
+        return self.fee_asset.market_fee_percent
 
-    def get_market_bid(self, depth=0, moving_average=0, weighted_moving_average=0, refresh=False):
-        """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be sold, enhanced with moving average or
-            weighted moving average.
-
-            Depth = 0 means highest regardless of size
-
-            :param float | depth:
-            :param float | moving_average:
-            :param float | weighted_moving_average:
-            :param bool | refresh:
-            :return:
+    def get_market_buy_orders(self):
         """
-        # Todo: Insert logic here
 
-    def get_market_center_price(self, depth=0, refresh=False):
+            :return: List of market buy orders
+        """
+        return self.get_market_orders()['bids']
+
+    def get_market_sell_orders(self, depth=1):
+        """
+
+            :return: List of market sell orders
+        """
+        return self.get_market_orders(depth=depth)['asks']
+
+    def get_highest_market_buy_order(self, orders=None):
+        """ Returns the highest buy order that is not own, regardless of order size.
+
+            :param list | orders: Optional list of orders, if none given fetch newest from market
+            :return: Highest market buy order or None
+        """
+        if not orders:
+            orders = self.market.orderbook(1)
+
+        try:
+            order = orders['bids'][0]
+        except IndexError:
+            self.log.info('Market has no buy orders.')
+            return None
+
+        return order
+
+    def get_highest_own_buy(self, orders=None):
+        """ Returns highest own buy order.
+
+            :param list | orders:
+            :return: Highest own buy order by price at the market or None
+        """
+        if not orders:
+            orders = self.get_own_buy_orders()
+
+        try:
+            return orders[0]
+        except IndexError:
+            return None
+
+    def get_lowest_market_sell_order(self, orders=None):
+        """ Returns the lowest sell order that is not own, regardless of order size.
+
+            :param list | orders: Optional list of orders, if none given fetch newest from market
+            :return: Lowest market sell order or None
+        """
+        if not orders:
+            orders = self.market.orderbook(1)
+
+        try:
+            order = orders['asks'][0]
+        except IndexError:
+            self.log.info('Market has no sell orders.')
+            return None
+
+        return order
+
+    def get_lowest_own_sell_order(self, orders=None):
+        """ Returns lowest own sell order.
+
+            :param list | orders:
+            :return: Lowest own sell order by price at the market
+        """
+        if not orders:
+            orders = self.get_own_sell_orders()
+
+        try:
+            return orders[0]
+        except IndexError:
+            return None
+
+    def get_market_center_price(self, quote_amount=0, refresh=False):
         """ Returns the center price of market including own orders.
 
             Depth: 0 = calculate from closest opposite orders.
             Depth: non-zero = calculate from specified depth
 
-            :param float | depth:
+            :param float | quote_amount:
             :param bool | refresh:
             :return:
         """
         # Todo: Insert logic here
 
-    def get_market_spread(self, highest_market_buy_price=None, lowest_market_sell_price=None,
-                          depth=0, refresh=False):
-        """ Returns the market spread %, including own orders, from specified depth, enhanced with moving average or
-            weighted moving average
+    def get_market_buy_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0,
+                             refresh=False):
+        """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
+            moving average or weighted moving average
 
-            :param float | highest_market_buy_price:
-            :param float | lowest_market_sell_price:
-            :param float | depth:
-            :param bool | refresh: Use most resent data from Bitshares
-            :return: float or None: Market spread
+            :param float | quote_amount:
+            :param float | base_amount:
+            :param float | moving_average:
+            :param float | weighted_moving_average:
+            :param bool | refresh:
+            :return:
         """
-        # Todo: Add depth
-        if refresh:
-            try:
-                # Try fetching orders from market
-                highest_market_buy_price = self.get_highest_own_buy().get('price')
-                lowest_market_sell_price = self.get_highest_own_buy().get('price')
-            except AttributeError:
-                # This error is given if there is no market buy or sell order
-                return None
-        else:
-            # If orders are given, use them instead newest data from the blockchain
-            highest_market_buy_price = highest_market_buy_price
-            lowest_market_sell_price = lowest_market_sell_price
+        # Todo: Logic here
+
+    def get_market_orders(self, depth=1):
+        """ Returns orders from the current market split in bids and asks. Orders are sorted by price.
+
+            bids = buy orders
+            asks = sell orders
+
+            :param int | depth: Amount of orders per side will be fetched, default=1
+            :return: Returns a dictionary of orders or None
+        """
+        return self.market.orderbook(depth)
+
+    def get_market_sell_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0,
+                              refresh=False):
+        """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be sold, enhanced with moving
+            average or weighted moving average.
+
+            Depth = 0 means highest regardless of size
+
+            :param float | quote_amount:
+            :param float | base_amount:
+            :param float | moving_average:
+            :param float | weighted_moving_average:
+            :param bool | refresh:
+            :return:
+        """
+        # In case depth is not given, return price of the lowest sell order on the market
+        if depth == 0:
+            lowest_market_sell_order = self.get_lowest_market_sell_order()
+            return lowest_market_sell_order['price']
+
+        sum_quote = 0
+        sum_base = 0
+        order_number = 0
+
+        market_sell_orders = self.get_market_sell_orders(depth=depth)
+        market_fee = self.get_market_fee()
+        lacking = depth * (1 + market_fee)
+
+        while lacking > 0:
+            sell_quote = float(market_sell_orders[order_number]['quote'])
+
+            if sell_quote > lacking:
+                sum_quote += lacking
+                sum_base += lacking * market_sell_orders[order_number]['price']  # Make sure price is not inverted
+                lacking = 0
+            else:
+                sum_quote += float(market_sell_orders[order_number]['quote'])
+                sum_base += float(market_sell_orders[order_number]['base'])
+                lacking = depth - sell_quote
+
+        price = sum_base / sum_quote
+
+        return price
+
+    def get_market_spread(self, quote_amount=0):
+        """ Returns the market spread %, including own orders, from specified depth, enhanced with moving average or
+            weighted moving average.
+
+            :param int | quote_amount:
+            :return: Market spread as float or None
+        """
+        # Decides how many orders need to be fetched for the market spread calculation
+        if quote_amount == 0:
+            # Get only the closest orders
+            fetch_depth = 1
+        elif quote_amount > 0:
+            fetch_depth = self.fetch_depth
+
+            # Raise the fetch depth each time. int() rounds the count
+            self.fetch_depth = int(self.fetch_depth * 1.5)
+
+        market_orders = self.get_market_orders(fetch_depth)
+
+        ask = self.get_market_ask()
+        bid = self.get_market_bid()
 
         # Calculate market spread
-        market_spread = lowest_market_sell_price / highest_market_buy_price - 1
+        market_spread = ask / bid - 1
+
         return market_spread
+
+    def get_order_cancellation_fee(self, fee_asset):
+        """ Returns the order cancellation fee in the specified asset.
+            :param fee_asset:
+            :return:
+        """
+        # Todo: Insert logic here
+
+    def get_order_creation_fee(self, fee_asset):
+        """ Returns the cost of creating an order in the asset specified
+
+            :param fee_asset: QUOTE, BASE, BTS, or any other
+            :return:
+        """
+        # Todo: Insert logic here
+
+    def filter_buy_orders(self, orders, sort=None):
+        """ Return own buy orders from list of orders. Can be used to pick buy orders from a list
+            that is not up to date with the blockchain data.
+
+            :param list | orders: List of orders
+            :param string | sort: DESC or ASC will sort the orders accordingly, default None
+            :return list | buy_orders: List of buy orders only
+        """
+        buy_orders = []
+
+        # Filter buy orders
+        for order in orders:
+            # Check if the order is buy order, by comparing asset symbol of the order and the market
+            if order['base']['symbol'] == self.market['base']['symbol']:
+                buy_orders.append(order)
+
+        if sort:
+            buy_orders = self.sort_orders_by_price(buy_orders, sort)
+
+        return buy_orders
+
+    def filter_sell_orders(self, orders, sort=None):
+        """ Return sell orders from list of orders. Can be used to pick sell orders from a list
+            that is not up to date with the blockchain data.
+
+            :param list | orders: List of orders
+            :param string | sort: DESC or ASC will sort the orders accordingly, default None
+            :return list | sell_orders: List of sell orders only
+        """
+        sell_orders = []
+
+        # Filter sell orders
+        for order in orders:
+            # Check if the order is buy order, by comparing asset symbol of the order and the market
+            if order['base']['symbol'] != self.market['base']['symbol']:
+                # Invert order before appending to the list, this gives easier comparison in strategy logic
+                sell_orders.append(order.invert())
+
+        if sort:
+            sell_orders = self.sort_orders_by_price(sell_orders, sort)
+
+        return sell_orders
+
+    def get_own_buy_orders(self, orders=None):
+        """ Get own buy orders from current market
+
+            :return: List of buy orders
+        """
+        if not orders:
+            # List of orders was not given so fetch everything from the market
+            orders = self.current_market_own_orders
+
+        return self.filter_buy_orders(orders)
+
+    def get_own_sell_orders(self, orders=None):
+        """ Get own sell orders from current market
+
+            :return: List of sell orders
+        """
+        if not orders:
+            # List of orders was not given so fetch everything from the market
+            orders = self.current_market_own_orders
+
+        return self.filter_sell_orders(orders)
 
     def get_own_spread(self, highest_own_buy_price=None, lowest_own_sell_price=None, depth=0, refresh=False):
         """ Returns the difference between own closest opposite orders.
@@ -647,8 +788,8 @@ class StrategyBase(Storage, StateMachine, Events):
         if refresh:
             try:
                 # Try fetching own orders
-                highest_own_buy_price = self.get_highest_market_buy().get('price')
-                lowest_own_sell_price = self.get_lowest_own_sell().get('price')
+                highest_own_buy_price = self.get_highest_market_buy_order().get('price')
+                lowest_own_sell_price = self.get_lowest_own_sell_order().get('price')
             except AttributeError:
                 return None
         else:
@@ -660,75 +801,22 @@ class StrategyBase(Storage, StateMachine, Events):
         actual_spread = lowest_own_sell_price / highest_own_buy_price - 1
         return actual_spread
 
-    def get_order_creation_fee(self, fee_asset):
-        """ Returns the cost of creating an order in the asset specified
+    def get_price_for_amount_buy(self, amount=None):
+        """ Returns the cumulative price for which you could buy the specified amount of QUOTE.
+            This method must take into account market fee.
 
-            :param fee_asset: QUOTE, BASE, BTS, or any other
+            :param amount:
             :return:
         """
         # Todo: Insert logic here
 
-    def get_order_cancellation_fee(self, fee_asset):
-        """ Returns the order cancellation fee in the specified asset.
-            :param fee_asset:
+    def get_price_for_amount_sell(self, amount=None):
+        """ Returns the cumulative price for which you could sell the specified amount of QUOTE
+
+            :param amount:
             :return:
         """
         # Todo: Insert logic here
-
-    def get_market_fee(self, asset):
-        """ Returns the fee percentage for buying specified asset.
-            :param asset:
-            :return: Fee percentage in decimal form (0.025)
-        """
-        # Todo: Insert logic here
-
-    def get_own_buy_orders(self, sort=None, orders=None):
-        # Todo: I might combine this with the get_own_sell_orders and have 2 functions to call it with different returns
-        """ Return own buy orders from list of orders. Can be used to pick buy orders from a list
-            that is not up to date with the blockchain data. If list of orders is not passed, orders are fetched from
-            blockchain.
-
-            :param string | sort: DESC or ASC will sort the orders accordingly, default None.
-            :param list | orders: List of orders. If None given get all orders from Blockchain.
-            :return list | buy_orders: List of buy orders only.
-        """
-        buy_orders = []
-
-        if not orders:
-            orders = self.current_market_own_orders
-
-        # Find buy orders
-        for order in orders:
-            if not self.is_sell_order(order):
-                buy_orders.append(order)
-        if sort:
-            buy_orders = self.sort_orders(buy_orders, sort)
-
-        return buy_orders
-
-    def get_own_sell_orders(self, sort=None, orders=None):
-        """ Return own sell orders from list of orders. Can be used to pick sell orders from a list
-            that is not up to date with the blockchain data. If list of orders is not passed, orders are fetched from
-            blockchain.
-
-            :param string | sort: DESC or ASC will sort the orders accordingly, default None.
-            :param list | orders: List of orders. If None given get all orders from Blockchain.
-            :return list | sell_orders: List of sell orders only.
-        """
-        sell_orders = []
-
-        if not orders:
-            orders = self.current_market_own_orders
-
-        # Find sell orders
-        for order in orders:
-            if self.is_sell_order(order):
-                sell_orders.append(order)
-
-        if sort:
-            sell_orders = self.sort_orders(sell_orders, sort)
-
-        return sell_orders
 
     def get_updated_order(self, order_id):
         # Todo: This needed?
@@ -774,26 +862,6 @@ class StrategyBase(Storage, StateMachine, Events):
         r = self.bitshares.txbuffer.broadcast()
         self.bitshares.blocking = False
         return r
-
-    def is_buy_order(self, order):
-        """ Checks if the order is a buy order. Returns False if not.
-
-            :param order: Buy / Sell order
-            :return:
-        """
-        if order['base']['symbol'] == self.market['base']['symbol']:
-            return True
-        return False
-
-    def is_sell_order(self, order):
-        """ Checks if the order is Sell order. Returns False if Buy order
-
-            :param order: Buy / Sell order
-            :return: bool: True = Sell order, False = Buy order
-        """
-        if order['base']['symbol'] != self.market['base']['symbol']:
-            return True
-        return False
 
     def is_current_market(self, base_asset_id, quote_asset_id):
         """ Returns True if given asset id's are of the current market
@@ -1023,28 +1091,40 @@ class StrategyBase(Storage, StateMachine, Events):
     def balances(self):
         """ Returns all the balances of the account assigned for the worker.
 
-            :return: list: Balances in list where each asset is in their own Amount object
+            :return: Balances in list where each asset is in their own Amount object
         """
         return self._account.balances
+
+    @property
+    def base_asset(self):
+        return self.worker['market'].split('/')[1]
+
+    @property
+    def quote_asset(self):
+        return self.worker['market'].split('/')[0]
 
     @property
     def all_own_orders(self, refresh=True):
         """ Return the worker's open orders in all markets
 
             :param bool | refresh: Use most resent data
-            :return: list: List of Order objects
+            :return: List of Order objects
         """
         # Refresh account data
         if refresh:
             self.account.refresh()
 
-        return [order for order in self.account.openorders]
+        orders = []
+        for order in self.account.openorders:
+            orders.append(order)
+
+        return orders
 
     @property
     def current_market_own_orders(self, refresh=False):
         """ Return the account's open orders in the current market
 
-            :return: list: List of Order objects
+            :return: List of Order objects
         """
         orders = []
 
@@ -1059,44 +1139,42 @@ class StrategyBase(Storage, StateMachine, Events):
         return orders
 
     @property
-    def get_updated_orders(self):
-        """ Returns all open orders as updated orders
-            Todo: What exactly? When orders are needed who wants out of date info?
-        """
-        self.account.refresh()
-
-        limited_orders = []
-        for order in self.account['limit_orders']:
-            base_asset_id = order['sell_price']['base']['asset_id']
-            quote_asset_id = order['sell_price']['quote']['asset_id']
-            # Check if the order is in the current market
-            if not self.is_current_market(base_asset_id, quote_asset_id):
-                continue
-
-            limited_orders.append(self.get_updated_limit_order(order))
-
-        return [Order(order, bitshares_instance=self.bitshares) for order in limited_orders]
-
-    @property
     def market(self):
         """ Return the market object as :class:`bitshares.market.Market`
         """
         return self._market
 
     @staticmethod
-    def convert_asset(from_value, from_asset, to_asset, refresh=False):
+    def convert_asset(from_value, from_asset, to_asset):
         """ Converts asset to another based on the latest market value
 
             :param float | from_value: Amount of the input asset
             :param string | from_asset: Symbol of the input asset
             :param string | to_asset: Symbol of the output asset
-            :param bool | refresh:
             :return: float Asset converted to another asset as float value
         """
         market = Market('{}/{}'.format(from_asset, to_asset))
         ticker = market.ticker()
         latest_price = ticker.get('latest', {}).get('price', None)
         return from_value * latest_price
+
+    @staticmethod
+    def get_order(order_id, return_none=True):
+        """ Returns the Order object for the order_id
+
+            :param str|dict order_id: blockchain object id of the order
+                can be an order dict with the id key in it
+            :param bool return_none: return None instead of an empty
+                Order object when the order doesn't exist
+        """
+        if not order_id:
+            return None
+        if 'id' in order_id:
+            order_id = order_id['id']
+        order = Order(order_id)
+        if return_none and order['deleted']:
+            return None
+        return order
 
     @staticmethod
     def get_original_order(order_id, return_none=True):
@@ -1146,8 +1224,8 @@ class StrategyBase(Storage, StateMachine, Events):
         Storage.clear_worker_data(worker_name)
 
     @staticmethod
-    def sort_orders(orders, sort='DESC'):
-        """ Return list of orders sorted ascending or descending
+    def sort_orders_by_price(orders, sort='DESC'):
+        """ Return list of orders sorted ascending or descending by price
 
             :param list | orders: list of orders to be sorted
             :param string | sort: ASC or DESC. Default DESC
