@@ -35,6 +35,10 @@ def remove(path):
 
 def truncate(number, decimals):
     """ Change the decimal point of a number without rounding
+
+        :param float | number: A float number to be cut down
+        :param int | decimals: Number of decimals to be left to the float number
+        :return: Price with specified precision
     """
     return math.floor(number * 10 ** decimals) / 10 ** decimals
 
