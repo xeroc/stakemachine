@@ -855,16 +855,6 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         # Todo: Insert logic here
 
-    def execute_bundle(self):
-        # Todo: Is this still needed?
-        # Apparently old naming was "execute", and was used by walls strategy.
-        """ Execute a bundle of operations
-        """
-        self.bitshares.blocking = "head"
-        r = self.bitshares.txbuffer.broadcast()
-        self.bitshares.blocking = False
-        return r
-
     def is_current_market(self, base_asset_id, quote_asset_id):
         """ Returns True if given asset id's are of the current market
 
