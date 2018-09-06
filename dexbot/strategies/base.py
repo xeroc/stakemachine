@@ -112,12 +112,12 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Common configs
         base_config = [
-            ConfigElement("account", "string", "", "Account",
-                          "BitShares account name for the bot to operate with",
-                          ""),
-            ConfigElement("market", "string", "USD:BTS", "Market",
-                          "BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"",
-                          r"[A-Z\.]+[:\/][A-Z\.]+"),
+            ConfigElement('account', 'string', '', 'Account',
+                          'BitShares account name for the bot to operate with',
+                          ''),
+            ConfigElement('market', 'string', 'USD:BTS', 'Market',
+                          'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
+                          r'[A-Z\.]+[:\/][A-Z\.]+'),
             ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
                           r'[A-Z\.]+')
