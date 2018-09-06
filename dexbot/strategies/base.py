@@ -512,16 +512,18 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         return self.fee_asset.market_fee_percent
 
-    def get_market_buy_orders(self):
-        """
+    def get_market_buy_orders(self, depth=10):
+        """ Fetches most reset data and returns list of buy orders.
 
-            :return: List of market buy orders
+            :param int | depth: Amount of buy orders returned, Default=10
+            :return: List of market sell orders
         """
-        return self.get_market_orders()['bids']
+        return self.get_market_orders(depth=depth)['bids']
 
-    def get_market_sell_orders(self, depth=1):
-        """
+    def get_market_sell_orders(self, depth=10):
+        """ Fetches most reset data and returns list of sell orders.
 
+            :param int | depth: Amount of sell orders returned, Default=10
             :return: List of market sell orders
         """
         return self.get_market_orders(depth=depth)['asks']
@@ -533,10 +535,10 @@ class StrategyBase(Storage, StateMachine, Events):
             :return: Highest market buy order or None
         """
         if not orders:
-            orders = self.market.orderbook(1)
+            orders = self.get_market_buy_orders(1)
 
         try:
-            order = orders['bids'][0]
+            order = orders[0]
         except IndexError:
             self.log.info('Market has no buy orders.')
             return None
@@ -564,10 +566,10 @@ class StrategyBase(Storage, StateMachine, Events):
             :return: Lowest market sell order or None
         """
         if not orders:
-            orders = self.market.orderbook(1)
+            orders = self.get_market_sell_orders(1)
 
         try:
-            order = orders['asks'][0]
+            order = orders[0]
         except IndexError:
             self.log.info('Market has no sell orders.')
             return None
