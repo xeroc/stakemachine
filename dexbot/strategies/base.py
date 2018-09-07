@@ -227,7 +227,6 @@ class StrategyBase(Storage, StateMachine, Events):
         """ This method distinguishes notifications caused by Matched orders from those caused by placed orders
             Todo: can this be renamed to _instantFill()?
         """
-        # Todo: Add documentation
         if isinstance(d, FilledOrder):
             self.onOrderMatched(d)
         elif isinstance(d, Order):
@@ -279,6 +278,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Orders balance calculation
         for order in self.all_own_orders:
+            # Todo: What is the purpose of this?
             updated_order = self.get_updated_order(order['id'])
 
             if not order:
@@ -421,13 +421,11 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return {'quote': quote, 'base': base}
 
-    def get_allocated_assets(self, order_ids, return_asset=False, refresh=True):
-        # Todo:
+    def get_allocated_assets(self, order_ids=None, return_asset=False):
         """ Returns the amount of QUOTE and BASE allocated in orders, and that do not show up in available balance
 
             :param order_ids:
             :param return_asset:
-            :param refresh:
             :return:
         """
         # Todo: Add documentation
@@ -574,7 +572,7 @@ class StrategyBase(Storage, StateMachine, Events):
             :param bool | refresh:
             :return:
         """
-        # Todo: Logic here
+        # Todo: Insert logic here
 
     def get_market_orders(self, depth=1):
         """ Returns orders from the current market split in bids and asks. Orders are sorted by price.
@@ -589,10 +587,10 @@ class StrategyBase(Storage, StateMachine, Events):
 
     def get_market_sell_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0,
                               refresh=False):
-        """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be sold, enhanced with moving
-            average or weighted moving average.
+        """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
+            enhanced with moving average or weighted moving average.
 
-            Depth = 0 means highest regardless of size
+            [quote/base]_amount = 0 means lowest regardless of size
 
             :param float | quote_amount:
             :param float | base_amount:
@@ -601,18 +599,20 @@ class StrategyBase(Storage, StateMachine, Events):
             :param bool | refresh:
             :return:
         """
-        # In case depth is not given, return price of the lowest sell order on the market
-        if depth == 0:
+        # Todo: Work in progress
+        # In case amount is not given, return price of the lowest sell order on the market
+        if base_amount == 0 or quote_amount == 0:
             lowest_market_sell_order = self.get_lowest_market_sell_order()
             return lowest_market_sell_order['price']
 
+        # This calculation is for when quote_amount is given
         sum_quote = 0
         sum_base = 0
         order_number = 0
 
-        market_sell_orders = self.get_market_sell_orders(depth=depth)
+        market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
         market_fee = self.get_market_fee()
-        lacking = depth * (1 + market_fee)
+        lacking = quote_amount * (1 + market_fee)
 
         while lacking > 0:
             sell_quote = float(market_sell_orders[order_number]['quote'])
@@ -624,7 +624,7 @@ class StrategyBase(Storage, StateMachine, Events):
             else:
                 sum_quote += float(market_sell_orders[order_number]['quote'])
                 sum_base += float(market_sell_orders[order_number]['base'])
-                lacking = depth - sell_quote
+                lacking -= sell_quote
 
         price = sum_base / sum_quote
 
@@ -649,8 +649,8 @@ class StrategyBase(Storage, StateMachine, Events):
 
         market_orders = self.get_market_orders(fetch_depth)
 
-        ask = self.get_market_ask()
-        bid = self.get_market_bid()
+        ask = self.get_market_sell_price()
+        bid = self.get_market_buy_price()
 
         # Calculate market spread
         market_spread = ask / bid - 1
@@ -659,6 +659,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
     def get_order_cancellation_fee(self, fee_asset):
         """ Returns the order cancellation fee in the specified asset.
+
             :param fee_asset:
             :return:
         """
@@ -764,10 +765,10 @@ class StrategyBase(Storage, StateMachine, Events):
         return actual_spread
 
     def get_price_for_amount_buy(self, amount=None):
-        """ Returns the cumulative price for which you could buy the specified amount of QUOTE.
-            This method must take into account market fee.
+        """ Returns the cumulative price for which you could buy the specified amount of QUOTE with market fee taken in
+            account.
 
-            :param amount:
+            :param float | amount: Amount to buy in QUOTE
             :return:
         """
         # Todo: Insert logic here
@@ -775,7 +776,7 @@ class StrategyBase(Storage, StateMachine, Events):
     def get_price_for_amount_sell(self, amount=None):
         """ Returns the cumulative price for which you could sell the specified amount of QUOTE
 
-            :param amount:
+            :param float | amount: Amount to sell in QUOTE
             :return:
         """
         # Todo: Insert logic here
@@ -784,8 +785,7 @@ class StrategyBase(Storage, StateMachine, Events):
         # Todo: This needed?
         """ Tries to get the updated order from the API. Returns None if the order doesn't exist
 
-            :param str|dict order_id: blockchain object id of the order
-                can be an order dict with the id key in it
+            :param str|dict order_id: blockchain object id of the order can be an order dict with the id key in it
         """
         if isinstance(order_id, dict):
             order_id = order_id['id']
@@ -816,6 +816,7 @@ class StrategyBase(Storage, StateMachine, Events):
         # Todo: Insert logic here
 
     def is_current_market(self, base_asset_id, quote_asset_id):
+        # Todo: Is this useful?
         """ Returns True if given asset id's are of the current market
 
             :return: bool: True = Current market, False = Not current market
@@ -824,11 +825,13 @@ class StrategyBase(Storage, StateMachine, Events):
             if base_asset_id == self.market['base']['id']:
                 return True
             return False
+
         # Todo: Should we return true if market is opposite?
         if quote_asset_id == self.market['base']['id']:
             if base_asset_id == self.market['quote']['id']:
                 return True
             return False
+
         return False
 
     def pause_worker(self):
@@ -963,6 +966,7 @@ class StrategyBase(Storage, StateMachine, Events):
             :return:
         """
         # Todo: Insert logic here
+        # Todo: Is this something that is commonly used and thus needed?
 
     def retry_action(self, action, *args, **kwargs):
         """ Perform an action, and if certain suspected-to-be-spurious grapheme bugs occur,
@@ -998,10 +1002,10 @@ class StrategyBase(Storage, StateMachine, Events):
                     raise
 
     def write_order_log(self, worker_name, order):
-        """
+        """ F
 
             :param string | worker_name: Name of the worker
-            :param object | order: Order that was traded
+            :param object | order: Order that was fulfilled
         """
         # Todo: Add documentation
         operation_type = 'TRADE'
@@ -1108,28 +1112,25 @@ class StrategyBase(Storage, StateMachine, Events):
         market = Market('{}/{}'.format(from_asset, to_asset))
         ticker = market.ticker()
         latest_price = ticker.get('latest', {}).get('price', None)
-        return from_value * latest_price
+        precision = market['base']['precision']
 
+        return truncate((from_value * latest_price), precision)
 
     @staticmethod
-    def get_original_order(order_id, return_none=True):
-        """ Returns the Order object for the order_id
+    def get_order(order_id, return_none=True):
+        """ Get Order object with order_id
 
-            :param dict | order_id: blockchain object id of the order can be an order dict with the id key in it
-            :param bool | return_none: return None instead of an empty Order object when the order doesn't exist
-            :return:
+            :param str | dict order_id: blockchain object id of the order can be an order dict with the id key in it
+            :param bool return_none: return None instead of an empty Order object when the order doesn't exist
+            :return: Order object
         """
         if not order_id:
             return None
-
         if 'id' in order_id:
             order_id = order_id['id']
-
         order = Order(order_id)
-
         if return_none and order['deleted']:
             return None
-
         return order
 
     @staticmethod
@@ -1140,6 +1141,7 @@ class StrategyBase(Storage, StateMachine, Events):
             :param limit_order: an item of Account['limit_orders']
             :return: Order
             Todo: When would we not want an updated order?
+            Todo: If get_updated_order is removed, this can be removed as well.
         """
         order = copy.deepcopy(limit_order)
         price = order['sell_price']['base']['amount'] / order['sell_price']['quote']['amount']
