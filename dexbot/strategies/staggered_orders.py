@@ -670,8 +670,8 @@ class Strategy(BaseStrategy):
                         # Limit sell order to available balance
                         if asset_balance < new_order_amount - order_amount:
                             new_order_amount = order_amount + asset_balance['amount']
-                            self.log.info('Limiting new sell order to avail asset balance: {}'.format(
-                                new_order_amount))
+                            self.log.info('Limiting new sell order to avail asset balance: {:.8f} {}'.format(
+                                new_order_amount, asset_balance['symbol']))
 
                         price = (order['price'] ** -1)
                         self.log.debug('Cancelling sell order in increase_order_sizes(); ' 
@@ -746,8 +746,8 @@ class Strategy(BaseStrategy):
                         # Limit buy order to available balance
                         if (asset_balance / price) < (new_base_amount - order_amount) / price:
                             new_base_amount = order_amount + asset_balance['amount']
-                            self.log.info('Limiting new buy order to avail asset balance: {}'.format(
-                                new_base_amount))
+                            self.log.info('Limiting new buy order to avail asset balance: {:.8f} {}'.format(
+                                new_base_amount, asset_balance['symbol']))
 
                         new_order_amount = new_base_amount / price
                         self.log.debug('Cancelling buy order in increase_order_sizes(); ' 
@@ -803,7 +803,8 @@ class Strategy(BaseStrategy):
                     # Limit order to available balance
                     if asset_balance < amount_base - order_amount:
                         amount_base = order_amount + asset_balance['amount']
-                        self.log.info('Limiting new order to avail asset balance: {}'.format(amount_base))
+                        self.log.info('Limiting new order to avail asset balance: {:.8f} {}'.format(amount_base,
+                            asset_balance['symbol']))
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
