@@ -283,19 +283,19 @@ class Strategy(BaseStrategy):
         self.base_balance = account_balances['base']
         self.quote_balance = account_balances['quote']
 
-        # Todo: order_creation_fee(BTS) = 0.01 for now. Reserve fee for 200 orders
+        # Todo: order_creation_fee(BTS) = 0.01 for now. Use OperationsFee in the feature.
+        # Reserve fee for 200 orders
         fee_reserve = 0.01 * 200
         if self.fee_asset['id'] == '1.3.0':
+            # Fee asset is BTS, so no further calculations are needed
             fee_reserve = fee_reserve
         else:
-            temp_market = Market(base=Asset('1.3.0'), quote=self.fee_asset)
-            ticker = temp_market.ticker()
-            """ Inverted CER gives us Price like 10 BTS/FEE_ASSET, where BTS is quote
-                We're using invert() as workaround for https://github.com/bitshares/python-bitshares/issues/138
-            """
-            core_exchange_rate = ticker['core_exchange_rate'].invert()
+            # Determine how many fee_asset is needed for core-exchange
+            temp_market = Market(base=self.fee_asset, quote=Asset('1.3.0'))
+            core_exchange_rate = temp_market.ticker()['core_exchange_rate']
             fee_reserve = fee_reserve * core_exchange_rate['base']['amount']
 
+        # Finally, reserve only required asset
         if self.fee_asset['id'] == self.market['base']['id']:
             self.base_balance['amount'] = self.base_balance['amount'] - fee_reserve
         elif self.fee_asset['id'] == self.market['quote']['id']:
