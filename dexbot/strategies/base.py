@@ -385,14 +385,41 @@ class StrategyBase(Storage, StateMachine, Events):
         order['base'] = base_asset
         return order
 
-    def calculate_worker_value(self, unit_of_measure, refresh=True):
-        """ Returns the combined value of allocated and available QUOTE and BASE, measured in "unit_of_measure".
+    def calculate_worker_value(self, unit_of_measure):
+        """ Returns the combined value of allocated and available BASE and QUOTE. Total value is
+            measured in "unit_of_measure", which is either BASE or QUOTE symbol.
 
-            :param unit_of_measure:
-            :param refresh:
-            :return:
+            :param string | unit_of_measure: Asset symbol
+            :return: Value of the worker as float
         """
-        # Todo: Insert logic here
+        base_total = 0
+        quote_total = 0
+
+        # Calculate total balances
+        balances = self.balances
+        for balance in balances:
+            if balance['symbol'] == self.base_asset:
+                base_total += balance['amount']
+            elif balance['symbol'] == self.quote_asset:
+                quote_total += balance['amount']
+
+        # Calculate value of the orders in unit of measure
+        orders = self.current_market_own_orders
+        for order in orders:
+            if order['base']['symbol'] == self.quote_asset:
+                # Pick sell orders order's BASE amount, which is same as worker's QUOTE, to worker's BASE
+                quote_total += order['base']['amount']
+            else:
+                base_total += order['base']['amount']
+
+        # Finally convert asset to another and return the sum
+        if unit_of_measure == self.base_asset:
+            quote_total = self.convert_asset(quote_total, self.quote_asset, unit_of_measure)
+        elif unit_of_measure == self.quote_asset:
+            base_total = self.convert_asset(base_total, self.base_asset, unit_of_measure)
+
+        # Fixme: Make sure that decimal precision is correct.
+        return base_total + quote_total
 
     def cancel_all_orders(self):
         """ Cancel all orders of the worker's account
