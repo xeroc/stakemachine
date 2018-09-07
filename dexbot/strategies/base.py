@@ -223,35 +223,6 @@ class StrategyBase(Storage, StateMachine, Events):
             logging.getLogger('dexbot.orders_log'), {}
         )
 
-    def _calculate_center_price(self, suppress_errors=False):
-        """
-
-            :param suppress_errors:
-            :return:
-        """
-        # Todo: Add documentation
-        ticker = self.market.ticker()
-        highest_bid = ticker.get("highestBid")
-        lowest_ask = ticker.get("lowestAsk")
-
-        if highest_bid is None or highest_bid == 0.0:
-            if not suppress_errors:
-                self.log.critical(
-                    "Cannot estimate center price, there is no highest bid."
-                )
-                self.disabled = True
-            return None
-        elif lowest_ask is None or lowest_ask == 0.0:
-            if not suppress_errors:
-                self.log.critical(
-                    "Cannot estimate center price, there is no lowest ask."
-                )
-                self.disabled = True
-            return None
-
-        center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
-        return center_price
-
     def _callbackPlaceFillOrders(self, d):
         """ This method distinguishes notifications caused by Matched orders from those caused by placed orders
             Todo: can this be renamed to _instantFill()?
@@ -338,49 +309,6 @@ class StrategyBase(Storage, StateMachine, Events):
             balance['amount'] = balance['amount'] - fee_reservation
 
         return balance
-
-    def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
-                               order_ids=None, manual_offset=0, suppress_errors=False):
-        # Todo: Fix comment
-        """ Calculate center price which shifts based on available funds
-        """
-        if center_price is None:
-            # No center price was given so we simply calculate the center price
-            calculated_center_price = self._calculate_center_price(suppress_errors)
-        else:
-            # Center price was given so we only use the calculated center price
-            # for quote to base asset conversion
-            calculated_center_price = self._calculate_center_price(True)
-            if not calculated_center_price:
-                calculated_center_price = center_price
-
-        if center_price:
-            calculated_center_price = center_price
-
-        if asset_offset:
-            total_balance = self.get_allocated_assets(order_ids)
-            total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
-
-            if not total:  # Prevent division by zero
-                balance = 0
-            else:
-                # Returns a value between -1 and 1
-                balance = (total_balance['base'] / total) * 2 - 1
-
-            if balance < 0:
-                # With less of base asset center price should be offset downward
-                calculated_center_price = calculated_center_price / math.sqrt(1 + spread * (balance * -1))
-            elif balance > 0:
-                # With more of base asset center price will be offset upwards
-                calculated_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
-            else:
-                calculated_center_price = calculated_center_price
-
-        # Calculate final_offset_price if manual center price offset is given
-        if manual_offset:
-            calculated_center_price = calculated_center_price + (calculated_center_price * manual_offset)
-
-        return calculated_center_price
 
     def calculate_order_data(self, order, amount, price):
         quote_asset = Amount(amount, self.market['quote']['symbol'])
