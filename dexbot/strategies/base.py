@@ -323,7 +323,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return total_value
 
-    def balance(self, asset, fee_reservation=False):
+    def balance(self, asset, fee_reservation=0):
         """ Return the balance of your worker's account for a specific asset
 
             :param string | asset:
@@ -331,8 +331,13 @@ class StrategyBase(Storage, StateMachine, Events):
             :return: Balance of specific asset
         """
         # Todo: Add documentation
-        # Todo: Add logic here, fee_reservation
-        return self._account.balance(asset)
+        # Todo: Check that fee reservation was as intended, having it true / false made no sense
+        balance = self._account.balance(asset)
+
+        if fee_reservation > 0:
+            balance['amount'] = balance['amount'] - fee_reservation
+
+        return balance
 
     def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
                                order_ids=None, manual_offset=0, suppress_errors=False):
