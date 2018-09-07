@@ -1182,23 +1182,6 @@ class StrategyBase(Storage, StateMachine, Events):
         latest_price = ticker.get('latest', {}).get('price', None)
         return from_value * latest_price
 
-    @staticmethod
-    def get_order(order_id, return_none=True):
-        """ Returns the Order object for the order_id
-
-            :param str|dict order_id: blockchain object id of the order
-                can be an order dict with the id key in it
-            :param bool return_none: return None instead of an empty
-                Order object when the order doesn't exist
-        """
-        if not order_id:
-            return None
-        if 'id' in order_id:
-            order_id = order_id['id']
-        order = Order(order_id)
-        if return_none and order['deleted']:
-            return None
-        return order
 
     @staticmethod
     def get_original_order(order_id, return_none=True):
