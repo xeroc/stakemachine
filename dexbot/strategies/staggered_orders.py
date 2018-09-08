@@ -429,10 +429,6 @@ class Strategy(BaseStrategy):
                             base_limit = None
                             self.log.debug('Limiting buy order base by opposite order QUOTE asset amount: {}'.format(
                                            quote_limit))
-                        else:
-                            self.log.warning('Using fallback order limiting')
-                            quote_limit = None
-                            base_limit = lowest_sell_order['quote']['amount']
                         self.place_higher_buy_order(highest_buy_order, quote_limit=quote_limit, base_limit=base_limit,
                                                     allow_partial=False)
                 elif not self.sell_orders:
@@ -526,10 +522,6 @@ class Strategy(BaseStrategy):
                             base_limit = highest_buy_order['base']['amount']
                             self.log.debug('Limiting sell order by opposite order BASE asset amount: {}'.format(
                                            base_limit))
-                        else:
-                            self.log.warning('Using fallback order limiting')
-                            quote_limit = highest_buy_order['quote']['amount']
-                            base_limit = None
                         self.place_lower_sell_order(lowest_sell_order, quote_limit=quote_limit, base_limit=base_limit,
                                                     allow_partial=False)
                 elif not self.buy_orders:
