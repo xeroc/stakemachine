@@ -607,160 +607,102 @@ class Strategy(BaseStrategy):
         """
         # Mountain mode:
         if self.mode == 'mountain':
+            """ Starting from the furthest order. For each order, see if it is approximately
+                maximum size.
+                If it is, move on to next.
+                If not, cancel it and replace with maximum size order. Then return.
+                If highest_sell_order is reached, increase it to maximum size
+
+                Maximum size is:
+                1. As many "amount * (1 + increment)" as the order further (further_bound)
+                AND
+                2. As many "amount" as the order closer to center (closer_bound)
+
+                Note: for buy orders "amount" is BASE asset amount, and for sell order "amount" is QUOTE.
+
+                Also when making an order it's size always will be limited by available free balance
+            """
             if asset == 'quote':
-                """ Starting from the lowest SELL order. For each order, see if it is approximately
-                    maximum size.
-                    If it is, move on to next.
-                    If not, cancel it and replace with maximum size order. Then return.
-                    If highest_sell_order is reached, increase it to maximum size
-
-                    Maximum size is:
-                    1. As many "quote * (1 + increment)" as the order below (higher_bound)
-                    AND
-                    2. As many "quote as the order above (lower_bound)
-
-                    Also when making an order it's size always will be limited by available free balance
-                """
-                # Get orders and amounts to be compared. Note: orders are sorted from low price to high
-                for order in orders:
-                    order_index = orders.index(order)
-                    order_amount = order['base']['amount']
-
-                    # This check prevents choosing order with index lower than the list length
-                    if order_index == 0:
-                        # In case checking the first order, use the same order, but increased by 1 increment
-                        # This allows our lowest sell order amount exceed highest buy order
-                        lower_order = order
-                        lower_bound = lower_order['base']['amount'] * (1 + self.increment)
-                    else:
-                        lower_order = orders[order_index - 1]
-                        lower_bound = lower_order['base']['amount']
-
-                    # This check prevents choosing order with index higher than the list length
-                    if order_index + 1 < len(orders):
-                        higher_order = orders[order_index + 1]
-                        is_least_order = False
-                    else:
-                        higher_order = orders[order_index]
-                        is_least_order = True
-
-                    higher_bound = higher_order['base']['amount'] * (1 + self.increment)
-
-                    self.log.debug('QUOTE: lower_bound: {}, order_amount: {}, higher_bound: {}'.format(
-                        lower_bound, order_amount * (1 + self.increment / 10), higher_bound))
-
-                    if lower_bound > order_amount * (1 + self.increment / 10) < higher_bound:
-                        # Calculate new order size and place the order to the market
-                        new_order_amount = higher_bound
-
-                        if is_least_order:
-                            new_orders_sum = 0
-                            amount = order_amount
-                            for o in orders:
-                                amount = amount * (1 + self.increment)
-                                new_orders_sum += amount
-                            # To reduce allocation rounds, increase furthest order more
-                            new_order_amount = order_amount * (self.quote_total_balance / new_orders_sum) \
-                                * (1 + self.increment * 0.75)
-
-                            if new_order_amount < lower_bound:
-                                """ This is for situations when calculated new_order_amount is not big enough to
-                                    allocate all funds. Use partial-increment increase, so we'll got at least one full
-                                    increase round.  Whether we will just use `new_order_amount = lower_bound`, we will
-                                    get less than one full allocation round, thus leaving lowest sell order not
-                                    increased.
-                                """
-                                new_order_amount = lower_bound / (1 + self.increment * 0.2)
-
-                        # Limit sell order to available balance
-                        if asset_balance < new_order_amount - order_amount:
-                            new_order_amount = order_amount + asset_balance['amount']
-                            self.log.info('Limiting new sell order to avail asset balance: {:.8f} {}'.format(
-                                new_order_amount, asset_balance['symbol']))
-
-                        price = (order['price'] ** -1)
-                        self.log.debug('Cancelling sell order in increase_order_sizes(); ' 
-                                       'mode: mountain, quote: {}, price: {:.8f}'.format(order_amount, price))
-                        self.cancel(order)
-                        self.market_sell(new_order_amount, price)
-                        # Only one increase at a time. This prevents running more than one increment round
-                        # simultaneously
-                        return
+                total_balance = self.quote_total_balance
+                order_type = 'sell'
             elif asset == 'base':
-                """ Starting from the highest BUY order, for each order, see if it is approximately
-                    maximum size.
-                    If it is, move on to next.
-                    If not, cancel it and replace with maximum size order. Maximum order size will be a
-                    size of higher order. Then return.
-                    If lowest_buy_order is reached, increase it to maximum size.
+                total_balance = self.base_total_balance
+                order_type = 'buy'
 
-                    Maximum size is:
-                    1. As many "base * (1 + increment)" as the order below (lower_bound)
-                    AND
-                    2. As many "base" as the order above (higher_bound)
+            # Get orders and amounts to be compared. Note: orders are sorted from low price to high
+            for order in orders:
+                order_index = orders.index(order)
+                order_amount = order['base']['amount']
 
-                    Also when making an order it's size always will be limited by available free balance
-                """
-                # Get orders and amounts to be compared. Note: orders are sorted from high price to low
-                for order in orders:
-                    order_index = orders.index(order)
-                    order_amount = order['base']['amount']
+                # This check prevents choosing order with index lower than the list length
+                if order_index == 0:
+                    # In case checking the first order, use the same order, but increased by 1 increment
+                    # This allows our closest order amount exceed highest opposite-side order amount
+                    closer_order = order
+                    closer_bound = closer_order['base']['amount'] * (1 + self.increment)
+                else:
+                    closer_order = orders[order_index - 1]
+                    closer_bound = closer_order['base']['amount']
 
-                    # This check prevents choosing order with index lower than the list length
-                    if order_index == 0:
-                        # In case checking the first order, use the same order, but increased by 1 increment
-                        # This allows our highest buy order amount exceed lowest sell order
-                        higher_order = order
-                        higher_bound = higher_order['base']['amount'] * (1 + self.increment)
-                    else:
-                        higher_order = orders[order_index - 1]
-                        higher_bound = higher_order['base']['amount']
+                # This check prevents choosing order with index higher than the list length
+                if order_index + 1 < len(orders):
+                    # Current order is a not furthest order
+                    further_order = orders[order_index + 1]
+                    is_least_order = False
+                else:
+                    # Current order is furthest order
+                    further_order = orders[order_index]
+                    is_least_order = True
 
-                    # This check prevents choosing order with index higher than the list length
-                    if order_index + 1 < len(orders):
-                        # If this is not a lowest_buy_order, lower order is a next order down
-                        lower_order = orders[order_index + 1]
-                        is_least_order = False
-                    else:
-                        # Current order
-                        lower_order = orders[order_index]
-                        is_least_order = True
+                further_bound = further_order['base']['amount'] * (1 + self.increment)
 
-                    lower_bound = lower_order['base']['amount'] * (1 + self.increment)
+                if further_bound > order_amount * (1 + self.increment / 10) < closer_bound:
+                    # Calculate new order size and place the order to the market
+                    new_order_amount = further_bound
 
-                    self.log.debug('BASE: lower_bound: {}, order_amount: {}, higher_bound: {}'.format(
-                        lower_bound, order_amount * (1 + self.increment / 10), higher_bound))
+                    if is_least_order:
+                        new_orders_sum = 0
+                        amount = order_amount
+                        for o in orders:
+                            amount = amount * (1 + self.increment)
+                            new_orders_sum += amount
+                        # To reduce allocation rounds, increase furthest order more
+                        new_order_amount = order_amount * (total_balance / new_orders_sum) \
+                            * (1 + self.increment * 0.75)
 
-                    if lower_bound > order_amount * (1 + self.increment / 10) < higher_bound:
-                        # Calculate new order size and place the order to the market
-                        new_base_amount = lower_bound
+                        if new_order_amount < closer_bound:
+                            """ This is for situations when calculated new_order_amount is not big enough to
+                                allocate all funds. Use partial-increment increase, so we'll got at least one full
+                                increase round.  Whether we will just use `new_order_amount = further_bound`, we will
+                                get less than one full allocation round, thus leaving closest-to-center order not
+                                increased.
+                            """
+                            new_order_amount = closer_bound / (1 + self.increment * 0.2)
+
+                    # Limit sell order to available balance
+                    if asset_balance < new_order_amount - order_amount:
+                        new_order_amount = order_amount + asset_balance['amount']
+                        self.log.info('Limiting new {} order to avail asset balance: {:.8f} {}'.format(
+                            order_type, new_order_amount, asset_balance['symbol']))
+
+                    if asset == 'quote':
+                        price = (order['price'] ** -1)
+                        quote_amount = new_order_amount
+                    elif asset == 'base':
                         price = order['price']
+                        quote_amount = new_order_amount / price
 
-                        if is_least_order:
-                            # To reduce allocation rounds, increase furthest order more
-                            new_orders_sum = 0
-                            amount = order_amount
-                            for o in orders:
-                                amount = amount * (1 + self.increment)
-                                new_orders_sum += amount
-                            new_base_amount = order_amount * (self.base_total_balance / new_orders_sum) \
-                                * (1 + self.increment * 0.75)
-                            if new_base_amount < higher_bound:
-                                new_base_amount = higher_bound / (1 + self.increment * 0.2)
-
-                        # Limit buy order to available balance
-                        if (asset_balance / price) < (new_base_amount - order_amount) / price:
-                            new_base_amount = order_amount + asset_balance['amount']
-                            self.log.info('Limiting new buy order to avail asset balance: {:.8f} {}'.format(
-                                new_base_amount, asset_balance['symbol']))
-
-                        new_order_amount = new_base_amount / price
-                        self.log.debug('Cancelling buy order in increase_order_sizes(); ' 
-                                       'mode: mountain, base: {}, price: {:.8f}'.format(order_amount, order['price']))
-                        self.cancel(order)
-                        self.market_buy(new_order_amount, price)
-                        # One increase at a time. This prevents running more than one increment round simultaneously.
-                        return
+                    self.log.debug('Cancelling {} order in increase_order_sizes(); '
+                                   'mode: {}, amount: {}, price: {:.8f}'.format(order_type, self.mode, order_amount,
+                                    price))
+                    self.cancel(order)
+                    if asset == 'quote':
+                        self.market_sell(quote_amount, price)
+                    elif asset == 'base':
+                        self.market_buy(quote_amount, price)
+                    # Only one increase at a time. This prevents running more than one increment round
+                    # simultaneously
+                    return
         elif self.mode == 'valley':
             """ Starting from the furthest order, for each order, see if it is approximately
                 maximum size.
