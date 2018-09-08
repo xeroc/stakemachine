@@ -36,8 +36,8 @@ class Strategy(BaseStrategy):
             ('mountain', 'Mountain'),
             # ('neutral', 'Neutral'),
             ('valley', 'Valley'),
-            # ('buy_slope', 'Buy Slope'),
-            # ('sell_slope', 'Sell Slope')
+            ('buy_slope', 'Buy Slope'),
+            ('sell_slope', 'Sell Slope')
         ]
 
         return BaseStrategy.configure(return_base_config) + [
@@ -419,12 +419,12 @@ class Strategy(BaseStrategy):
                     else:
                         # Place order limited by size of the opposite-side order
                         lowest_sell_order = self.sell_orders[0]
-                        if self.mode == 'mountain':
+                        if self.mode == 'mountain' or self.mode == 'buy_slope':
                             quote_limit = None
                             base_limit = lowest_sell_order['quote']['amount']
                             self.log.debug('Limiting buy order base by opposite order BASE asset amount: {}'.format(
                                            base_limit))
-                        elif self.mode == 'valley':
+                        elif self.mode == 'valley' or self.mode == 'sell_slope':
                             quote_limit = lowest_sell_order['base']['amount']
                             base_limit = None
                             self.log.debug('Limiting buy order base by opposite order QUOTE asset amount: {}'.format(
@@ -512,12 +512,12 @@ class Strategy(BaseStrategy):
                     else:
                         # Place order limited by opposite-side order
                         highest_buy_order = self.buy_orders[0]
-                        if self.mode == 'mountain':
+                        if self.mode == 'mountain' or self.mode == 'sell_slope':
                             quote_limit = highest_buy_order['quote']['amount']
                             base_limit = None
                             self.log.debug('Limiting sell order by opposite order QUOTE asset amount: {}'.format(
                                            quote_limit))
-                        elif self.mode == 'valley':
+                        elif self.mode == 'valley' or self.mode == 'buy_slope':
                             quote_limit = None
                             base_limit = highest_buy_order['base']['amount']
                             self.log.debug('Limiting sell order by opposite order BASE asset amount: {}'.format(
@@ -587,10 +587,12 @@ class Strategy(BaseStrategy):
             is started from the closest-to-center order.
 
             Buy slope:
-            Maximize order size as low as possible. Buy orders as far, and sell orders as close as possible to cp.
+            Maximize order size as low as possible. Buy orders maximized as far as possible (same as valley), and sell
+            orders as close as possible to cp (same as mountain).
 
             Sell slope:
-            Maximize order size as high as possible. Buy orders as close, and sell orders as far as possible from cp
+            Maximize order size as high as possible. Buy orders as close (same as mountain), and sell orders as far as
+            possible from cp (same as valley).
 
             :param str | asset: 'base' or 'quote', depending if checking sell or buy
             :param Amount | asset_balance: Balance of the account
@@ -598,7 +600,9 @@ class Strategy(BaseStrategy):
             :return None
         """
         # Mountain mode:
-        if self.mode == 'mountain':
+        if (self.mode == 'mountain' or
+            (self.mode == 'buy_slope' and asset == 'quote') or
+            (self.mode == 'sell_slope' and asset == 'base')):
             """ Starting from the furthest order. For each order, see if it is approximately
                 maximum size.
                 If it is, move on to next.
@@ -695,7 +699,10 @@ class Strategy(BaseStrategy):
                     # Only one increase at a time. This prevents running more than one increment round
                     # simultaneously
                     return
-        elif self.mode == 'valley':
+        elif (self.mode == 'valley' or
+            (self.mode == 'buy_slope' and asset == 'base') or
+            (self.mode == 'sell_slope' and asset == 'quote')):
+
             """ Starting from the furthest order, for each order, see if it is approximately
                 maximum size.
                 If it is, move on to next.
@@ -805,11 +812,11 @@ class Strategy(BaseStrategy):
             self.log.info('Refusing to place an order which crosses lowestAsk')
             return None
 
-        if self.mode == 'mountain':
+        if self.mode == 'mountain' or self.mode == 'sell_slope':
             amount = order['quote']['amount']
             # How many BASE we need to buy QUOTE `amount`
             base_amount = amount * price
-        elif self.mode == 'valley':
+        elif self.mode == 'valley' or self.mode == 'buy_slope':
             base_amount = order['base']['amount']
             amount = base_amount / price
 
@@ -844,9 +851,9 @@ class Strategy(BaseStrategy):
         """
         price = (order['price'] ** -1) * (1 + self.increment)
 
-        if self.mode == 'mountain':
+        if self.mode == 'mountain' or self.mode == 'buy_slope':
             amount = order['base']['amount'] / (1 + self.increment)
-        elif self.mode == 'valley':
+        elif self.mode == 'valley' or self.mode == 'sell_slope':
             amount = order['base']['amount']
 
         if amount > self.quote_balance['amount']:
@@ -872,9 +879,9 @@ class Strategy(BaseStrategy):
         """
         price = order['price'] / (1 + self.increment)
 
-        if self.mode == 'mountain':
+        if self.mode == 'mountain' or self.mode == 'sell_slope':
             amount = order['quote']['amount']
-        elif self.mode == 'valley':
+        elif self.mode == 'valley' or self.mode == 'buy_slope':
             amount = order['base']['amount'] / price
 
         # How many BASE we need to buy QUOTE `amount`
@@ -910,9 +917,9 @@ class Strategy(BaseStrategy):
 
         price = (order['price'] ** -1) / (1 + self.increment)
 
-        if self.mode == 'mountain':
+        if self.mode == 'mountain' or self.mode == 'buy_slope':
             amount = order['base']['amount'] * (1 + self.increment)
-        elif self.mode == 'valley':
+        elif self.mode == 'valley' or self.mode == 'sell_slope':
             amount = order['base']['amount']
 
         base_amount = amount * price
@@ -960,7 +967,7 @@ class Strategy(BaseStrategy):
                     .format(market_center_price, price, self.upper_bound))
             return
 
-        if self.mode == 'mountain':
+        if self.mode == 'mountain' or self.mode == 'buy_slope':
             previous_price = price
             orders_sum = 0
             amount = quote_balance['amount'] * self.increment
@@ -976,7 +983,7 @@ class Strategy(BaseStrategy):
             price = previous_price
             amount_quote = previous_amount * (self.quote_total_balance / orders_sum) * (1 + self.increment * 0.75)
 
-        elif self.mode == 'valley':
+        elif self.mode == 'valley' or self.mode == 'sell_slope':
             orders_count = 0
             while price <= self.upper_bound:
                 previous_price = price
@@ -1046,7 +1053,7 @@ class Strategy(BaseStrategy):
                     .format(market_center_price, price, self.lower_bound))
             return
 
-        if self.mode == 'mountain':
+        if self.mode == 'mountain' or self.mode == 'sell_slope':
             previous_price = price
             orders_sum = 0
             amount = base_balance['amount'] * self.increment
@@ -1062,7 +1069,7 @@ class Strategy(BaseStrategy):
             amount_base = previous_amount * (self.base_total_balance / orders_sum) * (1 + self.increment * 0.75)
             price = previous_price
             amount_quote = amount_base / price
-        elif self.mode == 'valley':
+        elif self.mode == 'valley' or self.mode == 'buy_slope':
             orders_count = 0
             while price >= self.lower_bound:
                 previous_price = price
