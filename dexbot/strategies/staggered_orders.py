@@ -863,7 +863,7 @@ class Strategy(BaseStrategy):
 
         price = order['price'] * (1 + self.increment)
 
-        if not self.is_instant_fill_enabled and price > float(self.ticker['lowestAsk']):
+        if not self.is_instant_fill_enabled and place_order and price > float(self.ticker['lowestAsk']):
             self.log.info('Refusing to place an order which crosses lowestAsk')
             return None
 
@@ -979,7 +979,7 @@ class Strategy(BaseStrategy):
 
         base_amount = amount * price
 
-        if not self.is_instant_fill_enabled and price < float(self.ticker['highestBid']):
+        if not self.is_instant_fill_enabled and place_order and price < float(self.ticker['highestBid']):
             self.log.info('Refusing to place an order which crosses highestBid')
             return None
 
