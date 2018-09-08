@@ -126,6 +126,9 @@ class Strategy(BaseStrategy):
         self.start = datetime.now()
         self.last_check = datetime.now()
 
+        # We do not waiting for order ids to be able to bundle operations
+        self.returnOrderId = None
+
         # Minimal check interval is needed to prevent event queue accumulation
         self.min_check_interval = 1
         self.max_check_interval = 120
@@ -208,6 +211,9 @@ class Strategy(BaseStrategy):
         # Get ticker data
         self.ticker = self.market.ticker()
 
+        # Prepare to bundle operations into single transaction
+        self.bitshares.bundle = True
+
         # BASE asset check
         if self.base_balance > self.base_asset_threshold:
             base_allocated = False
@@ -223,6 +229,11 @@ class Strategy(BaseStrategy):
             self.allocate_quote_asset(self.quote_balance)
         else:
             quote_allocated = True
+
+        # Send pending operations
+        if not self.bitshares.txbuffer.is_empty():
+            self.execute()
+        self.bitshares.bundle = False
 
         # Greatly increase check interval to lower CPU load whether there is no funds to allocate or we cannot
         # allocate funds for some reason
