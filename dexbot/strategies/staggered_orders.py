@@ -452,13 +452,15 @@ class Strategy(BaseStrategy):
                             (self.mode == 'sell_slope' and asset == 'quote')):
                                 opposite_asset_limit = None
                                 own_asset_limit = closest_opposite_order['quote']['amount']
+                                self.log.debug('Limiting {} order by opposite order: {} {}'.format(
+                                               order_type, own_asset_limit, symbol))
                         elif (self.mode == 'valley' or
                             (self.mode == 'buy_slope' and asset == 'quote') or
                             (self.mode == 'sell_slope' and asset == 'base')):
                                 opposite_asset_limit = closest_opposite_order['base']['amount']
                                 own_asset_limit = None
-                        self.log.debug('Limiting {} order by opposite order: {} {}'.format(
-                                       order_type, own_asset_limit, symbol))
+                                self.log.debug('Limiting {} order by opposite order: {} {}'.format(
+                                               order_type, opposite_asset_limit, symbol))
                         self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                                 opposite_asset_limit=opposite_asset_limit, allow_partial=False)
                 elif not opposite_orders:
