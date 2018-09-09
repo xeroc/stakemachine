@@ -477,8 +477,8 @@ class Strategy(BaseStrategy):
                             funds_to_reserve = closer_own_order['amount'] * closer_own_order['price']
                         elif asset == 'quote':
                             funds_to_reserve = closer_own_order['amount']
-                        self.log.debug('Partially filled order on opposite side, reserving funds for next buy order: '
-                                       '{:.8f} {}'.format(funds_to_reserve, symbol))
+                        self.log.debug('Partially filled order on opposite side, reserving funds for next {} order: '
+                                       '{:.8f} {}'.format(order_type, funds_to_reserve, symbol))
                         asset_balance -= funds_to_reserve
                     if asset_balance > own_threshold:
                         if ((asset == 'base' and furthest_own_order_price / (1 + self.increment) < self.lower_bound) or
