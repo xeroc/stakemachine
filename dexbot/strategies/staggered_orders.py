@@ -601,7 +601,8 @@ class Strategy(BaseStrategy):
 
                 further_bound = further_order['base']['amount'] * (1 + self.increment)
 
-                if further_bound > order_amount * (1 + self.increment / 10) < closer_bound:
+                if (further_bound > order_amount * (1 + self.increment / 10) < closer_bound and
+                    further_bound - order_amount >= order_amount * self.increment / 2):
                     # Calculate new order size and place the order to the market
                     new_order_amount = further_bound
 
@@ -692,7 +693,13 @@ class Strategy(BaseStrategy):
                         # Maximize order up to max possible amount if we can
                         closer_order_bound = new_amount
 
-                if order_amount * (1 + self.increment / 10) < closer_order_bound:
+                """ Check whether order amount is less than closer order and the diff is more than 50% of one increment
+                    Note: we can use only 50% or less diffs. Bigger will not work. For example, with diff 80% an order
+                    may have an actual difference like 30% from closer and 70% from further.
+                """
+                if (order_amount * (1 + self.increment / 10) < closer_order_bound and
+                    closer_order_bound - order_amount >= order_amount * self.increment / 2):
+
                     amount_base = closer_order_bound
 
                     # Limit order to available balance
