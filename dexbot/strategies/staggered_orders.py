@@ -824,7 +824,7 @@ class Strategy(BaseStrategy):
                 place_order = False
             elif allow_partial:
                 self.log.debug('Limiting {} order amount to available asset balance: {} {}'.format(
-                               balance, symbol))
+                               order_type, balance, symbol))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
@@ -883,7 +883,7 @@ class Strategy(BaseStrategy):
                 place_order = False
             elif allow_partial:
                 self.log.debug('Limiting {} order amount to available asset balance: {} {}'.format(
-                               balance, symbol))
+                               order_type, balance, symbol))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
