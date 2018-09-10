@@ -160,6 +160,11 @@ class Strategy(BaseStrategy):
             # Save initial market center price
             self.initial_market_center_price = self.market_center_price
 
+        # Still not have market_center_price? Empty market, don't continue
+        if not self.market_center_price:
+            self.log.warning('Cannot calculate center price on empty market, please set is manually')
+            return
+
         # Get highest buy and lowest sell prices from orders
         highest_buy_price = 0
         lowest_sell_price = 0
