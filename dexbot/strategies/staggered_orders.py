@@ -398,6 +398,8 @@ class Strategy(BaseStrategy):
             furthest_own_order = own_orders[-1]
             closest_own_order = own_orders[0]
             furthest_own_order_price = furthest_own_order['price']
+            if asset == 'quote':
+                furthest_own_order_price = furthest_own_order_price ** -1
 
             # Check if the order size is correct
             if self.check_partial_fill(closest_own_order):
