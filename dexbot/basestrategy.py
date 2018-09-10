@@ -662,6 +662,7 @@ class BaseStrategy(Storage, StateMachine, Events):
 
     @staticmethod
     def purge_worker_data(worker_name):
+        """ Remove worker data from database only """
         Storage.clear_worker_data(worker_name)
 
     def total_balance(self, order_ids=None, return_asset=False):
