@@ -180,8 +180,8 @@ class Strategy(BaseStrategy):
         # Calculate balances
         self.refresh_balances()
 
-        # Save current balances for futher checks. Save exactly key value instead of full key because it may be modified
-        # later on
+        # Save current balances for further checks.
+        # Save exactly key value instead of full key because it may be modified later on.
         previous_base_balance = self.base_balance['amount']
         previous_quote_balance = self.quote_balance['amount']
 
