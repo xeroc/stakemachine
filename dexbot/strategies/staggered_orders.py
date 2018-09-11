@@ -415,6 +415,14 @@ class Strategy(BaseStrategy):
                 self.actual_spread = (closest_opposite_price / closest_own_price) - 1
 
                 if self.actual_spread >= self.target_spread + self.increment:
+                    """ Note: because we're using operations batching, there is possible a situation when we will have
+                        both free balances and `self.actual_spread >= self.target_spread + self.increment`. In such case
+                        there will be TWO orders placed, one buy and one sell despite only one would be enough to reach
+                        target spread. Sure, we can add a workaround for that by overriding `closest_opposite_price` for
+                        second call of allocate_asset(). We are not doing this because we're not doing assumption on
+                        which side order (buy or sell) should be placed first. So, when placing two closer orders from
+                        both sides, spread will be no less than `target_spread - increment`, thus not making any loss.
+                    """
                     if opposite_balance <= opposite_threshold and self.bootstrapping and opposite_orders:
                         """ During the bootstrap we're fist placing orders of some amounts, than we are reaching target
                             spread and then turning bootstrap flag off and starting to allocate remaining balance by
