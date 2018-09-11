@@ -1023,8 +1023,8 @@ class Strategy(BaseStrategy):
         if price > self.upper_bound:
             self.log.info(
                 'Not placing highest sell order because price will exceed higher bound. Market center '
-                'price: {:.8f}, closest order price: {:.8f}, higher_bound: {}'.format(market_center_price,
-                price, self.higher_bound))
+                'price: {:.8f}, closest order price: {:.8f}, upper_bound: {}'.format(market_center_price,
+                price, self.upper_bound))
             return
 
         if self.mode == 'mountain':
