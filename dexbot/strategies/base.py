@@ -16,6 +16,7 @@ import bitsharesapi
 import bitsharesapi.exceptions
 from bitshares.account import Account
 from bitshares.amount import Amount, Asset
+from bitshares.dex import Dex
 from bitshares.instance import shared_bitshares_instance
 from bitshares.market import Market
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
@@ -143,6 +144,9 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
+
+        # Dex instance used to get different fees for the market
+        self.dex = Dex(self.bitshares)
 
         # Storage
         Storage.__init__(self, name)
@@ -667,10 +671,16 @@ class StrategyBase(Storage, StateMachine, Events):
     def get_order_cancellation_fee(self, fee_asset):
         """ Returns the order cancellation fee in the specified asset.
 
-            :param fee_asset:
-            :return:
+            :param string | fee_asset: Asset in which the fee is wanted
+            :return: Cancellation fee as fee asset
         """
-        # Todo: Insert logic here
+        # Get fee
+        fees = self.dex.returnFees()
+        limit_order_cancel = fees['limit_order_cancel']
+
+        # Convert fee
+        # Todo: Change 'TEST' to 'BTS'
+        return self.convert_asset(limit_order_cancel['fee'], 'TEST', fee_asset)
 
     def get_order_creation_fee(self, fee_asset):
         """ Returns the cost of creating an order in the asset specified
@@ -678,7 +688,13 @@ class StrategyBase(Storage, StateMachine, Events):
             :param fee_asset: QUOTE, BASE, BTS, or any other
             :return:
         """
-        # Todo: Insert logic here
+        # Get fee
+        fees = self.dex.returnFees()
+        limit_order_create = fees['limit_order_create']
+
+        # Convert fee
+        # Todo: Change 'TEST' to 'BTS'
+        return self.convert_asset(limit_order_create['fee'], 'TEST', fee_asset)
 
     def filter_buy_orders(self, orders, sort=None):
         """ Return own buy orders from list of orders. Can be used to pick buy orders from a list
