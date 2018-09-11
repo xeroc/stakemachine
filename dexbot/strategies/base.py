@@ -301,7 +301,6 @@ class StrategyBase(Storage, StateMachine, Events):
             :param bool | fee_reservation:
             :return: Balance of specific asset
         """
-        # Todo: Add documentation
         # Todo: Check that fee reservation was as intended, having it true / false made no sense
         balance = self._account.balance(asset)
 
@@ -311,6 +310,14 @@ class StrategyBase(Storage, StateMachine, Events):
         return balance
 
     def calculate_order_data(self, order, amount, price):
+        """
+
+            :param order:
+            :param amount:
+            :param price:
+            :return:
+        """
+        # Todo: Add documentation
         quote_asset = Amount(amount, self.market['quote']['symbol'])
         order['quote'] = quote_asset
         order['price'] = price
@@ -365,13 +372,12 @@ class StrategyBase(Storage, StateMachine, Events):
         self.log.info("Orders canceled")
 
     def cancel_orders(self, orders, batch_only=False):
-        """ Cancel specific order(s)
+        """ Cancel specific order or orders
 
             :param list | orders: List of orders to cancel
             :param bool | batch_only: Try cancel orders only in batch mode without one-by-one fallback
-            :return:
+            :return: Todo: Add documentation
         """
-        # Todo: Add documentation
         if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
 
@@ -424,11 +430,10 @@ class StrategyBase(Storage, StateMachine, Events):
     def get_allocated_assets(self, order_ids=None, return_asset=False):
         """ Returns the amount of QUOTE and BASE allocated in orders, and that do not show up in available balance
 
-            :param order_ids:
-            :param return_asset:
-            :return:
+            :param list | order_ids:
+            :param bool | return_asset:
+            :return: Dictionary of QUOTE and BASE amounts
         """
-        # Todo: Add documentation
         if not order_ids:
             order_ids = []
         elif isinstance(order_ids, str):
@@ -449,6 +454,7 @@ class StrategyBase(Storage, StateMachine, Events):
             elif asset_id == base_asset:
                 base += order['base']['amount']
 
+        # Return as Amount objects instead of only float values
         if return_asset:
             quote = Amount(quote, quote_asset)
             base = Amount(base, base_asset)
@@ -596,7 +602,6 @@ class StrategyBase(Storage, StateMachine, Events):
             :param float | base_amount:
             :param float | moving_average:
             :param float | weighted_moving_average:
-            :param bool | refresh:
             :return:
         """
         # Todo: Work in progress
@@ -619,6 +624,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
             if sell_quote > lacking:
                 sum_quote += lacking
+                # Fixme: Price is inverted to same format as buy orders. Should this be inverted for this calculation?
                 sum_base += lacking * market_sell_orders[order_number]['price']  # Make sure price is not inverted
                 lacking = 0
             else:
@@ -637,6 +643,7 @@ class StrategyBase(Storage, StateMachine, Events):
             :param int | quote_amount:
             :return: Market spread as float or None
         """
+        # Todo: Work in progress
         # Decides how many orders need to be fetched for the market spread calculation
         if quote_amount == 0:
             # Get only the closest orders
@@ -813,7 +820,7 @@ class StrategyBase(Storage, StateMachine, Events):
             :param int or float | weighted_average:
             :return:
         """
-        # Todo: Insert logic here
+        # Todo: Remove this after market center price is done
 
     def is_current_market(self, base_asset_id, quote_asset_id):
         # Todo: Is this useful?
