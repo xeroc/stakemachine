@@ -787,23 +787,6 @@ class StrategyBase(Storage, StateMachine, Events):
         actual_spread = lowest_own_sell_price / highest_own_buy_price - 1
         return actual_spread
 
-    def get_price_for_amount_buy(self, amount=None):
-        """ Returns the cumulative price for which you could buy the specified amount of QUOTE with market fee taken in
-            account.
-
-            :param float | amount: Amount to buy in QUOTE
-            :return:
-        """
-        # Todo: Insert logic here
-
-    def get_price_for_amount_sell(self, amount=None):
-        """ Returns the cumulative price for which you could sell the specified amount of QUOTE
-
-            :param float | amount: Amount to sell in QUOTE
-            :return:
-        """
-        # Todo: Insert logic here
-
     def get_updated_order(self, order_id):
         # Todo: This needed?
         """ Tries to get the updated order from the API. Returns None if the order doesn't exist
