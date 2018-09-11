@@ -161,7 +161,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         if return_value:
             new_worker_name = edit_worker_dialog.worker_name
             self.view.change_worker_widget_name(self.worker_name, new_worker_name)
-            self.main_ctrl.pause_worker(self.worker_name)
+            self.main_ctrl.pause_worker(self.worker_name, config=self.worker_config)
             self.main_ctrl.config.replace_worker_config(self.worker_name,
                                                         new_worker_name,
                                                         edit_worker_dialog.worker_data)
