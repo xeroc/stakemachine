@@ -203,6 +203,9 @@ class StrategyBase(Storage, StateMachine, Events):
             # If there is no fee asset, use BTS
             self.fee_asset = Asset('1.3.0')
 
+        # Ticker
+        self.ticker = self.market.ticker()
+
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
 
@@ -558,31 +561,78 @@ class StrategyBase(Storage, StateMachine, Events):
         except IndexError:
             return None
 
-    def get_market_center_price(self, quote_amount=0, refresh=False):
+    def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
 
             Depth: 0 = calculate from closest opposite orders.
-            Depth: non-zero = calculate from specified depth
+            Depth: non-zero = calculate from specified depth of orders
 
+            :param float | base_amount:
             :param float | quote_amount:
-            :param bool | refresh:
-            :return:
+            :param bool | suppress_errors:
+            :return: Market center price as float
         """
-        # Todo: Insert logic here
+        buy_price = 0
+        sell_price = 0
 
-    def get_market_buy_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0,
-                             refresh=False):
+        if base_amount == 0:
+            # Get highest buy order from the market
+            highest_buy_order = self.ticker.get("highestBid")
+
+            if highest_buy_order is None or highest_buy_order == 0.0:
+                if not suppress_errors:
+                    self.log.critical("Cannot estimate center price, there is no highest bid.")
+                    self.disabled = True
+                return None
+
+            # The highest buy price
+            buy_price = highest_buy_order['price']
+        elif base_amount > 0:
+            buy_price = self.get_market_buy_price(base_amount=base_amount)
+
+        if quote_amount == 0:
+            # Get lowest sell order from the market
+            lowest_sell_order = self.ticker.get("lowestAsk")
+
+            if lowest_sell_order is None or lowest_sell_order == 0.0:
+                if not suppress_errors:
+                    self.log.critical("Cannot estimate center price, there is no lowest ask.")
+                    self.disabled = True
+                return None
+
+            # The lowest sell price
+            sell_price = lowest_sell_order['price']
+        elif quote_amount > 0:
+            sell_price = self.get_market_sell_price(quote_amount=quote_amount)
+
+        # Calculate and return market center price
+        return buy_price * math.sqrt(sell_price / buy_price)
+
+    def get_market_buy_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0):
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
             moving average or weighted moving average
 
             :param float | quote_amount:
             :param float | base_amount:
-            :param float | moving_average:
-            :param float | weighted_moving_average:
-            :param bool | refresh:
+            :param int | moving_average: Count of orders to be taken in to the calculations
+            :param int | weighted_moving_average: Count of orders to be taken in to the calculations
             :return:
         """
-        # Todo: Insert logic here
+        """
+            Buy orders:
+                10 CODACOIN for 20 TEST
+                15 CODACOIN for 30 TEST
+                20 CODACOIN for 40 TEST
+            
+                             (price + price + price) / moving_average
+            moving average = (2 + 3 + 4) / 3 = 3
+            
+                                      ((amount * price) + (amount * price) + (amount * price)) / amount_total
+            weighted moving average = ((10 * 2) + (15 * 3) + (20 * 4)) / 45 = 3,222222
+            
+        """
+        # Todo: Work in progress
+        pass
 
     def get_market_orders(self, depth=1):
         """ Returns orders from the current market split in bids and asks. Orders are sorted by price.
@@ -595,8 +645,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         return self.market.orderbook(depth)
 
-    def get_market_sell_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0,
-                              refresh=False):
+    def get_market_sell_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0):
         """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
             enhanced with moving average or weighted moving average.
 
@@ -851,7 +900,7 @@ class StrategyBase(Storage, StateMachine, Events):
         # Removes worker's orders from local database
         self.clear_orders()
 
-    def purge_all_worker_data(self):
+    def clear_all_worker_data(self):
         """ Clear all the worker data from the database and cancel all orders
         """
         # Removes worker's orders from local database
