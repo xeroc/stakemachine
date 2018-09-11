@@ -793,8 +793,8 @@ class Strategy(BaseStrategy):
                 else:
                     """ Special processing for the closest order.
 
-                        Calculte new order amount based on orders count, but do not allow to perform too small increase
-                        rounds. New lowest buy / highest sell should be higher by at least one increment.
+                        Calculate new order amount based on orders count, but do not allow to perform too small 
+                        increase rounds. New lowest buy / highest sell should be higher by at least one increment.
                     """
                     closer_order_bound = order_amount * (1 + self.increment)
                     new_amount = (total_balance / orders_count) / (1 + self.increment / 100)
@@ -808,16 +808,15 @@ class Strategy(BaseStrategy):
                     # Limit order to available balance
                     if asset_balance < amount_base - order_amount:
                         amount_base = order_amount + asset_balance['amount']
-                        self.log.info('Limiting new order to avail asset balance: {:.8f} {}'.format(amount_base,
-                            asset_balance['symbol']))
+                        self.log.info('Limiting new order to avail asset balance: {:.8f} {}'
+                                      .format(amount_base, asset_balance['symbol']))
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
                     elif asset == 'base':
                         price = order['price']
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); '
-                                   'mode: {}, amount: {}, price: {:.8f}'.format(order_type, self.mode, order_amount,
-                                    price))
+                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
+                                   .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
 
                     if asset == 'quote':
@@ -1023,8 +1022,8 @@ class Strategy(BaseStrategy):
         if price > self.upper_bound:
             self.log.info(
                 'Not placing highest sell order because price will exceed higher bound. Market center '
-                'price: {:.8f}, closest order price: {:.8f}, upper_bound: {}'.format(market_center_price,
-                price, self.upper_bound))
+                'price: {:.8f}, closest order price: {:.8f}, upper_bound: {}'
+                    .format(market_center_price, price, self.upper_bound))
             return
 
         if self.mode == 'mountain':
@@ -1090,7 +1089,7 @@ class Strategy(BaseStrategy):
 
             Buy slope:
             Buy orders same as valley
-            Sell orders same asmountain
+            Sell orders same as mountain
 
             Sell slope:
             Buy orders same as mountain
@@ -1109,8 +1108,8 @@ class Strategy(BaseStrategy):
         if price < self.lower_bound:
             self.log.info(
                 'Not placing lowest buy order because price will exceed lower bound. Market center price: '
-                '{:.8f}, closest order price: {:.8f}, lower bound: {}'.format(market_center_price, price,
-                self.lower_bound))
+                '{:.8f}, closest order price: {:.8f}, lower bound: {}'
+                    .format(market_center_price, price, self.lower_bound))
             return
 
         if self.mode == 'mountain':
