@@ -401,11 +401,12 @@ class Strategy(BaseStrategy):
             if asset == 'quote':
                 furthest_own_order_price = furthest_own_order_price ** -1
 
-            # Check if the order size is correct
+            # Check if the order was partially filled
             if self.check_partial_fill(closest_own_order):
                 # Calculate actual spread
                 if opposite_orders:
-                    closest_opposite_price = opposite_orders[0]['price'] ** -1
+                    closest_opposite_order = opposite_orders[0]
+                    closest_opposite_price = closest_opposite_order['price'] ** -1
                 else:
                     # For one-sided start, calculate closest_opposite_price empirically
                     closest_opposite_price = self.market_center_price * (1 + self.target_spread / 2)
@@ -448,7 +449,6 @@ class Strategy(BaseStrategy):
                         self.place_closer_order(asset, closest_own_order)
                     else:
                         # Place order limited by size of the opposite-side order
-                        closest_opposite_order = opposite_orders[0]
                         if (self.mode == 'mountain' or
                             (self.mode == 'buy_slope' and asset == 'base') or
                             (self.mode == 'sell_slope' and asset == 'quote')):
@@ -469,7 +469,6 @@ class Strategy(BaseStrategy):
                     # Do not try to do anything than placing higher buy whether there is no sell orders
                     return
                 else:
-                    closest_opposite_order = opposite_orders[0]
                     if not self.check_partial_fill(closest_opposite_order):
                         """ Detect partially filled order on the opposite side and reserve appropriate amount to place
                             closer order
