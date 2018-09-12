@@ -564,14 +564,15 @@ class StrategyBase(Storage, StateMachine, Events):
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
 
-            Depth: 0 = calculate from closest opposite orders.
-            Depth: non-zero = calculate from specified depth of orders
-
             :param float | base_amount:
             :param float | quote_amount:
             :param bool | suppress_errors:
             :return: Market center price as float
         """
+
+        highest_buy_order = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
+        lowest_sell_order = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
+
         if highest_buy_order is None or highest_buy_order == 0.0:
             if not suppress_errors:
                 self.log.critical("Cannot estimate center price, there is no highest bid.")
@@ -584,11 +585,8 @@ class StrategyBase(Storage, StateMachine, Events):
                 self.disabled = True
             return None
 
-        buy_price = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
-        sell_price = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
-
         # Calculate and return market center price
-        return buy_price * math.sqrt(sell_price / buy_price)
+        return highest_buy_order * math.sqrt(lowest_sell_order / highest_buy_order)
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0):
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
@@ -615,7 +613,42 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         # Todo: Work in progress
         # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
-        pass
+        # In case amount is not given, return price of the lowest sell order on the market
+        if quote_amount == 0 and base_amount == 0:
+            return self.ticker.get('highestBid')
+
+        asset_amount = base_amount
+
+        """ Since the purpose is never get both quote and base amounts, favor base amount if both given because
+            this function is looking for buy price.
+        """
+        if base_amount > quote_amount:
+            base = True
+        else:
+            asset_amount = quote_amount
+            base = False
+
+        market_buy_orders = self.get_market_buy_orders(depth=self.fetch_depth)
+        market_fee = self.get_market_fee()
+
+        target_amount = asset_amount * (1 + market_fee)
+
+        quote_amount = 0
+        base_amount = 0
+        # Todo: Work in progress, THIS IS EXPERIEMENTAL WAY TO CALCULATE THIS. Revert if incorrect.
+        for order in market_buy_orders:
+            if base:
+                # BASE amount was given
+                if base_amount < target_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
+            elif not base:
+                # QUOTE amount was given
+                if quote_amount < target_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
+
+        return base_amount / quote_amount
 
     def get_market_orders(self, depth=1):
         """ Returns orders from the current market split in bids and asks. Orders are sorted by price.
@@ -642,69 +675,59 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         # Todo: Work in progress
         # In case amount is not given, return price of the lowest sell order on the market
-        if base_amount == 0 and quote_amount == 0:
-            return self.ticker.get("lowestAsk")
+        if quote_amount == 0 and base_amount == 0:
+            return self.ticker.get('lowestAsk')
 
-        sum_quote = 0
-        sum_base = 0
-        order_number = 0
+        asset_amount = quote_amount
+
+        """ Since the purpose is never get both quote and base amounts, favor quote amount if both given because
+            this function is looking for sell price.
+        """
+        if quote_amount > base_amount:
+            quote = True
+        else:
+            asset_amount = base_amount
+            quote = False
 
         market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
         market_fee = self.get_market_fee()
 
-        # This calculation is for when quote_amount is given (whether or not base_amount was given
-        if quote_amount > 0:
-            lacking = quote_amount * (1 + market_fee)
-            while lacking > 0:
-                sell_quote = float(market_sell_orders[order_number]['quote'])
+        target_amount = asset_amount * (1 + market_fee)
 
-                if sell_quote > lacking:
-                    sum_quote += lacking
-                    # Fixme: Price is inverted to same format as buy orders. Should this be inverted for this calculation?
-                    sum_base += lacking / market_sell_orders[order_number]['price']  # I swapped * to /. Is it right now?
-                    lacking = 0
-                else:
-                    sum_quote += float(market_sell_orders[order_number]['quote'])
-                    sum_base += float(market_sell_orders[order_number]['base'])
-                    lacking -= sell_quote
+        quote_amount = 0
+        base_amount = 0
 
-        # This calculation is for when quote_amount isn't given, so we go with the given base_amount
-        if quote_amount = 0:
-            lacking = base_amount * (1 + market_fee)
-            while lacking > 0:
-                buy_base = float(market_sell_orders[order_number]['base'])
+        # Todo: Work in progress, THIS IS EXPERIEMENTAL WAY TO CALCULATE THIS. Revert if incorrect.
+        for order in market_sell_orders:
+            if quote:
+                # QUOTE amount was given
+                if quote_amount < target_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
+            elif not quote:
+                # BASE amount was given
+                if base_amount < target_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
 
-                if buy_base > lacking:
-                    sum_base += lacking
-                    # Fixme: Price is inverted to same format as buy orders. Should this be inverted for this calculation?
-                    sum_quote += lacking * market_sell_orders[order_number][
-                        'price']  # Make sure price is not inverted
-                    lacking = 0
-                else:
-                    sum_quote += float(market_sell_orders[order_number]['quote'])
-                    sum_base += float(market_sell_orders[order_number]['base'])
-                    lacking -= buy_base
-
-        price = sum_base / sum_quote
-
-        return price
+        return base_amount / quote_amount
 
     def get_market_spread(self, quote_amount=0, base_amount=0):
         """ Returns the market spread %, including own orders, from specified depth, enhanced with moving average or
             weighted moving average.
 
-            :param int | quote_amount:
+            :param float | quote_amount:
+            :param float | base_amount:
             :return: Market spread as float or None
         """
-        # Todo: Work in progress
-
         ask = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
         bid = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
 
         # Calculate market spread
-        market_spread = ask / bid - 1
+        if ask == 0 or bid == 0:
+            return None
 
-        return market_spread
+        return ask / bid - 1
 
     def get_order_cancellation_fee(self, fee_asset):
         """ Returns the order cancellation fee in the specified asset.
