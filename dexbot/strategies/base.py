@@ -572,38 +572,20 @@ class StrategyBase(Storage, StateMachine, Events):
             :param bool | suppress_errors:
             :return: Market center price as float
         """
-        buy_price = 0
-        sell_price = 0
+        if highest_buy_order is None or highest_buy_order == 0.0:
+            if not suppress_errors:
+                self.log.critical("Cannot estimate center price, there is no highest bid.")
+                self.disabled = True
+            return None
 
-        if base_amount == 0:
-            # Get highest buy order from the market
-            highest_buy_order = self.ticker.get("highestBid")
+        if lowest_sell_order is None or lowest_sell_order == 0.0:
+            if not suppress_errors:
+                self.log.critical("Cannot estimate center price, there is no lowest ask.")
+                self.disabled = True
+            return None
 
-            if highest_buy_order is None or highest_buy_order == 0.0:
-                if not suppress_errors:
-                    self.log.critical("Cannot estimate center price, there is no highest bid.")
-                    self.disabled = True
-                return None
-
-            # The highest buy price
-            buy_price = highest_buy_order['price']
-        elif base_amount > 0:
-            buy_price = self.get_market_buy_price(base_amount=base_amount)
-
-        if quote_amount == 0:
-            # Get lowest sell order from the market
-            lowest_sell_order = self.ticker.get("lowestAsk")
-
-            if lowest_sell_order is None or lowest_sell_order == 0.0:
-                if not suppress_errors:
-                    self.log.critical("Cannot estimate center price, there is no lowest ask.")
-                    self.disabled = True
-                return None
-
-            # The lowest sell price
-            sell_price = lowest_sell_order['price']
-        elif quote_amount > 0:
-            sell_price = self.get_market_sell_price(quote_amount=quote_amount)
+        buy_price = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
+        sell_price = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
 
         # Calculate and return market center price
         return buy_price * math.sqrt(sell_price / buy_price)
@@ -632,6 +614,7 @@ class StrategyBase(Storage, StateMachine, Events):
             
         """
         # Todo: Work in progress
+        # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
         pass
 
     def get_market_orders(self, depth=1):
@@ -659,37 +642,54 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         # Todo: Work in progress
         # In case amount is not given, return price of the lowest sell order on the market
-        if base_amount == 0 or quote_amount == 0:
-            lowest_market_sell_order = self.get_lowest_market_sell_order()
-            return lowest_market_sell_order['price']
+        if base_amount == 0 and quote_amount == 0:
+            return self.ticker.get("lowestAsk")
 
-        # This calculation is for when quote_amount is given
         sum_quote = 0
         sum_base = 0
         order_number = 0
 
         market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
         market_fee = self.get_market_fee()
-        lacking = quote_amount * (1 + market_fee)
 
-        while lacking > 0:
-            sell_quote = float(market_sell_orders[order_number]['quote'])
+        # This calculation is for when quote_amount is given (whether or not base_amount was given
+        if quote_amount > 0:
+            lacking = quote_amount * (1 + market_fee)
+            while lacking > 0:
+                sell_quote = float(market_sell_orders[order_number]['quote'])
 
-            if sell_quote > lacking:
-                sum_quote += lacking
-                # Fixme: Price is inverted to same format as buy orders. Should this be inverted for this calculation?
-                sum_base += lacking * market_sell_orders[order_number]['price']  # Make sure price is not inverted
-                lacking = 0
-            else:
-                sum_quote += float(market_sell_orders[order_number]['quote'])
-                sum_base += float(market_sell_orders[order_number]['base'])
-                lacking -= sell_quote
+                if sell_quote > lacking:
+                    sum_quote += lacking
+                    # Fixme: Price is inverted to same format as buy orders. Should this be inverted for this calculation?
+                    sum_base += lacking / market_sell_orders[order_number]['price']  # I swapped * to /. Is it right now?
+                    lacking = 0
+                else:
+                    sum_quote += float(market_sell_orders[order_number]['quote'])
+                    sum_base += float(market_sell_orders[order_number]['base'])
+                    lacking -= sell_quote
+
+        # This calculation is for when quote_amount isn't given, so we go with the given base_amount
+        if quote_amount = 0:
+            lacking = base_amount * (1 + market_fee)
+            while lacking > 0:
+                buy_base = float(market_sell_orders[order_number]['base'])
+
+                if buy_base > lacking:
+                    sum_base += lacking
+                    # Fixme: Price is inverted to same format as buy orders. Should this be inverted for this calculation?
+                    sum_quote += lacking * market_sell_orders[order_number][
+                        'price']  # Make sure price is not inverted
+                    lacking = 0
+                else:
+                    sum_quote += float(market_sell_orders[order_number]['quote'])
+                    sum_base += float(market_sell_orders[order_number]['base'])
+                    lacking -= buy_base
 
         price = sum_base / sum_quote
 
         return price
 
-    def get_market_spread(self, quote_amount=0):
+    def get_market_spread(self, quote_amount=0, base_amount=0):
         """ Returns the market spread %, including own orders, from specified depth, enhanced with moving average or
             weighted moving average.
 
@@ -697,20 +697,9 @@ class StrategyBase(Storage, StateMachine, Events):
             :return: Market spread as float or None
         """
         # Todo: Work in progress
-        # Decides how many orders need to be fetched for the market spread calculation
-        if quote_amount == 0:
-            # Get only the closest orders
-            fetch_depth = 1
-        elif quote_amount > 0:
-            fetch_depth = self.fetch_depth
 
-            # Raise the fetch depth each time. int() rounds the count
-            self.fetch_depth = int(self.fetch_depth * 1.5)
-
-        market_orders = self.get_market_orders(fetch_depth)
-
-        ask = self.get_market_sell_price()
-        bid = self.get_market_buy_price()
+        ask = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
+        bid = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
 
         # Calculate market spread
         market_spread = ask / bid - 1
