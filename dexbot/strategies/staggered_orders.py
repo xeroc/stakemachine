@@ -456,6 +456,14 @@ class Strategy(BaseStrategy):
                         self.log.debug('Turning bootstrapping off: actual_spread > target_spread, and not having '
                                        'opposite-side balance')
                         self.bootstrapping = False
+                    elif (self.bootstrapping and
+                        self.base_balance_history[2] == self.base_balance_history[0] and
+                        self.quote_balance_history[2] == self.quote_balance_history[0]):
+                        # Turn off bootstrap mode whether we're didn't allocated assets during previos 3 maintenances
+                        self.log.debug('Turning bootstrapping off: actual_spread > target_spread, we have free '
+                                       'balances and cannot allocate them normally 3 times in a row')
+                        self.bootstrapping = False
+
                     # Place order closer to the center price
                     self.log.debug('Placing closer {} order; actual spread: {:.4%}, target + increment: {:.4%}'.format(
                                    order_type, self.actual_spread, self.target_spread + self.increment))
