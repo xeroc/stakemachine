@@ -635,7 +635,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         quote_amount = 0
         base_amount = 0
-        # Todo: Work in progress, THIS IS EXPERIEMENTAL WAY TO CALCULATE THIS. Revert if incorrect.
+
         for order in market_buy_orders:
             if base:
                 # BASE amount was given
@@ -697,7 +697,6 @@ class StrategyBase(Storage, StateMachine, Events):
         quote_amount = 0
         base_amount = 0
 
-        # Todo: Work in progress, THIS IS EXPERIEMENTAL WAY TO CALCULATE THIS. Revert if incorrect.
         for order in market_sell_orders:
             if quote:
                 # QUOTE amount was given
