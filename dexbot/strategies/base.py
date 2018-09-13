@@ -1025,15 +1025,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return sell_order
 
-    def restore_order(self, order):
-        """ If an order is partially or completely filled, this will make a new order of original size and price.
-
-            :param order:
-            :return:
-        """
-        # Todo: Insert logic here
-        # Todo: Is this something that is commonly used and thus needed?
-
     def retry_action(self, action, *args, **kwargs):
         """ Perform an action, and if certain suspected-to-be-spurious grapheme bugs occur,
             instead of bubbling the exception, it is quietly logged (level WARN), and try again
