@@ -588,30 +588,14 @@ class StrategyBase(Storage, StateMachine, Events):
         # Calculate and return market center price
         return buy_price * math.sqrt(sell_price / buy_price)
 
-    def get_market_buy_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0):
+    def get_market_buy_price(self, quote_amount=0, base_amount=0):
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
             moving average or weighted moving average
 
             :param float | quote_amount:
             :param float | base_amount:
-            :param int | moving_average: Count of orders to be taken in to the calculations
-            :param int | weighted_moving_average: Count of orders to be taken in to the calculations
             :return:
         """
-        """
-            Buy orders:
-                10 CODACOIN for 20 TEST
-                15 CODACOIN for 30 TEST
-                20 CODACOIN for 40 TEST
-            
-                             (price + price + price) / moving_average
-            moving average = (2 + 3 + 4) / 3 = 3
-            
-                                      ((amount * price) + (amount * price) + (amount * price)) / amount_total
-            weighted moving average = ((10 * 2) + (15 * 3) + (20 * 4)) / 45 = 3,222222
-            
-        """
-        # Todo: Work in progress
         # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
         # In case amount is not given, return price of the lowest sell order on the market
         if quote_amount == 0 and base_amount == 0:
@@ -635,6 +619,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         quote_amount = 0
         base_amount = 0
+        missing_amount = target_amount
 
         for order in market_buy_orders:
             if base:
@@ -642,11 +627,21 @@ class StrategyBase(Storage, StateMachine, Events):
                 if base_amount < target_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
+                    missing_amount -= order['base']['amount']
+                elif base_amount > missing_amount:
+                    base_amount += missing_amount
+                    quote_amount += missing_amount / order['price']
+                    break
             elif not base:
                 # QUOTE amount was given
                 if quote_amount < target_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
+                    missing_amount -= order['quote']['amount']
+                elif quote_amount > missing_amount:
+                    base_amount += missing_amount * order['price']
+                    quote_amount += missing_amount
+                    break
 
         return base_amount / quote_amount
 
