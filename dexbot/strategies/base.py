@@ -823,27 +823,18 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return self.filter_sell_orders(orders)
 
-    def get_own_spread(self, highest_own_buy_price=None, lowest_own_sell_price=None, depth=0, refresh=False):
+    def get_own_spread(self):
         """ Returns the difference between own closest opposite orders.
 
-            :param float | highest_own_buy_price:
-            :param float | lowest_own_sell_price:
-            :param float | depth: Use most resent data from Bitshares
-            :param bool | refresh:
             :return: float or None: Own spread
         """
-        # Todo: Add depth
-        if refresh:
-            try:
-                # Try fetching own orders
-                highest_own_buy_price = self.get_highest_market_buy_order().get('price')
-                lowest_own_sell_price = self.get_lowest_own_sell_order().get('price')
-            except AttributeError:
-                return None
-        else:
-            # If orders are given, use them instead newest data from the blockchain
-            highest_own_buy_price = highest_own_buy_price
-            lowest_own_sell_price = lowest_own_sell_price
+
+        try:
+            # Try fetching own orders
+            highest_own_buy_price = self.get_highest_market_buy_order().get('price')
+            lowest_own_sell_price = self.get_lowest_own_sell_order().get('price')
+        except AttributeError:
+            return None
 
         # Calculate actual spread
         actual_spread = lowest_own_sell_price / highest_own_buy_price - 1
@@ -884,7 +875,6 @@ class StrategyBase(Storage, StateMachine, Events):
         # Todo: Remove this after market center price is done
 
     def is_current_market(self, base_asset_id, quote_asset_id):
-        # Todo: Is this useful?
         """ Returns True if given asset id's are of the current market
 
             :return: bool: True = Current market, False = Not current market
@@ -1061,12 +1051,11 @@ class StrategyBase(Storage, StateMachine, Events):
                     raise
 
     def write_order_log(self, worker_name, order):
-        """ F
+        """ Write order log to csv file
 
             :param string | worker_name: Name of the worker
             :param object | order: Order that was fulfilled
         """
-        # Todo: Add documentation
         operation_type = 'TRADE'
 
         if order['base']['symbol'] == self.market['base']['symbol']:
