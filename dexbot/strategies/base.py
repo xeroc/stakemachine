@@ -204,7 +204,7 @@ class StrategyBase(Storage, StateMachine, Events):
             self.fee_asset = Asset('1.3.0')
 
         # Ticker
-        self.ticker = self.market.ticker()
+        self.ticker = self.market.ticker
 
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
@@ -351,7 +351,7 @@ class StrategyBase(Storage, StateMachine, Events):
                 quote_total += balance['amount']
 
         # Calculate value of the orders in unit of measure
-        orders = self.current_market_own_orders
+        orders = self.get_own_orders
         for order in orders:
             if order['base']['symbol'] == self.quote_asset:
                 # Pick sell orders order's BASE amount, which is same as worker's QUOTE, to worker's BASE
@@ -399,7 +399,7 @@ class StrategyBase(Storage, StateMachine, Events):
                 self._cancel_orders(order)
         return True
 
-    def count_asset(self, order_ids=None, return_asset=False, refresh=True):
+    def count_asset(self, order_ids=None, return_asset=False):
         """ Returns the combined amount of the given order ids and the account balance
             The amounts are returned in quote and base assets of the market
 
@@ -422,9 +422,9 @@ class StrategyBase(Storage, StateMachine, Events):
 
         if order_ids is None:
             # Get all orders from Blockchain
-            order_ids = [order['id'] for order in self.current_market_own_orders]
+            order_ids = [order['id'] for order in self.get_own_orders]
         if order_ids:
-            orders_balance = self.orders_balance(order_ids)
+            orders_balance = self.get_allocated_assets(order_ids)
             quote += orders_balance['quote']
             base += orders_balance['base']
 
@@ -599,7 +599,7 @@ class StrategyBase(Storage, StateMachine, Events):
         # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
         # In case amount is not given, return price of the lowest sell order on the market
         if quote_amount == 0 and base_amount == 0:
-            return self.ticker.get('highestBid')
+            return self.ticker().get('highestBid')
 
         asset_amount = base_amount
 
@@ -668,7 +668,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         # In case amount is not given, return price of the lowest sell order on the market
         if quote_amount == 0 and base_amount == 0:
-            return self.ticker.get('lowestAsk')
+            return self.ticker().get('lowestAsk')
 
         asset_amount = quote_amount
 
@@ -808,7 +808,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
-            orders = self.current_market_own_orders
+            orders = self.get_own_orders
 
         return self.filter_buy_orders(orders)
 
@@ -819,7 +819,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
-            orders = self.current_market_own_orders
+            orders = self.get_own_orders
 
         return self.filter_sell_orders(orders)
 
@@ -1125,7 +1125,7 @@ class StrategyBase(Storage, StateMachine, Events):
         return orders
 
     @property
-    def current_market_own_orders(self, refresh=False):
+    def get_own_orders(self):
         """ Return the account's open orders in the current market
 
             :return: List of Order objects
@@ -1133,8 +1133,7 @@ class StrategyBase(Storage, StateMachine, Events):
         orders = []
 
         # Refresh account data
-        if refresh:
-            self.account.refresh()
+        self.account.refresh()
 
         for order in self.account.openorders:
             if self.worker["market"] == order.market and self.account.openorders:
@@ -1192,8 +1191,8 @@ class StrategyBase(Storage, StateMachine, Events):
             Todo: If get_updated_order is removed, this can be removed as well.
         """
         order = copy.deepcopy(limit_order)
-        price = order['sell_price']['base']['amount'] / order['sell_price']['quote']['amount']
-        base_amount = order['for_sale']
+        price = float(order['sell_price']['base']['amount']) / float(order['sell_price']['quote']['amount'])
+        base_amount = float(order['for_sale'])
         quote_amount = base_amount / price
         order['sell_price']['base']['amount'] = base_amount
         order['sell_price']['quote']['amount'] = quote_amount
