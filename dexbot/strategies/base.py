@@ -570,23 +570,23 @@ class StrategyBase(Storage, StateMachine, Events):
             :return: Market center price as float
         """
 
-        highest_buy_order = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
-        lowest_sell_order = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
+        buy_price = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
+        sell_price = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
 
-        if highest_buy_order is None or highest_buy_order == 0.0:
+        if buy_price is None or buy_price == 0.0:
             if not suppress_errors:
                 self.log.critical("Cannot estimate center price, there is no highest bid.")
                 self.disabled = True
             return None
 
-        if lowest_sell_order is None or lowest_sell_order == 0.0:
+        if sell_price is None or sell_price == 0.0:
             if not suppress_errors:
                 self.log.critical("Cannot estimate center price, there is no lowest ask.")
                 self.disabled = True
             return None
 
         # Calculate and return market center price
-        return highest_buy_order * math.sqrt(lowest_sell_order / highest_buy_order)
+        return buy_price * math.sqrt(sell_price / buy_price)
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0):
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
