@@ -802,7 +802,7 @@ class StrategyBase(Storage, StateMachine, Events):
         return sell_orders
 
     def get_own_buy_orders(self, orders=None):
-        """ Get own buy orders from current market
+        """ Get own buy orders from current market, or from a set of orders passed for this function.
 
             :return: List of buy orders
         """
@@ -1212,7 +1212,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
     @staticmethod
     def purge_all_local_worker_data(worker_name):
-        # Todo: Confirm this being correct
         """ Removes worker's data and orders from local sqlite database
 
             :param worker_name: Name of the worker to be removed
