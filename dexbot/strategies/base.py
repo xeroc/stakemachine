@@ -656,7 +656,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         return self.market.orderbook(depth)
 
-    def get_market_sell_price(self, quote_amount=0, base_amount=0, moving_average=0, weighted_moving_average=0):
+    def get_market_sell_price(self, quote_amount=0, base_amount=00):
         """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
             enhanced with moving average or weighted moving average.
 
@@ -664,11 +664,8 @@ class StrategyBase(Storage, StateMachine, Events):
 
             :param float | quote_amount:
             :param float | base_amount:
-            :param float | moving_average:
-            :param float | weighted_moving_average:
             :return:
         """
-        # Todo: Work in progress
         # In case amount is not given, return price of the lowest sell order on the market
         if quote_amount == 0 and base_amount == 0:
             return self.ticker.get('lowestAsk')
@@ -691,6 +688,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         quote_amount = 0
         base_amount = 0
+        missing_amount = target_amount
 
         for order in market_sell_orders:
             if quote:
@@ -698,11 +696,22 @@ class StrategyBase(Storage, StateMachine, Events):
                 if quote_amount < target_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
+                    missing_amount -= order['quote']['amount']
+                elif quote_amount > missing_amount:
+                    base_amount += missing_amount * order['price']
+                    quote_amount += missing_amount
+                    break
+
             elif not quote:
                 # BASE amount was given
                 if base_amount < target_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
+                    missing_amount -= order['base']['amount']
+                elif base_amount > missing_amount:
+                    base_amount += missing_amount
+                    quote_amount += missing_amount / order['price']
+                    break
 
         return base_amount / quote_amount
 
