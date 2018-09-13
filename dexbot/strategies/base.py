@@ -743,8 +743,7 @@ class StrategyBase(Storage, StateMachine, Events):
         limit_order_cancel = fees['limit_order_cancel']
 
         # Convert fee
-        # Todo: Change 'TEST' to 'BTS'
-        return self.convert_asset(limit_order_cancel['fee'], 'TEST', fee_asset)
+        return self.convert_asset(limit_order_cancel['fee'], 'BTS', fee_asset)
 
     def get_order_creation_fee(self, fee_asset):
         """ Returns the cost of creating an order in the asset specified
@@ -757,8 +756,7 @@ class StrategyBase(Storage, StateMachine, Events):
         limit_order_create = fees['limit_order_create']
 
         # Convert fee
-        # Todo: Change 'TEST' to 'BTS'
-        return self.convert_asset(limit_order_create['fee'], 'TEST', fee_asset)
+        return self.convert_asset(limit_order_create['fee'], 'BTS', fee_asset)
 
     def filter_buy_orders(self, orders, sort=None):
         """ Return own buy orders from list of orders. Can be used to pick buy orders from a list
