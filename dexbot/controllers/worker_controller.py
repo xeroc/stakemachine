@@ -25,6 +25,14 @@ class WorkerController:
 
     @property
     def strategies(self):
+        """ Defines strategies that are configurable from the GUI.
+
+            key: Strategy location in the project
+            name: The name that is shown in the GUI for user
+            form_module: If there is custom form module created with QTDesigner
+
+            :return: List of strategies
+        """
         strategies = collections.OrderedDict()
         strategies['dexbot.strategies.relative_orders'] = {
             'name': 'Relative Orders',
