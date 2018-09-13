@@ -220,8 +220,21 @@ class StaggeredOrdersController(StrategyController):
             if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
                 self.view.strategy_widget.center_price_input.setDisabled(False)
 
-        # Do this after the event connecting
         super().__init__(view, configure, worker_controller, worker_data)
+
+        widget = self.view.strategy_widget
+
+        # Event connecting
+        widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
+
+        # Trigger the onchange events once
+        self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+
+    def onchange_center_price_dynamic_input(self, checked):
+        if checked:
+            self.view.strategy_widget.center_price_input.setDisabled(True)
+        else:
+            self.view.strategy_widget.center_price_input.setDisabled(False)
 
     def set_required_base(self, text):
         self.view.strategy_widget.required_base_text.setText(text)
