@@ -1,7 +1,7 @@
-from dexbot.basestrategy import BaseStrategy
+from dexbot.strategies.base import StrategyBase
 
 
-class Strategy(BaseStrategy):
+class Strategy(StrategyBase):
     """ Echo strategy
         Strategy that logs all events within the blockchain
     """
