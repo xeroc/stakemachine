@@ -53,13 +53,11 @@ class StrategyBase(Storage, StateMachine, Events):
          - Buy orders reserve BASE
          - Sell orders reserve QUOTE
 
-        Todo: This is copy / paste from old, update this if needed!
         Strategy inherits:
             * :class:`dexbot.storage.Storage` : Stores data to sqlite database
             * :class:`dexbot.statemachine.StateMachine`
             * ``Events``
 
-        Todo: This is copy / paste from old, update this if needed!
         Available attributes:
             * ``worker.bitshares``: instance of ´`bitshares.BitShares()``
             * ``worker.add_state``: Add a specific state
@@ -124,7 +122,6 @@ class StrategyBase(Storage, StateMachine, Events):
                           r'[A-Z\.]+')
         ]
 
-        # Todo: Is there any case / strategy where the base config would NOT be needed, making this unnecessary?
         if return_base_config:
             return base_config
         return []
@@ -232,7 +229,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
     def _callbackPlaceFillOrders(self, d):
         """ This method distinguishes notifications caused by Matched orders from those caused by placed orders
-            Todo: can this be renamed to _instantFill()?
         """
         if isinstance(d, FilledOrder):
             self.onOrderMatched(d)
@@ -285,7 +281,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Orders balance calculation
         for order in self.all_own_orders:
-            # Todo: What is the purpose of this?
             updated_order = self.get_updated_order(order['id'])
 
             if not order:
@@ -302,13 +297,12 @@ class StrategyBase(Storage, StateMachine, Events):
         return total_value
 
     def balance(self, asset, fee_reservation=0):
-        """ Return the balance of your worker's account for a specific asset
+        """ Return the balance of your worker's account in a specific asset.
 
-            :param string | asset:
-            :param bool | fee_reservation:
+            :param string | asset: In what asset the balance is wanted to be returned
+            :param float | fee_reservation: How much is saved in reserve for the fees
             :return: Balance of specific asset
         """
-        # Todo: Check that fee reservation was as intended, having it true / false made no sense
         balance = self._account.balance(asset)
 
         if fee_reservation > 0:
@@ -379,11 +373,11 @@ class StrategyBase(Storage, StateMachine, Events):
         self.log.info("Orders canceled")
 
     def cancel_orders(self, orders, batch_only=False):
-        """ Cancel specific order or orders
+        """ Cancel specific order(s)
 
             :param list | orders: List of orders to cancel
             :param bool | batch_only: Try cancel orders only in batch mode without one-by-one fallback
-            :return: Todo: Add documentation
+            :return:
         """
         if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
@@ -820,7 +814,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
             :return: float or None: Own spread
         """
-
         try:
             # Try fetching own orders
             highest_own_buy_price = self.get_highest_market_buy_order().get('price')
