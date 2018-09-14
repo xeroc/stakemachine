@@ -861,19 +861,6 @@ class StrategyBase(Storage, StateMachine, Events):
         order = self.get_updated_limit_order(order)
         return Order(order, bitshares_instance=self.bitshares)
 
-    def enhance_center_price(self, reference=None, manual_offset=False, balance_based_offset=False,
-                             moving_average=0, weighted_average=0):
-        """ Returns the passed reference price shifted up or down based on arguments.
-
-            :param float | reference: Center price to enhance
-            :param bool | manual_offset:
-            :param bool | balance_based_offset:
-            :param int or float | moving_average:
-            :param int or float | weighted_average:
-            :return:
-        """
-        # Todo: Remove this after market center price is done
-
     def is_current_market(self, base_asset_id, quote_asset_id):
         """ Returns True if given asset id's are of the current market
 
