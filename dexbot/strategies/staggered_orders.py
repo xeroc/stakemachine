@@ -680,7 +680,7 @@ class Strategy(BaseStrategy):
                 maximum size.
                 If it is, move on to next.
                 If not, cancel it and replace with maximum size order. Maximum order size will be a
-                size of higher order. Then return.
+                size of closer-to-center order. Then return.
                 If furthest is reached, increase it to maximum size.
 
                 Maximum size is (example for buy orders):
