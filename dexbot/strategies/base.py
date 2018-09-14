@@ -5,6 +5,7 @@ import logging
 import math
 import time
 
+from dexbot.basestrategy import BaseStrategy  # Todo: Once the old BaseStrategy deprecates, remove it.
 from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.statemachine import StateMachine
@@ -44,7 +45,7 @@ MAX_TRIES = 3
 ConfigElement = collections.namedtuple('ConfigElement', 'key type default title description extra')
 
 
-class StrategyBase(Storage, StateMachine, Events):
+class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
         most common methods needed by the strategy.
 
