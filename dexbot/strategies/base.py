@@ -368,7 +368,7 @@ class StrategyBase(Storage, StateMachine, Events):
         self.log.info('Canceling all orders')
 
         if self.all_own_orders:
-            self.cancel(self.all_own_orders)
+            self.cancel_orders(self.all_own_orders)
 
         self.log.info("Orders canceled")
 
@@ -870,7 +870,7 @@ class StrategyBase(Storage, StateMachine, Events):
             Note: By default pause cancels orders, but this can be overridden by strategy
         """
         # Cancel all orders from the market
-        self.cancel_all()
+        self.cancel_all_orders()
 
         # Removes worker's orders from local database
         self.clear_orders()
@@ -882,7 +882,7 @@ class StrategyBase(Storage, StateMachine, Events):
         self.clear_orders()
 
         # Cancel all orders from the market
-        self.cancel_all()
+        self.cancel_all_orders()
 
         # Finally clear all worker data from the database
         self.clear()
