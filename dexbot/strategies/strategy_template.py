@@ -53,12 +53,12 @@ class Strategy(StrategyBase):
             Documentation of ConfigElements can be found from base.py.
         """
         return StrategyBase.configure(return_base_config) + [
-            ConfigElement('upper_bound', 'float', 1, 'Max buy price',
-                          'Maximum price to pay in BASE.',
-                          (0, None, 8, '')),
-            ConfigElement('lower_bound', 'float', 1, 'Min buy price',
-                          'Minimum price to pay in BASE.',
-                          (0, None, 8, ''))
+            ConfigElement('lower_bound', 'float', 1, 'Lower bound',
+                          'The bottom price in the range',
+                          (0, 10000000, 8, '')),
+            ConfigElement('upper_bound', 'float', 10, 'Upper bound',
+                          'The top price in the range',
+                          (0, 10000000, 8, '')),
         ]
 
     def __init__(self, *args, **kwargs):
