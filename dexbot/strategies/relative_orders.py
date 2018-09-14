@@ -1,17 +1,17 @@
 import math
 from datetime import datetime, timedelta
 
-from dexbot.basestrategy import BaseStrategy, ConfigElement
+from dexbot.strategies.base import StrategyBase, ConfigElement
 from dexbot.qt_queue.idle_queue import idle_add
 
 
-class Strategy(BaseStrategy):
+class Strategy(StrategyBase):
     """ Relative Orders strategy
     """
 
     @classmethod
     def configure(cls, return_base_config=True):
-        return BaseStrategy.configure(return_base_config) + [
+        return StrategyBase.configure(return_base_config) + [
             ConfigElement('amount', 'float', 1, 'Amount',
                           'Fixed order size, expressed in quote asset, unless "relative order size" selected',
                           (0, None, 8, '')),
@@ -166,7 +166,7 @@ class Strategy(BaseStrategy):
         self.calculate_order_prices()
 
         # Cancel the orders before redoing them
-        self.cancel_all()
+        self.cancel_all_orders()
         self.clear_orders()
 
         order_ids = []
@@ -177,7 +177,7 @@ class Strategy(BaseStrategy):
 
         # Buy Side
         if amount_base:
-            buy_order = self.market_buy(amount_base, self.buy_price, True)
+            buy_order = self.place_market_buy_order(amount_base, self.buy_price, True)
             if buy_order:
                 self.save_order(buy_order)
                 order_ids.append(buy_order['id'])
@@ -185,7 +185,7 @@ class Strategy(BaseStrategy):
 
         # Sell Side
         if amount_quote:
-            sell_order = self.market_sell(amount_quote, self.sell_price, True)
+            sell_order = self.place_market_sell_order(amount_quote, self.sell_price, True)
             if sell_order:
                 self.save_order(sell_order)
                 order_ids.append(sell_order['id'])
@@ -198,6 +198,70 @@ class Strategy(BaseStrategy):
         # Some orders weren't successfully created, redo them
         if len(order_ids) < expected_num_orders and not self.disabled:
             self.update_orders()
+
+    def _calculate_center_price(self, suppress_errors=False):
+        ticker = self.market.ticker()
+        highest_bid = ticker.get("highestBid")
+        lowest_ask = ticker.get("lowestAsk")
+        if highest_bid is None or highest_bid == 0.0:
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no highest bid."
+                )
+                self.disabled = True
+            return None
+        elif lowest_ask is None or lowest_ask == 0.0:
+            if not suppress_errors:
+                self.log.critical(
+                    "Cannot estimate center price, there is no lowest ask."
+                )
+                self.disabled = True
+            return None
+
+        center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
+        return center_price
+
+    def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
+                               order_ids=None, manual_offset=0, suppress_errors=False):
+        """ Calculate center price which shifts based on available funds
+        """
+        if center_price is None:
+            # No center price was given so we simply calculate the center price
+            calculated_center_price = self._calculate_center_price(suppress_errors)
+        else:
+            # Center price was given so we only use the calculated center price
+            # for quote to base asset conversion
+            calculated_center_price = self._calculate_center_price(True)
+            if not calculated_center_price:
+                calculated_center_price = center_price
+
+        if center_price:
+            calculated_center_price = center_price
+
+        if asset_offset:
+            total_balance = self.count_asset(order_ids)
+            total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
+
+            if not total:  # Prevent division by zero
+                balance = 0
+            else:
+                # Returns a value between -1 and 1
+                balance = (total_balance['base'] / total) * 2 - 1
+
+            if balance < 0:
+                # With less of base asset center price should be offset downward
+                calculated_center_price = calculated_center_price / math.sqrt(1 + spread * (balance * -1))
+            elif balance > 0:
+                # With more of base asset center price will be offset upwards
+                calculated_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
+            else:
+                calculated_center_price = calculated_center_price
+
+        # Calculate final_offset_price if manual center price offset is given
+        if manual_offset:
+            calculated_center_price = calculated_center_price + (calculated_center_price * manual_offset)
+
+        return calculated_center_price
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
@@ -287,7 +351,7 @@ class Strategy(BaseStrategy):
         if orders:
             order_ids = orders.keys()
 
-        total_balance = self.total_balance(order_ids)
+        total_balance = self.count_asset(order_ids)
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 
         if not total:  # Prevent division by zero
