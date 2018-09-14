@@ -6,7 +6,7 @@ import threading
 import copy
 
 import dexbot.errors as errors
-from dexbot.basestrategy import BaseStrategy
+from dexbot.strategies.base import StrategyBase
 
 from bitshares import BitShares
 from bitshares.notify import Notify
@@ -225,12 +225,12 @@ class WorkerInfrastructure(threading.Thread):
     @staticmethod
     def remove_offline_worker(config, worker_name, bitshares_instance):
         # Initialize the base strategy to get control over the data
-        strategy = BaseStrategy(worker_name, config, bitshares_instance=bitshares_instance)
+        strategy = StrategyBase(worker_name, config, bitshares_instance=bitshares_instance)
         strategy.purge()
 
     @staticmethod
     def remove_offline_worker_data(worker_name):
-        BaseStrategy.purge_worker_data(worker_name)
+        StrategyBase.purge_all_local_worker_data(worker_name)
 
     def do_next_tick(self, job):
         """ Add a callable to be executed on the next tick """
