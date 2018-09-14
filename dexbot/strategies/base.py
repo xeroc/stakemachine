@@ -468,14 +468,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return {'quote': quote, 'base': base}
 
-    def get_external_price(self, source):
-        """ Returns the center price of market including own orders.
-
-            :param source:
-            :return:
-        """
-        # Todo: Insert logic here
-
     def get_market_fee(self):
         """ Returns the fee percentage for buying specified asset
 
