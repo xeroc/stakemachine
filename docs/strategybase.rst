@@ -1,13 +1,13 @@
 *************
-Base Strategy
+Strategy Base
 *************
 
 All strategies should inherit
-:class:`dexbot.basestrategy.BaseStrategy` which simplifies and
+:class:`dexbot.strategies.StrategyBase` which simplifies and
 unifies the development of new strategies.
 
 API
 ---
 
-.. autoclass:: dexbot.basestrategy.BaseStrategy
+.. autoclass:: dexbot.strategies.StrategyBase
    :members:
