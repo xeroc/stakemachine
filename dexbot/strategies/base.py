@@ -879,7 +879,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return False
 
-    def pause_worker(self):
+    def pause(self):
         """ Pause the worker
 
             Note: By default pause cancels orders, but this can be overridden by strategy
