@@ -20,7 +20,7 @@ class Strategy(StrategyBase):
         ready. It is recommended comment the strategy and functions to help other developers to make changes.
 
         Adding strategy to GUI
-        In dexbot.controller.strategy_controller add new strategy inside strategies() as show below:
+        In dexbot.controller.worker_controller add new strategy inside strategies() as show below:
 
             strategies['dexbot.strategies.strategy_template'] = {
                 'name': '<strategy_name>',
@@ -111,6 +111,8 @@ class Strategy(StrategyBase):
         if self.view:
             self.update_gui_slider()
 
+        self.log.info("{} initialized.".format(STRATEGY_NAME))
+
     def maintain_strategy(self):
         """ Strategy main loop
 
@@ -118,86 +120,18 @@ class Strategy(StrategyBase):
 
             Note: All orders are "buy" orders, since they are flipped to be easier to handle. Keep them separated to
             avoid confusion on problems.
-        """
-        # Todo: Clean this up once ready to release.
-        asset = 'TEST'
-        worker_value = self.calculate_worker_value(asset)
-        print('worker_value: {} as {}'.format(worker_value, asset))
 
-        asset = 'CODACOIN'
-        worker_value = self.calculate_worker_value(asset)
-        print('worker_value: {} as {}\n'.format(worker_value, asset))
-
-        print('BASE asset for this strategy is {}'.format(self.base_asset))
-        print('QUOTE asset for this strategy is {}'.format(self.quote_asset))
-        print('Market is (QUOTE/BASE) ({})'.format(self.worker.get('market')))
-
-        market_orders = self.get_market_orders(10)
-
-        print('\nMarket buy orders')
-        for order in market_orders['bids']:
-            print(order)
-
-        print('\nMarket sell orders')
-        for order in market_orders['asks']:
-            print(order)
-
-        all_orders = self.get_own_orders
-        print('\nUser\'s orders')
-        for order in all_orders:
-            print(order)
-
-        print('\nGet own BUY orders')
-        buy_orders = self.get_own_buy_orders()
-        for order in buy_orders:
-            print(order)
-
-        print('\nHighest own buy order')
-        highest_own_buy_order = self.get_highest_own_buy(buy_orders)
-        print(highest_own_buy_order)
-
-        print('\nGet own SELL orders')
-        sell_orders = self.get_own_sell_orders()
-        for order in sell_orders:
-            print(order)
-
-        print('\nLowest own sell order')
-        lowest_own_sell_order = self.get_lowest_own_sell_order(sell_orders)
-        print(lowest_own_sell_order)
-
-        print('Testing get_market_sell_price()')
-        quote_amount = 200
-        base_amount = 1200
-        sell_price = self.get_market_sell_price(quote_amount=quote_amount)
-        print('Sell price for {} CODACOIN {}'.format(quote_amount, sell_price))
-
-        sell_price = self.get_market_sell_price(base_amount=base_amount)
-        print('Sell price for {} TEST {}\n'.format(base_amount, sell_price))
-
-        print('Testing get_market_buy_price()')
-        buy_price = self.get_market_buy_price(quote_amount=quote_amount)
-        print('Buy price for {} CODACOIN is {}'.format(quote_amount, buy_price))
-
-        buy_price = self.get_market_buy_price(base_amount=base_amount)
-        print('Buy price for {} TEST is {}'.format(base_amount, buy_price))
-
-        self.market_center_price = self.get_market_center_price()
-
-        """ Placing an order to the market has been made simple. Placing a buy order for example requires two values:
+            Placing an order to the market has been made simple. Placing a buy order for example requires two values:
             Amount (as QUOTE asset) and price (which is BASE amount divided by QUOTE amount)
-            
+
             "Placing to buy 100 ASSET_A with price of 10 ASSET_A / ASSET_B" would be place_market_buy_order(100, 10).
             This would then cost 1000 USD to fulfil.
-        
+
             Further documentation can be found from the function's documentation.
+
         """
-
-        # Place BUY order to the market
-        # self.place_market_buy_order(highest_own_buy_order['quote']['amount'], highest_own_buy_order['price'])
-        # self.place_market_buy_order(100, 10)
-
-        # Place SELL order to the market
-        # self.place_market_sell_order(lowest_own_sell_order['quote']['amount'], lowest_own_sell_order['price'])
+        # Start writing strategy logic from here.
+        self.log.info("Starting {}".format(STRATEGY_NAME))
 
     def check_orders(self, *args, **kwargs):
         """  """
@@ -219,7 +153,6 @@ class Strategy(StrategyBase):
 
     def update_gui_slider(self):
         """ Updates GUI slider on the workers list """
-        # Todo: Need's fixing?
         latest_price = self.ticker().get('latest', {}).get('price', None)
         if not latest_price:
             return
