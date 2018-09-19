@@ -19,6 +19,14 @@ class Strategy(StrategyBase):
                           'Amount is expressed as a percentage of the account balance of quote/base asset', None),
             ConfigElement('spread', 'float', 5, 'Spread',
                           'The percentage difference between buy and sell', (0, 100, 2, '%')),
+            ConfigElement('dynamic_spread', 'bool', False, 'Dynamic spread',
+                          'Enable dynamic spread which overrides the spread field', None),
+            ConfigElement('market_depth_amount', 'float', 0, 'Market depth',
+                          'From which depth will market spread be measured? (QUOTE amount)'
+                          , (0.00000001, 1000000000, 8, '')),
+            ConfigElement('dynamic_spread_factor', 'float', 1, 'Dynamic spread factor',
+                          'How many percent will own spread be compared to market spread?'
+                          , (0.01, 1000, 2, '%')),
             ConfigElement('center_price', 'float', 0, 'Center price',
                           'Fixed center price expressed in base asset: base/quote', (0, None, 8, '')),
             ConfigElement('center_price_dynamic', 'bool', True, 'Update center price from closest market orders',
@@ -69,7 +77,12 @@ class Strategy(StrategyBase):
         self.is_asset_offset = self.worker.get('center_price_offset', False)
         self.manual_offset = self.worker.get('manual_offset', 0) / 100
         self.order_size = float(self.worker.get('amount', 1))
+
+        # Spread options
         self.spread = self.worker.get('spread') / 100
+        self.dynamic_spread = self.worker.get('dynamic_spread', False)
+        self.market_depth_amount = self.worker.get('market_depth_amount', 0)
+        self.dynamic_spread_factor = self.worker.get('dynamic_spread_factor', 1) / 100
         self.is_reset_on_partial_fill = self.worker.get('reset_on_partial_fill', True)
         self.partial_fill_threshold = self.worker.get('partial_fill_threshold', 30) / 100
         self.is_reset_on_price_change = self.worker.get('reset_on_price_change', False)
