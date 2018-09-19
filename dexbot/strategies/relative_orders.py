@@ -152,11 +152,18 @@ class Strategy(StrategyBase):
             return self.order_size
 
     def calculate_order_prices(self):
+
+        # Calculate spread if dynamic spread option in use, this calculation doesn't include own orders on the market
+        if self.dynamic_spread:
+            spread = self.get_market_spread(quote_amount=self.market_depth_amount) * self.dynamic_spread_factor
+        else:
+            spread = self.spread
+
         if self.is_center_price_dynamic:
             self.center_price = self.calculate_center_price(
                 None,
                 self.is_asset_offset,
-                self.spread,
+                spread,
                 self['order_ids'],
                 self.manual_offset
             )
@@ -164,23 +171,23 @@ class Strategy(StrategyBase):
             self.center_price = self.calculate_center_price(
                 self.center_price,
                 self.is_asset_offset,
-                self.spread,
+                spread,
                 self['order_ids'],
                 self.manual_offset
             )
 
-        self.buy_price = self.center_price / math.sqrt(1 + self.spread)
-        self.sell_price = self.center_price * math.sqrt(1 + self.spread)
+        self.buy_price = self.center_price / math.sqrt(1 + spread)
+        self.sell_price = self.center_price * math.sqrt(1 + spread)
 
     def update_orders(self):
         self.log.debug('Starting to update orders')
 
-        # Recalculate buy and sell order prices
-        self.calculate_order_prices()
-
         # Cancel the orders before redoing them
         self.cancel_all_orders()
         self.clear_orders()
+
+        # Recalculate buy and sell order prices
+        self.calculate_order_prices()
 
         order_ids = []
         expected_num_orders = 0
@@ -317,11 +324,18 @@ class Strategy(StrategyBase):
                             #        we're updating order it may be filled further so trade log entry will not
                             #        be correct
 
-        if self.is_reset_on_price_change and not self.is_center_price_dynamic:
+        # Check center price change when using market center price with reset option on change
+        if self.is_reset_on_price_change and self.is_center_price_dynamic:
+            # Calculate spread if dynamic spread option in use, this calculation includes own orders on the market
+            if self.dynamic_spread:
+                spread = self.get_market_spread(quote_amount=self.market_depth_amount) * self.dynamic_spread_factor
+            else:
+                spread = self.spread
+
             center_price = self.calculate_center_price(
                 None,
                 self.is_asset_offset,
-                self.spread,
+                spread,
                 self['order_ids'],
                 self.manual_offset
             )
