@@ -703,8 +703,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         return base_amount / quote_amount
 
     def get_market_spread(self, quote_amount=0, base_amount=0):
-        """ Returns the market spread %, including own orders, from specified depth, enhanced with moving average or
-            weighted moving average.
+        """ Returns the market spread %, including own orders, from specified depth.
 
             :param float | quote_amount:
             :param float | base_amount:
