@@ -109,8 +109,8 @@ class Strategy(StrategyBase):
             self.disabled = True
             return
 
-        # Check old orders from previous run (from force-interruption) only whether we are not using "Reset orders on
-        # center price change" option
+        # Check old orders from previous run (from force-interruption) only whether we are not using
+        # "Reset orders on center price change" option
         if self.is_reset_on_price_change:
             self.log.info('"Reset orders on center price change" is active, placing fresh orders')
             self.update_orders()
