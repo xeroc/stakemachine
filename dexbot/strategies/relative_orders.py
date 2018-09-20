@@ -29,8 +29,11 @@ class Strategy(StrategyBase):
                           , (0.01, 1000, 2, '%')),
             ConfigElement('center_price', 'float', 0, 'Center price',
                           'Fixed center price expressed in base asset: base/quote', (0, None, 8, '')),
-            ConfigElement('center_price_dynamic', 'bool', True, 'Update center price from closest market orders',
-                          'Always calculate the middle from the closest market orders', None),
+            ConfigElement('center_price_dynamic', 'bool', True, 'Measure center price from market orders',
+                          'Estimate the center from closest opposite orders or from a depth', None),
+            ConfigElement('center_price_depth', 'float', 0, 'Measurement depth',
+                          'Cumulative quote amount from which depth center price will be measured'
+                          , (0.00000001, 1000000000, 8, '')),
             ConfigElement('center_price_offset', 'bool', False, 'Center price offset based on asset balances',
                           'Automatically adjust orders up or down based on the imbalance of your assets', None),
             ConfigElement('manual_offset', 'float', 0, 'Manual center price offset',
