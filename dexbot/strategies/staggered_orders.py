@@ -259,9 +259,10 @@ class Strategy(BaseStrategy):
                            'balances'.format(self.min_check_interval))
             self.current_check_interval = self.min_check_interval
 
-        # Do not continue whether assets is not fully allocated
-        if (not base_allocated or not quote_allocated) or self.bootstrapping:
-            # Further checks should be performed on next maintenance
+        # Do not continue whether balances are changing or bootstrap is on
+        if (self.bootstrapping or
+                self.base_balance_history[0] != self.base_balance_history[2] or
+                self.quote_balance_history[0] != self.quote_balance_history[2]):
             self.last_check = datetime.now()
             self.log_maintenance_time()
             return
@@ -276,15 +277,15 @@ class Strategy(BaseStrategy):
             if self.market_center_price > highest_buy_price * (1 + self.target_spread):
                 # Cancel lowest buy order because center price moved up.
                 # On the next run there will be placed next buy order closer to the new center
-                self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
-                              'Cancelling lowest buy order as a fallback.')
+                self.log.info('Free balances are not changing and we are not in bootstrap mode and target spread is '
+                              'not reached. Cancelling lowest buy order as a fallback.')
                 self.cancel(self.buy_orders[-1])
         else:
             if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
                 # Cancel highest sell order because center price moved down.
                 # On the next run there will be placed next sell closer to the new center
-                self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
-                              'Cancelling highest sell order as a fallback.')
+                self.log.info('Free balances are not changing and we are not in bootstrap mode and target spread is '
+                              'not reached. Cancelling highest sell order as a fallback.')
                 self.cancel(self.sell_orders[-1])
 
         self.last_check = datetime.now()
