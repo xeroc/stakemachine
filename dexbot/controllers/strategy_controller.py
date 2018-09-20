@@ -156,11 +156,14 @@ class RelativeOrdersController(StrategyController):
     def onchange_center_price_dynamic_input(self, checked):
         if checked:
             self.view.strategy_widget.center_price_input.setDisabled(True)
+            self.view.strategy_widget.center_price_depth_input.setDisabled(False)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(False)
+
             if self.view.strategy_widget.reset_on_price_change_input.isChecked():
                 self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
         else:
             self.view.strategy_widget.center_price_input.setDisabled(False)
+            self.view.strategy_widget.center_price_depth_input.setDisabled(True)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(True)
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
 
@@ -213,6 +216,7 @@ class RelativeOrdersController(StrategyController):
 
     def set_quote_asset_label(self, text):
         self.view.strategy_widget.amount_input_asset_label.setText(text)
+        self.view.strategy_widget.center_price_depth_input_asset_label.setText(text)
         self.view.strategy_widget.market_depth_amount_input_asset_label.setText(text)
 
     def validation_errors(self):
