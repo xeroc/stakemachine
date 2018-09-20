@@ -168,6 +168,7 @@ class Strategy(StrategyBase):
                 self.manual_offset
             )
         else:
+            # User has given center price to use
             self.center_price = self.calculate_center_price(
                 self.center_price,
                 self.is_asset_offset,
@@ -249,8 +250,7 @@ class Strategy(StrategyBase):
             # No center price was given so we simply calculate the center price
             calculated_center_price = self._calculate_center_price(suppress_errors)
         else:
-            # Center price was given so we only use the calculated center price
-            # for quote to base asset conversion
+            # Center price was given so we only use the calculated center price for quote to base asset conversion
             calculated_center_price = self._calculate_center_price(True)
             if not calculated_center_price:
                 calculated_center_price = center_price
