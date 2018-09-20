@@ -70,9 +70,11 @@ class Strategy(StrategyBase):
         self.error_onMarketUpdate = self.error
         self.error_onAccount = self.error
 
-        self.is_center_price_dynamic = self.worker["center_price_dynamic"]
+        # Worker parameters
+        self.is_center_price_dynamic = self.worker['center_price_dynamic']
         if self.is_center_price_dynamic:
             self.center_price = None
+            self.center_price_depth = self.worker.get('center_price_depth', 0)
         else:
             self.center_price = self.worker["center_price"]
 
@@ -86,6 +88,7 @@ class Strategy(StrategyBase):
         self.dynamic_spread = self.worker.get('dynamic_spread', False)
         self.market_depth_amount = self.worker.get('market_depth_amount', 0)
         self.dynamic_spread_factor = self.worker.get('dynamic_spread_factor', 1) / 100
+
         self.is_reset_on_partial_fill = self.worker.get('reset_on_partial_fill', True)
         self.partial_fill_threshold = self.worker.get('partial_fill_threshold', 30) / 100
         self.is_reset_on_price_change = self.worker.get('reset_on_price_change', False)
@@ -155,6 +158,7 @@ class Strategy(StrategyBase):
             return self.order_size
 
     def calculate_order_prices(self):
+        center_price = None
 
         # Calculate spread if dynamic spread option in use, this calculation doesn't include own orders on the market
         if self.dynamic_spread:
@@ -163,15 +167,19 @@ class Strategy(StrategyBase):
             spread = self.spread
 
         if self.is_center_price_dynamic:
+            if self.center_price_depth > 0:
+                # Calculate with quote amount if given
+                center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
+
             self.center_price = self.calculate_center_price(
-                None,
+                center_price,
                 self.is_asset_offset,
                 spread,
                 self['order_ids'],
                 self.manual_offset
             )
         else:
-            # User has given center price to use
+            # User has given center price to use, calculate offsets and spread
             self.center_price = self.calculate_center_price(
                 self.center_price,
                 self.is_asset_offset,
