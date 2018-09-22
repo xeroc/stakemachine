@@ -171,18 +171,6 @@ class Strategy(BaseStrategy):
             self.log.warning('Cannot calculate center price on empty market, please set is manually')
             return
 
-        # Get highest buy and lowest sell prices from orders
-        highest_buy_price = 0
-        lowest_sell_price = 0
-
-        if self.buy_orders:
-            highest_buy_price = self.buy_orders[0].get('price')
-
-        if self.sell_orders:
-            lowest_sell_price = self.sell_orders[0].get('price')
-            # Invert the sell price to BASE so it can be used in comparison
-            lowest_sell_price = lowest_sell_price ** -1
-
         # Calculate balances
         self.refresh_balances()
 
@@ -269,6 +257,27 @@ class Strategy(BaseStrategy):
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders.
         # This is a fallback logic.
+
+        # Get highest buy and lowest sell prices from orders
+        highest_buy_price = 0
+        lowest_sell_price = 0
+
+        if self.buy_orders:
+            highest_buy_price = self.buy_orders[0].get('price')
+
+        if self.sell_orders:
+            lowest_sell_price = self.sell_orders[0].get('price')
+            # Invert the sell price to BASE so it can be used in comparison
+            lowest_sell_price = lowest_sell_price ** -1
+
+        if highest_buy_price and lowest_sell_price:
+            self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
+            if self.actual_spread < self.target_spread + self.increment:
+                # Target spread is reached, no need to cancel anything
+                self.last_check = datetime.now()
+                self.log_maintenance_time()
+                return
+
         # Measure which price is closer to the center
         buy_distance = self.market_center_price - highest_buy_price
         sell_distance = lowest_sell_price - self.market_center_price
