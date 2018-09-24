@@ -6,6 +6,7 @@ from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
 from dexbot.qt_queue.idle_queue import idle_add
 from .ui.worker_list_window_ui import Ui_MainWindow
 from .create_worker import CreateWorkerView
+from .settings import SettingsView
 from .worker_item import WorkerItemWidget
 from .errors import gui_error
 from .layouts.flow_layout import FlowLayout
@@ -32,6 +33,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         self.layout = FlowLayout(self.scrollAreaContent)
 
         self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
+        self.settings_button.clicked.connect(lambda: self.handle_open_settings())
 
         # Load worker widgets from config file
         workers = self.config.workers_data
@@ -91,6 +93,11 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.config.add_worker_config(worker_name, create_worker_dialog.worker_data)
             self.add_worker_widget(worker_name)
+
+    @gui_error
+    def handle_open_settings(self):
+        settings_dialog = SettingsView()
+        return_value = settings_dialog.exec_()
 
     def set_worker_name(self, worker_name, value):
         self.worker_widgets[worker_name].set_worker_name(value)
