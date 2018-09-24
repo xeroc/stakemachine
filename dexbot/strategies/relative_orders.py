@@ -158,15 +158,16 @@ class Strategy(StrategyBase):
             return self.order_size
 
     def calculate_order_prices(self):
+        # Set center price as None, in case dynamic has not amount given, center price is calculated from market orders
         center_price = None
+        spread = self.spread
 
         # Calculate spread if dynamic spread option in use, this calculation doesn't include own orders on the market
         if self.dynamic_spread:
             spread = self.get_market_spread(quote_amount=self.market_depth_amount) * self.dynamic_spread_factor
-        else:
-            spread = self.spread
 
         if self.is_center_price_dynamic:
+            # Calculate center price from the market orders
             if self.center_price_depth > 0:
                 # Calculate with quote amount if given
                 center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
@@ -250,8 +251,8 @@ class Strategy(StrategyBase):
                 self.disabled = True
             return None
 
-        center_price = highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
-        return center_price
+        # Calculate center price between two closest orders on the market
+        return highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
 
     def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
                                order_ids=None, manual_offset=0, suppress_errors=False):
@@ -269,30 +270,52 @@ class Strategy(StrategyBase):
         if center_price:
             calculated_center_price = center_price
 
+        # Calculate asset based offset to the center price
         if asset_offset:
-            total_balance = self.count_asset(order_ids)
-            total = (total_balance['quote'] * calculated_center_price) + total_balance['base']
-
-            if not total:  # Prevent division by zero
-                balance = 0
-            else:
-                # Returns a value between -1 and 1
-                balance = (total_balance['base'] / total) * 2 - 1
-
-            if balance < 0:
-                # With less of base asset center price should be offset downward
-                calculated_center_price = calculated_center_price / math.sqrt(1 + spread * (balance * -1))
-            elif balance > 0:
-                # With more of base asset center price will be offset upwards
-                calculated_center_price = calculated_center_price * math.sqrt(1 + spread * balance)
-            else:
-                calculated_center_price = calculated_center_price
+            calculated_center_price = self.calculate_asset_offset(calculated_center_price, order_ids, spread)
 
         # Calculate final_offset_price if manual center price offset is given
         if manual_offset:
-            calculated_center_price = calculated_center_price + (calculated_center_price * manual_offset)
+            calculated_center_price = self.calculate_manual_offset(calculated_center_price, manual_offset)
 
+        print('Calculated center price is {}'.format(calculated_center_price))
         return calculated_center_price
+
+    def calculate_asset_offset(self, center_price, order_ids, spread):
+        """ Adds offset based on the asset balance of the worker to the center price
+
+            :param float | center_price: Center price
+            :param list | order_ids: List of order ids that are used to calculate balance
+            :param float | spread: Spread percentage as float (eg. 0.01)
+            :return: Center price with asset offset
+        """
+        total_balance = self.count_asset(order_ids)
+        total = (total_balance['quote'] * center_price) + total_balance['base']
+
+        if not total:  # Prevent division by zero
+            balance = 0
+        else:
+            # Returns a value between -1 and 1
+            balance = (total_balance['base'] / total) * 2 - 1
+
+        if balance < 0:
+            # With less of base asset center price should be offset downward
+            center_price = center_price / math.sqrt(1 + spread * (balance * -1))
+        elif balance > 0:
+            # With more of base asset center price will be offset upwards
+            center_price = center_price * math.sqrt(1 + spread * balance)
+
+        return center_price
+
+    @staticmethod
+    def calculate_manual_offset(center_price, manual_offset):
+        """ Adds manual offset to given center price
+
+            :param float | center_price:
+            :param float | manual_offset:
+            :return: Center price with manual offset
+        """
+        return center_price + (center_price * manual_offset)
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
@@ -337,11 +360,11 @@ class Strategy(StrategyBase):
 
         # Check center price change when using market center price with reset option on change
         if self.is_reset_on_price_change and self.is_center_price_dynamic:
+            spread = self.spread
+
             # Calculate spread if dynamic spread option in use, this calculation includes own orders on the market
             if self.dynamic_spread:
                 spread = self.get_market_spread(quote_amount=self.market_depth_amount) * self.dynamic_spread_factor
-            else:
-                spread = self.spread
 
             center_price = self.calculate_center_price(
                 None,
