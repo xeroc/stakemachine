@@ -611,21 +611,21 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         for order in market_buy_orders:
             if base:
                 # BASE amount was given
-                if base_amount < target_amount:
+                if order['base']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['base']['amount']
-                elif base_amount > missing_amount:
+                else:
                     base_amount += missing_amount
                     quote_amount += missing_amount / order['price']
                     break
             elif not base:
                 # QUOTE amount was given
-                if quote_amount < target_amount:
+                if order['quote']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['quote']['amount']
-                elif quote_amount > missing_amount:
+                else:
                     base_amount += missing_amount * order['price']
                     quote_amount += missing_amount
                     break
@@ -680,22 +680,21 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         for order in market_sell_orders:
             if quote:
                 # QUOTE amount was given
-                if quote_amount < target_amount:
+                if order['quote']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['quote']['amount']
-                elif quote_amount > missing_amount:
+                else:
                     base_amount += missing_amount * order['price']
                     quote_amount += missing_amount
                     break
-
             elif not quote:
                 # BASE amount was given
-                if base_amount < target_amount:
+                if order['base']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['base']['amount']
-                elif base_amount > missing_amount:
+                else:
                     base_amount += missing_amount
                     quote_amount += missing_amount / order['price']
                     break
