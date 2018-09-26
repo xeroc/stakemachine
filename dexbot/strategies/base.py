@@ -917,7 +917,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a buy order for {} {} @ {;.8f}'.format(base_amount, symbol, price))
+        self.log.info('Placing a buy order for {} {} @ {:.8f}'.format(base_amount, symbol, price))
 
         # Place the order
         buy_transaction = self.retry_action(
