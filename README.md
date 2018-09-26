@@ -12,7 +12,7 @@ master:
 
 ## Installing and running the software
 
-See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki) for [Linux](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Linux), and [Windows](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Windows). OSX users can try downloading the package or following the Linux guide.
+See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki) for [Linux](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Linux), [Windows](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Windows), [OSX](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Mac-OS-X). [Raspberry Pi](https://github.com/Codaone/DEXBot/wiki/Setup-guide-for-Raspberry-Pi). Other users can try downloading the package or following the Linux guide.
 
 ## Contributing
 
