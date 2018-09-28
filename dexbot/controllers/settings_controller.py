@@ -39,7 +39,7 @@ class SettingsController:
         if current_index < (self.view.root_item.childCount() - 1):
             item = self.view.nodes_tree_widget.takeTopLevelItem(current_index)
             self.view.root_item.insertChild(current_index + 1, item)
-            item.setSelected()
+
             self.view.notification_label.setText('Unsaved changes detected; List order has changed.')
 
     def save_settings(self):
