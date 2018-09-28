@@ -213,6 +213,9 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         # Order expiration time in seconds
         self.expiration = 60 * 60 * 24 * 365 * 5
 
+        # buy/sell actions will return order id by default
+        self.returnOrderId = 'head'
+
         # A private logger that adds worker identify data to the LogRecord
         self.log = logging.LoggerAdapter(
             logging.getLogger('dexbot.per_worker'),
@@ -611,21 +614,21 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         for order in market_buy_orders:
             if base:
                 # BASE amount was given
-                if base_amount < target_amount:
+                if order['base']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['base']['amount']
-                elif base_amount > missing_amount:
+                else:
                     base_amount += missing_amount
                     quote_amount += missing_amount / order['price']
                     break
             elif not base:
                 # QUOTE amount was given
-                if quote_amount < target_amount:
+                if order['quote']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['quote']['amount']
-                elif quote_amount > missing_amount:
+                else:
                     base_amount += missing_amount * order['price']
                     quote_amount += missing_amount
                     break
@@ -680,22 +683,21 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         for order in market_sell_orders:
             if quote:
                 # QUOTE amount was given
-                if quote_amount < target_amount:
+                if order['quote']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['quote']['amount']
-                elif quote_amount > missing_amount:
+                else:
                     base_amount += missing_amount * order['price']
                     quote_amount += missing_amount
                     break
-
             elif not quote:
                 # BASE amount was given
-                if base_amount < target_amount:
+                if order['base']['amount'] <= missing_amount:
                     quote_amount += order['quote']['amount']
                     base_amount += order['base']['amount']
                     missing_amount -= order['base']['amount']
-                elif base_amount > missing_amount:
+                else:
                     base_amount += missing_amount
                     quote_amount += missing_amount / order['price']
                     break
@@ -908,12 +910,12 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if self.balance(self.market['base']) < base_amount:
+        if self.returnOrderId and self.balance(self.market['base']) < base_amount:
             self.log.critical("Insufficient buy balance, needed {} {}".format(base_amount, symbol))
             self.disabled = True
             return None
 
-        self.log.info('Placing a buy order for {} {} @ {}'.format(base_amount, symbol, round(price, 8)))
+        self.log.info('Placing a buy order for {} {} @ {:.8f}'.format(base_amount, symbol, price))
 
         # Place the order
         buy_transaction = self.retry_action(
@@ -922,21 +924,23 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             expiration=self.expiration,
-            returnOrderId="head",
+            returnOrderId=self.returnOrderId,
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
 
         self.log.debug('Placed buy order {}'.format(buy_transaction))
-        buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
-        if buy_order and buy_order['deleted']:
-            # The API doesn't return data on orders that don't exist
-            # We need to calculate the data on our own
-            buy_order = self.calculate_order_data(buy_order, amount, price)
-            self.recheck_orders = True
-
-        return buy_order
+        if self.returnOrderId:
+            buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
+            if buy_order and buy_order['deleted']:
+                # The API doesn't return data on orders that don't exist
+                # We need to calculate the data on our own
+                buy_order = self.calculate_order_data(buy_order, amount, price)
+                self.recheck_orders = True
+            return buy_order
+        else:
+            return True
 
     def place_market_sell_order(self, amount, price, return_none=False, *args, **kwargs):
         """ Places a sell order in the market
@@ -959,12 +963,12 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if self.balance(self.market['quote']) < quote_amount:
+        if self.returnOrderId and self.balance(self.market['quote']) < quote_amount:
             self.log.critical("Insufficient sell balance, needed {} {}".format(amount, symbol))
             self.disabled = True
             return None
 
-        self.log.info('Placing a sell order for {} {} @ {}'.format(quote_amount, symbol, round(price, 8)))
+        self.log.info('Placing a sell order for {} {} @ {:.8f}'.format(quote_amount, symbol, price))
 
         # Place the order
         sell_transaction = self.retry_action(
@@ -973,21 +977,23 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             expiration=self.expiration,
-            returnOrderId="head",
+            returnOrderId=self.returnOrderId,
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
 
         self.log.debug('Placed sell order {}'.format(sell_transaction))
-        sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
-        if sell_order and sell_order['deleted']:
-            # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
-            sell_order = self.calculate_order_data(sell_order, amount, price)
-            sell_order.invert()
-            self.recheck_orders = True
-
-        return sell_order
+        if self.returnOrderId:
+            sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
+            if sell_order and sell_order['deleted']:
+                # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
+                sell_order = self.calculate_order_data(sell_order, amount, price)
+                sell_order.invert()
+                self.recheck_orders = True
+            return sell_order
+        else:
+            return True
 
     def retry_action(self, action, *args, **kwargs):
         """ Perform an action, and if certain suspected-to-be-spurious grapheme bugs occur,

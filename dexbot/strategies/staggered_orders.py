@@ -171,18 +171,6 @@ class Strategy(BaseStrategy):
             self.log.warning('Cannot calculate center price on empty market, please set is manually')
             return
 
-        # Get highest buy and lowest sell prices from orders
-        highest_buy_price = 0
-        lowest_sell_price = 0
-
-        if self.buy_orders:
-            highest_buy_price = self.buy_orders[0].get('price')
-
-        if self.sell_orders:
-            lowest_sell_price = self.sell_orders[0].get('price')
-            # Invert the sell price to BASE so it can be used in comparison
-            lowest_sell_price = lowest_sell_price ** -1
-
         # Calculate balances
         self.refresh_balances()
 
@@ -259,15 +247,37 @@ class Strategy(BaseStrategy):
                            'balances'.format(self.min_check_interval))
             self.current_check_interval = self.min_check_interval
 
-        # Do not continue whether assets is not fully allocated
-        if (not base_allocated or not quote_allocated) or self.bootstrapping:
-            # Further checks should be performed on next maintenance
+        # Do not continue whether balances are changing or bootstrap is on
+        if (self.bootstrapping or
+                self.base_balance_history[0] != self.base_balance_history[2] or
+                self.quote_balance_history[0] != self.quote_balance_history[2]):
             self.last_check = datetime.now()
             self.log_maintenance_time()
             return
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders.
         # This is a fallback logic.
+
+        # Get highest buy and lowest sell prices from orders
+        highest_buy_price = 0
+        lowest_sell_price = 0
+
+        if self.buy_orders:
+            highest_buy_price = self.buy_orders[0].get('price')
+
+        if self.sell_orders:
+            lowest_sell_price = self.sell_orders[0].get('price')
+            # Invert the sell price to BASE so it can be used in comparison
+            lowest_sell_price = lowest_sell_price ** -1
+
+        if highest_buy_price and lowest_sell_price:
+            self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
+            if self.actual_spread < self.target_spread + self.increment:
+                # Target spread is reached, no need to cancel anything
+                self.last_check = datetime.now()
+                self.log_maintenance_time()
+                return
+
         # Measure which price is closer to the center
         buy_distance = self.market_center_price - highest_buy_price
         sell_distance = lowest_sell_price - self.market_center_price
@@ -276,15 +286,15 @@ class Strategy(BaseStrategy):
             if self.market_center_price > highest_buy_price * (1 + self.target_spread):
                 # Cancel lowest buy order because center price moved up.
                 # On the next run there will be placed next buy order closer to the new center
-                self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
-                              'Cancelling lowest buy order as a fallback.')
+                self.log.info('Free balances are not changing and we are not in bootstrap mode and target spread is '
+                              'not reached. Cancelling lowest buy order as a fallback.')
                 self.cancel(self.buy_orders[-1])
         else:
             if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
                 # Cancel highest sell order because center price moved down.
                 # On the next run there will be placed next sell closer to the new center
-                self.log.info('No avail balances and we not in bootstrap mode and target spread is not reached. '
-                              'Cancelling highest sell order as a fallback.')
+                self.log.info('Free balances are not changing and we are not in bootstrap mode and target spread is '
+                              'not reached. Cancelling highest sell order as a fallback.')
                 self.cancel(self.sell_orders[-1])
 
         self.last_check = datetime.now()
