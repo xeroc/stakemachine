@@ -27,6 +27,6 @@ class SettingsView(QtWidgets.QDialog, Ui_settings_dialog):
         self.move_down_button.clicked.connect(self.controller.move_down)
         self.restore_defaults_button.clicked.connect(self.controller.restore_defaults)
 
-        # Tab controls
+        # Dialog controls
         self.button_box.rejected.connect(self.reject)
         self.button_box.accepted.connect(self.controller.save_settings)
