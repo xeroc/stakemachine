@@ -506,7 +506,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         return order
 
-    def get_highest_own_buy(self, orders=None):
+    def get_highest_own_buy_order(self, orders=None):
         """ Returns highest own buy order.
 
             :param list | orders:
@@ -818,7 +818,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         """
         try:
             # Try fetching own orders
-            highest_own_buy_price = self.get_highest_market_buy_order().get('price')
+            highest_own_buy_price = self.get_highest_own_buy_order().get('price')
             lowest_own_sell_price = self.get_lowest_own_sell_order().get('price')
         except AttributeError:
             return None
