@@ -107,6 +107,7 @@ class RelativeOrdersController(StrategyController):
 
         # Event connecting
         widget.relative_order_size_input.clicked.connect(self.onchange_relative_order_size_input)
+        widget.dynamic_spread_input.clicked.connect(self.onchange_dynamic_spread_input)
         widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
         widget.manual_offset_input.valueChanged.connect(self.onchange_manual_offset_input)
         widget.reset_on_partial_fill_input.clicked.connect(self.onchange_reset_on_partial_fill_input)
@@ -116,6 +117,7 @@ class RelativeOrdersController(StrategyController):
         # Trigger the onchange events once
         self.onchange_relative_order_size_input(widget.relative_order_size_input.isChecked())
         self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+        self.onchange_dynamic_spread_input(widget.dynamic_spread_input.isChecked())
         self.onchange_reset_on_partial_fill_input(widget.reset_on_partial_fill_input.isChecked())
         self.onchange_reset_on_price_change_input(widget.reset_on_price_change_input.isChecked())
         self.onchange_custom_expiration_input(widget.custom_expiration_input.isChecked())
@@ -133,6 +135,18 @@ class RelativeOrdersController(StrategyController):
         text = "{}%".format(value)
         self.view.strategy_widget.manual_offset_amount_label.setText(text)
 
+    def onchange_dynamic_spread_input(self, checked):
+        if checked:
+            self.view.strategy_widget.market_depth_amount_input.setDisabled(False)
+            self.view.strategy_widget.dynamic_spread_factor_input.setDisabled(False)
+            # Disable the spread field if dynamic spread in use
+            self.view.strategy_widget.spread_input.setDisabled(True)
+        else:
+            self.view.strategy_widget.market_depth_amount_input.setDisabled(True)
+            self.view.strategy_widget.dynamic_spread_factor_input.setDisabled(True)
+            # Enable spread field if dynamic not in use
+            self.view.strategy_widget.spread_input.setDisabled(False)
+
     def onchange_relative_order_size_input(self, checked):
         if checked:
             self.order_size_input_to_relative()
@@ -142,11 +156,14 @@ class RelativeOrdersController(StrategyController):
     def onchange_center_price_dynamic_input(self, checked):
         if checked:
             self.view.strategy_widget.center_price_input.setDisabled(True)
+            self.view.strategy_widget.center_price_depth_input.setDisabled(False)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(False)
+
             if self.view.strategy_widget.reset_on_price_change_input.isChecked():
                 self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
         else:
             self.view.strategy_widget.center_price_input.setDisabled(False)
+            self.view.strategy_widget.center_price_depth_input.setDisabled(True)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(True)
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
 
@@ -173,9 +190,9 @@ class RelativeOrdersController(StrategyController):
         quote_symbol = self.worker_controller.view.quote_asset_input.text()
 
         if quote_symbol:
-            self.set_amount_asset_label(quote_symbol)
+            self.set_quote_asset_label(quote_symbol)
         else:
-            self.set_amount_asset_label('')
+            self.set_quote_asset_label('')
 
         if base_symbol and quote_symbol:
             text = '{} / {}'.format(base_symbol, quote_symbol)
@@ -197,8 +214,10 @@ class RelativeOrdersController(StrategyController):
     def set_center_price_market_label(self, text):
         self.view.strategy_widget.center_price_market_label.setText(text)
 
-    def set_amount_asset_label(self, text):
+    def set_quote_asset_label(self, text):
         self.view.strategy_widget.amount_input_asset_label.setText(text)
+        self.view.strategy_widget.center_price_depth_input_asset_label.setText(text)
+        self.view.strategy_widget.market_depth_amount_input_asset_label.setText(text)
 
     def validation_errors(self):
         error_texts = []
