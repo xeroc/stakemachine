@@ -22,24 +22,37 @@ class SettingsController:
         self.view.notification_label.setText('Unsaved changes detected; Node added.')
 
     def move_up(self):
-        node_item = self.view.nodes_tree_widget.currentItem()
-        current_index = self.view.nodes_tree_widget.indexOfTopLevelItem(node_item)
+        """  Move item up in the widget tree list
+        """
+        current_index = self.view.nodes_tree_widget.indexOfTopLevelItem(self.view.nodes_tree_widget.currentItem())
 
         # This prevents moving item out of the list
         if current_index > 0:
+            # Take the item out of the widget list
             item = self.view.nodes_tree_widget.takeTopLevelItem(current_index)
+
+            # Put item back to the list in new position
             self.view.root_item.insertChild(current_index - 1, item)
+
+            # Keep moved item selected
+            self.view.nodes_tree_widget.setCurrentItem(item)
             self.view.notification_label.setText('Unsaved changes detected; List order has changed.')
 
     def move_down(self):
-        node_item = self.view.nodes_tree_widget.currentItem()
-        current_index = self.view.nodes_tree_widget.indexOfTopLevelItem(node_item)
+        """  Move item down in the widget tree list
+        """
+        current_index = self.view.nodes_tree_widget.indexOfTopLevelItem(self.view.nodes_tree_widget.currentItem())
 
         # This prevents moving item out of the list
         if current_index < (self.view.root_item.childCount() - 1):
+            # Take the item out of the widget list
             item = self.view.nodes_tree_widget.takeTopLevelItem(current_index)
+
+            # Put item back to the list in new position
             self.view.root_item.insertChild(current_index + 1, item)
 
+            # Keep moved item selected
+            self.view.nodes_tree_widget.setCurrentItem(item)
             self.view.notification_label.setText('Unsaved changes detected; List order has changed.')
 
     def save_settings(self):
