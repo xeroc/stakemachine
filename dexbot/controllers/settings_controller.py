@@ -116,10 +116,10 @@ class SettingsController:
         self.view.notification_label.setText('Restored default nodes. Remember to save changes!')
 
     @staticmethod
-    def remove_empty_items(items_list):
+    def remove_empty_items(items):
         """ Removes empty strings from a list
         """
-        return list(filter(None, items_list))
+        return list(filter(None, items))
 
     @property
     def nodes(self):
