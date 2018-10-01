@@ -278,7 +278,6 @@ class Strategy(StrategyBase):
         if manual_offset:
             calculated_center_price = self.calculate_manual_offset(calculated_center_price, manual_offset)
 
-        print('Calculated center price is {}'.format(calculated_center_price))
         return calculated_center_price
 
     def calculate_asset_offset(self, center_price, order_ids, spread):
