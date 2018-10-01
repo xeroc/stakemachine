@@ -11,6 +11,8 @@ class SettingsController:
         self.view = view
 
     def add_node(self):
+        """  Add item in the widget tree list
+        """
         item = QTreeWidgetItem(self.view.nodes_tree_widget)
         item.setText(0, '')
         item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
@@ -56,6 +58,8 @@ class SettingsController:
             self.view.notification_label.setText('Unsaved changes detected; List order has changed.')
 
     def save_settings(self):
+        """  Save items in the tree widget list into the config file and reload the items
+        """
         nodes = []
 
         child_count = self.view.root_item.childCount()
@@ -68,6 +72,8 @@ class SettingsController:
         self.initialize_node_list()
 
     def remove_node(self):
+        """  Remove item from the widget tree list
+        """
         node = self.view.nodes_tree_widget.currentItem()
 
         if node:
