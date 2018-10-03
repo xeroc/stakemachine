@@ -479,6 +479,97 @@ margin: 0px;</string>
           </widget>
          </item>
          <item>
+          <widget class="QWidget" name="details" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>60</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Source Sans Pro</family>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="leftMargin">
+             <number>5</number>
+            </property>
+            <property name="topMargin">
+             <number>5</number>
+            </property>
+            <property name="rightMargin">
+             <number>5</number>
+            </property>
+            <property name="bottomMargin">
+             <number>5</number>
+            </property>
+            <item>
+             <widget class="QPushButton" name="details_button">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>24</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Source Sans Pro</family>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: #ffffff</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../../resources/icons.qrc">
+                <normaloff>:/worker_widget/img/info.svg</normaloff>:/worker_widget/img/info.svg</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>30</width>
+                <height>30</height>
+               </size>
+              </property>
+              <property name="flat">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+             <widget class="QLabel" name="details_label">
+              <property name="font">
+               <font>
+                <family>Source Sans Pro</family>
+                <pointsize>6</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true"/>
+              </property>
+              <property name="text">
+               <string>DETAILS</string>
+              </property>
+              <property name="textInteractionFlags">
+               <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
           <widget class="QWidget" name="widget_4" native="true">
            <property name="minimumSize">
             <size>
@@ -509,7 +600,7 @@ margin: 0px;</string>
             <property name="bottomMargin">
              <number>5</number>
             </property>
-            <item alignment="Qt::AlignTop">
+            <item>
              <widget class="QPushButton" name="edit_button">
               <property name="minimumSize">
                <size>

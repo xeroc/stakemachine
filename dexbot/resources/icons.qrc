@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="worker_widget">
+    <file>img/info.svg</file>
     <file>svg/modifystrategy.svg</file>
     <file>svg/simplestrategy.svg</file>
   </qresource>
