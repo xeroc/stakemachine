@@ -2,6 +2,7 @@ import re
 
 from .ui.worker_item_widget_ui import Ui_widget
 from .confirmation import ConfirmationDialog
+from .worker_details import WorkerDetailsView
 from .edit_worker import EditWorkerView
 from dexbot.storage import db_worker
 from dexbot.controllers.worker_controller import WorkerController
@@ -24,6 +25,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.setupUi(self)
 
         self.edit_button.clicked.connect(lambda: self.handle_edit_worker())
+        self.details_button.clicked.connect(lambda: self.handle_open_details())
         self.toggle.mouseReleaseEvent = lambda _: self.toggle_worker()
         self.onoff.mouseReleaseEvent = lambda _: self.toggle_worker()
 
@@ -150,6 +152,10 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.worker_config = self.main_ctrl.config.get_worker_config(worker_name)
         self.setup_ui_data(self.worker_config)
         self._pause_worker()
+
+    def handle_open_details(self):
+        details_dialog = WorkerDetailsView(self.worker_name, self.worker_config)
+        details_dialog.exec_()
 
     @gui_error
     def handle_edit_worker(self):
