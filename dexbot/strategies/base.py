@@ -479,7 +479,9 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param int | depth: Amount of buy orders returned, Default=10
             :return: List of market sell orders
         """
-        return self.get_market_orders(depth=depth)['bids']
+        orders = self.get_limit_orders(depth=depth)
+        buy_orders = self.filter_buy_orders(orders)
+        return buy_orders
 
     def get_market_sell_orders(self, depth=10):
         """ Fetches most recent data and returns list of sell orders.
@@ -487,7 +489,9 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param int | depth: Amount of sell orders returned, Default=10
             :return: List of market sell orders
         """
-        return self.get_market_orders(depth=depth)['asks']
+        orders = self.get_limit_orders(depth=depth)
+        sell_orders = self.filter_sell_orders(orders)
+        return sell_orders
 
     def get_highest_market_buy_order(self, orders=None):
         """ Returns the highest buy order that is not own, regardless of order size.
@@ -560,8 +564,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :return: Market center price as float
         """
 
-        buy_price = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
-        sell_price = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
+        buy_price = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount, exclude_own_orders=False)
+        sell_price = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount, exclude_own_orders=False)
 
         if buy_price is None or buy_price == 0.0:
             if not suppress_errors:
@@ -578,19 +582,31 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         # Calculate and return market center price
         return buy_price * math.sqrt(sell_price / buy_price)
 
-    def get_market_buy_price(self, quote_amount=0, base_amount=0):
+    def get_market_buy_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
             moving average or weighted moving average
 
             :param float | quote_amount:
             :param float | base_amount:
-            :return:
+            :param bool | exclude_own_orders: Exclude own orders when calculating a price
+            :return: price as float
         """
-        # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
-        # In case amount is not given, return price of the lowest sell order on the market
-        if quote_amount == 0 and base_amount == 0:
-            return self.ticker().get('highestBid')
+        market_buy_orders = []
 
+        # Exclude own orders from orderbook if needed
+        if exclude_own_orders:
+            market_buy_orders = self.get_market_buy_orders(depth=self.fetch_depth)
+            own_buy_orders_ids = [o['id'] for o in self.get_own_buy_orders()]
+            market_buy_orders = [o for o in market_buy_orders if o['id'] not in own_buy_orders_ids]
+
+        # In case amount is not given, return price of the highest buy order on the market
+        if quote_amount == 0 and base_amount == 0:
+            if exclude_own_orders:
+                return float(market_buy_orders[0]['price'])
+            else:
+                return float(self.ticker().get('highestBid'))
+
+        # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
         asset_amount = base_amount
 
         """ Since the purpose is never get both quote and base amounts, favor base amount if both given because
@@ -602,7 +618,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             asset_amount = quote_amount
             base = False
 
-        market_buy_orders = self.get_market_buy_orders(depth=self.fetch_depth)
+        if not market_buy_orders:
+            market_buy_orders = self.get_market_buy_orders(depth=self.fetch_depth)
         market_fee = self.get_market_fee()
 
         target_amount = asset_amount * (1 + market_fee)
@@ -635,8 +652,21 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         return base_amount / quote_amount
 
-    def get_market_orders(self, depth=1):
+    def get_limit_orders(self, depth=1):
+        """ Returns orders from the current market. Orders are sorted by price.
+
+            get_limit_orders() call does not have any depth limit.
+
+            :param int | depth: Amount of orders per side will be fetched, default=1
+            :return: Returns a list of orders or None
+        """
+        orders = self.bitshares.rpc.get_limit_orders(self.market['base']['id'], self.market['quote']['id'], depth)
+        return [Order(o, bitshares_instance=self.bitshares) for o in orders]
+
+    def get_orderbook_orders(self, depth=1):
         """ Returns orders from the current market split in bids and asks. Orders are sorted by price.
+
+            Market.orderbook() call has hard-limit of depth=50 enforced by bitshares node.
 
             bids = buy orders
             asks = sell orders
@@ -646,7 +676,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         """
         return self.market.orderbook(depth)
 
-    def get_market_sell_price(self, quote_amount=0, base_amount=00):
+    def get_market_sell_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):
         """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
             enhanced with moving average or weighted moving average.
 
@@ -654,11 +684,23 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
             :param float | quote_amount:
             :param float | base_amount:
+            :param bool | exclude_own_orders: Exclude own orders when calculating a price
             :return:
         """
+        market_sell_orders = []
+
+        # Exclude own orders from orderbook if needed
+        if exclude_own_orders:
+            market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
+            own_sell_orders_ids = [o['id'] for o in self.get_own_sell_orders()]
+            market_sell_orders = [o for o in market_sell_orders if o['id'] not in own_sell_orders_ids]
+
         # In case amount is not given, return price of the lowest sell order on the market
         if quote_amount == 0 and base_amount == 0:
-            return self.ticker().get('lowestAsk')
+            if exclude_own_orders:
+                return float(market_sell_orders[0]['price'])
+            else:
+                return float(self.ticker().get('lowestAsk'))
 
         asset_amount = quote_amount
 
@@ -671,7 +713,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             asset_amount = base_amount
             quote = False
 
-        market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
+        if not market_sell_orders:
+            market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
         market_fee = self.get_market_fee()
 
         target_amount = asset_amount * (1 + market_fee)
@@ -711,8 +754,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param float | base_amount:
             :return: Market spread as float or None
         """
-        ask = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
-        bid = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
+        ask = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount, exclude_own_orders=False)
+        bid = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount, exclude_own_orders=False)
 
         # Calculate market spread
         if ask == 0 or bid == 0:
