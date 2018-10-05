@@ -1,7 +1,7 @@
 import math
 from datetime import datetime, timedelta
 
-from dexbot.strategies.base import StrategyBase, ConfigElement
+from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement
 from dexbot.qt_queue.idle_queue import idle_add
 
 
@@ -52,6 +52,13 @@ class Strategy(StrategyBase):
             ConfigElement('expiration_time', 'int', 157680000, 'Order expiration time',
                           'Define custom order expiration time to force orders reset more often, seconds',
                           (30, 157680000, ''))
+        ]
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        return StrategyBase.configure_details(include_default_tabs) + [
+            DetailElement('graph', 'Profit', 'Profit for the past month'),
+            DetailElement('table', 'Buy orders', 'Open buy orders')
         ]
 
     def __init__(self, *args, **kwargs):

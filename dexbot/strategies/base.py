@@ -44,6 +44,16 @@ MAX_TRIES = 3
 """
 ConfigElement = collections.namedtuple('ConfigElement', 'key type default title description extra')
 
+""" Strategies have different needs for the details they want to show for the user. These elements help to build a 
+    custom details window for the strategy. 
+
+    Tuple fields as follows:
+        - Type: 'graph', 'text', 'table'
+        - Name: The name of the tab, shows at the top
+        - Title: The title is shown inside the tab
+"""
+DetailElement = collections.namedtuple('DetailTab', 'type name title')
+
 
 class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
@@ -125,6 +135,29 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         if return_base_config:
             return base_config
+        return []
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        """ Return a list of ConfigElement objects defining the configuration values for this class.
+
+            User interfaces should then generate widgets based on these values, gather data and save back to
+            the config dictionary for the worker.
+
+            NOTE: When overriding you almost certainly will want to call the ancestor and then
+            add your config values to the list.
+
+            :param include_default_tabs: bool:
+            :return: Returns a list of Detail elements
+        """
+
+        # Common configs
+        details = [
+            DetailElement('text', 'Log', 'Worker\'s log')
+        ]
+
+        if include_default_tabs:
+            return details
         return []
 
     def __init__(self,

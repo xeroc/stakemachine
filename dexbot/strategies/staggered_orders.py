@@ -4,6 +4,7 @@ from bitshares.market import Market
 from bitshares.asset import Asset
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
+from dexbot.strategies.base import StrategyBase, DetailElement
 from dexbot.qt_queue.idle_queue import idle_add
 
 
@@ -68,6 +69,12 @@ class Strategy(BaseStrategy):
             ConfigElement(
                 'instant_fill', 'bool', True, 'Allow instant fill',
                 'Allow to execute orders by market', None)
+        ]
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        return StrategyBase.configure_details(include_default_tabs) + [
+            DetailElement('text', 'Test', 'This is a test')
         ]
 
     def __init__(self, *args, **kwargs):
