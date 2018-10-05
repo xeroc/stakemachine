@@ -11,7 +11,7 @@ class WorkerDetailsController:
         """
         self.view = view
         self.worker_name = worker_name
-        self.config = config['workers'].get(self.worker_name)
+        self.config = config
 
     def initialize_worker_data(self):
         """ Initializes details view with worker's data
