@@ -474,7 +474,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         return self.fee_asset.market_fee_percent
 
     def get_market_buy_orders(self, depth=10):
-        """ Fetches most reset data and returns list of buy orders.
+        """ Fetches most recent data and returns list of buy orders.
 
             :param int | depth: Amount of buy orders returned, Default=10
             :return: List of market sell orders
@@ -482,7 +482,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         return self.get_market_orders(depth=depth)['bids']
 
     def get_market_sell_orders(self, depth=10):
-        """ Fetches most reset data and returns list of sell orders.
+        """ Fetches most recent data and returns list of sell orders.
 
             :param int | depth: Amount of sell orders returned, Default=10
             :return: List of market sell orders
@@ -1089,7 +1089,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
     def all_own_orders(self, refresh=True):
         """ Return the worker's open orders in all markets
 
-            :param bool | refresh: Use most resent data
+            :param bool | refresh: Use most recent data
             :return: List of Order objects
         """
         # Refresh account data
