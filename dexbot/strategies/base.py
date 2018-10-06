@@ -876,25 +876,17 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         return actual_spread
 
     def get_updated_order(self, order_id):
-        # Todo: This needed?
         """ Tries to get the updated order from the API. Returns None if the order doesn't exist
 
-            :param str|dict order_id: blockchain object id of the order can be an order dict with the id key in it
+            :param str|dict order: blockchain Order object or id of the order
         """
         if isinstance(order_id, dict):
             order_id = order_id['id']
-
-        # Get the limited order by id
-        order = None
-        for limit_order in self.account['limit_orders']:
-            if order_id == limit_order['id']:
-                order = limit_order
-                break
-        else:
-            return order
-
-        order = self.get_updated_limit_order(order)
-        return Order(order, bitshares_instance=self.bitshares)
+        # We are using direct rpc call here because passing an Order object to self.get_updated_limit_order() give us
+        # weird error "Object of type 'BitShares' is not JSON serializable"
+        order = self.bitshares.rpc.get_objects([order_id])[0]
+        updated_order = self.get_updated_limit_order(order)
+        return Order(updated_order, bitshares_instance=self.bitshares)
 
     def is_current_market(self, base_asset_id, quote_asset_id):
         """ Returns True if given asset id's are of the current market
@@ -1211,10 +1203,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         """ Returns a modified limit_order so that when passed to Order class,
             will return an Order object with updated amount values
 
-            :param limit_order: an item of Account['limit_orders']
+            :param limit_order: an item of Account['limit_orders'] or bitshares.rpc.get_limit_orders()
             :return: Order
-            Todo: When would we not want an updated order?
-            Todo: If get_updated_order is removed, this can be removed as well.
         """
         order = copy.deepcopy(limit_order)
         price = float(order['sell_price']['base']['amount']) / float(order['sell_price']['quote']['amount'])
