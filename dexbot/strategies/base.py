@@ -894,6 +894,18 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         updated_order = self.get_updated_limit_order(order)
         return Order(updated_order, bitshares_instance=self.bitshares)
 
+    def is_buy_order(self, order):
+        """ Check whether an order is buy order
+
+            :param dict | order: dict or Order object
+            :return bool
+        """
+        # Check if the order is buy order, by comparing asset symbol of the order and the market
+        if order['base']['symbol'] == self.market['base']['symbol']:
+            return True
+        else:
+            return False
+
     def is_current_market(self, base_asset_id, quote_asset_id):
         """ Returns True if given asset id's are of the current market
 
@@ -911,6 +923,18 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return False
 
         return False
+
+    def is_sell_order(self, order):
+        """ Check whether an order is sell order
+
+            :param dict | order: dict or Order object
+            :return bool
+        """
+        # Check if the order is sell order, by comparing asset symbol of the order and the market
+        if order['base']['symbol'] == self.market['quote']['symbol']:
+            return True
+        else:
+            return False
 
     def pause(self):
         """ Pause the worker
