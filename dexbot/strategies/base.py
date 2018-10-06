@@ -602,7 +602,10 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         # In case amount is not given, return price of the highest buy order on the market
         if quote_amount == 0 and base_amount == 0:
             if exclude_own_orders:
-                return float(market_buy_orders[0]['price'])
+                if market_buy_orders:
+                    return float(market_buy_orders[0]['price'])
+                else:
+                    return '0.0'
             else:
                 return float(self.ticker().get('highestBid'))
 
@@ -703,7 +706,10 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         # In case amount is not given, return price of the lowest sell order on the market
         if quote_amount == 0 and base_amount == 0:
             if exclude_own_orders:
-                return float(market_sell_orders[0]['price'])
+                if market_sell_orders:
+                    return float(market_sell_orders[0]['price'])
+                else:
+                    return '0.0'
             else:
                 return float(self.ticker().get('lowestAsk'))
 
