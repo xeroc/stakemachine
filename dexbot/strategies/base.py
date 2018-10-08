@@ -277,12 +277,6 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             pass
 
     def _cancel_orders(self, orders):
-        """
-
-            :param orders:
-            :return:
-        """
-        # Todo: Add documentation
         try:
             self.retry_action(
                 self.bitshares.cancel,
