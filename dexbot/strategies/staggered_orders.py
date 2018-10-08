@@ -562,8 +562,9 @@ class Strategy(BaseStrategy):
             elif asset == 'quote':
                 self.place_highest_sell_order(asset_balance)
 
-        # Get latest orders
-        self.refresh_orders()
+        # Get latest orders only when we are not bundling operations
+        if self.returnOrderId:
+            self.refresh_orders()
 
     def increase_order_sizes(self, asset, asset_balance, orders):
         """ Checks which order should be increased in size and replaces it
