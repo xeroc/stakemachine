@@ -43,10 +43,16 @@ def truncate(number, decimals):
     return math.floor(number * 10 ** decimals) / 10 ** decimals
 
 
+def get_data_directory():
+    """ Returns the data directory path which contains history, sql and logs
+    """
+    return user_data_dir(APP_NAME, AUTHOR)
+
+
 def initialize_orders_log():
     """ Creates .csv log file, adds the headers first time only
     """
-    data_dir = user_data_dir(APP_NAME, AUTHOR)
+    data_dir = get_data_directory()
     filename = os.path.join(data_dir, 'history.csv')
     file = os.path.isfile(filename)
 
