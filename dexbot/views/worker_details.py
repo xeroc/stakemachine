@@ -32,31 +32,6 @@ class WorkerDetailsView(QtWidgets.QDialog, Ui_details_dialog, Ui_Graph_Tab, Ui_T
         # Initialize other data to the dialog
         self.controller.initialize_worker_data()
 
-        # Testing that each tab works as intended, Todo: Remove these after dynamic creation works
-        self.tab_1 = QWidget(self)
-        self.tab_2 = QWidget(self)
-        self.tab_3 = QWidget(self)
-        self.tab_4 = QWidget(self)
-
-        graph_tab = Ui_Graph_Tab()
-        table_tab = Ui_Table_Tab()
-        table_tab_2 = Ui_Table_Tab()
-        text_tab = Ui_Text_Tab()
-
-        graph_tab.setupUi(self.tab_1)
-        table_tab.setupUi(self.tab_2)
-        table_tab_2.setupUi(self.tab_4)
-        text_tab.setupUi(self.tab_3)
-
-        graph_tab.graph_wrap.setTitle('Profit estimate')
-        table_tab.table_wrap.setTitle('Worker\'s buy orders in the market')
-        table_tab_2.table_wrap.setTitle('Worker\'s sell orders in the market')
-        text_tab.text_wrap.setTitle('Local log')
-
-        self.tabs_widget.addTab(self.tab_1, 'Profit')
-        self.tabs_widget.addTab(self.tab_2, 'Buy Orders')
-        self.tabs_widget.addTab(self.tab_4, 'Sell Orders')
-        self.tabs_widget.addTab(self.tab_3, 'Log')
 
         # Dialog controls
         self.button_box.rejected.connect(self.reject)
