@@ -479,7 +479,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param int | depth: Amount of buy orders returned, Default=10
             :return: List of market sell orders
         """
-        orders = self.get_limit_orders(depth=depth)
+        orders = self.get_market_orders(depth=depth)
         buy_orders = self.filter_buy_orders(orders)
         return buy_orders
 
@@ -489,7 +489,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param int | depth: Amount of sell orders returned, Default=10
             :return: List of market sell orders
         """
-        orders = self.get_limit_orders(depth=depth)
+        orders = self.get_market_orders(depth=depth)
         sell_orders = self.filter_sell_orders(orders)
         return sell_orders
 
@@ -655,10 +655,10 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         return base_amount / quote_amount
 
-    def get_limit_orders(self, depth=1, updated=True):
+    def get_market_orders(self, depth=1, updated=True):
         """ Returns orders from the current market. Orders are sorted by price.
 
-            get_limit_orders() call does not have any depth limit.
+            get_market_orders() call does not have any depth limit.
 
             :param int | depth: Amount of orders per side will be fetched, default=1
             :param bool | updated: Return updated orders. "Updated" means partially filled orders will represent
