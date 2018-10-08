@@ -73,9 +73,7 @@ class Strategy(BaseStrategy):
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        return StrategyBase.configure_details(include_default_tabs) + [
-            DetailElement('text', 'Test', 'This is a test')
-        ]
+        return StrategyBase.configure_details(include_default_tabs) + []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
