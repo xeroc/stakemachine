@@ -262,8 +262,10 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                 return False
             else:
                 self.log.exception("Unable to cancel order")
+                return False
         except bitshares.exceptions.MissingKeyError:
             self.log.exception('Unable to cancel order(s), private key missing.')
+            return False
 
         return True
 
