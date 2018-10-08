@@ -888,9 +888,17 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         """
         if isinstance(order_id, dict):
             order_id = order_id['id']
-        # We are using direct rpc call here because passing an Order object to self.get_updated_limit_order() give us
-        # weird error "Object of type 'BitShares' is not JSON serializable"
-        order = self.bitshares.rpc.get_objects([order_id])[0]
+
+        # At first, try to look up own orders. This prevents RPC calls whether requested order is own order
+        order = None
+        for limit_order in self.account['limit_orders']:
+            if order_id == limit_order['id']:
+                order = limit_order
+                break
+        else:
+            # We are using direct rpc call here because passing an Order object to self.get_updated_limit_order() give us
+            # weird error "Object of type 'BitShares' is not JSON serializable"
+            order = self.bitshares.rpc.get_objects([order_id])[0]
         updated_order = self.get_updated_limit_order(order)
         return Order(updated_order, bitshares_instance=self.bitshares)
 
