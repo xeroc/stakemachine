@@ -549,7 +549,8 @@ class Strategy(BaseStrategy):
                     elif asset == 'quote':
                         price = closest_own_order['price'] ** -1
                         self.market_sell(closest_own_order['base']['amount'], price)
-                    self.refresh_balances()
+                    if self.returnOrderId:
+                        self.refresh_balances()
                 else:
                     self.log.debug('Not replacing partially filled order because there is not enough funds')
         else:
