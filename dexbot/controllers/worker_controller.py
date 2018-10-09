@@ -178,7 +178,7 @@ class WorkerController:
         account = Account(account)
         pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
         key_type = self.bitshares.wallet.getKeyType(account, pubkey)
-        if key_type != 'active':
+        if key_type == 'memo':
             return False
         return True
 
