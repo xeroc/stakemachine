@@ -186,10 +186,7 @@ class Strategy(BaseStrategy):
 
         # Remove orders that exceed boundaries
         success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
-        if success:
-            # Refresh orders to prevent orders outside boundaries being in the future comparisons
-            self.refresh_orders()
-        else:
+        if not success:
             # Return back to beginning
             self.log_maintenance_time()
             return
@@ -374,6 +371,8 @@ class Strategy(BaseStrategy):
         if orders_to_cancel:
             # We are trying to cancel all orders in one try
             success = self.cancel(orders_to_cancel, batch_only=True)
+            # Refresh orders to prevent orders outside boundaries being in the future comparisons
+            self.refresh_orders()
             # Batch cancel failed, repeat cancelling only one order
             if success:
                 return True
