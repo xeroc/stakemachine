@@ -123,6 +123,7 @@ class Strategy(BaseStrategy):
         # Initial balance history elements should not be equal to avoid immediate bootstrap turn off
         self.quote_balance_history = [1, 2, 3]
         self.base_balance_history = [1, 2, 3]
+        self.cached_orders = None
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -171,8 +172,8 @@ class Strategy(BaseStrategy):
             self.log.warning('Cannot calculate center price on empty market, please set is manually')
             return
 
-        # Calculate balances
-        self.refresh_balances()
+        # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
+        self.refresh_balances(use_cached_orders=True)
 
         # Calculate asset thresholds
         self.quote_asset_threshold = self.quote_total_balance / 20000
@@ -303,9 +304,10 @@ class Strategy(BaseStrategy):
         delta = datetime.now() - self.start
         self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
 
-    def refresh_balances(self, total_balances=True):
+    def refresh_balances(self, total_balances=True, use_cached_orders=False):
         """ This function is used to refresh account balances
             :param bool | total_balances: refresh total balance or skip it
+            :param bool | use_cached_orders: when calculating orders balance, use cached orders from self.cached_orders
         """
         # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
@@ -335,7 +337,11 @@ class Strategy(BaseStrategy):
             return
 
         # Balance per asset from orders
-        order_ids = [order['id'] for order in self.orders]
+        if use_cached_orders and self.cached_orders:
+            orders = self.cached_orders
+        else:
+            orders = self.orders
+        order_ids = [order['id'] for order in orders]
         orders_balance = self.orders_balance(order_ids)
 
         # Total balance per asset (orders balance and available balance)
@@ -346,6 +352,7 @@ class Strategy(BaseStrategy):
         """ Updates buy and sell orders
         """
         orders = self.orders
+        self.cached_orders = orders
 
         # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
         self.buy_orders = self.get_buy_orders('DESC', orders)
