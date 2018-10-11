@@ -152,9 +152,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         """
 
         # Common configs
-        details = [
-            DetailElement('text', 'Log', 'Worker\'s log')
-        ]
+        details = []
 
         if include_default_tabs:
             return details
