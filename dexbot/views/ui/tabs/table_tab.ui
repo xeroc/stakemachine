@@ -20,6 +20,21 @@
       <string/>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
       <item>
        <widget class="QTableWidget" name="table">
         <property name="editTriggers">
@@ -35,38 +50,18 @@
          <bool>true</bool>
         </property>
         <property name="rowCount">
-         <number>20</number>
-        </property>
-        <property name="columnCount">
-         <number>4</number>
+         <number>0</number>
         </property>
         <attribute name="horizontalHeaderDefaultSectionSize">
          <number>120</number>
         </attribute>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <row/>
-        <column/>
-        <column/>
-        <column/>
-        <column/>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="status_label">
+        <property name="text">
+         <string/>
+        </property>
        </widget>
       </item>
      </layout>
