@@ -38,6 +38,7 @@ class WorkerDetailsController:
                 rows = list(file_reader)
         except FileNotFoundError:
             print('File {} not found'.format(file))
+            return
 
         table.setColumnCount(len(rows[0]))
 
