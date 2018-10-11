@@ -56,10 +56,7 @@ class Strategy(StrategyBase):
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        return StrategyBase.configure_details(include_default_tabs) + [
-            DetailElement('graph', 'Profit', 'Profit for the past month'),
-            DetailElement('table', 'Buy orders', 'Open buy orders')
-        ]
+        return StrategyBase.configure_details(include_default_tabs) + []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
