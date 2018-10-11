@@ -3,7 +3,7 @@ import logging
 import sys
 
 from dexbot import VERSION, APP_NAME, AUTHOR
-from dexbot.helper import initialize_orders_log
+from dexbot.helper import initialize_orders_log, initialize_data_folders
 from dexbot.worker import WorkerInfrastructure
 from dexbot.views.errors import PyQtHandler
 
@@ -37,6 +37,9 @@ class MainController:
 
         # Configure orders logging
         initialize_orders_log()
+
+        # Initialize folders
+        initialize_data_folders()
 
     def set_info_handler(self, handler):
         self.pyqt_handler.set_info_handler(handler)

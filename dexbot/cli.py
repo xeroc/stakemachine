@@ -6,7 +6,7 @@ import signal
 import sys
 
 from dexbot.config import Config, DEFAULT_CONFIG_FILE
-from dexbot.helper import initialize_orders_log
+from dexbot.helper import initialize_orders_log, initialize_data_folders
 from dexbot.ui import (
     verbose,
     chain,
@@ -34,6 +34,9 @@ logging.basicConfig(
 
 # Configure orders logging
 initialize_orders_log()
+
+# Initialize data folders
+initialize_data_folders()
 
 
 @click.group()
