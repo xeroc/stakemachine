@@ -35,39 +35,63 @@ class WorkerDetailsView(QtWidgets.QDialog, Ui_details_dialog, Ui_Graph_Tab, Ui_T
         # Initialize other data to the dialog
         self.controller.initialize_worker_data()
 
+        # Add custom tabs
+        self.add_tabs(details)
+
+        # Dialog controls
+        self.button_box.rejected.connect(self.reject)
+
+    def add_tabs(self, details):
         # Add tabs to the details view
-        # Todo: Make this prettier
         for detail in details:
             widget = QWidget(self)
 
             if detail.type == 'graph':
-                tab = Ui_Graph_Tab()
-                tab.setupUi(widget)
-                tab.graph_wrap.setTitle(detail.title)
-
-                # Get image path
-                # Todo: Pass the image name from the strategy as well as the location
-                directory = get_data_directory() + '/graphs'
-                filename = os.path.join(directory, 'graph.jpg')
-
-                # Create pixmap of the image
-                pixmap = QtGui.QPixmap(filename)
-
-                # Set graph image to the label
-                tab.graph.setPixmap(pixmap)
-
-                # Resize label to fit the image
-                # Todo: Resize the tab to fit the image nicely
+                widget = self.add_graph_tab(detail, widget)
             elif detail.type == 'table':
-                tab = Ui_Table_Tab()
-                tab.setupUi(widget)
-                tab.table_wrap.setTitle(detail.title)
+                widget = self.add_table_tab(detail, widget)
             elif detail.type == 'text':
-                tab = Ui_Text_Tab()
-                tab.setupUi(widget)
-                tab.text_wrap.setTitle(detail.title)
+                widget = self.add_text_tab(detail, widget)
 
             self.tabs_widget.addTab(widget, detail.name)
 
-        # Dialog controls
-        self.button_box.rejected.connect(self.reject)
+    @staticmethod
+    def add_graph_tab(detail, widget):
+        tab = Ui_Graph_Tab()
+        tab.setupUi(widget)
+        tab.graph_wrap.setTitle(detail.title)
+
+        # Get image path
+        directory = get_user_data_directory()
+        file = os.path.join(directory, 'graphs', detail.file)
+
+        # Fixme: If there is better way to print an image and scale it, fix this
+        tab.graph.setHtml('<img src=\'{}\' width="50%" height="50%"/>'.format(file))
+
+        return widget
+
+    def add_table_tab(self, detail, widget):
+        tab = Ui_Table_Tab()
+        tab.setupUi(widget)
+        tab.table_wrap.setTitle(detail.title)
+
+        if detail.file:
+            file = os.path.join(get_user_data_directory(), 'data', detail.file)
+            tab.table = self.controller.populate_table_from_csv(tab.table, file)
+        else:
+            tab.text.setText('File {} not found'.format(detail.file))
+
+        return widget
+
+    def add_text_tab(self, detail, widget):
+        tab = Ui_Text_Tab()
+        tab.setupUi(widget)
+        tab.text_wrap.setTitle(detail.title)
+
+        if detail.file:
+            file = os.path.join(get_user_data_directory(), 'logs', detail.file)
+            tab.text = self.controller.populate_text_from_file(tab, file)
+        else:
+            tab.text.setText('File {} not found'.format(detail.file))
+
+        return widget
