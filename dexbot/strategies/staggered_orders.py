@@ -128,6 +128,7 @@ class Strategy(BaseStrategy):
         # Initial balance history elements should not be equal to avoid immediate bootstrap turn off
         self.quote_balance_history = [1, 2, 3]
         self.base_balance_history = [1, 2, 3]
+        self.cached_orders = None
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -176,8 +177,8 @@ class Strategy(BaseStrategy):
             self.log.warning('Cannot calculate center price on empty market, please set is manually')
             return
 
-        # Calculate balances
-        self.refresh_balances()
+        # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
+        self.refresh_balances(use_cached_orders=True)
 
         # Calculate asset thresholds
         self.quote_asset_threshold = self.quote_total_balance / 20000
@@ -191,10 +192,7 @@ class Strategy(BaseStrategy):
 
         # Remove orders that exceed boundaries
         success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
-        if success:
-            # Refresh orders to prevent orders outside boundaries being in the future comparisons
-            self.refresh_orders()
-        else:
+        if not success:
             # Return back to beginning
             self.log_maintenance_time()
             return
@@ -228,7 +226,7 @@ class Strategy(BaseStrategy):
 
         # Maintain the history of free balances after maintenance runs.
         # Save exactly key values instead of full key because it may be modified later on.
-        self.refresh_balances()
+        self.refresh_balances(total_balances=False)
         self.base_balance_history.append(self.base_balance['amount'])
         self.quote_balance_history.append(self.quote_balance['amount'])
         if len(self.base_balance_history) > 3:
@@ -311,8 +309,10 @@ class Strategy(BaseStrategy):
         delta = datetime.now() - self.start
         self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
 
-    def refresh_balances(self):
+    def refresh_balances(self, total_balances=True, use_cached_orders=False):
         """ This function is used to refresh account balances
+            :param bool | total_balances: refresh total balance or skip it
+            :param bool | use_cached_orders: when calculating orders balance, use cached orders from self.cached_orders
         """
         # Get current account balances
         account_balances = self.total_balance(order_ids=[], return_asset=True)
@@ -338,8 +338,15 @@ class Strategy(BaseStrategy):
         elif self.fee_asset['id'] == self.market['quote']['id']:
             self.quote_balance['amount'] = self.quote_balance['amount'] - fee_reserve
 
+        if not total_balances:
+            return
+
         # Balance per asset from orders
-        order_ids = [order['id'] for order in self.orders]
+        if use_cached_orders and self.cached_orders:
+            orders = self.cached_orders
+        else:
+            orders = self.orders
+        order_ids = [order['id'] for order in orders]
         orders_balance = self.orders_balance(order_ids)
 
         # Total balance per asset (orders balance and available balance)
@@ -350,6 +357,7 @@ class Strategy(BaseStrategy):
         """ Updates buy and sell orders
         """
         orders = self.orders
+        self.cached_orders = orders
 
         # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
         self.buy_orders = self.get_buy_orders('DESC', orders)
@@ -379,6 +387,8 @@ class Strategy(BaseStrategy):
         if orders_to_cancel:
             # We are trying to cancel all orders in one try
             success = self.cancel(orders_to_cancel, batch_only=True)
+            # Refresh orders to prevent orders outside boundaries being in the future comparisons
+            self.refresh_orders()
             # Batch cancel failed, repeat cancelling only one order
             if success:
                 return True
@@ -555,7 +565,8 @@ class Strategy(BaseStrategy):
                     elif asset == 'quote':
                         price = closest_own_order['price'] ** -1
                         self.market_sell(closest_own_order['base']['amount'], price)
-                    self.refresh_balances()
+                    if self.returnOrderId:
+                        self.refresh_balances(total_balances=False)
                 else:
                     self.log.debug('Not replacing partially filled order because there is not enough funds')
         else:
@@ -567,8 +578,9 @@ class Strategy(BaseStrategy):
             elif asset == 'quote':
                 self.place_highest_sell_order(asset_balance)
 
-        # Get latest orders
-        self.refresh_orders()
+        # Get latest orders only when we are not bundling operations
+        if self.returnOrderId:
+            self.refresh_orders()
 
     def increase_order_sizes(self, asset, asset_balance, orders):
         """ Checks which order should be increased in size and replaces it
