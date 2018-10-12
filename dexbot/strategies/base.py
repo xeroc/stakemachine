@@ -244,12 +244,6 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             pass
 
     def _cancel_orders(self, orders):
-        """
-
-            :param orders:
-            :return:
-        """
-        # Todo: Add documentation
         try:
             self.retry_action(
                 self.bitshares.cancel,
@@ -315,14 +309,6 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         return balance
 
     def calculate_order_data(self, order, amount, price):
-        """
-
-            :param order:
-            :param amount:
-            :param price:
-            :return:
-        """
-        # Todo: Add documentation
         quote_asset = Amount(amount, self.market['quote']['symbol'])
         order['quote'] = quote_asset
         order['price'] = price
