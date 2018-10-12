@@ -20,26 +20,17 @@
       <string/>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_15">
-      <property name="spacing">
-       <number>0</number>
-      </property>
-      <property name="leftMargin">
-       <number>0</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>0</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
       <item>
        <widget class="QPlainTextEdit" name="text"/>
       </item>
       <item>
        <widget class="QLabel" name="status_label">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: red;</string>
+        </property>
         <property name="text">
          <string/>
         </property>
