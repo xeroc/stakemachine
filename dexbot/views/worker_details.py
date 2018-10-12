@@ -55,18 +55,14 @@ class WorkerDetailsView(QtWidgets.QDialog, Ui_details_dialog, Ui_Graph_Tab, Ui_T
 
             self.tabs_widget.addTab(widget, detail.name)
 
-    @staticmethod
-    def add_graph_tab(detail, widget):
+    def add_graph_tab(self, detail, widget):
         tab = Ui_Graph_Tab()
         tab.setupUi(widget)
         tab.graph_wrap.setTitle(detail.title)
 
-        # Get image path
-        directory = get_user_data_directory()
-        file = os.path.join(directory, 'graphs', detail.file)
-
-        # Fixme: If there is better way to print an image and scale it, fix this
-        tab.graph.setHtml('<img src=\'{}\' width="50%" height="50%"/>'.format(file))
+        if detail.file:
+            file = os.path.join(get_user_data_directory(), 'graphs', detail.file)
+            tab.table = self.controller.add_graph(tab, file)
 
         return widget
 
@@ -77,9 +73,7 @@ class WorkerDetailsView(QtWidgets.QDialog, Ui_details_dialog, Ui_Graph_Tab, Ui_T
 
         if detail.file:
             file = os.path.join(get_user_data_directory(), 'data', detail.file)
-            tab.table = self.controller.populate_table_from_csv(tab.table, file)
-        else:
-            tab.text.setText('File {} not found'.format(detail.file))
+            tab.table = self.controller.populate_table_from_csv(tab, file)
 
         return widget
 
@@ -91,7 +85,5 @@ class WorkerDetailsView(QtWidgets.QDialog, Ui_details_dialog, Ui_Graph_Tab, Ui_T
         if detail.file:
             file = os.path.join(get_user_data_directory(), 'logs', detail.file)
             tab.text = self.controller.populate_text_from_file(tab, file)
-        else:
-            tab.text.setText('File {} not found'.format(detail.file))
 
         return widget

@@ -1,4 +1,5 @@
 import csv
+import os
 
 from PyQt5.QtWidgets import QTableWidgetItem
 from PyQt5.QtGui import QTextCursor
@@ -30,17 +31,26 @@ class WorkerDetailsController:
         self.view.market.setText(self.config.get('market'))
         self.view.fee_asset.setText(self.config.get('fee_asset'))
 
-    @staticmethod
-    def populate_table_from_csv(table, file, delimiter=';', first_item_header=True):
+    def add_graph(self, tab, file):
+        # Fixme: If there is better way to print an image and scale it, fix this
+        if os.path.isfile(file):
+            tab.graph.setHtml('<img src=\'{}\'/>'.format(file))
+            self.status_file_loaded(tab, file)
+        else:
+            self.status_file_not_found(tab, file)
+
+        return tab.graph
+
+    def populate_table_from_csv(self, tab, file, delimiter=';', first_item_header=True):
         try:
             with open(file, 'r') as csv_file:
                 file_reader = csv.reader(csv_file, delimiter=delimiter)
                 rows = list(file_reader)
         except FileNotFoundError:
-            print('File {} not found'.format(file))
+            self.status_file_not_found(tab, file)
             return
 
-        table.setColumnCount(len(rows[0]))
+        tab.table.setColumnCount(len(rows[0]))
 
         # Set headers
         if first_item_header:
@@ -48,24 +58,36 @@ class WorkerDetailsController:
             for header_index, header in enumerate(headers):
                 item = QTableWidgetItem()
                 item.setText(header)
-                table.setHorizontalHeaderItem(header_index, item)
+                tab.table.setHorizontalHeaderItem(header_index, item)
 
         # Set rows data
-        table.setRowCount(len(rows))
+        tab.table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
             for column_index, column in enumerate(row):
                 item = QTableWidgetItem()
                 item.setText(column)
-                table.setItem(row_index, column_index, item)
+                tab.table.setItem(row_index, column_index, item)
 
-        return table
+        self.status_file_loaded(tab, file)
 
-    @staticmethod
-    def populate_text_from_file(tab, file):
+        return tab.table
+
+    def populate_text_from_file(self, tab, file):
         try:
             tab.text.setPlainText(open(file).read())
             tab.text.moveCursor(QTextCursor.End)
-
-            return tab
+            self.status_file_loaded(tab, file)
+            return tab.text
         except FileNotFoundError:
-            tab.status_label.setText('File \'{}\' not found'.format(file))
+            self.status_file_not_found(tab, file)
+            return
+
+    @staticmethod
+    def status_file_not_found(tab, file):
+        tab.status_label.setStyleSheet('color: red;')
+        return tab.status_label.setText('File \'{}\' not found'.format(file))
+
+    @staticmethod
+    def status_file_loaded(tab, file):
+        tab.status_label.setStyleSheet('')
+        return tab.status_label.setText('File \'{}\' loaded'.format(file))
