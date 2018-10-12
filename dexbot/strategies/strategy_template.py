@@ -2,7 +2,7 @@
 import math
 
 # Project imports
-from dexbot.strategies.base import StrategyBase, ConfigElement
+from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement
 from dexbot.qt_queue.idle_queue import idle_add
 
 # Third party imports
@@ -59,6 +59,21 @@ class Strategy(StrategyBase):
             ConfigElement('upper_bound', 'float', 10, 'Upper bound',
                           'The top price in the range',
                           (0, 10000000, 8, '')),
+        ]
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        """ This function defines the tabs for detailed view of the worker. Further documentation is found in base.py
+
+            :param include_default_tabs: If default tabs are included as well
+            :return: List of DetailElement(s)
+
+            NOTE: Add files to user data folders to see how they behave as an example.
+        """
+        return StrategyBase.configure_details(include_default_tabs) + [
+            DetailElement('graph', 'Graph', 'Graph', 'graph.jpg'),
+            DetailElement('table', 'Orders', 'Data from csv file', 'example.csv'),
+            DetailElement('text', 'Log', 'Log data', 'example.log')
         ]
 
     def __init__(self, *args, **kwargs):
