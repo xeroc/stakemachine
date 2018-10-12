@@ -52,18 +52,21 @@ ConfigElement = collections.namedtuple('ConfigElement', 'key type default title 
         - Name: The name of the tab, shows at the top
         - Title: The title is shown inside the tab
         - File: Tabs can also show data from files, pass on the file name including the file extension
-                in strategy's `configure_details`. Below folders and representative file types that inside the folders.
+                in strategy's `configure_details`. 
                 
-                Location : File extensions
-                dexbot/graphs : .png, .jpg
-                dexbot/data : .csv
-                dexbot/logs : .log, .txt
-            
+                Below folders and representative file types that inside the folders.
+                
+                Location        File extensions
+                ---------------------------
+                dexbot/graphs   .png, .jpg
+                dexbot/data     .csv
+                dexbot/logs     .log, .txt (.csv, will print as raw data)
+                
           NOTE: To avoid conflicts with other custom strategies, when generating names for files, use slug or worker's 
-          name when generating files.
+          name when generating files or create custom folders. Add relative path to 'file' parameter if file is in
+          custom folder inside default folders. Like shown below:
           
-          Example of graph tab:
-          `DetailElement('graph', 'Profit', 'Profit for the past month', 'profit_graph.jpg')`
+          `DetailElement('log', 'Worker log', 'Log of worker's actions', 'my_custom_folder/example_worker.log')`
 """
 DetailElement = collections.namedtuple('DetailTab', 'type name title file')
 
