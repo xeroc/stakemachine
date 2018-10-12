@@ -1,5 +1,6 @@
 import time
 from threading import Thread
+import webbrowser
 
 from dexbot import __version__
 from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
@@ -34,6 +35,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
         self.settings_button.clicked.connect(lambda: self.handle_open_settings())
+        self.help_button.clicked.connect(lambda: self.handle_open_documentation())
 
         # Load worker widgets from config file
         workers = self.config.workers_data
@@ -98,6 +100,10 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
     def handle_open_settings(self):
         settings_dialog = SettingsView()
         return_value = settings_dialog.exec_()
+
+    @staticmethod
+    def handle_open_documentation():
+        webbrowser.open('https://github.com/Codaone/DEXBot/wiki')
 
     def set_worker_name(self, worker_name, value):
         self.worker_widgets[worker_name].set_worker_name(value)
