@@ -1,6 +1,7 @@
 {
     "files": [
         ["dexbot/views/ui/*.ui", "dexbot/views/ui/"],
+        ["dexbot/views/ui/tabs/*.ui", "dexbot/views/ui/tabs"],
         ["dexbot/views/ui/forms/*.ui", "dexbot/views/ui/forms"],
         ["dexbot/resources/*.qrc", "dexbot/resources/"]
     ],
