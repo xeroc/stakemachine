@@ -1232,9 +1232,6 @@ class Strategy(BaseStrategy):
             price = previous_price
             amount_quote = amount_base / price
 
-        precision = self.market['quote']['precision']
-        amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
-
         elif self.mode == 'valley' or self.mode == 'buy_slope':
             orders_count = 0
             while price >= self.lower_bound:
@@ -1249,6 +1246,9 @@ class Strategy(BaseStrategy):
                 allocation to not turn bootstrap off prematurely
             """
             amount_quote = amount_quote / (1 + self.increment / 100)
+
+        precision = self.market['quote']['precision']
+        amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
             self.market_buy(amount_quote, price)
