@@ -1103,7 +1103,7 @@ class Strategy(BaseStrategy):
         if price > self.upper_bound:
             self.log.info(
                 'Not placing highest sell order because price will exceed higher bound. Market center '
-                'price: {:.8f}, closest order price: {:.8f}, upper_bound: {}'
+                'price: {:.8f}, closest order price: {:.8f}, upper_bound: {:.8f}'
                     .format(market_center_price, price, self.upper_bound))
             return
 
@@ -1207,7 +1207,7 @@ class Strategy(BaseStrategy):
         if price < self.lower_bound:
             self.log.info(
                 'Not placing lowest buy order because price will exceed lower bound. Market center price: '
-                '{:.8f}, closest order price: {:.8f}, lower bound: {}'
+                '{:.8f}, closest order price: {:.8f}, lower bound: {:.8f}'
                     .format(market_center_price, price, self.lower_bound))
             return
 
