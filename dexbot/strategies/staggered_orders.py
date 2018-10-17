@@ -480,34 +480,7 @@ class Strategy(BaseStrategy):
                         which side order (buy or sell) should be placed first. So, when placing two closer orders from
                         both sides, spread will be no less than `target_spread - increment`, thus not making any loss.
                     """
-                    if opposite_balance <= opposite_threshold and self.bootstrapping and opposite_orders:
-                        """ During the bootstrap we're fist placing orders of some amounts, than we are reaching target
-                            spread and then turning bootstrap flag off and starting to allocate remaining balance by
-                            gradually increasing order sizes. After bootstrap is complete and following order size
-                            increase is complete too, we will not have available balance.
-
-                            When we have a different amount of assets (for example, 100 USD for base and 1 BTC for
-                            quote), the orders on the one size will be bigger than at the opposite.
-
-                            During the bootstrap we are not allowing to place orders with limited amount by opposite
-                            order. Bootstrap is designed to place orders of the same size. But, when the bootstrap is
-                            done, we are beginning to limit new orders by opposite side orders. We need this to stay in
-                            game when orders on the lower side gets filled. Because they are less than big-side orders,
-                            we cannot just place another big order on the big side. So we are limiting the big-side
-                            order to amount of a low-side one!
-
-                            Normally we are turning bootstrap off after initial allocation is done and we're beginning
-                            to distribute remaining funds. But, whether we will restart the bot after size increase was
-                            done, we have no chance to know if bootstrap was done or not. This is where this check comes
-                            in! The situation when the target spread is not reached, but we have some available balance
-                            on the one side and not have any free balance of the other side, clearly says to us that an
-                            order from lower-side was filled! Thus, we can safely turn bootstrap off and thus place an
-                            order limited in size by opposite-side order.
-                        """
-                        self.log.debug('Turning bootstrapping off: actual_spread > target_spread, and not having '
-                                       'opposite-side balance')
-                        self.bootstrapping = False
-                    elif (self.bootstrapping and
+                    if (self.bootstrapping and
                           self.base_balance_history[2] == self.base_balance_history[0] and
                           self.quote_balance_history[2] == self.quote_balance_history[0]):
                         # Turn off bootstrap mode whether we're didn't allocated assets during previous 3 maintenance
