@@ -1148,13 +1148,13 @@ class Strategy(BaseStrategy):
 
             Mountain:
             For asset to be allocated (base for buy and quote for sell orders)
-            First order = balance * increment
+            First order (furthest) = balance * increment
             Next order = previous order / (1 + increment)
             Repeat until last order.
 
             Neutral:
             For asset to be allocated (base for buy and quote for sell orders)
-            First order = balance * (sqrt(1 + increment) - 1)
+            First order (furthest) = balance * (sqrt(1 + increment) - 1)
             Next order = previous order / sqrt(1 + increment)
             Repeat until last order
 
