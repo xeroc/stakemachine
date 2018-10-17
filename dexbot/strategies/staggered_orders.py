@@ -2,6 +2,7 @@ import math
 from datetime import datetime, timedelta
 from bitshares.market import Market
 from bitshares.asset import Asset
+from bitshares.dex import Dex
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.strategies.base import StrategyBase, DetailElement
@@ -129,6 +130,9 @@ class Strategy(BaseStrategy):
         self.quote_balance_history = [1, 2, 3]
         self.base_balance_history = [1, 2, 3]
         self.cached_orders = None
+
+        # Dex instance used to get different fees for the market
+        self.dex = Dex(self.bitshares)
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
@@ -309,6 +313,25 @@ class Strategy(BaseStrategy):
         delta = datetime.now() - self.start
         self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
 
+    def get_order_creation_fee(self, fee_asset):
+        """ Returns the cost of creating an order in the asset specified
+
+            :param fee_asset: QUOTE, BASE, BTS, or any other
+            :return:
+        """
+        # Get fee
+        fees = self.dex.returnFees()
+        limit_order_create = fees['limit_order_create']
+
+        if fee_asset['id'] == '1.3.0':
+            # Fee asset is BTS, so no further calculations are needed
+            return limit_order_create['fee']
+        else:
+            # Determine how many fee_asset is needed for core-exchange
+            temp_market = Market(base=fee_asset, quote=Asset('1.3.0'))
+            core_exchange_rate = temp_market.ticker()['core_exchange_rate']
+            return limit_order_create['fee'] * core_exchange_rate['base']['amount']
+
     def refresh_balances(self, total_balances=True, use_cached_orders=False):
         """ This function is used to refresh account balances
             :param bool | total_balances: refresh total balance or skip it
@@ -320,17 +343,9 @@ class Strategy(BaseStrategy):
         self.base_balance = account_balances['base']
         self.quote_balance = account_balances['quote']
 
-        # Todo: order_creation_fee(BTS) = 0.01 for now. Use OperationsFee in the feature.
-        # Reserve fee for 200 orders
-        fee_reserve = 0.01 * 200
-        if self.fee_asset['id'] == '1.3.0':
-            # Fee asset is BTS, so no further calculations are needed
-            fee_reserve = fee_reserve
-        else:
-            # Determine how many fee_asset is needed for core-exchange
-            temp_market = Market(base=self.fee_asset, quote=Asset('1.3.0'))
-            core_exchange_rate = temp_market.ticker()['core_exchange_rate']
-            fee_reserve = fee_reserve * core_exchange_rate['base']['amount']
+        # Reserve fees for N orders
+        reserve_num_orders = 200
+        fee_reserve = reserve_num_orders * self.get_order_creation_fee(self.fee_asset)
 
         # Finally, reserve only required asset
         if self.fee_asset['id'] == self.market['base']['id']:
