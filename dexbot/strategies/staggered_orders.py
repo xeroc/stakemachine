@@ -1107,39 +1107,44 @@ class Strategy(BaseStrategy):
                     .format(market_center_price, price, self.upper_bound))
             return
 
+        if self.fee_asset['id'] == self.market['quote']['id']:
+            fee = self.get_order_creation_fee(self.fee_asset)
+            buy_orders_count = self.calc_buy_orders_count(price=price)
+            sell_orders_count = self.calc_sell_orders_count(price=price)
+            # Exclude all further fees from avail balance
+            quote_balance = quote_balance - fee * (buy_orders_count + sell_orders_count)
+
         amount_quote = 0
         previous_price = 0
         if self.mode == 'mountain' or self.mode == 'buy_slope':
             previous_price = price
             orders_sum = 0
             amount = quote_balance['amount'] * self.increment
-            previous_amount = amount
 
             while price <= self.upper_bound:
-                orders_sum += previous_amount
                 previous_price = price
                 previous_amount = amount
+                orders_sum += previous_amount
                 price = price * (1 + self.increment)
                 amount = amount / (1 + self.increment)
 
             price = previous_price
-            amount_quote = previous_amount * (self.quote_total_balance / orders_sum) * (1 + self.increment * 0.75)
+            amount_quote = previous_amount * (quote_balance['amount'] / orders_sum)
 
-        if self.mode == 'neutral':
+        elif self.mode == 'neutral':
             previous_price = price
             orders_sum = 0
-            amount = quote_balance['amount'] * math.sqrt(1 + self.increment)
-            previous_amount = amount
+            amount = quote_balance['amount'] * (math.sqrt(1 + self.increment) - 1)
 
             while price <= self.upper_bound:
-                orders_sum += previous_amount
                 previous_price = price
                 previous_amount = amount
-                price = price * math.sqrt(1 + self.increment)
+                orders_sum += previous_amount
+                price = price * (1 + self.increment)
                 amount = amount / math.sqrt(1 + self.increment)
 
             price = previous_price
-            amount_quote = previous_amount * (self.quote_total_balance / orders_sum) * (1 + self.increment * 0.75)
+            amount_quote = previous_amount * (quote_balance['amount'] / orders_sum)
 
         elif self.mode == 'valley' or self.mode == 'sell_slope':
             orders_count = 0
@@ -1149,9 +1154,7 @@ class Strategy(BaseStrategy):
                 price = price * (1 + self.increment)
 
             price = previous_price
-            amount_quote = quote_balance / orders_count
-            # Slightly reduce order amount to avoid rounding issues
-            amount_quote = amount_quote / (1 + self.increment / 100)
+            amount_quote = quote_balance['amount'] / orders_count
 
         precision = self.market['quote']['precision']
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
@@ -1211,39 +1214,44 @@ class Strategy(BaseStrategy):
                     .format(market_center_price, price, self.lower_bound))
             return
 
+        if self.fee_asset['id'] == self.market['base']['id']:
+            fee = self.get_order_creation_fee(self.fee_asset)
+            buy_orders_count = self.calc_buy_orders_count(price=price)
+            sell_orders_count = self.calc_sell_orders_count(price=price)
+            # Exclude all further fees from avail balance
+            base_balance = base_balance - fee * (buy_orders_count + sell_orders_count)
+
         amount_quote = 0
         previous_price = 0
         if self.mode == 'mountain' or self.mode == 'sell_slope':
             previous_price = price
             orders_sum = 0
             amount = base_balance['amount'] * self.increment
-            previous_amount = amount
 
             while price >= self.lower_bound:
-                orders_sum += previous_amount
                 previous_price = price
                 previous_amount = amount
+                orders_sum += previous_amount
                 price = price / (1 + self.increment)
                 amount = amount / (1 + self.increment)
 
-            amount_base = previous_amount * (self.base_total_balance / orders_sum) * (1 + self.increment * 0.75)
+            amount_base = previous_amount * (base_balance['amount'] / orders_sum)
             price = previous_price
             amount_quote = amount_base / price
 
         elif self.mode == 'neutral':
             previous_price = price
             orders_sum = 0
-            amount = base_balance['amount'] * sqrt(1 + self.increment)
-            previous_amount = amount
+            amount = base_balance['amount'] * (math.sqrt(1 + self.increment) - 1)
 
             while price >= self.lower_bound:
-                orders_sum += previous_amount
                 previous_price = price
                 previous_amount = amount
-                price = price / sqrt(1 + self.increment)
-                amount = amount / sqrt(1 + self.increment)
+                orders_sum += previous_amount
+                price = price / (1 + self.increment)
+                amount = amount / math.sqrt(1 + self.increment)
 
-            amount_base = previous_amount * (self.base_total_balance / orders_sum) * (1 + self.increment * 0.75)
+            amount_base = previous_amount * (base_balance['amount'] / orders_sum)
             price = previous_price
             amount_quote = amount_base / price
 
@@ -1255,12 +1263,8 @@ class Strategy(BaseStrategy):
                 orders_count += 1
 
             price = previous_price
-            amount_base = self.base_total_balance / orders_count
+            amount_base = base_balance['amount'] / orders_count
             amount_quote = amount_base / price
-            """ Slightly reduce order amount to avoid rounding issues AND to leave some free balance after initial
-                allocation to not turn bootstrap off prematurely
-            """
-            amount_quote = amount_quote / (1 + self.increment / 100)
 
         precision = self.market['quote']['precision']
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
@@ -1269,6 +1273,30 @@ class Strategy(BaseStrategy):
             self.market_buy(amount_quote, price)
         else:
             return {"amount": amount_quote, "price": price}
+
+    def calc_buy_orders_count(self, price=None):
+        """ Calculate number of buy orders to place between lower_bound and specified price
+
+            :param float | price: Highest buy price bound
+            :return int | count: Returns number of orders
+        """
+        orders_count = 0
+        while price >= self.lower_bound:
+            orders_count += 1
+            price = price / (1 + self.increment)
+        return orders_count
+
+    def calc_sell_orders_count(self, price=None):
+        """ Calculate number of sell orders to place between upper_bound and specified price
+
+            :param float | price: Lowest sell price bound
+            :return int | count: Returns number of orders
+        """
+        orders_count = 0
+        while price <= self.upper_bound:
+            orders_count += 1
+            price = price * (1 + self.increment)
+        return orders_count
 
     def error(self, *args, **kwargs):
         self.disabled = True
