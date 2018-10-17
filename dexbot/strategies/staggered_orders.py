@@ -21,7 +21,8 @@ class Strategy(BaseStrategy):
             - Sell orders same BASE
 
             Neutral:
-            - All orders lower_order_quote / sqrt(1 + increment)
+            - Buy orders lower_order_base * sqrt(1 + increment)
+            - Sell orders higher_order_quote * sqrt(1 + increment)
 
             Valley:
             - Buy orders same BASE
@@ -36,7 +37,7 @@ class Strategy(BaseStrategy):
         # Todo: - Add other modes
         modes = [
             ('mountain', 'Mountain'),
-            # ('neutral', 'Neutral'),
+            ('neutral', 'Neutral'),
             ('valley', 'Valley'),
             ('buy_slope', 'Buy Slope'),
             ('sell_slope', 'Sell Slope')
@@ -503,8 +504,10 @@ class Strategy(BaseStrategy):
                             self.log.debug('Limiting {} order by opposite order: {} {}'
                                            .format(order_type, own_asset_limit, symbol))
                         elif self.mode == 'neutral':
-                            # todo: implement
-                            pass
+                            opposite_asset_limit = closest_opposite_order['base']['amount'] * math.sqrt(1 + self.increment)
+                            own_asset_limit = None
+                            self.log.debug('Limiting {} order by opposite order: {} {}'.format(
+                                           order_type, opposite_asset_limit, symbol))
                         elif (self.mode == 'valley' or
                               (self.mode == 'buy_slope' and asset == 'quote') or
                               (self.mode == 'sell_slope' and asset == 'base')):
@@ -785,7 +788,6 @@ class Strategy(BaseStrategy):
                     return
 
         elif self.mode == 'neutral':
-            # todo: convert to neutral
             if asset == 'quote':
                 total_balance = self.quote_total_balance
                 order_type = 'sell'
@@ -793,81 +795,63 @@ class Strategy(BaseStrategy):
                 total_balance = self.base_total_balance
                 order_type = 'buy'
 
-            # Get orders and amounts to be compared. Note: orders are sorted from low price to high
+            orders_count = len(orders)
+            orders = list(reversed(orders))
+
             for order in orders:
                 order_index = orders.index(order)
                 order_amount = order['base']['amount']
 
-                # This check prevents choosing order with index lower than the list length
-                if order_index == 0:
-                    # In case checking the first order, use the same order, but increased by 1 increment
-                    # This allows our closest order amount exceed highest opposite-side order amount
-                    closer_order = order
-                    closer_bound = closer_order['base']['amount'] * (1 + self.increment)
+                if order_index + 1 < orders_count:
+                    # Closer order is an order which one-step closer to the center
+                    closer_order = orders[order_index + 1]
+                    closer_order_bound = closer_order['base']['amount'] / math.sqrt(1 + self.increment)
                 else:
-                    closer_order = orders[order_index - 1]
-                    closer_bound = closer_order['base']['amount']
+                    closer_order_bound = order_amount * math.sqrt(1 + self.increment)
 
-                # This check prevents choosing order with index higher than the list length
-                if order_index + 1 < len(orders):
-                    # Current order is a not furthest order
-                    further_order = orders[order_index + 1]
-                    is_least_order = False
-                else:
-                    # Current order is furthest order
-                    further_order = orders[order_index]
-                    is_least_order = True
+                    new_orders_sum = 0
+                    amount = order_amount
+                    for o in orders:
+                        new_orders_sum += amount
+                        amount = amount / math.sqrt(1 + self.increment)
+                    new_amount = order_amount * (total_balance / new_orders_sum)
 
-                further_bound = further_order['base']['amount'] * (1 + self.increment)
+                    if new_amount > closer_order_bound:
+                        # Maximize order up to max possible amount if we can
+                        closer_order_bound = new_amount
 
-                if (further_bound > order_amount * (1 + self.increment / 10) < closer_bound and
-                        further_bound - order_amount >= order_amount * self.increment / 2):
-                    # Calculate new order size and place the order to the market
-                    new_order_amount = further_bound
+                self.log.debug('order amount: {:.8f}, closer_order_bound: {:.8f}'.format(order_amount, closer_order_bound))
+                self.log.debug('diff: {:.8f}, half of increase: {:.8f}'.format(closer_order_bound - order_amount, order_amount * (math.sqrt(1 + self.increment) - 1) / 2))
 
-                    if is_least_order:
-                        new_orders_sum = 0
-                        amount = order_amount
-                        for o in orders:
-                            amount = amount * (1 + self.increment)
-                            new_orders_sum += amount
-                        # To reduce allocation rounds, increase furthest order more
-                        new_order_amount = order_amount * (total_balance / new_orders_sum) \
-                            * (1 + self.increment * 0.75)
+                if (order_amount * (1 + self.increment / 10) < closer_order_bound and
+                        closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
 
-                        if new_order_amount < closer_bound:
-                            """ This is for situations when calculated new_order_amount is not big enough to
-                                allocate all funds. Use partial-increment increase, so we'll got at least one full
-                                increase round.  Whether we will just use `new_order_amount = further_bound`, we will
-                                get less than one full allocation round, thus leaving closest-to-center order not
-                                increased.
-                            """
-                            new_order_amount = closer_bound / (1 + self.increment * 0.2)
+                    amount_base = closer_order_bound
 
-                    # Limit sell order to available balance
-                    if asset_balance < new_order_amount - order_amount:
-                        new_order_amount = order_amount + asset_balance['amount']
-                        self.log.info('Limiting new {} order to avail asset balance: {:.8f} {}'
-                                      .format(order_type, new_order_amount, asset_balance['symbol']))
-                    quote_amount = 0
+                    # Limit order to available balance
+                    if asset_balance < amount_base - order_amount:
+                        amount_base = order_amount + asset_balance['amount']
+                        self.log.info('Limiting new order to avail asset balance: {:.8f} {}'
+                                      .format(amount_base, asset_balance['symbol']))
+
                     price = 0
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
-                        quote_amount = new_order_amount
                     elif asset == 'base':
                         price = order['price']
-                        quote_amount = new_order_amount / price
-
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
+                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {:.8f}, price: {:.8f}'
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
+
                     if asset == 'quote':
-                        self.market_sell(quote_amount, price)
+                        self.market_sell(amount_base, price)
                     elif asset == 'base':
-                        self.market_buy(quote_amount, price)
-                    # Only one increase at a time. This prevents running more than one increment round simultaneously
+                        amount_quote = amount_base / price
+                        self.market_buy(amount_quote, price)
+                    # One increase at a time. This prevents running more than one increment round simultaneously.
                     return
+
         return None
 
     def check_partial_fill(self, order):
@@ -947,7 +931,8 @@ class Strategy(BaseStrategy):
             own_asset_amount = order['base']['amount']
             opposite_asset_amount = own_asset_amount / price
         elif self.mode == 'neutral':
-            # todo: implement
+            own_asset_amount = order['base']['amount'] * math.sqrt(1 + self.increment)
+            opposite_asset_amount = own_asset_amount / price
 
         # Apply limits. Limit order only whether passed limit is less than expected order size
         if own_asset_limit and own_asset_limit < own_asset_amount:
@@ -1021,10 +1006,11 @@ class Strategy(BaseStrategy):
         if self.mode == 'mountain' or self.mode == 'buy_slope':
             opposite_asset_amount = order['quote']['amount']
             own_asset_amount = opposite_asset_amount * price
-        if self.mode == 'neutral':
-            # todo: implement
         elif self.mode == 'valley' or self.mode == 'buy_slope':
             own_asset_amount = order['base']['amount']
+            opposite_asset_amount = own_asset_amount / price
+        elif self.mode == 'neutral':
+            own_asset_amount = order['base']['amount'] / math.sqrt(1 + self.increment)
             opposite_asset_amount = own_asset_amount / price
 
         limiter = 0
