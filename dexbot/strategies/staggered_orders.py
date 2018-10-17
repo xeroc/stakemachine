@@ -1262,7 +1262,7 @@ class Strategy(BaseStrategy):
         else:
             return {"amount": amount_quote, "price": price}
 
-    def calc_buy_orders_count(self, price=None):
+    def calc_buy_orders_count(self, price):
         """ Calculate number of buy orders to place between lower_bound and specified price
 
             :param float | price: Highest buy price bound
@@ -1274,7 +1274,7 @@ class Strategy(BaseStrategy):
             price = price / (1 + self.increment)
         return orders_count
 
-    def calc_sell_orders_count(self, price=None):
+    def calc_sell_orders_count(self, price):
         """ Calculate number of sell orders to place between upper_bound and specified price
 
             :param float | price: Lowest sell price bound
