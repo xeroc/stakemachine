@@ -934,6 +934,11 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             # We are using direct rpc call here because passing an Order object to self.get_updated_limit_order() give us
             # weird error "Object of type 'BitShares' is not JSON serializable"
             order = self.bitshares.rpc.get_objects([order_id])[0]
+
+        # Do not try to continue whether there is no order in the blockchain
+        if not order:
+            return None
+
         updated_order = self.get_updated_limit_order(order)
         return Order(updated_order, bitshares_instance=self.bitshares)
 
