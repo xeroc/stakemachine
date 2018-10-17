@@ -99,6 +99,7 @@ class Strategy(BaseStrategy):
         self.increment = self.worker['increment'] / 100
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
+        # This fill threshold prevents too often orders replacements draining fee_asset
         self.partial_fill_threshold = self.increment / 10
         self.is_instant_fill_enabled = self.worker.get('instant_fill', True)
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
@@ -549,20 +550,7 @@ class Strategy(BaseStrategy):
                             self.log.debug('Placing further order than current furthest {} order'.format(order_type))
                             self.place_further_order(asset, furthest_own_order, allow_partial=True)
             else:
-                # Make sure we have enough balance to replace partially filled order
-                if asset_balance + closest_own_order['for_sale']['amount'] >= closest_own_order['base']['amount']:
-                    # Cancel closest order and immediately replace it with new one.
-                    self.log.info('Replacing partially filled {} order'.format(order_type))
-                    self.cancel(closest_own_order)
-                    if asset == 'base':
-                        self.market_buy(closest_own_order['quote']['amount'], closest_own_order['price'])
-                    elif asset == 'quote':
-                        price = closest_own_order['price'] ** -1
-                        self.market_sell(closest_own_order['base']['amount'], price)
-                    if self.returnOrderId:
-                        self.refresh_balances(total_balances=False)
-                else:
-                    self.log.debug('Not replacing partially filled order because there is not enough funds')
+                self.replace_partially_filled_order(closest_own_order)
         else:
             # Place first buy order as close to the lower bound as possible
             self.bootstrapping = True
@@ -608,6 +596,12 @@ class Strategy(BaseStrategy):
         """
         total_balance = 0
         order_type = ''
+
+        # First of all, make sure all orders are not partially filled
+        for order in orders:
+            if not self.check_partial_fill(order, fill_threshold=0):
+                self.replace_partially_filled_order(order)
+                return
 
         # Mountain mode:
         if (self.mode == 'mountain' or
@@ -854,21 +848,56 @@ class Strategy(BaseStrategy):
 
         return None
 
-    def check_partial_fill(self, order):
+    def check_partial_fill(self, order, fill_threshold=None):
         """ Checks whether order was partially filled it needs to be replaced
 
-            :param order: Order closest to the center price from buy or sell side
+            :param dict | order: Order closest to the center price from buy or sell side
+            :param float | fill_threshold: Order fill threshold, relative
             :return: bool | True = Order is correct size or within the threshold
                             False = Order is not right size
         """
+        if fill_threshold == None:
+            fill_threshold = self.partial_fill_threshold
+
         if order['for_sale']['amount'] != order['base']['amount']:
             diff_abs = order['base']['amount'] - order['for_sale']['amount']
             diff_rel = diff_abs / order['base']['amount']
-            if diff_rel >= self.partial_fill_threshold:
+            if diff_rel > fill_threshold:
                 self.log.debug('Partially filled order: {} @ {:.8f}, filled: {:.2%}'.format(
                                order['base']['amount'], order['price'], diff_rel))
                 return False
         return True
+
+    def replace_partially_filled_order(self, order):
+        """ Replace partially filled order
+
+            :param order: Order instance
+        """
+        order_type = ''
+        asset_balance = None
+
+        if order['base']['symbol'] == self.market['base']['symbol']:
+            asset_balance = self.base_balance
+            order_type = 'buy'
+        else:
+            asset_balance = self.quote_balance
+            order_type = 'sell'
+
+        # Make sure we have enough balance to replace partially filled order
+        if asset_balance + order['for_sale']['amount'] >= order['base']['amount']:
+            # Cancel closest order and immediately replace it with new one.
+            self.log.info('Replacing partially filled {} order'.format(order_type))
+            self.cancel(order)
+            if order_type == 'buy':
+                self.market_buy(order['quote']['amount'], order['price'])
+            elif order_type == 'sell':
+                price = order['price'] ** -1
+                self.market_sell(order['base']['amount'], price)
+            if self.returnOrderId:
+                self.refresh_balances(total_balances=False)
+        else:
+            self.log.debug('Not replacing partially filled {} order because there is not enough funds'
+                           .format(order_type))
 
     def place_closer_order(self, asset, order, place_order=True, allow_partial=False, own_asset_limit=None,
                            opposite_asset_limit=None):
