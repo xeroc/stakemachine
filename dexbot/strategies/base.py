@@ -248,6 +248,9 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             # If there is no fee asset, use BTS
             self.fee_asset = Asset('1.3.0')
 
+        # CER cache
+        self.core_exchange_rate = None
+
         # Ticker
         self.ticker = self.market.ticker
 
@@ -818,9 +821,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         # Get fee
         fees = self.dex.returnFees()
         limit_order_cancel = fees['limit_order_cancel']
-
-        # Convert fee
-        return self.convert_asset(limit_order_cancel['fee'], 'BTS', fee_asset)
+        return self.convert_fee(limit_order_cancel['fee'], fee_asset)
 
     def get_order_creation_fee(self, fee_asset):
         """ Returns the cost of creating an order in the asset specified
@@ -831,9 +832,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         # Get fee
         fees = self.dex.returnFees()
         limit_order_create = fees['limit_order_create']
-
-        # Convert fee
-        return self.convert_asset(limit_order_create['fee'], 'BTS', fee_asset)
+        return self.convert_fee(limit_order_create['fee'], fee_asset)
 
     def filter_buy_orders(self, orders, sort=None):
         """ Return own buy orders from list of orders. Can be used to pick buy orders from a list
@@ -1258,6 +1257,26 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         precision = market['base']['precision']
 
         return truncate((from_value * latest_price), precision)
+
+    def convert_fee(self, fee_amount, fee_asset):
+        """ Convert fee amount in BTS to fee in fee_asset
+
+            :param float | fee_amount: fee amount paid in BTS
+            :param Asset | fee_asset: fee asset to pay fee in
+            :return: float | amount of fee_asset to pay fee
+        """
+        if isinstance(fee_asset, str):
+            fee_asset = Asset(fee_asset)
+
+        if fee_asset['id'] == '1.3.0':
+            # Fee asset is BTS, so no further calculations are needed
+            return fee_amount
+        else:
+            if not self.core_exchange_rate:
+                # Determine how many fee_asset is needed for core-exchange
+                temp_market = Market(base=fee_asset, quote=Asset('1.3.0'))
+                self.core_exchange_rate = temp_market.ticker()['core_exchange_rate']
+            return fee_amount * self.core_exchange_rate['base']['amount']
 
     @staticmethod
     def get_order(order_id, return_none=True):

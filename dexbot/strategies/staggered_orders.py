@@ -315,25 +315,6 @@ class Strategy(BaseStrategy):
         delta = datetime.now() - self.start
         self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
 
-    def get_order_creation_fee(self, fee_asset):
-        """ Returns the cost of creating an order in the asset specified
-
-            :param fee_asset: QUOTE, BASE, BTS, or any other
-            :return:
-        """
-        # Get fee
-        fees = self.dex.returnFees()
-        limit_order_create = fees['limit_order_create']
-
-        if fee_asset['id'] == '1.3.0':
-            # Fee asset is BTS, so no further calculations are needed
-            return limit_order_create['fee']
-        else:
-            # Determine how many fee_asset is needed for core-exchange
-            temp_market = Market(base=fee_asset, quote=Asset('1.3.0'))
-            core_exchange_rate = temp_market.ticker()['core_exchange_rate']
-            return limit_order_create['fee'] * core_exchange_rate['base']['amount']
-
     def refresh_balances(self, total_balances=True, use_cached_orders=False):
         """ This function is used to refresh account balances
             :param bool | total_balances: refresh total balance or skip it
