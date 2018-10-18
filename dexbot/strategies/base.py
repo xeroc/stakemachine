@@ -919,7 +919,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
     def get_updated_order(self, order_id):
         """ Tries to get the updated order from the API. Returns None if the order doesn't exist
 
-            :param str|dict order: blockchain Order object or id of the order
+            :param str|dict order_id: blockchain Order object or id of the order
         """
         if isinstance(order_id, dict):
             order_id = order_id['id']
@@ -931,8 +931,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                 order = limit_order
                 break
         else:
-            # We are using direct rpc call here because passing an Order object to self.get_updated_limit_order() give us
-            # weird error "Object of type 'BitShares' is not JSON serializable"
+            # We are using direct rpc call here because passing an Order object to self.get_updated_limit_order() give
+            # us weird error "Object of type 'BitShares' is not JSON serializable"
             order = self.bitshares.rpc.get_objects([order_id])[0]
 
         # Do not try to continue whether there is no order in the blockchain
