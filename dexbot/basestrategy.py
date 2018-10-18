@@ -401,6 +401,10 @@ class BaseStrategy(Storage, StateMachine, Events):
         else:
             return order
 
+        # Do not try to continue whether there is no order in the blockchain
+        if not order:
+            return None
+
         order = self.get_updated_limit_order(order)
         return Order(order, bitshares_instance=self.bitshares)
 
