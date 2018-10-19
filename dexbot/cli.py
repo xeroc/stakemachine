@@ -6,7 +6,7 @@ import signal
 import sys
 
 from dexbot.config import Config, DEFAULT_CONFIG_FILE
-from dexbot.cli_conf import *
+from dexbot.cli_conf import SYSTEMD_SERVICE_NAME, get_whiptail, setup_systemd
 from dexbot.helper import initialize_orders_log, initialize_data_folders
 from dexbot.ui import (
     verbose,
