@@ -449,8 +449,8 @@ class Strategy(BaseStrategy):
                         both sides, spread will be no less than `target_spread - increment`, thus not making any loss.
                     """
                     if (self.bootstrapping and
-                          self.base_balance_history[2] == self.base_balance_history[0] and
-                          self.quote_balance_history[2] == self.quote_balance_history[0]):
+                            self.base_balance_history[2] == self.base_balance_history[0] and
+                            self.quote_balance_history[2] == self.quote_balance_history[0]):
                         # Turn off bootstrap mode whether we're didn't allocated assets during previous 3 maintenance
                         self.log.debug('Turning bootstrapping off: actual_spread > target_spread, we have free '
                                        'balances and cannot allocate them normally 3 times in a row')
@@ -471,7 +471,8 @@ class Strategy(BaseStrategy):
                             self.log.debug('Limiting {} order by opposite order: {} {}'
                                            .format(order_type, own_asset_limit, symbol))
                         elif self.mode == 'neutral':
-                            opposite_asset_limit = closest_opposite_order['base']['amount'] * math.sqrt(1 + self.increment)
+                            opposite_asset_limit = closest_opposite_order['base']['amount'] * \
+                                                   math.sqrt(1 + self.increment)
                             own_asset_limit = None
                             self.log.debug('Limiting {} order by opposite order: {} {}'.format(
                                            order_type, opposite_asset_limit, symbol))
@@ -780,8 +781,11 @@ class Strategy(BaseStrategy):
                         # Maximize order up to max possible amount if we can
                         closer_order_bound = new_amount
 
-                self.log.debug('order amount: {:.8f}, closer_order_bound: {:.8f}'.format(order_amount, closer_order_bound))
-                self.log.debug('diff: {:.8f}, half of increase: {:.8f}'.format(closer_order_bound - order_amount, order_amount * (math.sqrt(1 + self.increment) - 1) / 2))
+                self.log.debug('order amount: {:.8f}, closer_order_bound: {:.8f}'
+                               .format(order_amount, closer_order_bound))
+                self.log.debug('diff: {:.8f}, half of increase: {:.8f}'
+                               .format(closer_order_bound - order_amount,
+                                       order_amount * (math.sqrt(1 + self.increment) - 1) / 2))
 
                 if (order_amount * (1 + self.increment / 10) < closer_order_bound and
                         closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
@@ -800,7 +804,8 @@ class Strategy(BaseStrategy):
                         price = (order['price'] ** -1)
                     elif asset == 'base':
                         price = order['price']
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {:.8f}, price: {:.8f}'
+                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}'
+                                   ', amount: {:.8f}, price: {:.8f}'
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
 
