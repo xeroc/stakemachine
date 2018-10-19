@@ -208,19 +208,13 @@ class Strategy(BaseStrategy):
 
         # BASE asset check
         if self.base_balance > self.base_asset_threshold:
-            base_allocated = False
             # Allocate available BASE funds
             self.allocate_asset('base', self.base_balance)
-        else:
-            base_allocated = True
 
         # QUOTE asset check
         if self.quote_balance > self.quote_asset_threshold:
-            quote_allocated = False
             # Allocate available QUOTE funds
             self.allocate_asset('quote', self.quote_balance)
-        else:
-            quote_allocated = True
 
         # Send pending operations
         if not self.bitshares.txbuffer.is_empty():
@@ -405,8 +399,6 @@ class Strategy(BaseStrategy):
         closest_opposite_order = None
         opposite_asset_limit = None
         opposite_orders = []
-        opposite_balance = None
-        opposite_threshold = 0.0
         order_type = ''
         own_asset_limit = None
         own_orders = []
@@ -418,16 +410,12 @@ class Strategy(BaseStrategy):
             symbol = self.base_balance['symbol']
             own_orders = self.buy_orders
             opposite_orders = self.sell_orders
-            opposite_balance = self.quote_balance
-            opposite_threshold = self.quote_asset_threshold
             own_threshold = self.base_asset_threshold
         elif asset == 'quote':
             order_type = 'sell'
             symbol = self.quote_balance['symbol']
             own_orders = self.sell_orders
             opposite_orders = self.buy_orders
-            opposite_balance = self.base_balance
-            opposite_threshold = self.base_asset_threshold
             own_threshold = self.quote_asset_threshold
 
         if own_orders:
@@ -851,8 +839,6 @@ class Strategy(BaseStrategy):
 
             :param order: Order instance
         """
-        order_type = ''
-        asset_balance = None
 
         if order['base']['symbol'] == self.market['base']['symbol']:
             asset_balance = self.base_balance
