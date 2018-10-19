@@ -197,6 +197,9 @@ class BaseStrategy(Storage, StateMachine, Events):
         # buy/sell actions will return order id by default
         self.returnOrderId = 'head'
 
+        # CER cache
+        self.core_exchange_rate = None
+
         # A private logger that adds worker identify data to the LogRecord
         self.log = logging.LoggerAdapter(
             logging.getLogger('dexbot.per_worker'),
@@ -363,6 +366,28 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Sort orders by price
         return sorted(orders, key=lambda order: order['price'], reverse=reverse)
+
+    def get_order_cancellation_fee(self, fee_asset):
+        """ Returns the order cancellation fee in the specified asset.
+
+            :param string | fee_asset: Asset in which the fee is wanted
+            :return: Cancellation fee as fee asset
+        """
+        # Get fee
+        fees = self.dex.returnFees()
+        limit_order_cancel = fees['limit_order_cancel']
+        return self.convert_fee(limit_order_cancel['fee'], fee_asset)
+
+    def get_order_creation_fee(self, fee_asset):
+        """ Returns the cost of creating an order in the asset specified
+
+            :param fee_asset: QUOTE, BASE, BTS, or any other
+            :return:
+        """
+        # Get fee
+        fees = self.dex.returnFees()
+        limit_order_create = fees['limit_order_create']
+        return self.convert_fee(limit_order_create['fee'], fee_asset)
 
     @staticmethod
     def get_order(order_id, return_none=True):
@@ -755,6 +780,26 @@ class BaseStrategy(Storage, StateMachine, Events):
         ticker = market.ticker()
         latest_price = ticker.get('latest', {}).get('price', None)
         return from_value * latest_price
+
+    def convert_fee(self, fee_amount, fee_asset):
+        """ Convert fee amount in BTS to fee in fee_asset
+
+            :param float | fee_amount: fee amount paid in BTS
+            :param Asset | fee_asset: fee asset to pay fee in
+            :return: float | amount of fee_asset to pay fee
+        """
+        if isinstance(fee_asset, str):
+            fee_asset = Asset(fee_asset)
+
+        if fee_asset['id'] == '1.3.0':
+            # Fee asset is BTS, so no further calculations are needed
+            return fee_amount
+        else:
+            if not self.core_exchange_rate:
+                # Determine how many fee_asset is needed for core-exchange
+                temp_market = Market(base=fee_asset, quote=Asset('1.3.0'))
+                self.core_exchange_rate = temp_market.ticker()['core_exchange_rate']
+            return fee_amount * self.core_exchange_rate['base']['amount']
 
     def orders_balance(self, order_ids, return_asset=False):
         if not order_ids:
