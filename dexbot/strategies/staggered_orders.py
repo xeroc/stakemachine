@@ -1,7 +1,5 @@
 import math
 from datetime import datetime, timedelta
-from bitshares.market import Market
-from bitshares.asset import Asset
 from bitshares.dex import Dex
 
 from dexbot.basestrategy import BaseStrategy, ConfigElement
