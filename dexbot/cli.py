@@ -95,7 +95,7 @@ def run(ctx):
             # signal.signal(signal.SIGUSR1, lambda x, y: worker.do_next_tick(worker.reread_config))
         except ValueError:
             log.debug("Cannot set all signals -- not available on this platform")
-        if ctx.obj['systemd'] or ctx.obj['d']:
+        if ctx.obj['systemd']:
             try:
                 import sdnotify  # A soft dependency on sdnotify -- don't crash on non-systemd systems
                 n = sdnotify.SystemdNotifier()
