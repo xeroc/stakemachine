@@ -32,7 +32,6 @@ class Strategy(BaseStrategy):
             Sell slope:
             - All orders same QUOTE (profit made in BASE)
         """
-        # Todo: - Add other modes
         modes = [
             ('mountain', 'Mountain'),
             ('neutral', 'Neutral'),
