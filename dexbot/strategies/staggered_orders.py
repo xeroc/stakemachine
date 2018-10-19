@@ -827,7 +827,7 @@ class Strategy(BaseStrategy):
             :return: bool | True = Order is correct size or within the threshold
                             False = Order is not right size
         """
-        if fill_threshold == None:
+        if fill_threshold is None:
             fill_threshold = self.partial_fill_threshold
 
         if order['for_sale']['amount'] != order['base']['amount']:
