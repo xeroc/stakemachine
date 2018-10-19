@@ -1071,8 +1071,10 @@ class Strategy(BaseStrategy):
             # Exclude all further fees from avail balance
             quote_balance = quote_balance - fee * (buy_orders_count + sell_orders_count)
 
+        # Initialize local variables
         amount_quote = 0
         previous_price = 0
+        previous_amount = 0
         if self.mode == 'mountain' or self.mode == 'buy_slope':
             previous_price = price
             orders_sum = 0
@@ -1178,8 +1180,10 @@ class Strategy(BaseStrategy):
             # Exclude all further fees from avail balance
             base_balance = base_balance - fee * (buy_orders_count + sell_orders_count)
 
+        # Initialize local variables
         amount_quote = 0
         previous_price = 0
+        previous_amount = 0
         if self.mode == 'mountain' or self.mode == 'sell_slope':
             previous_price = price
             orders_sum = 0
