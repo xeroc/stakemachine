@@ -15,7 +15,7 @@ install_requires = [
     'sdnotify',
     'appdirs>=1.4.3',
     'pycryptodomex==3.6.4',
-    'websocket-client==0.53.0'
+    'websocket-client==0.48.0'
 ]
 
 
