@@ -7,8 +7,7 @@ matrix:
   - os: osx
     language: generic
     before_install:
-    - python --version
-    - brew upgrade python
+    - brew update
 install:
   - make install
 script:
