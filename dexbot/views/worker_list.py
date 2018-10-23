@@ -43,7 +43,6 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
             self.add_worker_widget(worker_name)
 
             # Limit the max amount of workers so that the performance isn't greatly affected
-            self.num_of_workers += 1
             if self.num_of_workers >= self.max_workers:
                 self.add_worker_button.setEnabled(False)
                 break
