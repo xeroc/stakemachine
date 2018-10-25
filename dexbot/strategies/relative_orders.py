@@ -119,6 +119,16 @@ class Strategy(StrategyBase):
             self.disabled = True
             return
 
+        # Check if market has center price when using dynamic center price
+        if self.is_center_price_dynamic:
+
+            # Try getting center price from the market
+            self.center_price = self.get_market_center_price(suppress_errors=True)
+
+            if self.center_price is None:
+                self.log.info('Waiting until market center price can be estimated')
+                return
+
         # Check old orders from previous run (from force-interruption) only whether we are not using
         # "Reset orders on center price change" option
         if self.is_reset_on_price_change:
