@@ -74,6 +74,13 @@ class Strategy(StrategyBase):
         self.error_onMarketUpdate = self.error
         self.error_onAccount = self.error
 
+        # Market status
+        self.market_center_price = self.get_market_center_price(suppress_errors=True)
+        self.empty_market = False
+
+        if not self.market_center_price:
+            self.empty_market = True
+
         # Worker parameters
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
         if self.is_center_price_dynamic:
@@ -120,14 +127,9 @@ class Strategy(StrategyBase):
             return
 
         # Check if market has center price when using dynamic center price
-        if self.is_center_price_dynamic:
-
-            # Try getting center price from the market
-            self.center_price = self.get_market_center_price(suppress_errors=True)
-
-            if self.center_price is None:
-                self.log.info('Waiting until market center price can be estimated')
-                return
+        if self.empty_market and (self.is_center_price_dynamic or self.dynamic_spread):
+            self.log.info('Market is empty and using dynamic market parameters. Waiting for market change...')
+            return
 
         # Check old orders from previous run (from force-interruption) only whether we are not using
         # "Reset orders on center price change" option
