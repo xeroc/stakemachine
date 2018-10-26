@@ -89,13 +89,15 @@ def process_config_element(elem, whiptail, config):
                     title, config.get(
                         elem.key, elem.default))
         config[elem.key] = txt
+
     if elem.type == "bool":
         value = config.get(elem.key, elem.default)
         value = 'yes' if value else 'no'
         config[elem.key] = whiptail.confirm(title, value)
+
     if elem.type in ("float", "int"):
-        txt = whiptail.prompt(title, str(config.get(elem.key, elem.default)))
         while True:
+            txt = whiptail.prompt(title, str(config.get(elem.key, elem.default)))
             try:
                 if elem.type == "int":
                     val = int(txt)
@@ -109,8 +111,8 @@ def process_config_element(elem, whiptail, config):
                     break
             except ValueError:
                 whiptail.alert("Not a valid value")
-            txt = whiptail.prompt(title, str(config.get(elem.key, elem.default)))
         config[elem.key] = val
+
     if elem.type == "choice":
         config[elem.key] = whiptail.radiolist(title, select_choice(
             config.get(elem.key, elem.default), elem.extra))
@@ -165,33 +167,56 @@ def setup_systemd(whiptail, config):
     config['systemd_status'] = 'enabled'
 
 
-def configure_worker(whiptail, worker):
-    default_strategy = worker.get('module', 'dexbot.strategies.relative_orders')
-    for i in STRATEGIES:
-        if default_strategy == i['class']:
-            default_strategy = i['tag']
+def configure_worker(whiptail, worker_config):
+    default_strategy = worker_config.get('module', 'dexbot.strategies.relative_orders')
+    strategy_list = []
 
-    worker['module'] = whiptail.radiolist(
-        "Choose a worker strategy", select_choice(
-            default_strategy, [(i['tag'], i['name']) for i in STRATEGIES]))
-    for i in STRATEGIES:
-        if i['tag'] == worker['module']:
-            worker['module'] = i['class']
+    for strategy in STRATEGIES:
+        if default_strategy == strategy['class']:
+            default_strategy = strategy['tag']
+
+        # Add strategy tag and name pairs to a list
+        strategy_list.append([strategy['tag'], strategy['name']])
+
+    worker_config['module'] = whiptail.radiolist(
+        "Choose a worker strategy",
+        select_choice(default_strategy, strategy_list)
+    )
+
+    for strategy in STRATEGIES:
+        if strategy['tag'] == worker_config['module']:
+            worker_config['module'] = strategy['class']
+
     # Import the strategy class but we don't __init__ it here
     strategy_class = getattr(
-        importlib.import_module(worker["module"]),
+        importlib.import_module(worker_config["module"]),
         'Strategy'
     )
+
+    # print(worker_config)
+
+    # if default_strategy != worker_config['module']:
+    from dexbot.strategies.base import StrategyBase
+
+    new_worker_config = {}
+
+    for config_item in StrategyBase.configure():
+        key = config_item[0]
+        new_worker_config[key] = worker_config[key]
+
+    print(new_worker_config)
+
     # Use class metadata for per-worker configuration
-    configs = strategy_class.configure()
-    if configs:
-        for c in configs:
-            process_config_element(c, whiptail, worker)
+    config_elems = strategy_class.configure()
+    if config_elems:
+        # Strategy options
+        for elem in config_elems:
+            process_config_element(elem, whiptail, worker_config)
     else:
         whiptail.alert(
             "This worker type does not have configuration information. "
             "You will have to check the worker code and add configuration values to config.yml if required")
-    return worker
+    return worker_config
 
 
 def configure_dexbot(config, ctx):
@@ -214,13 +239,13 @@ def configure_dexbot(config, ctx):
              ('CONF', 'Redo general config')])
 
         if action == 'EDIT':
-            worker_name = whiptail.menu("Select worker to edit", [(i, i) for i in workers])
+            worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
             config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name])
 
             strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
             strategy.clear_all_worker_data()
         elif action == 'DEL':
-            worker_name = whiptail.menu("Select worker to delete", [(i, i) for i in workers])
+            worker_name = whiptail.menu("Select worker to delete", [(index, index) for index in workers])
             del config['workers'][worker_name]
 
             strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
@@ -231,7 +256,7 @@ def configure_dexbot(config, ctx):
         elif action == 'CONF':
             choice = whiptail.node_radiolist(
                 msg="Choose node",
-                items=select_choice(config['node'][0], [(i, i) for i in config['node']])
+                items=select_choice(config['node'][0], [(index, index) for index in config['node']])
             )
             # Move selected node as first item in the config file's node list
             config['node'].remove(choice)
