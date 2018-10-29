@@ -6,6 +6,7 @@ import signal
 import sys
 
 from dexbot.config import Config, DEFAULT_CONFIG_FILE
+from dexbot.cli_conf import SYSTEMD_SERVICE_NAME, get_whiptail, setup_systemd
 from dexbot.helper import initialize_orders_log, initialize_data_folders
 from dexbot.ui import (
     verbose,
@@ -108,6 +109,24 @@ def run(ctx):
         if ctx.obj['pidfile']:
             helper.remove(ctx.obj['pidfile'])
 
+
+@main.command()
+@click.pass_context
+@configfile
+@chain
+@unlock
+def runservice(ctx):
+    """ Continuously run the worker as a service
+    """
+    if dexbot_service_running():
+        click.echo("Stopping dexbot daemon")
+        os.system('systemctl --user stop dexbot')
+
+    if not os.path.exists(SYSTEMD_SERVICE_NAME):
+        setup_systemd(get_whiptail('DEXBot configure'), {})
+
+    click.echo("Starting dexbot daemon")
+    os.system("systemctl --user start dexbot")
 
 @main.command()
 @click.pass_context

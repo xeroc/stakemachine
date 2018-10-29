@@ -1001,10 +1001,14 @@ class Strategy(BaseStrategy):
         # Calculate new order amounts depending on mode
         opposite_asset_amount = 0
         own_asset_amount = 0
-        if self.mode == 'mountain' or self.mode == 'buy_slope':
+        if (self.mode == 'mountain' or
+                (self.mode == 'buy_slope' and asset == 'quote') or
+                (self.mode == 'sell_slope' and asset == 'base')):
             opposite_asset_amount = order['quote']['amount']
             own_asset_amount = opposite_asset_amount * price
-        elif self.mode == 'valley' or self.mode == 'buy_slope':
+        elif (self.mode == 'valley' or
+              (self.mode == 'buy_slope' and asset == 'base') or
+              (self.mode == 'sell_slope' and asset == 'quote')):
             own_asset_amount = order['base']['amount']
             opposite_asset_amount = own_asset_amount / price
         elif self.mode == 'neutral':
