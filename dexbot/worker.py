@@ -179,13 +179,18 @@ class WorkerInfrastructure(threading.Thread):
 
     def stop(self, worker_name=None, pause=False):
         """ Used to stop the worker(s)
+
             :param str worker_name: name of the worker to stop
-            :param bool pause: optional argument which tells worker if it was
-                stopped or just paused
+            :param bool pause: optional argument which tells worker if it was stopped or just paused
         """
-        if worker_name and len(self.workers) > 1:
-            # Kill only the specified worker
-            self.remove_market(worker_name)
+        if worker_name:
+            try:
+                # Kill only the specified worker
+                self.remove_market(worker_name)
+            except KeyError:
+                # Worker was not found meaning it does not exist or it is paused already
+                return
+
             with self.config_lock:
                 account = self.config['workers'][worker_name]['account']
                 self.config['workers'].pop(worker_name)
@@ -194,14 +199,18 @@ class WorkerInfrastructure(threading.Thread):
             if pause:
                 self.workers[worker_name].pause()
             self.workers.pop(worker_name, None)
-            self.update_notify()
         else:
             # Kill all of the workers
             if pause:
                 for worker in self.workers:
                     self.workers[worker].pause()
-            if self.notify:
-                self.notify.websocket.close()
+
+        # Update other workers
+        if len(self.workers) > 0:
+            self.update_notify()
+        else:
+            # No workers left, close websocket
+            self.notify.websocket.close()
 
     def remove_worker(self, worker_name=None):
         if worker_name:
