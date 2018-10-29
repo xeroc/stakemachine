@@ -167,6 +167,13 @@ def setup_systemd(whiptail, config):
     config['systemd_status'] = 'enabled'
 
 
+def get_strategy_tag(strategy_class):
+    for strategy in STRATEGIES:
+        if strategy_class == strategy['class']:
+            return strategy['tag']
+    return None
+
+
 def configure_worker(whiptail, worker_config):
     default_strategy = worker_config.get('module', 'dexbot.strategies.relative_orders')
     strategy_list = []
@@ -193,18 +200,18 @@ def configure_worker(whiptail, worker_config):
         'Strategy'
     )
 
-    # print(worker_config)
+    # Check if strategy has changed
+    if default_strategy != get_strategy_tag(worker_config['module']):
+        new_worker_config = {}
 
-    # if default_strategy != worker_config['module']:
-    from dexbot.strategies.base import StrategyBase
+        # If strategy has changed, create new config where base elements stay the same
+        for config_item in StrategyBase.configure():
+            key = config_item[0]
+            new_worker_config[key] = worker_config[key]
 
-    new_worker_config = {}
-
-    for config_item in StrategyBase.configure():
-        key = config_item[0]
-        new_worker_config[key] = worker_config[key]
-
-    print(new_worker_config)
+        # Add module separately to the config
+        new_worker_config['module'] = worker_config['module']
+        worker_config = new_worker_config
 
     # Use class metadata for per-worker configuration
     config_elems = strategy_class.configure()
