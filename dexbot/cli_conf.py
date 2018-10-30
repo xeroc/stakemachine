@@ -175,6 +175,12 @@ def get_strategy_tag(strategy_class):
 
 
 def configure_worker(whiptail, worker_config):
+    # By default always editing
+    editing = True
+
+    if not worker_config:
+        editing = False
+
     default_strategy = worker_config.get('module', 'dexbot.strategies.relative_orders')
     strategy_list = []
 
@@ -185,6 +191,7 @@ def configure_worker(whiptail, worker_config):
         # Add strategy tag and name pairs to a list
         strategy_list.append([strategy['tag'], strategy['name']])
 
+    # Strategy selection
     worker_config['module'] = whiptail.radiolist(
         "Choose a worker strategy",
         select_choice(default_strategy, strategy_list)
@@ -200,8 +207,8 @@ def configure_worker(whiptail, worker_config):
         'Strategy'
     )
 
-    # Check if strategy has changed
-    if default_strategy != get_strategy_tag(worker_config['module']):
+    # Check if strategy has changed and editing existing worker
+    if editing and default_strategy != get_strategy_tag(worker_config['module']):
         new_worker_config = {}
 
         # If strategy has changed, create new config where base elements stay the same
