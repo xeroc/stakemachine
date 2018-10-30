@@ -3,3 +3,7 @@ pyqt-distutils==0.7.3
 pyinstaller==3.3.1
 click-datetime==0.2
 cryptography==2.3
+aiohttp==3.4.4
+requests>=2.20.0
+yarl==1.1.0
+ccxt==1.17.434
