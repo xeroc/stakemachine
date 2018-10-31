@@ -135,7 +135,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param return_base_config: bool:
             :return: Returns a list of config elements
         """
-
+        exchs = [('gecko', 'coingecko'), ('ccxt-kraken', 'kraken'), ('ccxt-bitfinex', 'bitfinex'), ('ccxt-gdax', 'gdax')]
+      
         # Common configs
         base_config = [
             ConfigElement('account', 'string', '', 'Account',
@@ -144,7 +145,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             ConfigElement('market', 'string', 'USD:BTS', 'Market',
                           'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
                           r'[A-Z\.]+[:\/][A-Z\.]+'),
-            ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
+            ConfigElement('external_center_price', 'bool', True, 
+                          'Use External center price (if not avail, defaults to manual center price)', 
+                          'External center price expressed in base asset: base/quote', None),
+            ConfigElement('external_center_price_source', 'choice', 'gecko', 'External Source',
+                          'External Price Source, select one', exchs),
+      
+
+      ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
                           r'[A-Z\.]+')
         ]
@@ -592,6 +600,18 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return orders[0]
         except IndexError:
             return None
+
+    def get_external_market_center_price(self):
+#      def get_external_market_center_price(self, exchange='gecko', market='BTC/USD',  suppress_errors=False):  
+            """ Returns the center price of market including own orders. 
+            :param bool | suppress_errors: 
+            :return: Market center price as float
+            """
+            print("getting market center price for BTC/USD at 6363.00")
+            ticker_price = 6363.00 # dummy price 
+            return ticker_price
+
+
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
