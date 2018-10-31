@@ -135,7 +135,9 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param return_base_config: bool:
             :return: Returns a list of config elements
         """
-        exchs = [('gecko', 'coingecko'), ('ccxt-kraken', 'kraken'), ('ccxt-bitfinex', 'bitfinex'), ('ccxt-gdax', 'gdax')]
+
+        exchs = [('gecko', 'coingecko'), ('ccxt-kraken', 'kraken'), 
+                 ('ccxt-bitfinex', 'bitfinex'), ('ccxt-gdax', 'gdax'), ('ccxt-binance', 'binance')]
       
         # Common configs
         base_config = [
@@ -149,10 +151,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                           'Use External center price (if not avail, defaults to manual center price)', 
                           'External center price expressed in base asset: base/quote', None),
             ConfigElement('external_center_price_source', 'choice', 'gecko', 'External Source',
-                          'External Price Source, select one', exchs),
-      
-
-      ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
+                          'External Price Source, select one', exchs),            
+            ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
                           r'[A-Z\.]+')
         ]
@@ -243,6 +243,11 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
+                 
+        # set external price source
+        if self.worker.get('external_center_price', False):
+            external_price_source = self.worker.get('external_center_price_source')
+            print("external_price_source", external_price_source, sep=":") 
 
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
