@@ -7,8 +7,8 @@ from distutils.command import build as build_module
 cmd_class = {}
 console_scripts = ['dexbot-cli = dexbot.cli:main']
 install_requires = [
-    'bitshares==0.2.0',
-    'uptick>=0.1.9',
+    'bitshares==0.2.1',
+    'uptick>=0.2.0',
     'click',
     'sqlalchemy',
     'ruamel.yaml>=0.15.37',
