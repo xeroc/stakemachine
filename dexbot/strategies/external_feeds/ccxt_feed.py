@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import os, sys, time, math
 import click
+import asyncio, functools
+import ccxt.async_support as accxt
 import ccxt  # noqa: E402
 from pprint import pprint
 from styles import *
@@ -33,10 +35,58 @@ def get_ticker(exchange, symbol):
 
 
 
+async def fetch_ticker(exchange, symbol):
+    ticker = await exchange.fetchTicker(symbol)
+    print(exchange.id, symbol, ticker)
+    return ticker
+
+
+async def fetch_tickers(exchange):
+    await exchange.load_markets()
+    print(exchange.id, 'fetching all tickers by simultaneous multiple concurrent requests')
+    symbols_to_load = get_active_symbols(exchange)
+    input_coroutines = [fetch_ticker(exchange, symbol) for symbol in symbols_to_load]
+    tickers = await asyncio.gather(*input_coroutines, return_exceptions=True)
+    for ticker, symbol in zip(tickers, symbols_to_load):
+        if not isinstance(ticker, dict):
+            print(exchange.id, symbol, 'error')
+        else:
+            print(exchange.id, symbol, 'ok')
+    print(exchange.id, 'fetched', len(list(tickers)), 'tickers')
+
+
+async def print_ticker(symbol, id):
+    # verbose mode will show the order of execution to verify concurrency
+    exchange = getattr(accxt, id)({'verbose': True})
+    print(await exchange.fetch_ticker(symbol))
+
+
 ###### unit tests ######
 @click.group()
 def main():
     pass
+
+
+@main.command()
+def test_async():
+
+    symbol = 'ETH/BTC'
+    print_ethbtc_ticker = functools.partial(print_ticker, symbol)
+    [asyncio.ensure_future(print_ethbtc_ticker(id)) for id in [
+            'bitfinex',
+            'binance',
+            'kraken',
+            'gdax',
+            'bittrex',
+            ]]
+    pending = asyncio.Task.all_tasks()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(*pending))
+
+#    asyncio.get_event_loop().run_until_complete(fetch_tickers(accxt.bitfinex({
+#                    'enableRateLimit': True,  # this option enables the built-in rate limiter
+#                    })))
+
 
 
 @main.command()
@@ -116,4 +166,5 @@ def test_exch_sym(exchange):
 if __name__ == '__main__':
     main()
     
+
 
