@@ -1,5 +1,6 @@
 import os
 
+
 def style(s, style):
     return style + s + '\033[0m'
 
@@ -33,9 +34,7 @@ def underline(s):
 
 
 if __name__ == '__main__':
-
     # unit test
-
     print(green("green style test"))
     print(blue("blue style test"))
     print(yellow("yellow style test"))
