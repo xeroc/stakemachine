@@ -588,8 +588,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             return None
 
         self.log.info(
-            'Placing a buy order for {} {} @ {:.8f}'.format(
-                base_amount, symbol, price)
+            'Placing a buy order for {:.{prec}} {} @ {:.8f}'.format(
+                base_amount, symbol, price, prec=precision)
         )
 
         # Place the order
@@ -639,8 +639,8 @@ class BaseStrategy(Storage, StateMachine, Events):
             return None
 
         self.log.info(
-            'Placing a sell order for {} {} @ {:.8f}'.format(
-                quote_amount, symbol, price)
+            'Placing a sell order for {:.{prec}f} {} @ {:.8f}'.format(
+                quote_amount, symbol, price, prec=precision)
         )
 
         # Place the order
