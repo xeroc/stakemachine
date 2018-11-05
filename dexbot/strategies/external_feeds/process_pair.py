@@ -1,4 +1,3 @@
-# Python imports
 import re
 
 
@@ -7,7 +6,7 @@ def print_args(*args):
 
 
 def filter_prefix_symbol(symbol):
-    # example open.USD or bridge.USD, remove leading bit up to .
+    # Example open.USD or bridge.USD, remove leading bit up to .
     base = ''
     if re.match(r'^[a-zA-Z](.*)\.(.*)', symbol):
         base = re.sub('(.*)\.', '', symbol)
@@ -32,14 +31,14 @@ def split_pair(symbol):
 
 
 def get_consolidated_pair(base, quote):
-    # split into two USD pairs, STEEM/BTS=(BTS/USD * USD/STEEM)
+    # Split into two USD pairs, STEEM/BTS=(BTS/USD * USD/STEEM)
     pair1 = [base, 'USD']  # BTS/USD  pair=[quote, base]
     pair2 = ['USD', quote]
     return pair1, pair2
 
 
 # Unit Tests
-
+# Todo: Move tests to own files
 def test_consolidated_pair():
     symbol = 'STEEM:BTS'  # pair = 'STEEM:BTS' or STEEM/BTS'
     pair = split_pair(symbol)

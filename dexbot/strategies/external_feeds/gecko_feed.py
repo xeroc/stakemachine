@@ -1,15 +1,13 @@
-# Python imports
-import requests
-import json
-import sys
 import click
-from styles import yellow
-from process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol
+import requests
+
+from dexbot.strategies.external_feeds.styles import yellow
+from dexbot.strategies.external_feeds.process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol
 """
-To use Gecko API, note that gecko does not provide pairs by default.
-For base/quote one must be listed as ticker and the other as fullname,
-i.e. BTCUSD is vs_currency = usd , ids = bitcoin
-https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin
+    To use Gecko API, note that gecko does not provide pairs by default.
+    For base/quote one must be listed as ticker and the other as fullname,
+    i.e. BTCUSD is vs_currency = usd , ids = bitcoin
+    https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin
 """
 GECKO_COINS_URL = 'https://api.coingecko.com/api/v3/coins/'
 isDebug = False
@@ -22,7 +20,7 @@ def debug(*args):
 
 def print_usage():
     print("Usage: python3 gecko_feed.py", yellow('[symbol]'),
-        "Symbol is required, for example:", yellow('BTC/USD'), sep='')
+          "Symbol is required, for example:", yellow('BTC/USD'), sep='')
 
 
 def get_gecko_json(url):
@@ -31,9 +29,9 @@ def get_gecko_json(url):
     return json_obj
 
 
-def check_gecko_symbol_exists(coinlist, symbol):
+def check_gecko_symbol_exists(coin_list, symbol):
     try:
-        symbol_name = [obj for obj in coinlist if obj['symbol'] == symbol][0]['id']
+        symbol_name = [obj for obj in coin_list if obj['symbol'] == symbol][0]['id']
         return symbol_name
     except IndexError:
         return None
@@ -59,6 +57,7 @@ def get_gecko_market_price(base, quote):
 
 
 # Unit tests
+# Todo: Move tests to own files
 @click.group()
 def main():
     pass
@@ -68,7 +67,7 @@ def main():
 @click.argument('symbol')
 def test_feed(symbol):
     """
-    [symbol]  Symbol example: btc/usd or btc:usd
+        [symbol]  Symbol example: btc/usd or btc:usd
     """
     try:
         pair = split_pair(symbol)  # pair=[quote, base]
@@ -77,13 +76,14 @@ def test_feed(symbol):
         new_quote = filtered_pair[0]
         new_base = filtered_pair[1]
         current_price = get_gecko_market_price(new_base, new_quote)
-        if current_price is None:   # try inverted version
+
+        if current_price is None:   # Try inverted version
             debug(" Trying pair inversion...")
             current_price = get_gecko_market_price(new_quote, new_base)
-            print(new_base+"/"+new_quote,  str(current_price), sep=':')
-            if current_price is not None:   # re-invert price
+            print(new_base + '/' + new_quote,  str(current_price), sep=':')
+            if current_price is not None:   # Re-invert price
                 actual_price = 1/current_price
-                print(new_quote+"/"+new_base, str(actual_price), sep=':')
+                print(new_quote + '/' + new_base, str(actual_price), sep=':')
         else:
             print(symbol, current_price, sep=':')
     except Exception as e:
