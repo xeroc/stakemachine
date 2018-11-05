@@ -5,8 +5,9 @@ import functools
 import ccxt.async_support as accxt
 import ccxt  # noqa: E402
 from pprint import pprint
-from styles import green, yellow, bold, underline
-from process_pair import print_args
+
+from dexbot.strategies.external_feeds.styles import red, green, yellow, bold, underline
+from dexbot.strategies.external_feeds.process_pair import print_args
 
 
 def get_exchanges():
