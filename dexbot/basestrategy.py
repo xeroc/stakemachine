@@ -100,13 +100,31 @@ class BaseStrategy(Storage, StateMachine, Events):
         NOTE: when overriding you almost certainly will want to call the ancestor
         and then add your config values to the list.
         """
+
+        # External exchanges used to calculate center price
+        exchanges = [
+            ('gecko', 'coingecko'),
+            ('ccxt-kraken', 'kraken'),
+            ('ccxt-bitfinex', 'bitfinex'),
+            ('ccxt-gdax', 'gdax'),
+            ('ccxt-binance', 'binance')
+        ]
+
         # These configs are common to all bots
         base_config = [
-            ConfigElement("account", "string", "", "Account", "BitShares account name for the bot to operate with", ""),
-            ConfigElement("market", "string", "USD:BTS", "Market",
-                          "BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"",
-                          r"[A-Z\.]+[:\/][A-Z\.]+"),
-            ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset', 'Asset to be used to pay transaction fees',
+            ConfigElement('account', 'string', '', 'Account',
+                          'BitShares account name for the bot to operate with',
+                          ''),
+            ConfigElement('market', 'string', 'USD:BTS', 'Market',
+                          'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
+                          r'[A-Z\.]+[:\/][A-Z\.]+'),
+            ConfigElement('external_center_price', 'bool', True,
+                          'Use External center price (if not available, defaults to manual center price)',
+                          'External center price expressed in base asset: BASE/QUOTE', None),
+            ConfigElement('external_center_price_source', 'choice', 'gecko', 'External Source',
+                          'External Price Source, select one', exchanges),
+            ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
+                          'Asset to be used to pay transaction fees',
                           r'[A-Z\.]+')
         ]
         if return_base_config:
@@ -173,6 +191,10 @@ class BaseStrategy(Storage, StateMachine, Events):
 
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
+
+        # Set external price source
+        if self.worker.get('external_center_price', False):
+            self.external_price_source = self.worker.get('external_center_price_source')
 
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
