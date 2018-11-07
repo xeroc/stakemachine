@@ -13,14 +13,14 @@ from PyQt5 import QtCore, QtWidgets
 
 class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
-    def __init__(self, worker_name, config, main_controller, view):
+    def __init__(self, worker_name, config, main_ctrl, view):
         super().__init__()
 
-        self.worker_name = worker_name
-        self.worker_config = config
-        self.main_controller = main_controller
-        self.view = view
+        self.main_ctrl = main_ctrl
         self.running = False
+        self.worker_name = worker_name
+        self.worker_config = self.main_ctrl.config.get_worker_config(worker_name)
+        self.view = view
 
         self.setupUi(self)
 
@@ -73,9 +73,8 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     @gui_error
     def start_worker(self):
         self.set_status("Starting worker")
-        # thread.start() HERE
         self._start_worker()
-        self.main_controller.start_worker(self.worker_name, self.worker_config, self.view)
+        self.main_ctrl.start_worker(self.worker_name, self.worker_config, self.view)
 
     def _start_worker(self):
         self.running = True
@@ -85,7 +84,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def pause_worker(self):
         self.set_status("Pausing worker")
         self._pause_worker()
-        self.main_controller.pause_worker(self.worker_name)
+        self.main_ctrl.pause_worker(self.worker_name)
 
     def _pause_worker(self):
         self.running = False
@@ -142,7 +141,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.remove_widget()
 
     def remove_widget(self):
-        self.main_controller.remove_worker(self.worker_name)
+        self.main_ctrl.remove_worker(self.worker_name)
         self.view.remove_worker_widget(self.worker_name)
         self.main_controller.config.remove_worker(self.worker_name)
         self.deleteLater()
@@ -150,7 +149,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def reload_widget(self, worker_name):
         """ Reload the data of the widget
         """
-        self.worker_config = self.main_controller.config.get_worker_config(worker_name)
+        self.worker_config = self.main_ctrl.config.get_worker_config(worker_name)
         self.setup_ui_data(self.worker_config)
         self._pause_worker()
 
@@ -160,7 +159,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def handle_edit_worker(self):
-        edit_worker_dialog = EditWorkerView(self, self.main_controller.bitshares_instance,
+        edit_worker_dialog = EditWorkerView(self, self.main_ctrl.bitshares_instance,
                                             self.worker_name, self.worker_config)
         return_value = edit_worker_dialog.exec_()
 
@@ -168,10 +167,10 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         if return_value:
             new_worker_name = edit_worker_dialog.worker_name
             self.view.change_worker_widget_name(self.worker_name, new_worker_name)
-            self.main_controller.pause_worker(self.worker_name, config=self.worker_config)
-            self.main_controller.config.replace_worker_config(self.worker_name,
-                                                              new_worker_name,
-                                                              edit_worker_dialog.worker_data)
+            self.main_ctrl.pause_worker(self.worker_name, config=self.worker_config)
+            self.main_ctrl.config.replace_worker_config(self.worker_name,
+                                                        new_worker_name,
+                                                        edit_worker_dialog.worker_data)
             self.worker_name = new_worker_name
             self.reload_widget(new_worker_name)
 
