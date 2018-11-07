@@ -107,7 +107,7 @@ class SettingsController:
         nodes = self.remove_empty_items(nodes)
 
         self.config['node'] = nodes
-        self.config.save()
+        self.config.save_config()
         # Update status
         self.view.notification_label.setText('Settings successfully saved!')
 

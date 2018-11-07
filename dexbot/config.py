@@ -20,8 +20,6 @@ class Config(dict):
             :param str path: path to the config file
         """
         super().__init__()
-
-        # Check if using custom path for the config
         if path:
             self.config_dir = os.path.dirname(path)
             self.config_file = path
@@ -30,21 +28,18 @@ class Config(dict):
             self.config_file = DEFAULT_CONFIG_FILE
 
         if config:
-            self.create(config, self.config_file)
+            self.create_config(config, self.config_file)
+            self._config = self.load_config(self.config_file)
         else:
             if not os.path.isfile(self.config_file):
-                # Config file was not found, creating default config+
-                self.create(self.default_data, self.config_file)
-
-        # Load config to cache from the configuration file
-        self._config = self.load(self.config_file)
+                self.create_config(self.default_data, self.config_file)
+            self._config = self.load_config(self.config_file)
 
         # In case there is not a list of nodes in the config file,
         # the node will be replaced by a list of pre-defined nodes.
-        # This prevents deleting worker config in a case where user has deleted nodes but left worker
         if isinstance(self._config['node'], str):
             self._config['node'] = self.node_list
-            self.save()
+            self.save_config()
 
     def __setitem__(self, key, value):
         self._config[key] = value
@@ -63,13 +58,7 @@ class Config(dict):
 
     @property
     def default_data(self):
-        """ Default data used to create an empty configuration file
-            :return: dict: node list and workers dict
-        """
-        return {
-            'node': self.node_list,
-            'workers': {}
-        }
+        return {'node': self.node_list, 'workers': {}}
 
     @property
     def workers_data(self):
@@ -83,7 +72,7 @@ class Config(dict):
         return self._config
 
     @staticmethod
-    def create(config, path=None):
+    def create_config(config, path=None):
         if not path:
             config_dir = DEFAULT_CONFIG_DIR
             config_file = DEFAULT_CONFIG_FILE
@@ -98,19 +87,19 @@ class Config(dict):
             yaml.dump(config, f, default_flow_style=False)
 
     @staticmethod
-    def load(path=None):
+    def load_config(path=None):
         if not path:
             path = DEFAULT_CONFIG_FILE
 
         with open(path, 'r') as f:
             return Config.ordered_load(f, loader=yaml.SafeLoader)
 
-    def save(self):
+    def save_config(self):
         with open(self.config_file, 'w') as f:
             yaml.dump(self._config, f, default_flow_style=False)
 
     def refresh_config(self):
-        self._config = self.load(self.config_file)
+        self._config = self.load_config(self.config_file)
 
     @staticmethod
     def get_worker_config_file(worker_name, path=None):
@@ -134,11 +123,7 @@ class Config(dict):
         config['workers'] = OrderedDict({worker_name: config['workers'][worker_name]})
         return config
 
-        # Return only the config items matching the worker_name
-        # config = self.workers_data.get(worker_name)
-        # return config
-
-    def remove_worker(self, worker_name):
+    def remove_worker_config(self, worker_name):
         self._config['workers'].pop(worker_name, None)
 
         with open(self.config_file, 'w') as f:

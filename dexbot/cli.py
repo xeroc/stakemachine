@@ -143,7 +143,7 @@ def configure(ctx):
 
     config = Config(path=ctx.obj['configfile'])
     configure_dexbot(config, ctx)
-    config.save()
+    config.save_config()
 
     click.echo("New configuration saved")
     if config.get('systemd_status', 'disabled') == 'enabled':
