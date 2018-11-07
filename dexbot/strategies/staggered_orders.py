@@ -484,7 +484,7 @@ class Strategy(BaseStrategy):
                                 self.log.debug('Limiting {} order by opposite order: {} {}'.format(
                                                order_type, opposite_asset_limit, symbol))
                         self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
-                                                opposite_asset_limit=opposite_asset_limit, allow_partial=True)
+                                                opposite_asset_limit=opposite_asset_limit, allow_partial=False)
                 elif not opposite_orders:
                     # Do not try to do anything than placing higher buy whether there is no sell orders
                     return
