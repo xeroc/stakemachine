@@ -21,20 +21,24 @@ log_workers = logging.getLogger('dexbot.per_worker')
 
 class WorkerInfrastructure(threading.Thread):
 
-    def __init__(
-        self,
-        config,
-        bitshares_instance=None,
-        view=None
-    ):
+    def __init__(self, config, bitshares_instance=None, view=None):
         super().__init__()
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
-        self.config = copy.deepcopy(config)
+
+        # Global configuration file including all the workers
+        # Why is this deep copied?
+        # self.config = copy.deepcopy(config)
+        self.config = config
+
+        # Main view
         self.view = view
+
         self.jobs = set()
         self.notify = None
+
+        # Active workers
         self.workers = {}
 
         self.accounts = set()

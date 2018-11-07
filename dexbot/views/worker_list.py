@@ -12,38 +12,56 @@ from .worker_item import WorkerItemWidget
 from .errors import gui_error
 from .layouts.flow_layout import FlowLayout
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtGui
+from PyQt5.QtCore import QThreadPool
+from PyQt5.QtWidgets import QMainWindow
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 
 
-class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
+class MainView(QMainWindow, Ui_MainWindow):
 
-    def __init__(self, main_ctrl):
+    def __init__(self, main_controller):
         super().__init__()
         self.setupUi(self)
-        self.main_ctrl = main_ctrl
+        self.main_controller = main_controller
 
-        self.config = main_ctrl.config
+        # Global configuration
+        self.config = self.main_controller.config
+
+        # View settings
         self.max_workers = 10
-        self.num_of_workers = 0
+
+        # Number of active workers
+        self.num_of_active_workers = 0
+
+        # Worker item widgets on the main view
         self.worker_widgets = {}
+
         self.closing = False
         self.statusbar_updater = None
         self.statusbar_updater_first_run = True
-        self.main_ctrl.set_info_handler(self.set_worker_status)
+        self.main_controller.set_info_handler(self.set_worker_status)
         self.layout = FlowLayout(self.scrollAreaContent)
 
+        # View events
         self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
         self.settings_button.clicked.connect(lambda: self.handle_open_settings())
         self.help_button.clicked.connect(lambda: self.handle_open_documentation())
 
+        # Configure threading
+        self.thread_pool = QThreadPool()
+        # Create thread pool size of the maximum number of workers.
+        self.thread_pool.setMaxThreadCount(self.max_workers)
+        print('Multi threading with max {} threads'.format(self.thread_pool.maxThreadCount()))
+
         # Load worker widgets from config file
-        workers = self.config.workers_data
-        for worker_name in workers:
+        # Todo: THREADING HERE
+        # Assign thread for each worker item widget and then set it up so that start worker button starts the thread
+        for worker_name in self.config.workers_data:
             self.add_worker_widget(worker_name)
 
             # Limit the max amount of workers so that the performance isn't greatly affected
-            if self.num_of_workers >= self.max_workers:
+            if self.num_of_active_workers >= self.max_workers:
                 self.add_worker_button.setEnabled(False)
                 break
 
@@ -51,31 +69,31 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         self.dispatcher = ThreadDispatcher(self)
         self.dispatcher.start()
 
+        # Statusbar updater
         self.status_bar.showMessage("ver {} - Node delay: - ms".format(__version__))
-        self.statusbar_updater = Thread(
-            target=self._update_statusbar_message
-        )
+        self.statusbar_updater = Thread(target=self._update_statusbar_message)
         self.statusbar_updater.start()
 
         QtGui.QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
     def add_worker_widget(self, worker_name):
-        config = self.config.get_worker_config(worker_name)
-        widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
+        config = self.main_controller.config.get_worker_config(worker_name)
+
+        widget = WorkerItemWidget(worker_name, config, self.main_controller, view=self)
         widget.setFixedSize(widget.frameSize())
         self.layout.addWidget(widget)
         self.worker_widgets[worker_name] = widget
 
         # Limit the max amount of workers so that the performance isn't greatly affected
-        self.num_of_workers += 1
-        if self.num_of_workers >= self.max_workers:
+        self.num_of_active_workers += 1
+        if self.num_of_active_workers >= self.max_workers:
             self.add_worker_button.setEnabled(False)
 
     def remove_worker_widget(self, worker_name):
         self.worker_widgets.pop(worker_name, None)
 
-        self.num_of_workers -= 1
-        if self.num_of_workers < self.max_workers:
+        self.num_of_active_workers -= 1
+        if self.num_of_active_workers < self.max_workers:
             self.add_worker_button.setEnabled(True)
 
     def change_worker_widget_name(self, old_worker_name, new_worker_name):
@@ -84,13 +102,13 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @gui_error
     def handle_add_worker(self):
-        create_worker_dialog = CreateWorkerView(self.main_ctrl.bitshares_instance)
+        create_worker_dialog = CreateWorkerView(self.main_controller.bitshares_instance)
         return_value = create_worker_dialog.exec_()
 
         # User clicked save
         if return_value == 1:
             worker_name = create_worker_dialog.worker_name
-            self.main_ctrl.create_worker(worker_name)
+            self.main_controller.create_worker(worker_name)
 
             self.config.add_worker_config(worker_name, create_worker_dialog.worker_data)
             self.add_worker_widget(worker_name)
