@@ -6,6 +6,7 @@ from dexbot import VERSION, APP_NAME, AUTHOR
 from dexbot.helper import initialize_orders_log, initialize_data_folders
 from dexbot.worker import WorkerInfrastructure
 from dexbot.views.errors import PyQtHandler
+from dexbot.storage import Storage
 
 from appdirs import user_data_dir
 from bitshares.instance import set_shared_bitshares_instance
@@ -16,6 +17,8 @@ class MainController:
     def __init__(self, bitshares_instance, config):
         self.bitshares_instance = bitshares_instance
         set_shared_bitshares_instance(bitshares_instance)
+
+        # Global configuration which includes all the workers
         self.config = config
         self.worker_manager = None
 
@@ -77,5 +80,10 @@ class MainController:
 
     @staticmethod
     def create_worker(worker_name):
-        # Deletes old worker's data
+        # Todo: Rename this function to something better
+        # In case worker is deleted only from config file, there are still information with the name in the database
+        # This function removes all that data and cancels orders so that new worker can take the name in it's use
         WorkerInfrastructure.remove_offline_worker_data(worker_name)
+
+        # Wound't this be just shortcut to achieve the same thing??
+        # Storage.clear_worker_data(worker_name)
