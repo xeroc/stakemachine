@@ -143,7 +143,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
     def remove_widget(self):
         self.main_ctrl.remove_worker(self.worker_name)
         self.view.remove_worker_widget(self.worker_name)
-        self.main_ctrl.config.remove_worker_config(self.worker_name)
+        self.main_controller.config.remove_worker(self.worker_name)
         self.deleteLater()
 
     def reload_widget(self, worker_name):
