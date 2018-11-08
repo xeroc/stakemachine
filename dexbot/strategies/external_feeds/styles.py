@@ -34,7 +34,8 @@ def underline(s):
 
 
 if __name__ == '__main__':
-    # unit test
+    # Unit test
+    # Todo: Move tests to own files
     print(green("green style test"))
     print(blue("blue style test"))
     print(yellow("yellow style test"))

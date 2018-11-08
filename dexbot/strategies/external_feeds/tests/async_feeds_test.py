@@ -3,8 +3,9 @@ import aiohttp
 
 gecko_coins_url = 'https://api.coingecko.com/api/v3/coins/'
 waves_symbols = 'http://marketdata.wavesplatform.com/api/symbols'
-cwatch_assets='https://api.cryptowat.ch/assets'
+cwatch_assets = 'https://api.cryptowat.ch/assets'
 urls = [cwatch_assets, waves_symbols, gecko_coins_url]
+
 
 @asyncio.coroutine
 def call_url(url):
@@ -13,6 +14,7 @@ def call_url(url):
     data = yield from response.text()
     print('url: {} bytes: {}'.format(url, len(data)))
     return data
+
 
 futures = [call_url(url) for url in urls]
 asyncio.run(asyncio.wait(futures))

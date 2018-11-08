@@ -136,8 +136,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :return: Returns a list of config elements
         """
 
-        exchs = [('gecko', 'coingecko'), ('ccxt-kraken', 'kraken'), 
-                 ('ccxt-bitfinex', 'bitfinex'), ('ccxt-gdax', 'gdax'), ('ccxt-binance', 'binance')]
+        # External exchanges used to calculate center price
+        exchanges = [
+            ('gecko', 'coingecko'),
+            ('ccxt-kraken', 'kraken'),
+            ('ccxt-bitfinex', 'bitfinex'),
+            ('ccxt-gdax', 'gdax'),
+            ('ccxt-binance', 'binance')
+        ]
       
         # Common configs
         base_config = [
@@ -148,10 +154,10 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                           'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
                           r'[A-Z\.]+[:\/][A-Z\.]+'),
             ConfigElement('external_center_price', 'bool', True, 
-                          'Use External center price (if not avail, defaults to manual center price)', 
-                          'External center price expressed in base asset: base/quote', None),
+                          'Use External center price (if not available, defaults to manual center price)',
+                          'External center price expressed in base asset: BASE/QUOTE', None),
             ConfigElement('external_center_price_source', 'choice', 'gecko', 'External Source',
-                          'External Price Source, select one', exchs),            
+                          'External Price Source, select one', exchanges),
             ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
                           r'[A-Z\.]+')
@@ -244,10 +250,9 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
                  
-        # set external price source
+        # Set external price source
         if self.worker.get('external_center_price', False):
-            external_price_source = self.worker.get('external_center_price_source')
-            print("external_price_source", external_price_source, sep=":") 
+            self.external_price_source = self.worker.get('external_center_price_source')
 
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
@@ -607,16 +612,9 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
     def get_external_market_center_price(self):
-#      def get_external_market_center_price(self, exchange='gecko', market='BTC/USD',  suppress_errors=False):  
-            """ Returns the center price of market including own orders. 
-            :param bool | suppress_errors: 
-            :return: Market center price as float
-            """
-            print("getting market center price for BTC/USD at 6363.00")
-            ticker_price = 6363.00 # dummy price 
-            return ticker_price
-
-
+        # Todo: Work in progress
+        ticker_price = 6363.00  # Dummy price
+        return ticker_price
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
@@ -627,8 +625,10 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :return: Market center price as float
         """
 
-        buy_price = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount, exclude_own_orders=False)
-        sell_price = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount, exclude_own_orders=False)
+        buy_price = self.get_market_buy_price(quote_amount=quote_amount,
+                                              base_amount=base_amount, exclude_own_orders=False)
+        sell_price = self.get_market_sell_price(quote_amount=quote_amount,
+                                                base_amount=base_amount, exclude_own_orders=False)
 
         if buy_price is None or buy_price == 0.0:
             if not suppress_errors:
