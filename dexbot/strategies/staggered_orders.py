@@ -722,29 +722,30 @@ class Strategy(BaseStrategy):
                 if (order_amount * (1 + self.increment / 10) < closer_order_bound and
                         closer_order_bound - order_amount >= order_amount * self.increment / 2):
 
-                    amount_base = closer_order_bound
+                    new_order_amount = closer_order_bound
 
                     # Limit order to available balance
-                    if asset_balance < amount_base - order_amount:
-                        amount_base = order_amount + asset_balance['amount']
+                    if asset_balance < new_order_amount - order_amount:
+                        new_order_amount = order_amount + asset_balance['amount']
                         self.log.info('Limiting new order to avail asset balance: {:.8f} {}'
-                                      .format(amount_base, asset_balance['symbol']))
+                                      .format(new_order_amount, asset_balance['symbol']))
 
                     price = 0
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
+                        quote_amount = new_order_amount
                     elif asset == 'base':
                         price = order['price']
+                        quote_amount = new_order_amount / price
                     self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
 
                     if asset == 'quote':
-                        self.market_sell(amount_base, price)
+                        self.market_sell(quote_amount, price)
                     elif asset == 'base':
-                        amount_quote = amount_base / price
-                        self.market_buy(amount_quote, price)
+                        self.market_buy(quote_amount, price)
                     # One increase at a time. This prevents running more than one increment round simultaneously.
                     return
 
@@ -790,30 +791,31 @@ class Strategy(BaseStrategy):
                 if (order_amount * (1 + self.increment / 10) < closer_order_bound and
                         closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
 
-                    amount_base = closer_order_bound
+                    new_order_amount = closer_order_bound
 
                     # Limit order to available balance
-                    if asset_balance < amount_base - order_amount:
-                        amount_base = order_amount + asset_balance['amount']
+                    if asset_balance < new_order_amount - order_amount:
+                        new_order_amount = order_amount + asset_balance['amount']
                         self.log.info('Limiting new order to avail asset balance: {:.8f} {}'
-                                      .format(amount_base, asset_balance['symbol']))
+                                      .format(new_order_amount, asset_balance['symbol']))
 
                     price = 0
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
+                        quote_amount = new_order_amount
                     elif asset == 'base':
                         price = order['price']
+                        quote_amount = new_order_amount / price
                     self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}'
                                    ', amount: {:.8f}, price: {:.8f}'
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
 
                     if asset == 'quote':
-                        self.market_sell(amount_base, price)
+                        self.market_sell(quote_amount, price)
                     elif asset == 'base':
-                        amount_quote = amount_base / price
-                        self.market_buy(amount_quote, price)
+                        self.market_buy(quote_amount, price)
                     # One increase at a time. This prevents running more than one increment round simultaneously.
                     return
 
