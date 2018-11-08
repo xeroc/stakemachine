@@ -563,12 +563,25 @@ class Strategy(BaseStrategy):
         """
         total_balance = 0
         order_type = ''
+        symbol = ''
+        precision = 0
 
         # First of all, make sure all orders are not partially filled
         for order in orders:
             if not self.check_partial_fill(order, fill_threshold=0):
                 self.replace_partially_filled_order(order)
                 return
+
+        if asset == 'quote':
+            total_balance = self.quote_total_balance
+            order_type = 'sell'
+            symbol = self.market['quote']['symbol']
+            precision = self.market['quote']['precision']
+        elif asset == 'base':
+            total_balance = self.base_total_balance
+            order_type = 'buy'
+            symbol = self.market['base']['symbol']
+            precision = self.market['base']['precision']
 
         # Mountain mode:
         if (self.mode == 'mountain' or
@@ -589,13 +602,6 @@ class Strategy(BaseStrategy):
 
                 Also when making an order it's size always will be limited by available free balance
             """
-            if asset == 'quote':
-                total_balance = self.quote_total_balance
-                order_type = 'sell'
-            elif asset == 'base':
-                total_balance = self.base_total_balance
-                order_type = 'buy'
-
             # Get orders and amounts to be compared. Note: orders are sorted from low price to high
             for order in orders:
                 order_index = orders.index(order)
@@ -650,8 +656,8 @@ class Strategy(BaseStrategy):
                     # Limit order to available balance
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
-                        self.log.info('Limiting new {} order to avail asset balance: {:.8f} {}'
-                                      .format(order_type, new_order_amount, asset_balance['symbol']))
+                        self.log.debug('Limiting new {} order to avail balance: {:.8f} {}'
+                                      .format(order_type, new_order_amount, symbol))
                     quote_amount = 0
                     price = 0
 
@@ -662,6 +668,8 @@ class Strategy(BaseStrategy):
                         price = order['price']
                         quote_amount = new_order_amount / price
 
+                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
+                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
                     self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
@@ -685,13 +693,6 @@ class Strategy(BaseStrategy):
                 Maximum size is (example for buy orders):
                 1. As many "base" as the order below (closer_order_bound)
             """
-            if asset == 'quote':
-                total_balance = self.quote_total_balance
-                order_type = 'sell'
-            elif asset == 'base':
-                total_balance = self.base_total_balance
-                order_type = 'buy'
-
             orders_count = len(orders)
             orders = list(reversed(orders))
 
@@ -727,8 +728,8 @@ class Strategy(BaseStrategy):
                     # Limit order to available balance
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
-                        self.log.info('Limiting new order to avail asset balance: {:.8f} {}'
-                                      .format(new_order_amount, asset_balance['symbol']))
+                        self.log.debug('Limiting new order to avail asset balance: {:.8f} {}'
+                                      .format(new_order_amount, symbol))
 
                     price = 0
 
@@ -738,10 +739,11 @@ class Strategy(BaseStrategy):
                     elif asset == 'base':
                         price = order['price']
                         quote_amount = new_order_amount / price
+                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
+                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
                     self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
-
                     if asset == 'quote':
                         self.market_sell(quote_amount, price)
                     elif asset == 'base':
@@ -750,13 +752,6 @@ class Strategy(BaseStrategy):
                     return
 
         elif self.mode == 'neutral':
-            if asset == 'quote':
-                total_balance = self.quote_total_balance
-                order_type = 'sell'
-            elif asset == 'base':
-                total_balance = self.base_total_balance
-                order_type = 'buy'
-
             orders_count = len(orders)
             orders = list(reversed(orders))
 
@@ -796,8 +791,8 @@ class Strategy(BaseStrategy):
                     # Limit order to available balance
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
-                        self.log.info('Limiting new order to avail asset balance: {:.8f} {}'
-                                      .format(new_order_amount, asset_balance['symbol']))
+                        self.log.debug('Limiting new order to avail asset balance: {:.8f} {}'
+                                      .format(new_order_amount, symbol))
 
                     price = 0
 
@@ -807,11 +802,12 @@ class Strategy(BaseStrategy):
                     elif asset == 'base':
                         price = order['price']
                         quote_amount = new_order_amount / price
+                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
+                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
                     self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}'
                                    ', amount: {:.8f}, price: {:.8f}'
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
-
                     if asset == 'quote':
                         self.market_sell(quote_amount, price)
                     elif asset == 'base':
