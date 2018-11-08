@@ -647,7 +647,7 @@ class Strategy(BaseStrategy):
                             """
                             new_order_amount = closer_bound / (1 + self.increment * 0.2)
 
-                    # Limit sell order to available balance
+                    # Limit order to available balance
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
                         self.log.info('Limiting new {} order to avail asset balance: {:.8f} {}'
