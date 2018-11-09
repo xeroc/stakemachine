@@ -2,12 +2,11 @@ import math
 from datetime import datetime, timedelta
 from bitshares.dex import Dex
 
-from dexbot.basestrategy import BaseStrategy, ConfigElement
 from dexbot.strategies.base import StrategyBase, DetailElement
 from dexbot.qt_queue.idle_queue import idle_add
 
 
-class Strategy(BaseStrategy):
+class Strategy(StrategyBase):
     """ Staggered Orders strategy """
 
     @classmethod
@@ -40,7 +39,7 @@ class Strategy(BaseStrategy):
             ('sell_slope', 'Sell Slope')
         ]
 
-        return BaseStrategy.configure(return_base_config) + [
+        return StrategyBase.configure(return_base_config) + [
             ConfigElement(
                 'mode', 'choice', 'mountain', 'Strategy mode',
                 'How to allocate funds and profits. Doesn\'t effect existing orders, only future ones', modes),
@@ -121,7 +120,6 @@ class Strategy(BaseStrategy):
         self.base_total_balance = 0
         self.quote_balance = None
         self.base_balance = None
-        self.ticker = None
         self.quote_asset_threshold = 0
         self.base_asset_threshold = 0
         # Initial balance history elements should not be equal to avoid immediate bootstrap turn off
@@ -164,11 +162,11 @@ class Strategy(BaseStrategy):
         self.refresh_orders()
 
         # Check if market center price is calculated
-        if not self.bootstrapping:
-            self.market_center_price = self.calculate_center_price(suppress_errors=True)
-        elif not self.market_center_price:
-            # On empty market we have to pass the user specified center price
-            self.market_center_price = self.calculate_center_price(center_price=self.center_price, suppress_errors=True)
+        self.market_center_price = self.get_market_center_price(suppress_errors=True)
+
+        # Set center price to manual value if needed
+        if self.center_price:
+            self.market_center_price = self.center_price
 
         # Still not have market_center_price? Empty market, don't continue
         if not self.market_center_price:
@@ -194,9 +192,6 @@ class Strategy(BaseStrategy):
             # Return back to beginning
             self.log_maintenance_time()
             return
-
-        # Get ticker data
-        self.ticker = self.market.ticker()
 
         # Prepare to bundle operations into single transaction
         self.bitshares.bundle = True
@@ -307,7 +302,7 @@ class Strategy(BaseStrategy):
             :param bool | use_cached_orders: when calculating orders balance, use cached orders from self.cached_orders
         """
         # Get current account balances
-        account_balances = self.total_balance(order_ids=[], return_asset=True)
+        account_balances = self.count_asset(order_ids=[], return_asset=True)
 
         self.base_balance = account_balances['base']
         self.quote_balance = account_balances['quote']
@@ -329,9 +324,9 @@ class Strategy(BaseStrategy):
         if use_cached_orders and self.cached_orders:
             orders = self.cached_orders
         else:
-            orders = self.orders
+            orders = self.get_own_orders
         order_ids = [order['id'] for order in orders]
-        orders_balance = self.orders_balance(order_ids)
+        orders_balance = self.get_allocated_assets(order_ids)
 
         # Total balance per asset (orders balance and available balance)
         self.quote_total_balance = orders_balance['quote'] + self.quote_balance['amount']
@@ -340,12 +335,12 @@ class Strategy(BaseStrategy):
     def refresh_orders(self):
         """ Updates buy and sell orders
         """
-        orders = self.orders
+        orders = self.get_own_orders
         self.cached_orders = orders
 
         # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
-        self.buy_orders = self.get_buy_orders('DESC', orders)
-        self.sell_orders = self.get_sell_orders('DESC', orders)
+        self.buy_orders = self.filter_buy_orders(orders, sort='DESC')
+        self.sell_orders = self.filter_sell_orders(orders, sort='DESC', invert=False)
 
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
@@ -671,9 +666,9 @@ class Strategy(BaseStrategy):
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
                     if asset == 'quote':
-                        self.market_sell(quote_amount, price)
+                        self.place_market_sell_order(quote_amount, price)
                     elif asset == 'base':
-                        self.market_buy(quote_amount, price)
+                        self.place_market_buy_order(quote_amount, price)
                     # Only one increase at a time. This prevents running more than one increment round simultaneously
                     return
         elif (self.mode == 'valley' or
@@ -742,9 +737,9 @@ class Strategy(BaseStrategy):
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
                     if asset == 'quote':
-                        self.market_sell(quote_amount, price)
+                        self.place_market_sell_order(quote_amount, price)
                     elif asset == 'base':
-                        self.market_buy(quote_amount, price)
+                        self.place_market_buy_order(quote_amount, price)
                     # One increase at a time. This prevents running more than one increment round simultaneously.
                     return
 
@@ -806,9 +801,9 @@ class Strategy(BaseStrategy):
                                    .format(order_type, self.mode, order_amount, price))
                     self.cancel(order)
                     if asset == 'quote':
-                        self.market_sell(quote_amount, price)
+                        self.place_market_sell_order(quote_amount, price)
                     elif asset == 'base':
-                        self.market_buy(quote_amount, price)
+                        self.place_market_buy_order(quote_amount, price)
                     # One increase at a time. This prevents running more than one increment round simultaneously.
                     return
 
@@ -853,10 +848,10 @@ class Strategy(BaseStrategy):
             self.log.info('Replacing partially filled {} order'.format(order_type))
             self.cancel(order)
             if order_type == 'buy':
-                self.market_buy(order['quote']['amount'], order['price'])
+                self.place_market_buy_order(order['quote']['amount'], order['price'])
             elif order_type == 'sell':
                 price = order['price'] ** -1
-                self.market_sell(order['base']['amount'], price)
+                self.place_market_sell_order(order['base']['amount'], price)
             if self.returnOrderId:
                 self.refresh_balances(total_balances=False)
         else:
@@ -962,9 +957,9 @@ class Strategy(BaseStrategy):
                     quote_amount = balance
 
         if place_order and asset == 'base':
-            self.market_buy(quote_amount, price)
+            self.place_market_buy_order(quote_amount, price)
         elif place_order and asset == 'quote':
-            self.market_sell(quote_amount, price)
+            self.place_market_sell_order(quote_amount, price)
 
         return {"amount": quote_amount, "price": price}
 
@@ -1037,9 +1032,9 @@ class Strategy(BaseStrategy):
                     quote_amount = balance
 
         if place_order and asset == 'base':
-            self.market_buy(quote_amount, price)
+            self.place_market_buy_order(quote_amount, price)
         elif place_order and asset == 'quote':
-            self.market_sell(quote_amount, price)
+            self.place_market_sell_order(quote_amount, price)
 
         return {"amount": quote_amount, "price": price}
 
@@ -1118,7 +1113,7 @@ class Strategy(BaseStrategy):
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
-            self.market_sell(amount_quote, price)
+            self.place_market_sell_order(amount_quote, price)
         else:
             return {"amount": amount_quote, "price": price}
 
@@ -1230,7 +1225,7 @@ class Strategy(BaseStrategy):
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
-            self.market_buy(amount_quote, price)
+            self.place_market_buy_order(amount_quote, price)
         else:
             return {"amount": amount_quote, "price": price}
 
