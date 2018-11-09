@@ -432,9 +432,11 @@ class Strategy(BaseStrategy):
                 if opposite_orders:
                     closest_opposite_order = opposite_orders[0]
                     closest_opposite_price = closest_opposite_order['price'] ** -1
-                else:
+                elif asset == 'base':
                     # For one-sided start, calculate closest_opposite_price empirically
                     closest_opposite_price = self.market_center_price * (1 + self.target_spread / 2)
+                elif asset == 'quote':
+                    closest_opposite_price = (self.market_center_price / (1 + self.target_spread / 2)) ** -1
 
                 closest_own_price = closest_own_order['price']
                 self.actual_spread = (closest_opposite_price / closest_own_price) - 1
