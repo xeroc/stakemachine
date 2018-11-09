@@ -114,7 +114,6 @@ class Strategy(BaseStrategy):
         # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
         self.bootstrapping = True
         self.market_center_price = None
-        self.initial_market_center_price = None
         self.buy_orders = []
         self.sell_orders = []
         self.actual_spread = self.target_spread + 1
@@ -170,10 +169,6 @@ class Strategy(BaseStrategy):
         elif not self.market_center_price:
             # On empty market we have to pass the user specified center price
             self.market_center_price = self.calculate_center_price(center_price=self.center_price, suppress_errors=True)
-
-        if self.market_center_price and not self.initial_market_center_price:
-            # Save initial market center price
-            self.initial_market_center_price = self.market_center_price
 
         # Still not have market_center_price? Empty market, don't continue
         if not self.market_center_price:
