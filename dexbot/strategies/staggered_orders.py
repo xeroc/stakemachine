@@ -393,17 +393,20 @@ class Strategy(StrategyBase):
         own_asset_limit = None
         own_orders = []
         own_threshold = 0
-        symbol = ''
+        own_symbol = ''
+        opposite_symbol = ''
 
         if asset == 'base':
             order_type = 'buy'
-            symbol = self.base_balance['symbol']
+            own_symbol = self.base_balance['symbol']
+            opposite_symbol = self.quote_balance['symbol']
             own_orders = self.buy_orders
             opposite_orders = self.sell_orders
             own_threshold = self.base_asset_threshold
         elif asset == 'quote':
             order_type = 'sell'
-            symbol = self.quote_balance['symbol']
+            own_symbol = self.quote_balance['symbol']
+            opposite_symbol = self.base_balance['symbol']
             own_orders = self.sell_orders
             opposite_orders = self.buy_orders
             own_threshold = self.quote_asset_threshold
@@ -470,20 +473,20 @@ class Strategy(StrategyBase):
                         opposite_asset_limit = None
                         own_asset_limit = closest_opposite_order['quote']['amount']
                         self.log.debug('Limiting {} order by opposite order: {} {}'
-                                       .format(order_type, own_asset_limit, symbol))
+                                       .format(order_type, own_asset_limit, own_symbol))
                     elif self.mode == 'neutral':
                         opposite_asset_limit = closest_opposite_order['base']['amount'] * \
                                                math.sqrt(1 + self.increment)
                         own_asset_limit = None
                         self.log.debug('Limiting {} order by opposite order: {} {}'.format(
-                                       order_type, opposite_asset_limit, symbol))
+                                       order_type, opposite_asset_limit, opposite_symbol))
                     elif (self.mode == 'valley' or
                           (self.mode == 'buy_slope' and asset == 'quote') or
                           (self.mode == 'sell_slope' and asset == 'base')):
                             opposite_asset_limit = closest_opposite_order['base']['amount']
                             own_asset_limit = None
                             self.log.debug('Limiting {} order by opposite order: {} {}'.format(
-                                           order_type, opposite_asset_limit, symbol))
+                                           order_type, opposite_asset_limit, opposite_symbol))
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                             opposite_asset_limit=opposite_asset_limit, allow_partial=False)
             elif not self.check_partial_fill(closest_own_order):
