@@ -480,34 +480,26 @@ class Strategy(StrategyBase):
                 elif not opposite_orders:
                     # Do not try to do anything than placing higher buy whether there is no sell orders
                     return
+                elif not self.check_partial_fill(closest_opposite_order, fill_threshold=0):
+                    """ Partially filled order on the opposite side, wait until closest order will be fully
+                        fillled. Previously we did reservation of funds for next order and allocated remainder, but
+                        this approach is not well-suited for valley mode, causing liquidity decrease around center.
+                    """
+                    self.log.debug('Partially filled order on opposite side, reserving funds until fully filled')
+                    return
+                elif ((asset == 'base' and furthest_own_order_price /
+                     (1 + self.increment) < self.lower_bound) or
+                        (asset == 'quote' and furthest_own_order_price *
+                         (1 + self.increment) > self.upper_bound)):
+                    # Lower/upper bound has been reached and now will start allocating rest of the balance.
+                    self.bootstrapping = False
+                    self.log.debug('Increasing sizes of {} orders'.format(order_type))
+                    self.increase_order_sizes(asset, asset_balance, own_orders)
                 else:
-                    if not self.check_partial_fill(closest_opposite_order):
-                        """ Detect partially filled order on the opposite side and 
-                            reserve appropriate amount to place closer order
-                        """
-                        funds_to_reserve = 0
-                        closer_own_order = self.place_closer_order(asset, closest_own_order, place_order=False)
-                        if asset == 'base':
-                            funds_to_reserve = closer_own_order['amount'] * closer_own_order['price']
-                        elif asset == 'quote':
-                            funds_to_reserve = closer_own_order['amount']
-                        self.log.debug('Partially filled order on opposite side, reserving funds for next {} order: '
-                                       '{:.8f} {}'.format(order_type, funds_to_reserve, symbol))
-                        asset_balance -= funds_to_reserve
-                    if asset_balance > own_threshold:
-                        if ((asset == 'base' and furthest_own_order_price /
-                             (1 + self.increment) < self.lower_bound) or
-                                (asset == 'quote' and furthest_own_order_price *
-                                 (1 + self.increment) > self.upper_bound)):
-                            # Lower/upper bound has been reached and now will start allocating rest of the balance.
-                            self.bootstrapping = False
-                            self.log.debug('Increasing sizes of {} orders'.format(order_type))
-                            self.increase_order_sizes(asset, asset_balance, own_orders)
-                        else:
-                            # Range bound is not reached, we need to add additional orders at the extremes
-                            self.bootstrapping = False
-                            self.log.debug('Placing further order than current furthest {} order'.format(order_type))
-                            self.place_further_order(asset, furthest_own_order, allow_partial=True)
+                    # Range bound is not reached, we need to add additional orders at the extremes
+                    self.bootstrapping = False
+                    self.log.debug('Placing further order than current furthest {} order'.format(order_type))
+                    self.place_further_order(asset, furthest_own_order, allow_partial=True)
             else:
                 self.replace_partially_filled_order(closest_own_order)
         else:
