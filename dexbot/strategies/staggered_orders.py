@@ -96,7 +96,7 @@ class Strategy(StrategyBase):
         self.upper_bound = self.worker['upper_bound']
         self.lower_bound = self.worker['lower_bound']
         # This fill threshold prevents too often orders replacements draining fee_asset
-        self.partial_fill_threshold = self.increment / 10
+        self.partial_fill_threshold = 0.15
         self.is_instant_fill_enabled = self.worker.get('instant_fill', True)
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
 
@@ -416,92 +416,103 @@ class Strategy(StrategyBase):
             if asset == 'quote':
                 furthest_own_order_price = furthest_own_order_price ** -1
 
-            # Check if the order was partially filled
-            if self.check_partial_fill(closest_own_order):
-                # Calculate actual spread
-                if opposite_orders:
-                    closest_opposite_order = opposite_orders[0]
-                    closest_opposite_price = closest_opposite_order['price'] ** -1
-                elif asset == 'base':
-                    # For one-sided start, calculate closest_opposite_price empirically
-                    closest_opposite_price = self.market_center_price * (1 + self.target_spread / 2)
-                elif asset == 'quote':
-                    closest_opposite_price = (self.market_center_price / (1 + self.target_spread / 2)) ** -1
+            # Calculate actual spread
+            if opposite_orders:
+                closest_opposite_order = opposite_orders[0]
+                closest_opposite_price = closest_opposite_order['price'] ** -1
+            elif asset == 'base':
+                # For one-sided start, calculate closest_opposite_price empirically
+                closest_opposite_price = self.market_center_price * (1 + self.target_spread / 2)
+            elif asset == 'quote':
+                closest_opposite_price = (self.market_center_price / (1 + self.target_spread / 2)) ** -1
 
-                closest_own_price = closest_own_order['price']
-                self.actual_spread = (closest_opposite_price / closest_own_price) - 1
+            closest_own_price = closest_own_order['price']
+            self.actual_spread = (closest_opposite_price / closest_own_price) - 1
 
-                if self.actual_spread >= self.target_spread + self.increment:
-                    """ Note: because we're using operations batching, there is possible a situation when we will have
-                        both free balances and `self.actual_spread >= self.target_spread + self.increment`. In such case
-                        there will be TWO orders placed, one buy and one sell despite only one would be enough to reach
-                        target spread. Sure, we can add a workaround for that by overriding `closest_opposite_price` for
-                        second call of allocate_asset(). We are not doing this because we're not doing assumption on
-                        which side order (buy or sell) should be placed first. So, when placing two closer orders from
-                        both sides, spread will be no less than `target_spread - increment`, thus not making any loss.
+            if self.actual_spread >= self.target_spread + self.increment:
+                if not self.check_partial_fill(closest_own_order, fill_threshold=0):
+                    # Replace closest order if it was partially filled for any %
+                    """ Note on partial filled orders handling: if target spread is not reached and we need to place
+                        closer order, we need to make sure current closest order is 100% unfilled. When target spread is
+                        reached, we are replacing order only if it was filled no less than `self.fill_threshold`. This
+                        helps to avoid too often replacements.
                     """
-                    if (self.bootstrapping and
-                            self.base_balance_history[2] == self.base_balance_history[0] and
-                            self.quote_balance_history[2] == self.quote_balance_history[0]):
-                        # Turn off bootstrap mode whether we're didn't allocated assets during previous 3 maintenance
-                        self.log.debug('Turning bootstrapping off: actual_spread > target_spread, we have free '
-                                       'balances and cannot allocate them normally 3 times in a row')
-                        self.bootstrapping = False
+                    self.replace_partially_filled_order(closest_own_order)
+                    return
 
-                    # Place order closer to the center price
-                    self.log.debug('Placing closer {} order; actual spread: {:.4%}, target + increment: {:.4%}'
-                                   .format(order_type, self.actual_spread, self.target_spread + self.increment))
-                    if self.bootstrapping:
-                        self.place_closer_order(asset, closest_own_order)
-                    else:
-                        # Place order limited by size of the opposite-side order
-                        if (self.mode == 'mountain' or
-                                (self.mode == 'buy_slope' and asset == 'base') or
-                                (self.mode == 'sell_slope' and asset == 'quote')):
-                            opposite_asset_limit = None
-                            own_asset_limit = closest_opposite_order['quote']['amount']
-                            self.log.debug('Limiting {} order by opposite order: {} {}'
-                                           .format(order_type, own_asset_limit, symbol))
-                        elif self.mode == 'neutral':
-                            opposite_asset_limit = closest_opposite_order['base']['amount'] * \
-                                                   math.sqrt(1 + self.increment)
+                if (self.bootstrapping and
+                        self.base_balance_history[2] == self.base_balance_history[0] and
+                        self.quote_balance_history[2] == self.quote_balance_history[0]):
+                    # Turn off bootstrap mode whether we're didn't allocated assets during previous 3 maintenance
+                    self.log.debug('Turning bootstrapping off: actual_spread > target_spread, we have free '
+                                   'balances and cannot allocate them normally 3 times in a row')
+                    self.bootstrapping = False
+
+                """ Note: because we're using operations batching, there is possible a situation when we will have
+                    both free balances and `self.actual_spread >= self.target_spread + self.increment`. In such case
+                    there will be TWO orders placed, one buy and one sell despite only one would be enough to reach
+                    target spread. Sure, we can add a workaround for that by overriding `closest_opposite_price` for
+                    second call of allocate_asset(). We are not doing this because we're not doing assumption on
+                    which side order (buy or sell) should be placed first. So, when placing two closer orders from
+                    both sides, spread will be no less than `target_spread - increment`, thus not making any loss.
+                """
+
+                # Place order closer to the center price
+                self.log.debug('Placing closer {} order; actual spread: {:.4%}, target + increment: {:.4%}'
+                               .format(order_type, self.actual_spread, self.target_spread + self.increment))
+                if self.bootstrapping:
+                    self.place_closer_order(asset, closest_own_order)
+                else:
+                    # Place order limited by size of the opposite-side order
+                    if (self.mode == 'mountain' or
+                            (self.mode == 'buy_slope' and asset == 'base') or
+                            (self.mode == 'sell_slope' and asset == 'quote')):
+                        opposite_asset_limit = None
+                        own_asset_limit = closest_opposite_order['quote']['amount']
+                        self.log.debug('Limiting {} order by opposite order: {} {}'
+                                       .format(order_type, own_asset_limit, symbol))
+                    elif self.mode == 'neutral':
+                        opposite_asset_limit = closest_opposite_order['base']['amount'] * \
+                                               math.sqrt(1 + self.increment)
+                        own_asset_limit = None
+                        self.log.debug('Limiting {} order by opposite order: {} {}'.format(
+                                       order_type, opposite_asset_limit, symbol))
+                    elif (self.mode == 'valley' or
+                          (self.mode == 'buy_slope' and asset == 'quote') or
+                          (self.mode == 'sell_slope' and asset == 'base')):
+                            opposite_asset_limit = closest_opposite_order['base']['amount']
                             own_asset_limit = None
                             self.log.debug('Limiting {} order by opposite order: {} {}'.format(
                                            order_type, opposite_asset_limit, symbol))
-                        elif (self.mode == 'valley' or
-                              (self.mode == 'buy_slope' and asset == 'quote') or
-                              (self.mode == 'sell_slope' and asset == 'base')):
-                                opposite_asset_limit = closest_opposite_order['base']['amount']
-                                own_asset_limit = None
-                                self.log.debug('Limiting {} order by opposite order: {} {}'.format(
-                                               order_type, opposite_asset_limit, symbol))
-                        self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
-                                                opposite_asset_limit=opposite_asset_limit, allow_partial=False)
-                elif not opposite_orders:
-                    # Do not try to do anything than placing higher buy whether there is no sell orders
-                    return
-                elif not self.check_partial_fill(closest_opposite_order, fill_threshold=0):
-                    """ Partially filled order on the opposite side, wait until closest order will be fully
-                        fillled. Previously we did reservation of funds for next order and allocated remainder, but
-                        this approach is not well-suited for valley mode, causing liquidity decrease around center.
-                    """
-                    self.log.debug('Partially filled order on opposite side, reserving funds until fully filled')
-                    return
-                elif ((asset == 'base' and furthest_own_order_price /
-                     (1 + self.increment) < self.lower_bound) or
-                        (asset == 'quote' and furthest_own_order_price *
-                         (1 + self.increment) > self.upper_bound)):
-                    # Lower/upper bound has been reached and now will start allocating rest of the balance.
-                    self.bootstrapping = False
-                    self.log.debug('Increasing sizes of {} orders'.format(order_type))
-                    self.increase_order_sizes(asset, asset_balance, own_orders)
-                else:
-                    # Range bound is not reached, we need to add additional orders at the extremes
-                    self.bootstrapping = False
-                    self.log.debug('Placing further order than current furthest {} order'.format(order_type))
-                    self.place_further_order(asset, furthest_own_order, allow_partial=True)
-            else:
+                    self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
+                                            opposite_asset_limit=opposite_asset_limit, allow_partial=False)
+            elif not self.check_partial_fill(closest_own_order):
+                # Replace closest own order if `fill % > default threshold`
                 self.replace_partially_filled_order(closest_own_order)
+                return
+            elif not opposite_orders:
+                # Do not try to do anything than placing higher buy whether there is no sell orders
+                return
+            elif not self.check_partial_fill(closest_opposite_order, fill_threshold=0):
+                """ Partially filled order on the opposite side, wait until closest order will be fully
+                    fillled. Previously we did reservation of funds for next order and allocated remainder, but
+                    this approach is not well-suited for valley mode, causing liquidity decrease around center.
+                """
+                self.log.debug('Partially filled order on opposite side, reserving funds until fully filled')
+                return
+            elif ((asset == 'base' and furthest_own_order_price /
+                 (1 + self.increment) < self.lower_bound) or
+                    (asset == 'quote' and furthest_own_order_price *
+                     (1 + self.increment) > self.upper_bound)):
+                # Lower/upper bound has been reached and now will start allocating rest of the balance.
+                self.bootstrapping = False
+                self.log.debug('Increasing sizes of {} orders'.format(order_type))
+                self.increase_order_sizes(asset, asset_balance, own_orders)
+            else:
+                # Range bound is not reached, we need to add additional orders at the extremes
+                self.bootstrapping = False
+                self.log.debug('Placing further order than current furthest {} order'.format(order_type))
+                self.place_further_order(asset, furthest_own_order, allow_partial=True)
         else:
             # Place first buy order as close to the lower bound as possible
             self.bootstrapping = True
