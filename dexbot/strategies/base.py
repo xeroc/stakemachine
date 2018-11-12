@@ -138,11 +138,13 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         # External exchanges used to calculate center price
         exchanges = [
-            ('gecko', 'coingecko'),
-            ('ccxt-kraken', 'kraken'),
-            ('ccxt-bitfinex', 'bitfinex'),
-            ('ccxt-gdax', 'gdax'),
-            ('ccxt-binance', 'binance')
+            ('none', 'None - Use Manual or Bitshares DEX Price (default)'),
+            ('gecko', 'Coingecko'),
+            ('waves', 'Waves DEX'),
+            ('kraken', 'Kraken'),
+            ('bitfinex', 'Bitfinex'),
+            ('gdax', 'Gdax'),
+            ('binance', 'Binance')
         ]
       
         # Common configs
@@ -153,10 +155,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             ConfigElement('market', 'string', 'USD:BTS', 'Market',
                           'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
                           r'[A-Z\.]+[:\/][A-Z\.]+'),
-            ConfigElement('external_center_price', 'bool', True, 
-                          'Use External center price (if not available, defaults to manual center price)',
-                          'External center price expressed in base asset: BASE/QUOTE', None),
-            ConfigElement('external_center_price_source', 'choice', 'gecko', 'External Source',
+            ConfigElement('external_center_price_source', 'choice', exchanges[0], 'External Source',
                           'External Price Source, select one', exchanges),
             ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
@@ -251,9 +250,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         self.fetch_depth = 8
                  
         # Set external price source
-        if self.worker.get('external_center_price', False):
-            self.external_price_source = self.worker.get('external_center_price_source')
-
+        self.external_price_source = self.worker.get('external_center_price_source')
+        
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
 
@@ -611,10 +609,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         except IndexError:
             return None
 
-    def get_external_market_center_price(self):
+    def get_external_market_center_price(self, external_source):
         # Todo: Work in progress
-        ticker_price = 6363.00  # Dummy price
-        return ticker_price
+        print("inside get_emcp, exchange: ", external_source, sep=':')  # debug
+        market =  self.market.get_string('/')
+        print("market:", market, sep=' ') # debug
+        # center_price = process_pair(exchange, market)        #todo: use process pair object to get center price
+        center_price = 0.08888  # Dummy price for now
+        return center_price
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
@@ -624,26 +626,31 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :param bool | suppress_errors:
             :return: Market center price as float
         """
-
-        buy_price = self.get_market_buy_price(quote_amount=quote_amount,
-                                              base_amount=base_amount, exclude_own_orders=False)
-        sell_price = self.get_market_sell_price(quote_amount=quote_amount,
-                                                base_amount=base_amount, exclude_own_orders=False)
-
-        if buy_price is None or buy_price == 0.0:
-            if not suppress_errors:
-                self.log.critical("Cannot estimate center price, there is no highest bid.")
-                self.disabled = True
-            return None
-
-        if sell_price is None or sell_price == 0.0:
-            if not suppress_errors:
-                self.log.critical("Cannot estimate center price, there is no lowest ask.")
-                self.disabled = True
-            return None
-
-        # Calculate and return market center price
-        return buy_price * math.sqrt(sell_price / buy_price)
+        center_price = None
+        external_source = self.external_price_source
+        
+        if external_source != 'none':
+            center_price = self.get_external_market_center_price(external_source)
+        else:
+            buy_price = self.get_market_buy_price(quote_amount=quote_amount,
+                                                  base_amount=base_amount, exclude_own_orders=False)
+            sell_price = self.get_market_sell_price(quote_amount=quote_amount,
+                                                    base_amount=base_amount, exclude_own_orders=False)
+            if buy_price is None or buy_price == 0.0:
+                if not suppress_errors:
+                    self.log.critical("Cannot estimate center price, there is no highest bid.")
+                    self.disabled = True
+                    return None
+                
+            if sell_price is None or sell_price == 0.0:
+                if not suppress_errors:
+                    self.log.critical("Cannot estimate center price, there is no lowest ask.")
+                    self.disabled = True
+                    return None
+            # Calculate and return market center price
+            center_price = buy_price * math.sqrt(sell_price / buy_price)        
+        print("center_price : " , center_price, sep=' ') # debug 
+        return center_price
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
@@ -880,13 +887,12 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         return buy_orders
 
-    def filter_sell_orders(self, orders, sort=None, invert=True):
+    def filter_sell_orders(self, orders, sort=None):
         """ Return sell orders from list of orders. Can be used to pick sell orders from a list
             that is not up to date with the blockchain data.
 
             :param list | orders: List of orders
             :param string | sort: DESC or ASC will sort the orders accordingly, default None
-            :param bool | invert: return inverted orders or not
             :return list | sell_orders: List of sell orders only
         """
         sell_orders = []
@@ -896,9 +902,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             # Check if the order is buy order, by comparing asset symbol of the order and the market
             if order['base']['symbol'] != self.market['base']['symbol']:
                 # Invert order before appending to the list, this gives easier comparison in strategy logic
-                if invert:
-                    order = order.invert()
-                sell_orders.append(order)
+                sell_orders.append(order.invert())
 
         if sort:
             sell_orders = self.sort_orders_by_price(sell_orders, sort)
@@ -1060,8 +1064,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a buy order for {:.{prec}f} {} @ {:.8f}'
-                      .format(base_amount, symbol, price, prec=precision))
+        self.log.info('Placing a buy order for {} {} @ {:.8f}'.format(base_amount, symbol, price))
 
         # Place the order
         buy_transaction = self.retry_action(
@@ -1114,8 +1117,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a sell order for {:.{prec}f} {} @ {:.8f}'
-                      .format(quote_amount, symbol, price, prec=precision))
+        self.log.info('Placing a sell order for {} {} @ {:.8f}'.format(quote_amount, symbol, price))
 
         # Place the order
         sell_transaction = self.retry_action(
