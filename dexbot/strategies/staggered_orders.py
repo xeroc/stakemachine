@@ -504,7 +504,7 @@ class Strategy(StrategyBase):
                 self.log.debug('Partially filled order on opposite side, reserving funds until fully filled')
                 return
             elif ((asset == 'base' and furthest_own_order_price /
-                 (1 + self.increment) < self.lower_bound) or
+                   (1 + self.increment) < self.lower_bound) or
                     (asset == 'quote' and furthest_own_order_price *
                      (1 + self.increment) > self.upper_bound)):
                 # Lower/upper bound has been reached and now will start allocating rest of the balance.
@@ -655,7 +655,7 @@ class Strategy(StrategyBase):
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
                         self.log.debug('Limiting new {} order to avail balance: {:.8f} {}'
-                                      .format(order_type, new_order_amount, symbol))
+                                       .format(order_type, new_order_amount, symbol))
                     quote_amount = 0
                     price = 0
 
@@ -727,9 +727,10 @@ class Strategy(StrategyBase):
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
                         self.log.debug('Limiting new order to avail asset balance: {:.8f} {}'
-                                      .format(new_order_amount, symbol))
+                                       .format(new_order_amount, symbol))
 
                     price = 0
+                    quote_amount = 0
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
@@ -790,7 +791,7 @@ class Strategy(StrategyBase):
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
                         self.log.debug('Limiting new order to avail asset balance: {:.8f} {}'
-                                      .format(new_order_amount, symbol))
+                                       .format(new_order_amount, symbol))
 
                     price = 0
 
