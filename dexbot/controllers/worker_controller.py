@@ -12,6 +12,7 @@ import bitshares
 from bitshares.instance import shared_bitshares_instance
 from bitshares.asset import Asset
 from bitshares.account import Account
+from bitshares.exceptions import KeyAlreadyInStoreException
 from bitsharesbase.account import PrivateKey
 from PyQt5 import QtGui
 
@@ -57,7 +58,7 @@ class WorkerController:
         wallet = self.bitshares.wallet
         try:
             wallet.addPrivateKey(private_key)
-        except ValueError:
+        except KeyAlreadyInStoreException:
             # Private key already added
             pass
 
@@ -240,6 +241,7 @@ class WorkerController:
         if self.mode == 'add':
             # Add the private key to the database
             private_key = self.view.private_key_input.text()
+
             if private_key:
                 self.add_private_key(private_key)
 

@@ -97,7 +97,11 @@ def process_config_element(elem, whiptail, config):
 
     if elem.type in ("float", "int"):
         while True:
-            txt = whiptail.prompt(title, str(config.get(elem.key, elem.default)))
+            if elem.type == 'int':
+                template = '{}'
+            else:
+                template = '{:.8f}'
+            txt = whiptail.prompt(title, template.format(config.get(elem.key, elem.default)))
             try:
                 if elem.type == "int":
                     val = int(txt)
