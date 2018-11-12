@@ -138,7 +138,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         # External exchanges used to calculate center price
         exchanges = [
-            ('none', 'None - Use Manual or Bitshares DEX Price (default)'),
+            ('none', 'None. Use Manual or Bitshares DEX Price (default)'),
             ('gecko', 'Coingecko'),
             ('waves', 'Waves DEX'),
             ('kraken', 'Kraken'),
