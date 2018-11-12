@@ -2,7 +2,7 @@ import math
 from datetime import datetime, timedelta
 from bitshares.dex import Dex
 
-from dexbot.strategies.base import StrategyBase, DetailElement
+from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement
 from dexbot.qt_queue.idle_queue import idle_add
 
 
