@@ -887,7 +887,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         return buy_orders
 
-    def filter_sell_orders(self, orders, sort=None,  invert=True):
+    def filter_sell_orders(self, orders, sort=None, invert=True):
         """ Return sell orders from list of orders. Can be used to pick sell orders from a list
             that is not up to date with the blockchain data.
 
@@ -905,7 +905,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                 # Invert order before appending to the list, this gives easier comparison in strategy logic
                 if invert:
                     order = order.invert()
-                sell_orders.append(order.invert())
+                sell_orders.append(order)
 
         if sort:
             sell_orders = self.sort_orders_by_price(sell_orders, sort)
@@ -1121,7 +1121,8 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a sell order for {} {} @ {:.8f}'.format(quote_amount, symbol, price))
+        self.log.info('Placing a sell order for {:.{prec}f} {} @ {:.8f}'
+                      .format(quote_amount, symbol, price, prec=precision))
 
         # Place the order
         sell_transaction = self.retry_action(
