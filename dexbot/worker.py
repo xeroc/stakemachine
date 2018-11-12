@@ -204,6 +204,7 @@ class WorkerInfrastructure(threading.Thread):
             if pause:
                 for worker in self.workers:
                     self.workers[worker].pause()
+                self.workers = []
 
         # Update other workers
         if len(self.workers) > 0:
