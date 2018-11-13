@@ -10,6 +10,7 @@ from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.statemachine import StateMachine
 from dexbot.helper import truncate
+from dexbot.strategies.external_feeds.price_feed import PriceFeed
 
 from events import Events
 import bitshares.exceptions
@@ -614,7 +615,11 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
               "fetch depth", self.fetch_depth, sep=':')  # debug
         market =  self.market.get_string('/')
         print("market:", market, sep=' ') # debug
-        # center_price = price_feed(exchange, market)
+        print("exchange:", self.external_price_source, sep=' ')
+        pf = PriceFeed(self.external_price_source, market)
+        center_price = pf.get_center_price()
+        print(" PriceFeed ", center_price, sep=':')
+
         center_price = 0.10778888  # Dummy price for now
         print("external dummy price", center_price, sep=' ')
         return center_price
