@@ -80,15 +80,19 @@ class Strategy(StrategyBase):
 
         if not self.market_center_price:
             self.empty_market = True
-
+            
         # Worker parameters
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
         if self.is_center_price_dynamic:
             self.center_price = None
             self.center_price_depth = self.worker.get('center_price_depth', 0)
         else:
-            self.center_price = self.worker["center_price"]
-
+            external_source = self.external_price_source
+            if external_source != 'none':
+                self.center_price = self.get_external_market_center_price()
+            else:
+                self.center_price = self.worker["center_price"]
+            
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)
         self.manual_offset = self.worker.get('manual_offset', 0) / 100

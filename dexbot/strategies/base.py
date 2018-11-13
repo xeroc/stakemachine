@@ -609,13 +609,13 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         except IndexError:
             return None
 
-    def get_external_market_center_price(self, external_source):
+    def get_external_market_center_price(self):
         # Todo: Work in progress
-        print("inside get_emcp, exchange: ", external_source, sep=':')  # debug
+        print("inside get_emcp, exchange: ", self.external_price_source, "fetch depth", self.fetch_depth, sep=':')  # debug
         market =  self.market.get_string('/')
         print("market:", market, sep=' ') # debug
         # center_price = process_pair(exchange, market)        #todo: use process pair object to get center price
-        center_price = 0.08888  # Dummy price for now
+        center_price = 0.0778888  # Dummy price for now
         return center_price
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
@@ -627,28 +627,23 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :return: Market center price as float
         """
         center_price = None
-        external_source = self.external_price_source
-        
-        if external_source != 'none':
-            center_price = self.get_external_market_center_price(external_source)
-        else:
-            buy_price = self.get_market_buy_price(quote_amount=quote_amount,
-                                                  base_amount=base_amount, exclude_own_orders=False)
-            sell_price = self.get_market_sell_price(quote_amount=quote_amount,
-                                                    base_amount=base_amount, exclude_own_orders=False)
-            if buy_price is None or buy_price == 0.0:
-                if not suppress_errors:
-                    self.log.critical("Cannot estimate center price, there is no highest bid.")
-                    self.disabled = True
-                    return None
-                
-            if sell_price is None or sell_price == 0.0:
-                if not suppress_errors:
-                    self.log.critical("Cannot estimate center price, there is no lowest ask.")
-                    self.disabled = True
-                    return None
+        buy_price = self.get_market_buy_price(quote_amount=quote_amount,
+                                              base_amount=base_amount, exclude_own_orders=False)
+        sell_price = self.get_market_sell_price(quote_amount=quote_amount,
+                                                base_amount=base_amount, exclude_own_orders=False)
+        if buy_price is None or buy_price == 0.0:
+            if not suppress_errors:
+                self.log.critical("Cannot estimate center price, there is no highest bid.")
+                self.disabled = True
+                return None
+            
+        if sell_price is None or sell_price == 0.0:
+            if not suppress_errors:
+                self.log.critical("Cannot estimate center price, there is no lowest ask.")
+                self.disabled = True
+                return None
             # Calculate and return market center price
-            center_price = buy_price * math.sqrt(sell_price / buy_price)        
+        center_price = buy_price * math.sqrt(sell_price / buy_price)        
         print("center_price : " , center_price, sep=' ') # debug 
         return center_price
 
