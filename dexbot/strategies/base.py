@@ -140,7 +140,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         exchanges = [
             ('none', 'None. Use Manual or Bitshares DEX Price (default)'),
             ('gecko', 'Coingecko'),
-            ('waves', 'Waves DEX'),
+            ('waves', 'Waves DEX (todo)'),
             ('kraken', 'Kraken'),
             ('bitfinex', 'Bitfinex'),
             ('gdax', 'Gdax'),
@@ -610,12 +610,13 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
     def get_external_market_center_price(self):
-        # Todo: Work in progress
-        print("inside get_emcp, exchange: ", self.external_price_source, "fetch depth", self.fetch_depth, sep=':')  # debug
+        print("inside get_emcp, exchange: ", self.external_price_source,
+              "fetch depth", self.fetch_depth, sep=':')  # debug
         market =  self.market.get_string('/')
         print("market:", market, sep=' ') # debug
-        # center_price = process_pair(exchange, market)        #todo: use process pair object to get center price
-        center_price = 0.0778888  # Dummy price for now
+        # center_price = price_feed(exchange, market)
+        center_price = 0.10778888  # Dummy price for now
+        print("external dummy price", center_price, sep=' ')
         return center_price
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
@@ -644,7 +645,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                 return None
             # Calculate and return market center price
         center_price = buy_price * math.sqrt(sell_price / buy_price)        
-        print("center_price : " , center_price, sep=' ') # debug 
+        print("inside get_market_center_price : " , center_price, sep=' ') # debug 
         return center_price
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):

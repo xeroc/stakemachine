@@ -75,7 +75,7 @@ class Strategy(StrategyBase):
         self.error_onAccount = self.error
 
         # Market status
-        self.market_center_price = self.get_market_center_price(suppress_errors=True)
+        self.market_center_price = self.get_market_center_price(suppress_errors=True)        
         self.empty_market = False
 
         if not self.market_center_price:
@@ -90,8 +90,12 @@ class Strategy(StrategyBase):
             external_source = self.external_price_source
             if external_source != 'none':
                 self.center_price = self.get_external_market_center_price()
+                if self.center_price is None:
+                    self.center_price = self.worker["center_price"] # set as manual
+                print("inside relative orders, get external center price", self.center_price, sep=' ')  # debug
             else:
                 self.center_price = self.worker["center_price"]
+                print("inside relative orders, no external center price", self.center_price, sep=' ') # debug
             
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)
