@@ -199,12 +199,18 @@ class Strategy(StrategyBase):
         # BASE asset check
         if self.base_balance > self.base_asset_threshold:
             # Allocate available BASE funds
+            base_allocated = False
             self.allocate_asset('base', self.base_balance)
+        else:
+            base_allocated = True
 
         # QUOTE asset check
         if self.quote_balance > self.quote_asset_threshold:
             # Allocate available QUOTE funds
+            quote_allocated = False
             self.allocate_asset('quote', self.quote_balance)
+        else:
+            quote_allocated = True
 
         # Send pending operations
         if not self.bitshares.txbuffer.is_empty():
@@ -268,24 +274,41 @@ class Strategy(StrategyBase):
                 self.log_maintenance_time()
                 return
 
-        # Measure which price is closer to the center
-        buy_distance = self.market_center_price - highest_buy_price
-        sell_distance = lowest_sell_price - self.market_center_price
+        # What amount of quote may be obtained if buy using avail base balance
+        can_obtain_quote = self.base_balance['amount'] * self.market_center_price
+        side_to_cancel = None
 
-        if buy_distance > sell_distance:
-            if self.market_center_price > highest_buy_price * (1 + self.target_spread):
-                # Cancel lowest buy order because center price moved up.
-                # On the next run there will be placed next buy order closer to the new center
-                self.log.info('Free balances are not changing and we are not in bootstrap mode and target spread is '
-                              'not reached. Cancelling lowest buy order as a fallback.')
-                self.cancel(self.buy_orders[-1])
+        """ The logic is following: compare on which side we have bigger free balance, then cancel furthest order on
+            that side to be able to place closer order. This is for situations when amount obtained from previous trade
+            is not enough to place closer order.
+        """
+        if can_obtain_quote > self.quote_balance['amount'] and not base_allocated:
+            side_to_cancel = 'buy'
+        elif self.quote_balance['amount'] > can_obtain_quote and not quote_allocated:
+            side_to_cancel = 'sell'
+
+        if not side_to_cancel:
+            """ Balance-based cancel logic didn't give a result, so use logic based on distance to market center
+            """
+            # Measure which price is closer to the center
+            buy_distance = self.market_center_price - highest_buy_price
+            sell_distance = lowest_sell_price - self.market_center_price
+
+            if buy_distance > sell_distance:
+                side_to_cancel = 'buy'
+            else:
+                side_to_cancel = 'sell'
+
+        if side_to_cancel == 'buy':
+            self.log.info('Free balances are not changing, bootstrap is off and target spread is not reached. '
+                          'Cancelling lowest buy order as a fallback')
+            self.cancel(self.buy_orders[-1])
+        elif side_to_cancel == 'sell':
+            self.log.info('Free balances are not changing, bootstrap is off and target spread is not reached. '
+                          'Cancelling highest sell order as a fallback')
+            self.cancel(self.sell_orders[-1])
         else:
-            if self.market_center_price < lowest_sell_price * (1 - self.target_spread):
-                # Cancel highest sell order because center price moved down.
-                # On the next run there will be placed next sell closer to the new center
-                self.log.info('Free balances are not changing and we are not in bootstrap mode and target spread is '
-                              'not reached. Cancelling highest sell order as a fallback.')
-                self.cancel(self.sell_orders[-1])
+            self.log.info('Target spread is not reached but cannot determine what furthest order to cancel')
 
         self.last_check = datetime.now()
         self.log_maintenance_time()
