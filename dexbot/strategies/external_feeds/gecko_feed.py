@@ -65,12 +65,12 @@ def get_gecko_price(symbol):
             debug(" Trying pair inversion...")
             current_price = get_market_price(new_quote, new_base)
 
-            print(new_base + '/' + new_quote,  str(current_price), sep=':')
+            debug(new_base + '/' + new_quote,  str(current_price))
             if current_price is not None:   # Re-invert price
                 actual_price = 1/current_price
-                print(new_quote + '/' + new_base, str(actual_price), sep=':')
+                debug(new_quote + '/' + new_base, str(actual_price))
         else:
-            print(symbol, current_price, sep=':')
+            debug(symbol, current_price)
     except Exception as e:
         print(type(e).__name__, e.args, str(e))
         print_usage()

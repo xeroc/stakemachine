@@ -3,7 +3,6 @@ from dexbot.strategies.external_feeds.waves_feed import get_waves_price
 from dexbot.strategies.external_feeds.gecko_feed import get_gecko_price
 
 from dexbot.strategies.external_feeds.process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol, debug
-#from gecko_feed import get_gecko_price
 
 
 class PriceFeed:
@@ -30,19 +29,18 @@ class PriceFeed:
             price = get_gecko_price(self.symbol)
         elif self.exchange == 'waves':
             print("use waves -", self.exchange, ' symbol ', self.symbol, sep=":")
-            price = get_waves_price(self.pair[1], self.pair[0])
-
+            price = get_waves_price(symbol_=self.symbol)
         return price
 
 
-    
 if __name__ == '__main__':
-    exchanges = ['bitfinex', 'kraken', 'gecko', 'waves']
+    exchanges = ['gecko', 'bitfinex', 'kraken', 'waves']
     symbol = 'BTC/USD'  # quote/base for external exchanges
     
     for exchange in exchanges:
         pf = PriceFeed(exchange, symbol)
         pf.prefilter()
+        print(pf.pair)
         center_price = pf.get_center_price()
         print("center price: ", center_price)
         
