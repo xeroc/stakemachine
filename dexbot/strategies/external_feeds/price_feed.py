@@ -1,8 +1,8 @@
 from dexbot.strategies.external_feeds.ccxt_feed import get_ccxt_price
-#from ccxt_feed import get_ccxt_price
-
+from dexbot.strategies.external_feeds.waves_feed import get_waves_price
+from dexbot.strategies.external_feeds.process_pair import split_pair
 #from gecko_feed import get_gecko_price
-#from waves_feed import get_waves_price
+
 
 class PriceFeed:
 
@@ -13,6 +13,7 @@ class PriceFeed:
 
         
     def get_center_price(self):
+        pair = split_pair(symbol)
         price = None
         if self.exchange not in self.alt_exchanges:
             print("use ccxt exchange ", self.exchange, ' symbol ', self.symbol, sep=":")   
@@ -20,15 +21,19 @@ class PriceFeed:
         elif self.exchange == 'gecko':
             print("gecko - WIP todo")
         elif self.exchange == 'waves':
-            print("waves - WIP todo") 
+            print("use waves -", self.exchange, ' symbol ', self.symbol, sep=":")
+            price = get_waves_price(pair[1], pair[0])
+
         return price
 
 
+    
 if __name__ == '__main__':
     exchanges = ['bitfinex', 'kraken', 'gecko', 'waves']
-    symbol = 'BTC/USD'
+    symbol = 'BTC/USD'  # quote/base for external exchanges
     
     for exchange in exchanges:
         pf = PriceFeed(exchange, symbol)
         center_price = pf.get_center_price()
         print("center price: ", center_price)
+        

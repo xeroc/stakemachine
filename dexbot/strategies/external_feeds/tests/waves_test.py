@@ -3,6 +3,14 @@ import pywaves as pw
 # GET /ticker/{AMOUNT_ASSET}/{PRICE_ASSET}
 #ticker_url = https://marketdata.wavesplatform.com/api/ticker/BTC/USD
 
+def get_asset(symbol, coin_list):
+        asset_id = None
+        try:
+                asset_id = [obj for obj in coin_list if obj['symbol'] == symbol][0]['assetID']                
+        except IndexError as e:
+                print(e)
+        return pw.Asset(asset_id)
+
 # set the asset pair
 WAVES_BTC = pw.AssetPair(pw.WAVES, pw.BTC)
 

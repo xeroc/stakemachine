@@ -1,6 +1,5 @@
 import re
 
-
 def print_args(*args):
     print(' '.join([str(arg) for arg in args]))
 

@@ -23,7 +23,7 @@ def print_usage():
           "Symbol is required, for example:", yellow('BTC/USD'), sep='')
 
 
-def get_gecko_json(url):
+def get_json(url):
     r = requests.get(url)
     json_obj = r.json()
     return json_obj
@@ -39,12 +39,12 @@ def check_gecko_symbol_exists(coin_list, symbol):
 
 def get_gecko_market_price(base, quote):
     try:
-        coin_list = get_gecko_json(GECKO_COINS_URL+'list')
+        coin_list = get_json(GECKO_COINS_URL+'list')
         quote_name = check_gecko_symbol_exists(coin_list, quote.lower())
         lookup_pair = "?vs_currency="+base.lower()+"&ids="+quote_name
         market_url = GECKO_COINS_URL+'markets'+lookup_pair
         debug(market_url)
-        ticker = get_gecko_json(market_url)
+        ticker = get_json(market_url)
         current_price = None
         for entry in ticker:
             current_price = entry['current_price']
