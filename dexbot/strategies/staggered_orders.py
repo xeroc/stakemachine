@@ -703,7 +703,6 @@ class Strategy(StrategyBase):
         elif (self.mode == 'valley' or
               (self.mode == 'buy_slope' and asset == 'base') or
               (self.mode == 'sell_slope' and asset == 'quote')):
-
             """ Starting from the furthest order, for each order, see if it is approximately
                 maximum size.
                 If it is, move on to next.
@@ -712,40 +711,86 @@ class Strategy(StrategyBase):
                 If furthest is reached, increase it to maximum size.
 
                 Maximum size is (example for buy orders):
-                1. As many "base" as the order below (closer_order_bound)
+                1. As many "base" as the further order (further_order_bound)
+                2. As many "base" as the order closer to center (closer_order_bound)
             """
             orders_count = len(orders)
             orders = list(reversed(orders))
+
+            closest_order = orders[-1]
+            closest_order_bound = closest_order['base']['amount'] * (1 + self.increment)
 
             for order in orders:
                 order_index = orders.index(order)
                 order_amount = order['base']['amount']
 
+                if order_index == 0:
+                    # This is a furthest order
+                    further_order_bound = order['base']['amount']
+                    furthest_order_bound = order['base']['amount']
+                else:
+                    # Not a furthest order
+                    further_order = orders[order_index - 1]
+                    further_order_bound = further_order['base']['amount']
+
                 if order_index + 1 < orders_count:
                     # Closer order is an order which one-step closer to the center
                     closer_order = orders[order_index + 1]
                     closer_order_bound = closer_order['base']['amount']
+                    is_closest_order = False
                 else:
                     """ Special processing for the closest order.
 
                         Calculate new order amount based on orders count, but do not allow to perform too small 
                         increase rounds. New lowest buy / highest sell should be higher by at least one increment.
                     """
-                    closer_order_bound = order_amount * (1 + self.increment)
+                    is_closest_order = True
+                    closer_order_bound = closest_order_bound
                     new_amount = (total_balance / orders_count) / (1 + self.increment / 100)
-                    if new_amount > closer_order_bound:
+                    if furthest_order_bound < new_amount > closer_order_bound:
                         # Maximize order up to max possible amount if we can
                         closer_order_bound = new_amount
 
-                """ Check whether order amount is less than closer order and the diff is more than 50% of one increment
-                    Note: we can use only 50% or less diffs. Bigger will not work. For example, with diff 80% an order
-                    may have an actual difference like 30% from closer and 70% from further.
-                """
-                if (order_amount * (1 + self.increment / 10) < closer_order_bound and
+                order_amount_normalized = order_amount * (1 + self.increment / 10)
+                need_increase = False
+
+                if (order_amount_normalized < further_order_bound and
+                        further_order_bound - order_amount >= order_amount * self.increment / 2 and
+                        order_amount_normalized < closest_order_bound):
+                    """ Check whether order amount is less than further order and also less than `closest order +
+                        increment`. We need this check to be able to increase closer orders more smoothly. Here is the
+                        example:
+
+                        [100 100 100 10 10 10] -- starting point, buy orders, result of imbalanced sides
+                        [100 100 100 12 10 10]
+                        [100 100 100 12 12 10]
+                        [100 100 100 12 12 12]
+
+                        Note: This check is taking precedence because we need to begin new increase round only after all
+                        orders will be max-sized.
+                    """
+                    need_increase = True
+
+                    if is_closest_order:
+                        new_order_amount = closer_order_bound
+                    else:
+                        # Do not allow to increase more than further order amount
+                        new_order_amount = min(closer_order_bound * (1 + self.increment), further_order_bound)
+
+                    if new_order_amount < order_amount_normalized:
+                        # Skip order if new amount is less than current for any reason
+                        need_increase = False
+
+                elif (order_amount_normalized < closer_order_bound and
                         closer_order_bound - order_amount >= order_amount * self.increment / 2):
-
+                    """ Check whether order amount is less than closer or order and the diff is more than 50% of one
+                        increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with diff 80%
+                        an order may have an actual difference like 30% from closer and 70% from further.
+                    """
                     new_order_amount = closer_order_bound
+                    need_increase = True
 
+                if need_increase:
                     # Limit order to available balance
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
@@ -774,40 +819,90 @@ class Strategy(StrategyBase):
                     return
 
         elif self.mode == 'neutral':
+            """ Starting from the furthest order, for each order, see if it is approximately
+                maximum size.
+                If it is, move on to next.
+                If not, cancel it and replace with maximum size order. Maximum order size will be a
+                size of closer-to-center order. Then return.
+                If furthest is reached, increase it to maximum size.
+
+                Maximum size is (example for buy orders):
+                1. As many "base * sqrt(1 + increment)" as the further order (further_order_bound)
+                2. As many "base / sqrt(1 + increment)" as the order closer to center (closer_order_bound)
+            """
+
             orders_count = len(orders)
             orders = list(reversed(orders))
+
+            closest_order = orders[-1]
+            closest_order_bound = closest_order['base']['amount'] * math.sqrt(1 + self.increment)
 
             for order in orders:
                 order_index = orders.index(order)
                 order_amount = order['base']['amount']
 
+                if order_index == 0:
+                    # This is a furthest order
+                    further_order_bound = order['base']['amount']
+                    furthest_order_bound = order['base']['amount']
+                else:
+                    # Not a furthest order
+                    further_order = orders[order_index - 1]
+                    further_order_bound = further_order['base']['amount'] * math.sqrt(1 + self.increment)
+
                 if order_index + 1 < orders_count:
                     # Closer order is an order which one-step closer to the center
                     closer_order = orders[order_index + 1]
                     closer_order_bound = closer_order['base']['amount'] / math.sqrt(1 + self.increment)
+                    is_closest_order = False
                 else:
-                    closer_order_bound = order_amount * math.sqrt(1 + self.increment)
+                    is_closest_order = True
+                    closer_order_bound = closest_order_bound
 
                     new_orders_sum = 0
                     amount = order_amount
                     for o in orders:
                         new_orders_sum += amount
                         amount = amount / math.sqrt(1 + self.increment)
+                    virtual_furthest_order_bound = amount * (total_balance / new_orders_sum)
                     new_amount = order_amount * (total_balance / new_orders_sum)
 
-                    if new_amount > closer_order_bound:
+                    if new_amount > closer_order_bound and virtual_furthest_order_bound > furthest_order_bound:
                         # Maximize order up to max possible amount if we can
                         closer_order_bound = new_amount
 
+                need_increase = False
                 order_amount_normalized = order_amount * (1 + self.increment / 10)
-                if ((order_amount_normalized < further_order_bound and
-                        further_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2) \
-                            or
-                        (order_amount_normalized < closer_order_bound and
-                        closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2)):
+
+                if (order_amount_normalized < further_order_bound and
+                        further_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
+                    # Order is less than further order and diff is more than `increment / 2`
+
+                    if is_closest_order:
+                        new_order_amount = closer_order_bound
+                        need_increase = True
+                    else:
+                        price = closest_order['price']
+                        amount = closest_order['base']['amount']
+                        while price > order['price'] * (1 + self.increment / 10):
+                            # Calculate closer order amount based on current closest order
+                            previous_amount = amount
+                            price = price / (1 + self.increment)
+                            amount = amount / math.sqrt(1 + self.increment)
+                        if order_amount_normalized < previous_amount:
+                            # Current order is less than virtually calculated next order
+                            # Do not allow to increase more than further order amount
+                            new_order_amount = min(closer_order['base']['amount'], further_order_bound)
+                            need_increase = True
+
+                elif (order_amount_normalized < closer_order_bound and
+                        closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
+                    # Order is less than closer order and diff is more than `increment / 2`
 
                     new_order_amount = closer_order_bound
+                    need_increase = True
 
+                if need_increase:
                     # Limit order to available balance
                     if asset_balance < new_order_amount - order_amount:
                         new_order_amount = order_amount + asset_balance['amount']
