@@ -799,14 +799,12 @@ class Strategy(StrategyBase):
                         # Maximize order up to max possible amount if we can
                         closer_order_bound = new_amount
 
-                self.log.debug('order amount: {:.8f}, closer_order_bound: {:.8f}'
-                               .format(order_amount, closer_order_bound))
-                self.log.debug('diff: {:.8f}, half of increase: {:.8f}'
-                               .format(closer_order_bound - order_amount,
-                                       order_amount * (math.sqrt(1 + self.increment) - 1) / 2))
-
-                if (order_amount * (1 + self.increment / 10) < closer_order_bound and
-                        closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
+                order_amount_normalized = order_amount * (1 + self.increment / 10)
+                if ((order_amount_normalized < further_order_bound and
+                        further_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2) \
+                            or
+                        (order_amount_normalized < closer_order_bound and
+                        closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2)):
 
                     new_order_amount = closer_order_bound
 
