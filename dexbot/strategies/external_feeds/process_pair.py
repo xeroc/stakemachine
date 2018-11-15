@@ -1,6 +1,6 @@
 import re
 
-isDebug = False
+isDebug = True
 
 def debug(*args):
     if isDebug:

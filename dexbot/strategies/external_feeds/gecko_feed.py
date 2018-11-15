@@ -51,30 +51,37 @@ def get_market_price(base, quote):
         return None
 
 
-def get_gecko_price(symbol):
+def get_gecko_price_by_pair(pair):
     current_price = None
     try:
-        pair = split_pair(symbol)  # pair=[quote, base]
-        filtered_pair = [filter_bit_symbol(j) for j in [filter_prefix_symbol(i) for i in pair]]
-        debug(filtered_pair)
-        new_quote = filtered_pair[0]
-        new_base = filtered_pair[1]
-        current_price = get_market_price(new_base, new_quote)
-        
+        quote = pair[0]
+        base =  pair[1]
+        current_price = get_market_price(base, quote)        
         if current_price is None:   # Try inverted version
             debug(" Trying pair inversion...")
-            current_price = get_market_price(new_quote, new_base)
-
-            debug(new_base + '/' + new_quote,  str(current_price))
+            current_price = get_market_price(quote, base)
+            debug(base + '/' + quote,  str(current_price))
             if current_price is not None:   # Re-invert price
                 actual_price = 1/current_price
-                debug(new_quote + '/' + new_base, str(actual_price))
+                debug(quote + '/' + base, str(actual_price))
         else:
-            debug(symbol, current_price)
+            debug(pair, current_price)
     except Exception as e:
         print(type(e).__name__, e.args, str(e))
-        print_usage()
     return current_price
+
+
+def get_gecko_price(**kwargs):
+    price = None
+    for key, value in list(kwargs.items()):
+        debug("The value of {} is {}".format(key, value)) # debug
+        if key == "pair_":
+            price = get_gecko_price_by_pair(value)
+        elif key == "symbol_":
+            pair = split_pair(value) # pair=[quote, base]
+            price =  get_gecko_price_by_pair(pair)
+    return price
+
 
     
 # Unit tests
@@ -90,9 +97,11 @@ def test_feed(symbol):
     """
         [symbol]  Symbol example: btc/usd or btc:usd
     """
-    price = get_gecko_price(symbol)
+    price = get_gecko_price(symbol_=symbol)
     print(price)
 
+    pair = split_pair(symbol)
+    price = get_gecko_price(pair_=pair)
 
 if __name__ == '__main__':
     main()
