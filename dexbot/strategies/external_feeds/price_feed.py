@@ -1,67 +1,137 @@
 from dexbot.strategies.external_feeds.ccxt_feed import get_ccxt_price
 from dexbot.strategies.external_feeds.waves_feed import get_waves_price
 from dexbot.strategies.external_feeds.gecko_feed import get_gecko_price
-
-from dexbot.strategies.external_feeds.process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol, debug
+from dexbot.strategies.external_feeds.process_pair import split_pair, join_pair, filter_prefix_symbol, filter_bit_symbol, debug
+import re
 
 """
 Note from Marko Paasila: 
-
 We have been calling the unit-of-measure BASE and the asset-of-interest QUOTE. 
-Since there seem to be confusing definitions around, we just had to settle one way, and be consistent. 
 We chose the way @xeroc had in python-bitshares, where the market is BTSUSD or BTS:USD or BTS/USD, 
 and price is USD/BTS. This is opposite to how bitshares-ui shows it (or I'm not sure of that, 
 but at least unit-of-measure is QUOTE and not BASE there). 
 
 So in DEXBot:
-
 unit of measure = BASE
 asset of interest = QUOTE
-
 """
 
 class PriceFeed:
 
     def __init__(self, exchange, symbol):
-        self.exchange = exchange
-        self.symbol = symbol
-        self.alt_exchanges = ['gecko', 'waves'] # assume all other exchanges are ccxt
-        self.pair = split_pair(self.symbol)
+        self._alt_exchanges = ['gecko', 'waves'] # assume all other exchanges are ccxt
+        self._exchange= exchange
+        self._symbol=symbol
+        self._pair= split_pair(symbol)
+ 
+               
+    @property
+    def symbol(self):
+        return self._symbol
+
+    
+    @symbol.setter
+    def symbol(self, symbol):
+        self._symbol = symbol
+        self._pair = split_pair(self._symbol)
 
         
+    @property
+    def pair(self):
+        return self._pair
+
+    
+    @pair.setter
+    def pair(self, pair):        
+        self._pair = pair
+        self._symbol = join_pair(pair)
+
+        
+    @property
+    def exchange(self):
+        return self._exchange
+
+    
+    @exchange.setter
+    def exchange(self, exchange):
+        self._exchange = exchange
+
+
     def filter_symbols(self):
-        raw_pair = self.pair
-        self.pair = [filter_bit_symbol(j) for j in [filter_prefix_symbol(i) for i in raw_pair]]
-        debug(self.pair)        
+        raw_pair = self._pair
+        self._pair = [filter_bit_symbol(j) for j in [filter_prefix_symbol(i) for i in raw_pair]]
+        debug(self._pair)        
 
-#    def get_usd_alternative(self):
-#    def get_consolidated_alternative(self):
+        
+    def set_alt_usd_pair(self):
+        """
+        get center price by search and replace for USD with USDT only
+        extend this method in the future for other usdt like options, e.g. USDC, TUSD,etc
+        """
+        alt_usd_pair = self._pair
+        i = 0
+        while i < 2:
+            if re.match(r'^USD$', self._pair[i], re.I):
+                alt_usd_pair[i] = re.sub(r'USD','USDT', self._pair[i])
+            i = i+1
+        self._pair = alt_usd_pair
+        self._symbol = join_pair(self._pair)
+        
 
 
-    def get_center_price(self):
+    def get_center_price(self, type):
+        if type == "USDT":
+            self.set_alt_usd_pair()
+        print(symbol)
+        return  self._get_center_price()
+
+
+        
+    def _get_center_price(self):
+        symbol = self._symbol
         price = None
-        if self.exchange not in self.alt_exchanges:
-            print("use ccxt exchange ", self.exchange, ' symbol ', self.symbol, sep=":")   
-            price = get_ccxt_price(self.symbol, self.exchange)
-        elif self.exchange == 'gecko':
-            print("gecko exchange - ", self.exchange, ' symbol ', self.symbol, sep=":")
-            price = get_gecko_price(symbol_=self.symbol)
-        elif self.exchange == 'waves':
-            print("use waves -", self.exchange, ' symbol ', self.symbol, sep=":")
-            price = get_waves_price(symbol_=self.symbol)
-            
+        if self._exchange not in self._alt_exchanges:
+            print("use ccxt exchange ", self._exchange, ' symbol ', symbol, sep=":")
+            price = get_ccxt_price(symbol, self._exchange)
+        elif self._exchange == 'gecko':
+            print("gecko exchange - ", self._exchange, ' symbol ', symbol, sep=":")
+            price = get_gecko_price(symbol_=symbol)
+        elif self._exchange == 'waves':
+            print("use waves -", self._exchange, ' symbol ', symbol, sep=":")
+            price = get_waves_price(symbol_=symbol)
         return price
 
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
+    center_price = None
     exchanges = ['gecko', 'bitfinex', 'kraken', 'waves', 'gdax', 'binance']
-    symbol = 'BTC/USD'  # quote/base for external exchanges
+
+    #    exchanges = ['bitfinex']
+    symbol = 'BTC/USDT'
+
+    """
+    pf = PriceFeed('bitfinex', symbol) 
+    pf.filter_symbols()
+
+    center_price = get_ccxt_price(symbol, 'bitfinex')
+    print(center_price)
+    
+    center_price = pf.get_center_price(None)
+    print("center price: ", center_price)
+    
+    center_price = pf.get_center_price("USDT")
+    print("usdt center price: ", center_price)
+    """
+
     
     for exchange in exchanges:
+        symbol = 'BTC/USD'
         pf = PriceFeed(exchange, symbol)
         pf.filter_symbols()
-        print(pf.pair)
-        center_price = pf.get_center_price()
-        print("center price: ", center_price)
-        
+        center_price = pf.get_center_price(None)
+        print("center price: ", center_price)        
+        if center_price is None: # try USDT
+            center_price = pf.get_center_price("USDT")
+            print("s/usd/usdt, center price: ", center_price)
+

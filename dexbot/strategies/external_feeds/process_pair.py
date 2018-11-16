@@ -10,7 +10,7 @@ def debug(*args):
 def print_args(*args):
     print(' '.join([str(arg) for arg in args]))
 
-
+    
 def filter_prefix_symbol(symbol):
     # Example open.USD or bridge.USD, remove leading bit up to .
     base = ''
@@ -34,6 +34,11 @@ def filter_bit_symbol(symbol):
 def split_pair(symbol):
     pair = re.split(':|/', symbol)
     return pair
+
+
+def join_pair(pair):
+    symbol = pair[0]+'/'+pair[1]
+    return symbol
 
 
 def get_consolidated_pair(base, quote):
