@@ -611,18 +611,22 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
     def get_external_market_center_price(self):
-        print("inside get_emcp, exchange: ", self.external_price_source,
-              "fetch depth", self.fetch_depth, sep=':')  # debug
+        center_price = None
+        print("inside get_emcp, exchange: ", self.external_price_source,   sep=':')  # debug
         market =  self.market.get_string('/')
         print("market:", market, sep=' ') # debug
-        print("exchange:", self.external_price_source, sep=' ')
+
+#        market = 'BTC/USD' # override for testing  debut      
+#        print("dummy market:", market, sep=' ') # debug
+
+        print("exchange:", self.external_price_source, sep=' ')        
         pf = PriceFeed(self.external_price_source, market)
+        pf.filter_symbols()
         center_price = pf.get_center_price(None)
         print(" PriceFeed ", center_price, sep=':')
         if center_price is None: # try USDT
             center_price = pf.get_center_price("USDT")
             print("s/USD/USDT, center price: ", center_price)
-            
 #        center_price = 0.10778888  # Dummy price for now
 #        print("external dummy price", center_price, sep=' ')
         return center_price
@@ -651,9 +655,10 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                 self.log.critical("Cannot estimate center price, there is no lowest ask.")
                 self.disabled = True
                 return None
-            # Calculate and return market center price
-        center_price = buy_price * math.sqrt(sell_price / buy_price)        
-        print("inside get_market_center_price : " , center_price, sep=' ') # debug 
+            # Calculate and return market center price. make sure buy_price has value
+        if buy_price is not None:
+            center_price = buy_price * math.sqrt(sell_price / buy_price)        
+            print("inside get_market_center_price : " , center_price, sep=' ') # debug 
         return center_price
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):

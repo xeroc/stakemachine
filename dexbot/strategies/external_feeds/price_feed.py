@@ -78,13 +78,10 @@ class PriceFeed:
         self._symbol = join_pair(self._pair)
         
 
-
     def get_center_price(self, type):
         if type == "USDT":
             self.set_alt_usd_pair()
-        print(symbol)
         return  self._get_center_price()
-
 
         
     def _get_center_price(self):
@@ -106,24 +103,7 @@ class PriceFeed:
 if __name__ == '__main__':
     center_price = None
     exchanges = ['gecko', 'bitfinex', 'kraken', 'waves', 'gdax', 'binance']
-
-    #    exchanges = ['bitfinex']
     symbol = 'BTC/USDT'
-
-    """
-    pf = PriceFeed('bitfinex', symbol) 
-    pf.filter_symbols()
-
-    center_price = get_ccxt_price(symbol, 'bitfinex')
-    print(center_price)
-    
-    center_price = pf.get_center_price(None)
-    print("center price: ", center_price)
-    
-    center_price = pf.get_center_price("USDT")
-    print("usdt center price: ", center_price)
-    """
-
     
     for exchange in exchanges:
         symbol = 'BTC/USD'
