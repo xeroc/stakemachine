@@ -617,11 +617,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         print("market:", market, sep=' ') # debug
         print("exchange:", self.external_price_source, sep=' ')
         pf = PriceFeed(self.external_price_source, market)
-        center_price = pf.get_center_price()
+        center_price = pf.get_center_price(None)
         print(" PriceFeed ", center_price, sep=':')
-
-        center_price = 0.10778888  # Dummy price for now
-        print("external dummy price", center_price, sep=' ')
+        if center_price is None: # try USDT
+            center_price = pf.get_center_price("USDT")
+            print("s/USD/USDT, center price: ", center_price)
+            
+#        center_price = 0.10778888  # Dummy price for now
+#        print("external dummy price", center_price, sep=' ')
         return center_price
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
