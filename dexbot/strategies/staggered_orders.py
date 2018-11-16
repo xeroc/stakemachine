@@ -857,7 +857,7 @@ class Strategy(StrategyBase):
                     is_closest_order = False
                 else:
                     is_closest_order = True
-                    closer_order_bound = closest_order_bound
+                    closer_order_bound = order['base']['amount'] * (1 + self.increment)
 
                     new_orders_sum = 0
                     amount = order_amount
@@ -892,7 +892,7 @@ class Strategy(StrategyBase):
                         if order_amount_normalized < previous_amount:
                             # Current order is less than virtually calculated next order
                             # Do not allow to increase more than further order amount
-                            new_order_amount = min(closer_order['base']['amount'], further_order_bound)
+                            new_order_amount = min(order['base']['amount'] * (1 + self.increment), further_order_bound)
                             need_increase = True
 
                 elif (order_amount_normalized < closer_order_bound and
