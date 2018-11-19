@@ -1,4 +1,7 @@
+import sys
 import math
+import traceback
+import bitsharesapi.exceptions
 from datetime import datetime, timedelta
 from bitshares.dex import Dex
 
@@ -214,7 +217,16 @@ class Strategy(StrategyBase):
 
         # Send pending operations
         if not self.bitshares.txbuffer.is_empty():
-            self.execute()
+            try:
+                self.execute()
+            except bitsharesapi.exceptions.RPCError:
+                """ Handle exception without stopping the worker. The goal is to handle race condition when partially
+                    filled order was further filled before we actually replaced them.
+                """
+                self.log.warning('Got exception during broadcasting trx:')
+                traceback.print_exc(file=sys.stdout)
+                self.log.warning('Ignoring that exception and continue')
+                return
         self.bitshares.bundle = False
 
         # Maintain the history of free balances after maintenance runs.
