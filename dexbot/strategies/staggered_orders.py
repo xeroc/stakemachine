@@ -784,7 +784,7 @@ class Strategy(StrategyBase):
                 if (order_amount_normalized < further_order_bound and
                         further_order_bound - order_amount >= order_amount * self.increment / 2 and
                         order_amount_normalized < closest_order_bound):
-                    """ Check whether order amount is less than further order and also less than `closest order +
+                    """ Check whether order amount is less than further order and also less than `closer order +
                         increment`. We need this check to be able to increase closer orders more smoothly. Here is the
                         example:
 
