@@ -1107,8 +1107,10 @@ class Strategy(StrategyBase):
                     quote_amount = balance
 
         if place_order and asset == 'base':
+            self.log.info('Placing closer buy order')
             self.place_market_buy_order(quote_amount, price)
         elif place_order and asset == 'quote':
+            self.log.info('Placing closer sell order')
             self.place_market_sell_order(quote_amount, price)
 
         return {"amount": quote_amount, "price": price}
@@ -1182,8 +1184,10 @@ class Strategy(StrategyBase):
                     quote_amount = balance
 
         if place_order and asset == 'base':
+            self.log.info('Placing further buy order')
             self.place_market_buy_order(quote_amount, price)
         elif place_order and asset == 'quote':
+            self.log.info('Placing further sell order')
             self.place_market_sell_order(quote_amount, price)
 
         return {"amount": quote_amount, "price": price}
