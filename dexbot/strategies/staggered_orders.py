@@ -125,6 +125,7 @@ class Strategy(StrategyBase):
         self.base_balance = None
         self.quote_asset_threshold = 0
         self.base_asset_threshold = 0
+        self.min_increase_factor = 1.15
         # Initial balance history elements should not be equal to avoid immediate bootstrap turn off
         self.quote_balance_history = [1, 2, 3]
         self.base_balance_history = [1, 2, 3]
@@ -542,7 +543,7 @@ class Strategy(StrategyBase):
                         new allocation round will be started, this is mostly for valley-like modes.
                     """
                     funds_to_reserve = 0
-                    additional_reserve = 1 + self.increment * 1.1
+                    additional_reserve = max(1 + self.increment, self.min_increase_factor) * 1.05
                     closer_own_order = self.place_closer_order(asset, closest_own_order, place_order=False)
 
                     if asset == 'base':
@@ -798,11 +799,10 @@ class Strategy(StrategyBase):
                     """
                     need_increase = True
 
-                    if is_closest_order:
-                        new_order_amount = closer_order_bound
-                    else:
-                        # Do not allow to increase more than further order amount
-                        new_order_amount = min(closer_order_bound * (1 + self.increment), further_order_bound)
+                    # To speed up the process, use at least N% increases
+                    increase_factor = max(1 + self.increment, self.min_increase_factor)
+                    # Do not allow to increase more than further order amount
+                    new_order_amount = min(closer_order_bound * increase_factor, further_order_bound)
 
                     if new_order_amount < order_amount_normalized:
                         # Skip order if new amount is less than current for any reason
