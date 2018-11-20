@@ -529,8 +529,13 @@ class Strategy(StrategyBase):
                                            order_type, opposite_asset_limit, opposite_symbol))
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                             opposite_asset_limit=opposite_asset_limit, allow_partial=False)
-            elif not self.check_partial_fill(closest_own_order):
-                # Replace closest own order if `fill % > default threshold`
+            elif not self.check_partial_fill(closest_own_order) and not self.check_partial_fill(closest_opposite_order):
+                """ Replace closest own order if `fill % > default threshold` and only when opposite order is also
+                    partially filled. This would prevent an abuse case when we are operationg on inactive market. An
+                    attacker can massively dump the price and then he can buy back the asset cheaper. Only applicable
+                    when sides are massively imbalanced. Though in the normal market a similar condition may happen
+                    naturally on significant price drops. This check helps to redistribute funds more smoothly.
+                """
                 self.replace_partially_filled_order(closest_own_order)
                 return
             elif not opposite_orders:
@@ -615,12 +620,6 @@ class Strategy(StrategyBase):
         symbol = ''
         precision = 0
 
-        # First of all, make sure all orders are not partially filled
-        for order in orders:
-            if not self.check_partial_fill(order, fill_threshold=0):
-                self.replace_partially_filled_order(order)
-                return
-
         if asset == 'quote':
             total_balance = self.quote_total_balance
             order_type = 'sell'
@@ -702,11 +701,6 @@ class Strategy(StrategyBase):
                             """
                             new_order_amount = closer_bound / (1 + self.increment * 0.2)
 
-                    # Limit order to available balance
-                    if asset_balance < new_order_amount - order_amount:
-                        new_order_amount = order_amount + asset_balance['amount']
-                        self.log.debug('Limiting new {} order to avail balance: {:.8f} {}'
-                                       .format(order_type, new_order_amount, symbol))
                     quote_amount = 0
                     price = 0
 
@@ -716,6 +710,12 @@ class Strategy(StrategyBase):
                     elif asset == 'base':
                         price = order['price']
                         quote_amount = new_order_amount / price
+
+                    if asset_balance < new_order_amount - order['for_sale']['amount']:
+                        # Balance should be enough to replace partially filled order
+                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
+                                       .format(order_type, price))
+                        return
 
                     self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
                                   .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
@@ -818,12 +818,6 @@ class Strategy(StrategyBase):
                     need_increase = True
 
                 if need_increase:
-                    # Limit order to available balance
-                    if asset_balance < new_order_amount - order_amount:
-                        new_order_amount = order_amount + asset_balance['amount']
-                        self.log.debug('Limiting new order to avail asset balance: {:.8f} {}'
-                                       .format(new_order_amount, symbol))
-
                     price = 0
                     quote_amount = 0
 
@@ -833,6 +827,13 @@ class Strategy(StrategyBase):
                     elif asset == 'base':
                         price = order['price']
                         quote_amount = new_order_amount / price
+
+                    if asset_balance < new_order_amount - order['for_sale']['amount']:
+                        # Balance should be enough to replace partially filled order
+                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
+                                       .format(order_type, price))
+                        return
+
                     self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
                                   .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
                     self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
@@ -930,12 +931,6 @@ class Strategy(StrategyBase):
                     need_increase = True
 
                 if need_increase:
-                    # Limit order to available balance
-                    if asset_balance < new_order_amount - order_amount:
-                        new_order_amount = order_amount + asset_balance['amount']
-                        self.log.debug('Limiting new order to avail asset balance: {:.8f} {}'
-                                       .format(new_order_amount, symbol))
-
                     price = 0
 
                     if asset == 'quote':
@@ -944,6 +939,13 @@ class Strategy(StrategyBase):
                     elif asset == 'base':
                         price = order['price']
                         quote_amount = new_order_amount / price
+
+                    if asset_balance < new_order_amount - order['for_sale']['amount']:
+                        # Balance should be enough to replace partially filled order
+                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
+                                       .format(order_type, price))
+                        return
+
                     self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
                                   .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
                     self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}'
