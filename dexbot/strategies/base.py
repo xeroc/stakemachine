@@ -141,7 +141,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         exchanges = [
             ('none', 'None. Use Manual or Bitshares DEX Price (default)'),
             ('gecko', 'Coingecko'),
-            ('waves', 'Waves DEX (todo)'),
+            ('waves', 'Waves DEX'),
             ('kraken', 'Kraken'),
             ('bitfinex', 'Bitfinex'),
             ('gdax', 'Gdax'),
