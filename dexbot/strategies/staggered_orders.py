@@ -534,7 +534,7 @@ class Strategy(StrategyBase):
                 self.replace_partially_filled_order(closest_own_order)
                 return
             elif not opposite_orders:
-                # Do not try to do anything than placing higher buy whether there is no sell orders
+                # Do not try to do anything than placing closer order whether there is no opposite orders
                 return
             else:
                 if not self.check_partial_fill(closest_opposite_order, fill_threshold=0):
