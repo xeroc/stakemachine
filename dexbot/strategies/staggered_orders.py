@@ -560,7 +560,7 @@ class Strategy(StrategyBase):
                     asset_balance -= funds_to_reserve
                 if asset_balance > own_threshold:
                     if ((asset == 'base' and furthest_own_order_price /
-                           (1 + self.increment) < self.lower_bound) or
+                         (1 + self.increment) < self.lower_bound) or
                             (asset == 'quote' and furthest_own_order_price *
                              (1 + self.increment) > self.upper_bound)):
                         # Lower/upper bound has been reached and now will start allocating rest of the balance.
@@ -811,8 +811,8 @@ class Strategy(StrategyBase):
                 elif (order_amount_normalized < closer_order_bound and
                         closer_order_bound - order_amount >= order_amount * self.increment / 2):
                     """ Check whether order amount is less than closer or order and the diff is more than 50% of one
-                        increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with diff 80%
-                        an order may have an actual difference like 30% from closer and 70% from further.
+                        increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with 
+                        diff 80% an order may have an actual difference like 30% from closer and 70% from further.
                     """
                     new_order_amount = closer_order_bound
                     need_increase = True
