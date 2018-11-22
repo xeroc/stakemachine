@@ -972,12 +972,19 @@ class Strategy(StrategyBase):
         if fill_threshold is None:
             fill_threshold = self.partial_fill_threshold
 
+        if self.is_buy_order(order):
+            order_type = 'buy'
+            price = order['price']
+        else:
+            order_type = 'sell'
+            price = order['price'] ** -1
+
         if order['for_sale']['amount'] != order['base']['amount']:
             diff_abs = order['base']['amount'] - order['for_sale']['amount']
             diff_rel = diff_abs / order['base']['amount']
             if diff_rel > fill_threshold:
-                self.log.debug('Partially filled order: {} @ {:.8f}, filled: {:.2%}'.format(
-                               order['base']['amount'], order['price'], diff_rel))
+                self.log.debug('Partially filled {} order: {} {} @ {:.8f}, filled: {:.2%}'.format(
+                               order_type, order['base']['amount'], order['base']['symbol'], price, diff_rel))
                 return False
         return True
 
