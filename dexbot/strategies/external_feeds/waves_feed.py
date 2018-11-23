@@ -1,5 +1,4 @@
 import requests
-from dexbot.strategies.external_feeds.process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol, debug
 
 WAVES_URL = 'https://marketdata.wavesplatform.com/api/'
 SYMBOLS_URL = "/symbols"
@@ -48,17 +47,3 @@ def get_waves_price(**kwargs):
     return price
     
 
-if __name__ == '__main__':
-    
-    symbol = 'BTC/USD'  # quote/base for external exchanges
-    print(symbol, "=")
-    raw_pair = split_pair(symbol)
-    pair = [filter_bit_symbol(j) for j in [filter_prefix_symbol(i) for i in raw_pair]]
-
-    pair_price = get_waves_price(pair_=pair)
-    print("pair price", pair_price)
-    
-#    current_price = get_waves_price(pair[1], pair[0])
-    current_price = get_waves_price(symbol_=symbol)
-    print("symbol price", current_price)
-    

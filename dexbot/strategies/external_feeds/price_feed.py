@@ -98,7 +98,7 @@ class PriceFeed:
 
 if __name__ == '__main__':
     center_price = None
-    exchanges = ['gecko', 'bitfinex', 'kraken', 'waves', 'gdax', 'binance']
+    exchanges = ['gecko', 'bitfinex', 'kraken', 'gdax', 'binance', 'waves']
     symbol = 'BTC/USDT'
     
     for exchange in exchanges:

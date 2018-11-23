@@ -1,7 +1,5 @@
-import click
 import json
 import asyncio
-import functools
 import ccxt.async_support as accxt
 from pprint import pprint
 
@@ -43,24 +41,4 @@ def get_ccxt_price(symbol, exchange_name):
         center_price = (ticker['bid'] + ticker['ask'])/2
     return center_price
 
-
-if __name__ == '__main__':
-    #    result = asyncio.get_event_loop().run_until_complete(print_ticker(symbol, 'bitfinex'))    
-    exchanges =['bitfinex', 'kraken', 'binance', 'gdax']
-    symbol = 'BTC/USDT'
-    
-    # testing get all pairs.
-    for exchange_id in exchanges:
-        print("\n\n\n")
-        print(exchange_id)
-        result = asyncio.get_event_loop().run_until_complete(get_ccxt_load_markets(exchange_id))
-        all_symbols= [obj for obj in result]
-        print(all_symbols)
-        
-    # testing get center price
-    # center_price = [asyncio.get_event_loop().run_until_complete(get_ccxt_price(symbol, e)) for e in exchanges]
-
-    center_price = [get_ccxt_price(symbol, e) for e in exchanges]
-    print(' exchange: ', exchanges, ' symbol: ', symbol, sep=':')
-    print(' center_price: ', center_price)
 

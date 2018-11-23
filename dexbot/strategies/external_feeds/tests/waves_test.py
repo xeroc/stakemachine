@@ -1,33 +1,18 @@
-import pywaves as pw
+from dexbot.strategies.external_feeds.process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol
+from dexbot.strategies.external_feeds.waves_feed import get_waves_price        
 
-# GET /ticker/{AMOUNT_ASSET}/{PRICE_ASSET}
-#ticker_url = https://marketdata.wavesplatform.com/api/ticker/BTC/USD
+if __name__ == '__main__':
 
-def get_asset(symbol, coin_list):
-        asset_id = None
-        try:
-                asset_id = [obj for obj in coin_list if obj['symbol'] == symbol][0]['assetID']                
-        except IndexError as e:
-                print(e)
-        return pw.Asset(asset_id)
+        symbol = 'BTC/USD'  # quote/base for external exchanges
+        print(symbol, "=")
+        raw_pair = split_pair(symbol)
+        pair = [filter_bit_symbol(j) for j in [filter_prefix_symbol(i) for i in raw_pair]]
+        
+        pair_price = get_waves_price(pair_=pair)
+        if pair_price is not None:
+                print("pair price", pair_price, sep=":")
 
-# set the asset pair
-WAVES_BTC = pw.AssetPair(pw.WAVES, pw.BTC)
-
-# get last price and volume
-print("%s %s" % (WAVES_BTC.last(), WAVES_BTC.volume()))
-
-# get ticker
-ticker = WAVES_BTC.ticker()
-print(ticker['24h_open'])
-print(ticker['24h_vwap'])
-
-# get last 10 trades
-trades = WAVES_BTC.trades(10)
-for t in trades:
-	print("%s %s %s %s" % (t['buyer'], t['seller'], t['price'], t['amount']))
-	
-# get last 10 daily OHLCV candles
-ohlcv = WAVES_BTC.candles(1440, 10)
-for t in ohlcv:
-	print("%s %s %s %s %s" % (t['open'], t['high'], t['low'], t['close'], t['volume']))
+        current_price = get_waves_price(symbol_=symbol)
+        if current_price is not None:
+                print("symbol price", current_price, sep=":")
+    
