@@ -1,8 +1,5 @@
-import click
 import requests
-
-from dexbot.strategies.external_feeds.styles import yellow
-from dexbot.strategies.external_feeds.process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol, debug
+from dexbot.strategies.external_feeds.process_pair import split_pair, debug
 
 """
     To use Gecko API, note that gecko does not provide pairs by default.
@@ -11,11 +8,6 @@ from dexbot.strategies.external_feeds.process_pair import split_pair, filter_pre
     https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin
 """
 GECKO_COINS_URL = 'https://api.coingecko.com/api/v3/coins/'
-
-
-def print_usage():
-    print("Usage: python3 gecko_feed.py", yellow('[symbol]'),
-          "Symbol is required, for example:", yellow('BTC/USD'), sep='')
 
 
 def get_json(url):
@@ -82,26 +74,3 @@ def get_gecko_price(**kwargs):
             price =  get_gecko_price_by_pair(pair)
     return price
 
-
-    
-# Unit tests
-# Todo: Move tests to own files
-@click.group()
-def main():
-    pass
-
-
-@main.command()
-@click.argument('symbol')
-def test_feed(symbol):
-    """
-        [symbol]  Symbol example: btc/usd or btc:usd
-    """
-    price = get_gecko_price(symbol_=symbol)
-    print(price)
-
-    pair = split_pair(symbol)
-    price = get_gecko_price(pair_=pair)
-
-if __name__ == '__main__':
-    main()

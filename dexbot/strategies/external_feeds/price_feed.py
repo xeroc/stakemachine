@@ -5,19 +5,15 @@ from dexbot.strategies.external_feeds.process_pair import split_pair, join_pair,
 import re
 
 """
-Note from Marko Paasila: 
-We have been calling the unit-of-measure BASE and the asset-of-interest QUOTE. 
-We chose the way @xeroc had in python-bitshares, where the market is BTSUSD or BTS:USD or BTS/USD, 
-and price is USD/BTS. This is opposite to how bitshares-ui shows it (or I'm not sure of that, 
-but at least unit-of-measure is QUOTE and not BASE there). 
-
-So in DEXBot:
+Note from Marko Paasila, In DEXBot:
 unit of measure = BASE
 asset of interest = QUOTE
 """
 
 class PriceFeed:
-
+    """
+    price feed class to handle price feed
+    """
     def __init__(self, exchange, symbol):
         self._alt_exchanges = ['gecko', 'waves'] # assume all other exchanges are ccxt
         self._exchange= exchange
