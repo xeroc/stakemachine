@@ -4,11 +4,7 @@ from dexbot.strategies.external_feeds.gecko_feed import get_gecko_price
 from dexbot.strategies.external_feeds.process_pair import split_pair, join_pair, filter_prefix_symbol, filter_bit_symbol, debug
 import re
 
-"""
-Note from Marko Paasila, In DEXBot:
-unit of measure = BASE
-asset of interest = QUOTE
-"""
+
 
 class PriceFeed:
     """
@@ -95,19 +91,4 @@ class PriceFeed:
         return price
 
 
-
-if __name__ == '__main__':
-    center_price = None
-    exchanges = ['gecko', 'bitfinex', 'kraken', 'gdax', 'binance', 'waves']
-    symbol = 'BTC/USDT'
-    
-    for exchange in exchanges:
-        symbol = 'BTC/USD'
-        pf = PriceFeed(exchange, symbol)
-        pf.filter_symbols()
-        center_price = pf.get_center_price(None)
-        print("center price: ", center_price)        
-        if center_price is None: # try USDT
-            center_price = pf.get_center_price("USDT")
-            print("s/usd/usdt, center price: ", center_price)
 
