@@ -430,7 +430,9 @@ class Strategy(StrategyBase):
         own_orders = []
         own_threshold = 0
         own_symbol = ''
+        own_precision = 0
         opposite_symbol = ''
+        increase_finished = False
 
         if asset == 'base':
             order_type = 'buy'
@@ -439,6 +441,7 @@ class Strategy(StrategyBase):
             own_orders = self.buy_orders
             opposite_orders = self.sell_orders
             own_threshold = self.base_asset_threshold
+            own_precision = self.market['base']['precision']
         elif asset == 'quote':
             order_type = 'sell'
             own_symbol = self.quote_balance['symbol']
@@ -446,6 +449,7 @@ class Strategy(StrategyBase):
             own_orders = self.sell_orders
             opposite_orders = self.buy_orders
             own_threshold = self.quote_asset_threshold
+            own_precision = self.market['quote']['precision']
 
         if own_orders:
             # Get currently the furthest and closest orders
@@ -530,19 +534,22 @@ class Strategy(StrategyBase):
                                            order_type, opposite_asset_limit, opposite_symbol))
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                             opposite_asset_limit=opposite_asset_limit, allow_partial=False)
-            elif not self.check_partial_fill(closest_own_order) and not self.check_partial_fill(closest_opposite_order):
-                """ Replace closest own order if `fill % > default threshold` and only when opposite order is also
-                    partially filled. This would prevent an abuse case when we are operationg on inactive market. An
-                    attacker can massively dump the price and then he can buy back the asset cheaper. Only applicable
-                    when sides are massively imbalanced. Though in the normal market a similar condition may happen
-                    naturally on significant price drops. This check helps to redistribute funds more smoothly.
-                """
-                self.replace_partially_filled_order(closest_own_order)
-                return
+                else:
+                    self.log.warning('Boostrap is off, but there is no opposite orders, not placing closer order')
             elif not opposite_orders:
                 # Do not try to do anything than placing closer order whether there is no opposite orders
                 return
             else:
+                # Target spread is reached, let's allocate remaining funds
+                if not self.check_partial_fill(closest_own_order, fill_threshold=0):
+                    """ Detect partially filled order on the own side and reserve funds to replace order in case
+                        opposite oreder will be fully filled.
+                    """
+                    funds_to_reserve = closest_own_order['base']['amount']
+                    self.log.debug('Partially filled order on own side, reserving funds to replace: '
+                                   '{:.{prec}f} {}'.format(funds_to_reserve, own_symbol, prec=own_precision))
+                    asset_balance -= funds_to_reserve
+
                 if not self.check_partial_fill(closest_opposite_order, fill_threshold=0):
                     """ Detect partially filled order on the opposite side and reserve appropriate amount to place
                         closer order. We adding some additional reserve to be able to place next order whether
@@ -557,9 +564,12 @@ class Strategy(StrategyBase):
                     elif asset == 'quote':
                         funds_to_reserve = closer_own_order['amount'] * additional_reserve
                     self.log.debug('Partially filled order on opposite side, reserving funds for next {} order: '
-                                   '{:.8f} {}'.format(order_type, funds_to_reserve, own_symbol))
+                                   '{:.{prec}f} {}'.format(order_type, funds_to_reserve, own_symbol,
+                                   prec=own_precision))
                     asset_balance -= funds_to_reserve
+
                 if asset_balance > own_threshold:
+                    # Allocate excess funds
                     if ((asset == 'base' and furthest_own_order_price /
                          (1 + self.increment) < self.lower_bound) or
                             (asset == 'quote' and furthest_own_order_price *
@@ -567,12 +577,32 @@ class Strategy(StrategyBase):
                         # Lower/upper bound has been reached and now will start allocating rest of the balance.
                         self.bootstrapping = False
                         self.log.debug('Increasing sizes of {} orders'.format(order_type))
-                        self.increase_order_sizes(asset, asset_balance, own_orders)
+                        increase_finished = self.increase_order_sizes(asset, asset_balance, own_orders)
                     else:
                         # Range bound is not reached, we need to add additional orders at the extremes
                         self.bootstrapping = False
                         self.log.debug('Placing further order than current furthest {} order'.format(order_type))
                         self.place_further_order(asset, furthest_own_order, allow_partial=True)
+                else:
+                    increase_finished = True
+
+            if (increase_finished and not self.check_partial_fill(closest_own_order)
+                    and not self.check_partial_fill(closest_opposite_order, fill_threshold=0)):
+                """ Replace partially filled closest orders only when allocation of excess funds was finished. This
+                    would prevent an abuse case when we are operating inactive market. An attacker can massively dump
+                    the price and then he can buy back the asset cheaper. Similar case may happen on the "normal" market
+                    on significant price drops or spikes.
+
+                    The logic how it works is following:
+                    1. If we have partially filled closest orders, reserve fuds to replace them later
+                    2. If we have excess funds, allocate them by increasing order sizes or expand bounds if needed
+                    3. When increase is finished, replace partially filled closest orders
+
+                    Thus we are don't need to precisely count how much was filled on closest orders.
+                """
+                # Refresh balances to make "reserved" funds available
+                self.refresh_balances(use_cached_orders=True)
+                self.replace_partially_filled_order(closest_own_order)
         else:
             # Place first buy order as close to the lower bound as possible
             self.bootstrapping = True
@@ -614,7 +644,8 @@ class Strategy(StrategyBase):
             :param str | asset: 'base' or 'quote', depending if checking sell or buy
             :param Amount | asset_balance: Balance of the account
             :param list | orders: List of buy or sell orders
-            :return None
+            :return boot | True = all available funds was allocated
+                           False = not all funds was allocated, can increase more orders next time
         """
         total_balance = 0
         order_type = ''
@@ -716,7 +747,7 @@ class Strategy(StrategyBase):
                         # Balance should be enough to replace partially filled order
                         self.log.debug('Not enough balance to increase {} order at price {:.8f}'
                                        .format(order_type, price))
-                        return
+                        return True
 
                     self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
                                   .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
@@ -728,7 +759,7 @@ class Strategy(StrategyBase):
                     elif asset == 'base':
                         self.place_market_buy_order(quote_amount, price)
                     # Only one increase at a time. This prevents running more than one increment round simultaneously
-                    return
+                    return False
         elif (self.mode == 'valley' or
               (self.mode == 'buy_slope' and asset == 'base') or
               (self.mode == 'sell_slope' and asset == 'quote')):
@@ -831,7 +862,7 @@ class Strategy(StrategyBase):
                         # Balance should be enough to replace partially filled order
                         self.log.debug('Not enough balance to increase {} order at price {:.8f}'
                                        .format(order_type, price))
-                        return
+                        return True
 
                     self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
                                   .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
@@ -843,7 +874,7 @@ class Strategy(StrategyBase):
                     elif asset == 'base':
                         self.place_market_buy_order(quote_amount, price)
                     # One increase at a time. This prevents running more than one increment round simultaneously.
-                    return
+                    return False
 
         elif self.mode == 'neutral':
             """ Starting from the furthest order, for each order, see if it is approximately
@@ -941,7 +972,7 @@ class Strategy(StrategyBase):
                         # Balance should be enough to replace partially filled order
                         self.log.debug('Not enough balance to increase {} order at price {:.8f}'
                                        .format(order_type, price))
-                        return
+                        return True
 
                     self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
                                   .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
@@ -954,7 +985,7 @@ class Strategy(StrategyBase):
                     elif asset == 'base':
                         self.place_market_buy_order(quote_amount, price)
                     # One increase at a time. This prevents running more than one increment round simultaneously.
-                    return
+                    return False
 
         return None
 
