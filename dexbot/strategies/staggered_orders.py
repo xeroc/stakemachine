@@ -765,14 +765,12 @@ class Strategy(StrategyBase):
                     # Closer order is an order which one-step closer to the center
                     closer_order = orders[order_index + 1]
                     closer_order_bound = closer_order['base']['amount']
-                    is_closest_order = False
                 else:
                     """ Special processing for the closest order.
 
                         Calculate new order amount based on orders count, but do not allow to perform too small 
                         increase rounds. New lowest buy / highest sell should be higher by at least one increment.
                     """
-                    is_closest_order = True
                     closer_order_bound = closest_order_bound
                     new_amount = (total_balance / orders_count) / (1 + self.increment / 100)
                     if furthest_order_bound < new_amount > closer_order_bound:
@@ -861,9 +859,7 @@ class Strategy(StrategyBase):
 
             orders_count = len(orders)
             orders = list(reversed(orders))
-
             closest_order = orders[-1]
-            closest_order_bound = closest_order['base']['amount'] * math.sqrt(1 + self.increment)
 
             for order in orders:
                 order_index = orders.index(order)
