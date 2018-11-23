@@ -4,7 +4,6 @@ from dexbot.strategies.external_feeds.ccxt_feed import get_ccxt_load_markets, ge
 
 
 if __name__ == '__main__':
-    #    result = asyncio.get_event_loop().run_until_complete(print_ticker(symbol, 'bitfinex'))    
     exchanges =['bitfinex', 'kraken', 'binance', 'gdax']
     symbol = 'BTC/USDT'
     
@@ -17,8 +16,6 @@ if __name__ == '__main__':
         print(all_symbols)
         
     # testing get center price
-    # center_price = [asyncio.get_event_loop().run_until_complete(get_ccxt_price(symbol, e)) for e in exchanges]
-
     center_price = [get_ccxt_price(symbol, e) for e in exchanges]
     print(' exchange: ', exchanges, ' symbol: ', symbol, sep=':')
     print(' center_price: ', center_price)
