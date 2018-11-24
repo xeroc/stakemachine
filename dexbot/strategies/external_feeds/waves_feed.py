@@ -15,11 +15,11 @@ async def get_json(url):
 
 def get_last_price(base, quote):
     current_price = None
-    try:                
-        market_bq = MARKET_URL + quote  +'/'+ base # external exchange format
+    try:
+        market_bq = MARKET_URL + quote + '/' + base  # external exchange format
         ticker = asyncio.get_event_loop().run_until_complete(get_json(WAVES_URL + market_bq))
-        current_price = ticker['24h_close']        
-    except Exception as e:       
+        current_price = ticker['24h_close']
+    except Exception as e:
         pass  # No pair found on waves dex for external price. 
     return current_price
 
@@ -30,11 +30,11 @@ def get_waves_symbols():
 
 
 def get_waves_by_pair(pair):
-    current_price = get_last_price(pair[1], pair[0]) # base, quote
-    if current_price is None: # try inversion
+    current_price = get_last_price(pair[1], pair[0])  # base, quote
+    if current_price is None:  # try inversion
         price = get_last_price(pair[0], pair[1])
         if price is not None:
-            current_price = 1/float(price)        
+            current_price = 1 / float(price)
     return current_price
 
 
@@ -50,5 +50,3 @@ def get_waves_price(**kwargs):
             price = get_waves_by_pair(pair)
             dexbot.strategies.external_feeds.process_pair.debug(pair, price)
     return price
-    
-
