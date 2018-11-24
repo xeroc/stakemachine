@@ -11,7 +11,7 @@ def debug(*args):
 def print_args(*args):
     print(' '.join([str(arg) for arg in args]))
 
-    
+
 def filter_prefix_symbol(symbol):
     # Example open.USD or bridge.USD, remove leading bit up to .
     base = ''
@@ -38,15 +38,12 @@ def split_pair(symbol):
 
 
 def join_pair(pair):
-    symbol = pair[0]+'/'+pair[1]
+    symbol = pair[0] + '/' + pair[1]
     return symbol
 
 
 def get_consolidated_pair(base, quote):
     # Split into two USD pairs, STEEM/BTS=(BTS/USD * USD/STEEM)
-    # todo
     pair1 = [base, 'USD']  # BTS/USD  pair=[quote, base]
     pair2 = ['USD', quote]
     return pair1, pair2
-
-
