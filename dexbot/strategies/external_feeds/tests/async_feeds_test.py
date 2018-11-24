@@ -1,6 +1,10 @@
 import asyncio
 import aiohttp
 
+"""
+This is the unit test for testing async with ccxt only with multiple urls.
+"""
+
 gecko_coins_url = 'https://api.coingecko.com/api/v3/coins/'
 waves_symbols = 'http://marketdata.wavesplatform.com/api/symbols'
 cwatch_assets = 'https://api.cryptowat.ch/assets'

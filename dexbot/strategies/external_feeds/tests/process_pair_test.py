@@ -1,5 +1,9 @@
 from dexbot.strategies.external_feeds.process_pair import split_pair, get_consolidated_pair, filter_prefix_symbol, filter_bit_symbol
 
+"""
+This is the unit test for filters in process_pair module.
+"""
+
 # Unit Tests
 def test_consolidated_pair():
     symbol = 'STEEM:BTS'  # pair = 'STEEM:BTS' or STEEM/BTS'

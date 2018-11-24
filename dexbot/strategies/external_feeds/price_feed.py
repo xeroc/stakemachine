@@ -5,18 +5,18 @@ from dexbot.strategies.external_feeds.process_pair import split_pair, join_pair,
 import re
 
 
-
 class PriceFeed:
     """
-    price feed class to handle price feed
+    price feed class, which handles all data requests for external center price
     """
+                       
     def __init__(self, exchange, symbol):
         self._alt_exchanges = ['gecko', 'waves'] # assume all other exchanges are ccxt
         self._exchange= exchange
         self._symbol=symbol
         self._pair= split_pair(symbol)
- 
-               
+
+                   
     @property
     def symbol(self):
         return self._symbol
@@ -55,26 +55,20 @@ class PriceFeed:
         debug(self._pair)        
 
         
-    def set_alt_usd_pair(self):
+    def set_alt_usd_pair(self, type):
         """
         get center price by search and replace for USD with USDT only
-        extend this method in the future for other usdt like options, e.g. USDC, TUSD,etc
+        todo: extend this method in the future for others, e.g. USDC, TUSD,etc
         """
         alt_usd_pair = self._pair
         i = 0
         while i < 2:
             if re.match(r'^USD$', self._pair[i], re.I):
-                alt_usd_pair[i] = re.sub(r'USD','USDT', self._pair[i])
+                alt_usd_pair[i] = re.sub(r'USD', type, self._pair[i])
             i = i+1
         self._pair = alt_usd_pair
         self._symbol = join_pair(self._pair)
         
-
-    def get_center_price(self, type):
-        if type == "USDT":
-            self.set_alt_usd_pair()
-        return  self._get_center_price()
-
         
     def _get_center_price(self):
         symbol = self._symbol
@@ -90,5 +84,10 @@ class PriceFeed:
             price = get_waves_price(symbol_=symbol)
         return price
 
+
+    def get_center_price(self, type):
+        if type is not None:
+            self.set_alt_usd_pair(type)
+        return  self._get_center_price()
 
 

@@ -2,8 +2,13 @@ import click
 import asyncio
 from dexbot.strategies.external_feeds.ccxt_feed import get_ccxt_load_markets, get_ccxt_price
 
+"""
+This is the unit test for getting external feed data from CCXT using ccxt_feed module.
+"""
+
 
 if __name__ == '__main__':
+
     exchanges =['bitfinex', 'kraken', 'binance', 'gdax']
     symbol = 'BTC/USDT'
     

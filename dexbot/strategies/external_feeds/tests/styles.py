@@ -1,5 +1,8 @@
 import os
 
+"""
+This is the unit test for print styles
+"""
 
 def style(s, style):
     return style + s + '\033[0m'

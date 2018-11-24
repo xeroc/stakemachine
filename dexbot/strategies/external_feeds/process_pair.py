@@ -2,6 +2,7 @@ import re
 
 isDebug = True
 
+
 def debug(*args):
     if isDebug:
         print(' '.join([str(arg) for arg in args]))
@@ -43,6 +44,7 @@ def join_pair(pair):
 
 def get_consolidated_pair(base, quote):
     # Split into two USD pairs, STEEM/BTS=(BTS/USD * USD/STEEM)
+    # todo
     pair1 = [base, 'USD']  # BTS/USD  pair=[quote, base]
     pair2 = ['USD', quote]
     return pair1, pair2

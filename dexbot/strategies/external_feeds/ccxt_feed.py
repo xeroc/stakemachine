@@ -1,7 +1,6 @@
 import json
 import asyncio
 import ccxt.async_support as accxt
-from pprint import pprint
 
 
 async def print_ticker(symbol, id):

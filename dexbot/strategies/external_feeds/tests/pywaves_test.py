@@ -1,5 +1,8 @@
 import pywaves as pw
-
+"""
+pywaves is an open source library for waves. While it is not as stable as REST API,
+we leave the test here if integration is desired for future dexbot cross-exchange strategies.
+"""
 
 
 if __name__ == '__main__':
