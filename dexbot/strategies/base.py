@@ -1022,6 +1022,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         symbol = self.market['base']['symbol']
         precision = self.market['base']['precision']
         base_amount = truncate(price * amount, precision)
+        return_order_id = kwargs.pop('returnOrderId', self.returnOrderId)
 
         # Don't try to place an order of size 0
         if not base_amount:
@@ -1030,7 +1031,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if self.returnOrderId and self.balance(self.market['base']) < base_amount:
+        if return_order_id and self.balance(self.market['base']) < base_amount:
             self.log.critical("Insufficient buy balance, needed {} {}".format(base_amount, symbol))
             self.disabled = True
             return None
@@ -1045,14 +1046,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             expiration=self.expiration,
-            returnOrderId=self.returnOrderId,
+            returnOrderId=return_order_id,
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
 
         self.log.debug('Placed buy order {}'.format(buy_transaction))
-        if self.returnOrderId:
+        if return_order_id:
             buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
             if buy_order and buy_order['deleted']:
                 # The API doesn't return data on orders that don't exist
@@ -1076,6 +1077,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         symbol = self.market['quote']['symbol']
         precision = self.market['quote']['precision']
         quote_amount = truncate(amount, precision)
+        return_order_id = kwargs.pop('returnOrderId', self.returnOrderId)
 
         # Don't try to place an order of size 0
         if not quote_amount:
@@ -1084,7 +1086,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if self.returnOrderId and self.balance(self.market['quote']) < quote_amount:
+        if return_order_id and self.balance(self.market['quote']) < quote_amount:
             self.log.critical("Insufficient sell balance, needed {} {}".format(amount, symbol))
             self.disabled = True
             return None
@@ -1099,14 +1101,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             expiration=self.expiration,
-            returnOrderId=self.returnOrderId,
+            returnOrderId=return_order_id,
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
 
         self.log.debug('Placed sell order {}'.format(sell_transaction))
-        if self.returnOrderId:
+        if return_order_id:
             sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
             if sell_order and sell_order['deleted']:
                 # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
