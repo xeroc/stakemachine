@@ -615,14 +615,16 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         self.log.debug('inside get_external_mcp, exchange: {} '.format(self.external_price_source))
         market =  self.market.get_string('/')
         self.log.debug('market: {}  '.format(market))
-        self.log.debug('exchange: {}'.format(self.external_price_source))
         pf = PriceFeed(self.external_price_source, market)
         pf.filter_symbols()
         center_price = pf.get_center_price(None)
         self.log.debug('PriceFeed: {}'.format(center_price))
         if center_price is None: # try USDT
             center_price = pf.get_center_price("USDT")
-            self.log.debug('Try Substitute USD/USDT center price: {}'.format(center_price))
+            self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
+            if center_price is None: # try consolidated
+                center_price = pf.get_consolidated_price()
+                self.log.debug('Consolidated center price: {}'.format(center_price))
         return center_price
 
                        

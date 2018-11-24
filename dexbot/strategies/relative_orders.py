@@ -92,10 +92,8 @@ class Strategy(StrategyBase):
                 self.center_price = self.get_external_market_center_price()
                 if self.center_price is None:
                     self.center_price = self.worker["center_price"] # set as manual
-                print("inside relative orders, get external center price", self.center_price, sep=' ')  # debug
             else:
                 self.center_price = self.worker["center_price"]
-                print("inside relative orders, no external center price", self.center_price, sep=' ') # debug
             
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)

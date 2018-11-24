@@ -1,7 +1,7 @@
 from dexbot.strategies.external_feeds.ccxt_feed import get_ccxt_price
 from dexbot.strategies.external_feeds.waves_feed import get_waves_price
 from dexbot.strategies.external_feeds.gecko_feed import get_gecko_price
-from dexbot.strategies.external_feeds.process_pair import split_pair, join_pair, filter_prefix_symbol, filter_bit_symbol, debug
+from dexbot.strategies.external_feeds.process_pair import split_pair, join_pair, filter_prefix_symbol, filter_bit_symbol, get_consolidated_pair, debug
 import re
 
 
@@ -54,11 +54,32 @@ class PriceFeed:
         self._pair = [filter_bit_symbol(j) for j in [filter_prefix_symbol(i) for i in raw_pair]]
         debug(self._pair)        
 
+
+    def get_consolidated_price(self):
+        """
+        assumes XXX/YYY must be broken into XXX/USD * USD/YYY
+        """
+        center_price = None
+        original_pair = self.pair
+        try:
+            pair1, pair2 = get_consolidated_pair(self.pair[0], self.pair[1])
+            self.pair = pair1
+            p1_price = self.get_center_price(None)
+            self.pair = pair2
+            p2_price = self.get_center_price(None)
+            if p1_price and p2_price:
+                center_price = p1_price * p2_price
+                print(original_pair, "price is ", center_price)
+                self.pair = original_pair # put original pair back
+        except Exception as e:
+            print(type(e).__name__, e.args, 'Error')
+        return center_price
+    
         
     def set_alt_usd_pair(self, type):
         """
         get center price by search and replace for USD with USDT only
-        todo: extend this method in the future for others, e.g. USDC, TUSD,etc
+        todo: extend in PriceFeed or base.py for other alts, e.g. USDC, TUSD,etc
         """
         alt_usd_pair = self._pair
         i = 0
@@ -74,14 +95,14 @@ class PriceFeed:
         symbol = self._symbol
         price = None
         if self._exchange not in self._alt_exchanges:
-            print("use ccxt exchange ", self._exchange, ' symbol ', symbol, sep=":")
             price = get_ccxt_price(symbol, self._exchange)
+            debug("use ccxt exchange ", self._exchange, ' symbol ', symbol, ' price:', price)
         elif self._exchange == 'gecko':
-            print("gecko exchange - ", self._exchange, ' symbol ', symbol, sep=":")
             price = get_gecko_price(symbol_=symbol)
+            debug("gecko exchange - ", self._exchange, ' symbol ', symbol, ' price:',  price)
         elif self._exchange == 'waves':
-            print("use waves -", self._exchange, ' symbol ', symbol, sep=":")
             price = get_waves_price(symbol_=symbol)
+            debug("use waves -", self._exchange, ' symbol ', symbol, ' price:',  price)
         return price
 
 
