@@ -1025,9 +1025,11 @@ class Strategy(StrategyBase):
         if order['base']['symbol'] == self.market['base']['symbol']:
             asset_balance = self.base_balance
             order_type = 'buy'
+            precision = self.market['base']['precision']
         else:
             asset_balance = self.quote_balance
             order_type = 'sell'
+            precision = self.market['quote']['precision']
 
         # Make sure we have enough balance to replace partially filled order
         if asset_balance + order['for_sale']['amount'] >= order['base']['amount']:
@@ -1042,8 +1044,10 @@ class Strategy(StrategyBase):
             if self.returnOrderId:
                 self.refresh_balances(total_balances=False)
         else:
-            self.log.debug('Not replacing partially filled {} order because there is not enough funds'
-                           .format(order_type))
+            needed = order['base']['amount'] - order['for_sale']['amount']
+            self.log.debug('Unable to replace partially filled {} order: avail/needed: {:.{prec}f}/{:.{prec}f} {}'
+                           .format(order_type, asset_balance['amount'], needed, order['base']['symbol'],
+                           prec=precision))
 
     def place_closer_order(self, asset, order, place_order=True, allow_partial=False, own_asset_limit=None,
                            opposite_asset_limit=None):
