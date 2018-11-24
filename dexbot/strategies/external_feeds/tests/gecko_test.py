@@ -21,16 +21,15 @@ def test_feed(symbol):
     """
         [symbol]  Symbol example: btc/usd or btc:usd
     """
-    try:        
+    try:
         price = get_gecko_price(symbol_=symbol)
-        print(price)    
+        print(price)
         pair = split_pair(symbol)
         price = get_gecko_price(pair_=pair)
     except Exception as e:
         print_usage()
         print(type(e).__name__, e.args, str(e))
-        
+
 
 if __name__ == '__main__':
     main()
-
