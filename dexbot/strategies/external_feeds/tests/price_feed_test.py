@@ -5,7 +5,7 @@ from dexbot.strategies.external_feeds.process_pair import get_consolidated_pair
 This is the unit test for testing price_feed module. 
 Run this test first to cover everything in external feeds
 
-Note from Marko, In DEXBot: unit of measure = BASE, asset of interest = QUOTE
+In DEXBot: unit of measure = BASE, asset of interest = QUOTE
 """
 
 
