@@ -1,4 +1,4 @@
-from dexbot.strategies.external_feeds.process_pair import split_pair, debug
+import dexbot.strategies.external_feeds.process_pair
 import requests
 import asyncio
 
@@ -41,14 +41,14 @@ def get_waves_by_pair(pair):
 def get_waves_price(**kwargs):
     price = None
     for key, value in list(kwargs.items()):
-        debug("The value of {} is {}".format(key, value))
+        dexbot.strategies.external_feeds.process_pair.debug("The value of {} is {}".format(key, value))
         if key == "pair_":
             price = get_waves_by_pair(value)
-            debug(value, price)
+            dexbot.strategies.external_feeds.process_pair.debug(value, price)
         elif key == "symbol_":
-            pair = split_pair(value)
+            pair = dexbot.strategies.external_feeds.process_pair.split_pair(value)
             price = get_waves_by_pair(pair)
-            debug(pair, price)
+            dexbot.strategies.external_feeds.process_pair.debug(pair, price)
     return price
     
 
