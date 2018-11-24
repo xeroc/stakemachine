@@ -19,10 +19,10 @@ async def get_json(url):
 
 def _get_market_price(base, quote):
     try:
-        coin_list = asyncio.get_event_loop().run_until_complete(get_json(GECKO_COINS_URL+'list'))
+        coin_list = asyncio.get_event_loop().run_until_complete(get_json(GECKO_COINS_URL + 'list'))
         quote_name = check_gecko_symbol_exists(coin_list, quote.lower())
-        lookup_pair = "?vs_currency="+base.lower()+"&ids="+quote_name
-        market_url = GECKO_COINS_URL+'markets'+lookup_pair
+        lookup_pair = "?vs_currency=" + base.lower() + "&ids=" + quote_name
+        market_url = GECKO_COINS_URL + 'markets' + lookup_pair
         debug(market_url)
         ticker = asyncio.get_event_loop().run_until_complete(get_json(market_url))
         current_price = None
@@ -43,21 +43,21 @@ def check_gecko_symbol_exists(coin_list, symbol):
     except IndexError:
         return None
 
-    
+
 def get_gecko_price_by_pair(pair):
     current_price = None
     try:
         quote = pair[0]
-        base =  pair[1]
-        current_price = _get_market_price(base, quote)        
-        if current_price is None:   # Try inverted version
+        base = pair[1]
+        current_price = _get_market_price(base, quote)
+        if current_price is None:  # Try inverted version
             debug("Trying pair inversion...")
             current_price = _get_market_price(quote, base)
-            debug(base + '/' + quote,  str(current_price))
-            if current_price is not None:   # Re-invert price
-                actual_price = 1/current_price
+            debug(base + '/' + quote, str(current_price))
+            if current_price is not None:  # Re-invert price
+                actual_price = 1 / current_price
                 debug(quote + '/' + base, str(actual_price))
-                current_price= actual_price
+                current_price = actual_price
         else:
             debug(pair, current_price)
     except Exception as e:
@@ -68,11 +68,10 @@ def get_gecko_price_by_pair(pair):
 def get_gecko_price(**kwargs):
     price = None
     for key, value in list(kwargs.items()):
-        debug("The value of {} is {}".format(key, value)) # debug
+        debug("The value of {} is {}".format(key, value))  # debug
         if key == "pair_":
             price = get_gecko_price_by_pair(value)
         elif key == "symbol_":
-            pair = split_pair(value) # pair=[quote, base]
-            price =  get_gecko_price_by_pair(pair)
+            pair = split_pair(value)  # pair=[quote, base]
+            price = get_gecko_price_by_pair(pair)
     return price
-

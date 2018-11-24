@@ -12,7 +12,7 @@ async def print_ticker(symbol, exchange_id):
 
 async def get_ccxt_load_markets(exchange_id):
     exchange = getattr(accxt, exchange_id)({'verbose': False})
-    symbols  = await exchange.load_markets()
+    symbols = await exchange.load_markets()
     await exchange.close()
     return symbols
 
@@ -34,10 +34,8 @@ async def fetch_ticker(exchange, symbol):
 def get_ccxt_price(symbol, exchange_name):
     """ Get all tickers from multiple exchanges using async """
     center_price = None
-    exchange = getattr(accxt, exchange_name)({'verbose':False})
+    exchange = getattr(accxt, exchange_name)({'verbose': False})
     ticker = asyncio.get_event_loop().run_until_complete(fetch_ticker(exchange, symbol))
     if ticker:
-        center_price = (ticker['bid'] + ticker['ask'])/2
+        center_price = (ticker['bid'] + ticker['ask']) / 2
     return center_price
-
-
