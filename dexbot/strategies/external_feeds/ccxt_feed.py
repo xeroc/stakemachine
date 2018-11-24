@@ -1,11 +1,11 @@
-import json
 import asyncio
+
 import ccxt.async_support as accxt
 
 
-async def print_ticker(symbol, id):
+async def print_ticker(symbol, exchange_id):
     # Verbose mode will show the order of execution to verify concurrency
-    exchange = getattr(accxt, id)({'verbose': True})
+    exchange = getattr(accxt, exchange_id)({'verbose': True})
     await exchange.fetch_ticker(symbol)
     await exchange.close()
 
