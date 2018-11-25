@@ -389,14 +389,14 @@ class Strategy(StrategyBase):
         for order in sell_orders:
             order_price = order['price'] ** -1
             if order_price > self.upper_bound:
-                self.log.info('Cancelling sell order outside range: {}'.format(order_price))
+                self.log.info('Cancelling sell order outside range: {:.8f}'.format(order_price))
                 orders_to_cancel.append(order)
 
         # Remove buy orders that exceed boundaries
         for order in buy_orders:
             order_price = order['price']
             if order_price < self.lower_bound:
-                self.log.info('Cancelling buy order outside range: {}'.format(order_price))
+                self.log.info('Cancelling buy order outside range: {:.8f}'.format(order_price))
                 orders_to_cancel.append(order)
 
         if orders_to_cancel:
