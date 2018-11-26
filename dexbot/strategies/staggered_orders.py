@@ -481,7 +481,8 @@ class Strategy(StrategyBase):
 
                 if (self.bootstrapping and
                         self.base_balance_history[2] == self.base_balance_history[0] and
-                        self.quote_balance_history[2] == self.quote_balance_history[0]):
+                        self.quote_balance_history[2] == self.quote_balance_history[0] and
+                        opposite_orders):
                     # Turn off bootstrap mode whether we're didn't allocated assets during previous 3 maintenance
                     self.log.debug('Turning bootstrapping off: actual_spread > target_spread, we have free '
                                    'balances and cannot allocate them normally 3 times in a row')
