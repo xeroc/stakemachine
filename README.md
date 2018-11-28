@@ -9,8 +9,7 @@ The _Relative Orders_ strategy is the one most think of when speaking of _Market
 
 **Make sure to read strategy documentation from the wiki.** [Here](https://link.medium.com/gXkfewn6XR) is a step-by-step guide to get started
 
-Then the most interesting question:
-> Does it make profit?
+## Does it make profit?
 If you properly predict future market conditions, you can manage to make profit. All strategies rely on assumptions. The strategies that rely on less assumptions are less risky but likely also provide less profit. During long declines the effect is decreased losses - not actual profits.
 
 ## Getting help
