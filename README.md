@@ -1,5 +1,9 @@
 # DEXBot
 
+![GUI](https://i.imgur.com/rW8XKQ4.png)The Dashboard of the GUI version of DEXBot
+
+![CLI](https://i.imgur.com/H1N96nI.png)The CLI version of DEXBot in configuration dialog
+
 A Trading Bot provided with two very flexible Market Making strategies. Works on "vanilla" BitShares and all exchanges built upon it. Can be customized with additional strategies written in Python3.
 
 DEXBot can be installed from source or by using the excecutable packages for Windows, OSX, and Linux. Packages include the GUI version, but installation from source provides also the CLI version, which can be used on headless servers and Raspberry Pi's.
@@ -10,7 +14,7 @@ The _Relative Orders_ strategy is the one most think of when speaking of _Market
 **Make sure to read strategy documentation from the wiki.** [Here](https://link.medium.com/gXkfewn6XR) is a step-by-step guide to get started
 
 ## Does it make profit?
-If you properly predict future market conditions, you can manage to make profit. All strategies rely on assumptions. The strategies that rely on less assumptions are less risky but likely also provide less profit. During long declines the effect is decreased losses - not actual profits.
+If you properly predict future market conditions, you can manage to make profit. All strategies rely on assumptions. The strategies that rely on less assumptions are less risky, and more risky strategies _can_ make more profit. During long declines the effect is decreased losses - not actual profits. So we can only say that it can make profit, without forgetting that it can also make losses. Good luck.
 
 ## Getting help
 Join the [Telegram Chat for DEXBot](https://t.me/DEXBOTbts).
