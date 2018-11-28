@@ -6,6 +6,8 @@
 
 A Trading Bot provided with two very flexible Market Making strategies. Works on "vanilla" BitShares and all exchanges built upon it. Can be customized with additional strategies written in Python3.
 
+DEXBot was paid for by the BitShares blockchain (by means of a Worker Proposal), and managed by "The Cabinet", consisting of 6 active BitShares community members. All spending was controlled by an account which requires 3/5 approvals (multisig scheme).
+
 DEXBot can be installed from source or by using the excecutable packages for Windows, OSX, and Linux. Packages include the GUI version, but installation from source provides also the CLI version, which can be used on headless servers and Raspberry Pi's.
 
 The provided strategies can be used to bootstrap new markets, to increase liquidity of an asset, or to try to make profits.
