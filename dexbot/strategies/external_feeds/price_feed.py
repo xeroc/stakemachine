@@ -58,11 +58,11 @@ class PriceFeed:
         try:
             pair1, pair2 = get_consolidated_pair(self.pair[0], self.pair[1])
             self.pair = pair1
-            p1_price = self.get_center_price(None)
+            pair1_price = self.get_center_price(None)
             self.pair = pair2
-            p2_price = self.get_center_price(None)
-            if p1_price and p2_price:
-                center_price = p1_price * p2_price
+            pair2_price = self.get_center_price(None)
+            if pair1_price and pair2_price:
+                center_price = pair1_price * pair2_price
                 print(original_pair, "price is ", center_price)
                 self.pair = original_pair  # put original pair back
         except Exception as e:
@@ -87,7 +87,7 @@ class PriceFeed:
         symbol = self._symbol
         price = None
         if self._exchange not in self._alt_exchanges:
-            price = dexbot.strategies.external_feeds.ccxt_feed.get_ccxt_price(symbol, self._exchange)
+            price = get_ccxt_price(symbol, self._exchange)
             debug("use ccxt exchange ", self._exchange, ' symbol ', symbol, ' price:', price)
         elif self._exchange == 'gecko':
             price = get_gecko_price(symbol_=symbol)

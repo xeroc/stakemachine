@@ -613,21 +613,20 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
     def get_external_market_center_price(self):
         center_price = None
         self.log.debug('inside get_external_mcp, exchange: {} '.format(self.external_price_source))
-        market =  self.market.get_string('/')
+        market = self.market.get_string('/')
         self.log.debug('market: {}  '.format(market))
-        pf = PriceFeed(self.external_price_source, market)
-        pf.filter_symbols()
-        center_price = pf.get_center_price(None)
+        price_feed = PriceFeed(self.external_price_source, market)
+        price_feed.filter_symbols()
+        center_price = price_feed.get_center_price(None)
         self.log.debug('PriceFeed: {}'.format(center_price))
-        if center_price is None: # try USDT
-            center_price = pf.get_center_price("USDT")
+        if center_price is None:  # Try USDT
+            center_price = price_feed.get_center_price("USDT")
             self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
-            if center_price is None: # try consolidated
-                center_price = pf.get_consolidated_price()
+            if center_price is None:  # Try consolidated
+                center_price = price_feed.get_consolidated_price()
                 self.log.debug('Consolidated center price: {}'.format(center_price))
         return center_price
 
-                       
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
 

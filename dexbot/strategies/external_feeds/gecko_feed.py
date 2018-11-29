@@ -1,9 +1,9 @@
 import requests
 import asyncio
+
 from dexbot.strategies.external_feeds.process_pair import split_pair, debug
 
-"""
-    To use Gecko API, note that gecko does not provide pairs by default.
+""" To use Gecko API, note that gecko does not provide pairs by default.
     For base/quote one must be listed as ticker and the other as fullname,
     i.e. BTCUSD is vs_currency = usd , ids = bitcoin
     https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin

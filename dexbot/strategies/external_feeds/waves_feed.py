@@ -8,9 +8,8 @@ MARKET_URL = "/ticker/"
 
 
 async def get_json(url):
-    r = requests.get(url)
-    json_obj = r.json()
-    return json_obj
+    response = requests.get(url)
+    return response.json()
 
 
 def get_last_price(base, quote):
@@ -19,7 +18,7 @@ def get_last_price(base, quote):
         market_bq = MARKET_URL + quote + '/' + base  # external exchange format
         ticker = asyncio.get_event_loop().run_until_complete(get_json(WAVES_URL + market_bq))
         current_price = ticker['24h_close']
-    except Exception as e:
+    except Exception as exeption:
         pass  # No pair found on waves dex for external price. 
     return current_price
 

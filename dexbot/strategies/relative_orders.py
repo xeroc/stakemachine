@@ -91,7 +91,7 @@ class Strategy(StrategyBase):
             if external_source != 'none':
                 self.center_price = self.get_external_market_center_price()
                 if self.center_price is None:
-                    self.center_price = self.worker["center_price"] # set as manual
+                    self.center_price = self.worker["center_price"]  # Set as manual
             else:
                 self.center_price = self.worker["center_price"]
             
