@@ -1,5 +1,5 @@
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
-from dexbot.strategies.external_feeds.process_pair import get_consolidated_pair
+
 
 """
 This is the unit test for testing price_feed module. 

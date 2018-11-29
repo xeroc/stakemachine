@@ -1,5 +1,5 @@
-import click
 import asyncio
+
 from dexbot.strategies.external_feeds.ccxt_feed import get_ccxt_load_markets, get_ccxt_price
 
 """
