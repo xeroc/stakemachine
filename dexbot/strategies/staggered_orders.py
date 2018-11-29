@@ -1335,7 +1335,6 @@ class Strategy(StrategyBase):
         if place_order and asset == 'base':
             virtual_bound = self.market_center_price / math.sqrt(1 + self.target_spread)
             orders_count = self.calc_buy_orders_count(virtual_bound, price)
-            print(orders_count)
             if orders_count > self.operational_depth and isinstance(order, VirtualOrder):
                 # Allow to place closer order only if current is virtual
 
@@ -1347,7 +1346,6 @@ class Strategy(StrategyBase):
         elif place_order and asset == 'quote':
             virtual_bound = self.market_center_price * math.sqrt(1 + self.target_spread)
             orders_count = self.calc_sell_orders_count(virtual_bound, price)
-            print(orders_count)
             if orders_count > self.operational_depth and isinstance(order, VirtualOrder):
                 self.log.info('Placing virtual closer sell order')
                 new_order = self.place_virtual_sell_order(quote_amount, price)
