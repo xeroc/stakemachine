@@ -1802,6 +1802,7 @@ class Strategy(StrategyBase):
 
         idle_add(self.view.set_worker_slider, self.worker_name, percentage)
 
+
 class VirtualOrder(dict):
     """ Wrapper class to handle virtual orders comparison in list index() method
     """
