@@ -693,8 +693,6 @@ class Strategy(StrategyBase):
                                            order_type, opposite_asset_limit, opposite_symbol))
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                             opposite_asset_limit=opposite_asset_limit, allow_partial=False)
-                else:
-                    self.log.warning('Boostrap is off, but there is no opposite orders, not placing closer order')
             elif not opposite_orders:
                 # Do not try to do anything than placing closer order whether there is no opposite orders
                 return
