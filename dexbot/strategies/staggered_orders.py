@@ -203,8 +203,12 @@ class Strategy(StrategyBase):
 
         # Check market's price boundaries
         if self.market_center_price > self.upper_bound:
+            self.log.debug('Overriding upper bound by market center price: {} -> {:.8f}'
+                           .format(self.upper_bound, self.market_center_price))
             self.upper_bound = self.market_center_price
         elif self.market_center_price < self.lower_bound:
+            self.log.debug('Overriding lower bound by market center price: {} -> {:.8f}'
+                           .format(self.lower_bound, self.market_center_price))
             self.lower_bound = self.market_center_price
 
         # Remove orders that exceed boundaries
