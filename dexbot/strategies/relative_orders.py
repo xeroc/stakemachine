@@ -314,19 +314,23 @@ class Strategy(StrategyBase):
         total = (total_balance['quote'] * center_price) + total_balance['base']
 
         if not total:  # Prevent division by zero
-            balance = 0
+            base_percent = quote_percent = 0.5
         else:
-            # Returns a value between -1 and 1
-            balance = (total_balance['base'] / total) * 2 - 1
+            base_percent = total_balance['base'] / total
+            quote_percent = 1 - base_percent
 
-        if balance < 0:
-            # With less of base asset center price should be offset downward
-            center_price = center_price / math.sqrt(1 + spread * (balance * -1))
-        elif balance > 0:
-            # With more of base asset center price will be offset upwards
-            center_price = center_price * math.sqrt(1 + spread * balance)
+        highest_bid = float(self.ticker().get('highestBid'))
+        lowest_ask = float(self.ticker().get('lowestAsk'))
 
-        return center_price
+        lowest_price = center_price / (1 + spread)
+        highest_price = center_price * (1 + spread)
+
+        # Use highest_bid price if spread-based price is lower. This limits offset aggression.
+        lowest_price = max(lowest_price, highest_bid)
+        # Use lowest_ask price if spread-based price is higher
+        highest_price = min(highest_price, lowest_ask)
+
+        return math.pow(highest_price, base_percent) * math.pow(lowest_price, quote_percent)
 
     @staticmethod
     def calculate_manual_offset(center_price, manual_offset):
