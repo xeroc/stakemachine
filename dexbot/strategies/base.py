@@ -654,7 +654,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             # Calculate and return market center price. make sure buy_price has value
         if buy_price:
             center_price = buy_price * math.sqrt(sell_price / buy_price)        
-            self.log.debug('Inside get_market_center_price: {} '.format(center_price))
+            self.log.debug('Center price in get_market_center_price: {:.8f} '.format(center_price))
         return center_price
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):
