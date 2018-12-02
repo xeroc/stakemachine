@@ -184,8 +184,9 @@ class Strategy(StrategyBase):
         # Check if market center price is calculated
         self.market_center_price = self.get_market_center_price(suppress_errors=True)
 
-        # Set center price to manual value if needed
-        if self.center_price:
+        # Set center price to manual value if needed. Manual center price works only when there are no orders
+        if self.center_price and not (self.buy_orders or self.sell_orders):
+            self.log.debug('Using manual center price because of no sell or buy orders')
             self.market_center_price = self.center_price
 
         # Still not have market_center_price? Empty market, don't continue
