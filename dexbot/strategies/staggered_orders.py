@@ -666,7 +666,7 @@ class Strategy(StrategyBase):
                                .format(order_type, self.actual_spread, self.target_spread + self.increment))
                 if self.bootstrapping:
                     self.place_closer_order(asset, closest_own_order)
-                else:
+                elif opposite_orders:
                     # Place order limited by size of the opposite-side order
                     if self.mode == 'mountain':
                         opposite_asset_limit = closest_opposite_order['base']['amount'] * (1 + self.increment)
@@ -694,6 +694,9 @@ class Strategy(StrategyBase):
                                            order_type, opposite_asset_limit, opposite_symbol))
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                             opposite_asset_limit=opposite_asset_limit, allow_partial=False)
+                else:
+                    # Opposite side probably reached range bound, allow to place partial order
+                    self.place_closer_order(asset, closest_own_order, allow_partial=True)
             elif not opposite_orders:
                 # Do not try to do anything than placing closer order whether there is no opposite orders
                 return
