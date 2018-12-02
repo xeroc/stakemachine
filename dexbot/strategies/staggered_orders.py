@@ -508,7 +508,6 @@ class Strategy(StrategyBase):
                 if not isinstance(furthest_order, VirtualOrder):
                     # Failed to place order
                     break
-            self.virtual_orders_restored = True
 
         if self.sell_orders:
             furthest_order = self.real_sell_orders[-1]
@@ -517,7 +516,9 @@ class Strategy(StrategyBase):
                 if not isinstance(furthest_order, VirtualOrder):
                     # Failed to place order
                     break
-            self.virtual_orders_restored = True
+
+        # Set "restored" flag anyway to not break initial bootstrap
+        self.virtual_orders_restored = True
 
     def replace_real_order_with_virtual(self, order):
         """ Replace real limit order with virtual order
