@@ -335,8 +335,14 @@ class Strategy(StrategyBase):
             :param float | center_price:
             :param float | manual_offset:
             :return: Center price with manual offset
+
+            Adjust center price by given percent in symmetrical way. Thus, -1% adjustement on BTS:USD market will be
+            same as adjusting +1% on USD:BTS market.
         """
-        return center_price + (center_price * manual_offset)
+        if manual_offset < 0:
+            return center_price / (1 + abs(manual_offset))
+        else:
+            return center_price * (1 + manual_offset)
 
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
