@@ -255,9 +255,9 @@ class Strategy(StrategyBase):
             self.update_orders()
 
     def _calculate_center_price(self, suppress_errors=False):
-        ticker = self.market.ticker()
-        highest_bid = ticker.get("highestBid")
-        lowest_ask = ticker.get("lowestAsk")
+        highest_bid = float(self.ticker().get('highestBid'))
+        lowest_ask = float(self.ticker().get('lowestAsk'))
+
         if highest_bid is None or highest_bid == 0.0:
             if not suppress_errors:
                 self.log.critical(
@@ -274,7 +274,7 @@ class Strategy(StrategyBase):
             return None
 
         # Calculate center price between two closest orders on the market
-        return highest_bid['price'] * math.sqrt(lowest_ask['price'] / highest_bid['price'])
+        return highest_bid * math.sqrt(lowest_ask / highest_bid)
 
     def calculate_center_price(self, center_price=None, asset_offset=False, spread=None,
                                order_ids=None, manual_offset=0, suppress_errors=False):
