@@ -588,6 +588,7 @@ class Strategy(StrategyBase):
         """
         self.log.debug('Need to allocate {}: {}'.format(asset, asset_balance))
         closest_opposite_order = None
+        closest_opposite_price = 0
         opposite_asset_limit = None
         opposite_orders = []
         order_type = ''
@@ -772,6 +773,7 @@ class Strategy(StrategyBase):
         else:
             # Place first buy order as close to the lower bound as possible
             self.bootstrapping = True
+            order = None
             self.log.debug('Placing first {} order'.format(order_type))
             if asset == 'base':
                 order = self.place_lowest_buy_order(asset_balance)
@@ -821,6 +823,8 @@ class Strategy(StrategyBase):
         order_type = ''
         symbol = ''
         precision = 0
+        new_order_amount = 0
+        furthest_order_bound = 0
 
         if asset == 'quote':
             total_balance = self.quote_total_balance
@@ -1076,6 +1080,7 @@ class Strategy(StrategyBase):
             orders_count = len(orders)
             orders = list(reversed(orders))
             closest_order = orders[-1]
+            previous_amount = 0
 
             for order in orders:
                 order_index = orders.index(order)
@@ -1144,6 +1149,7 @@ class Strategy(StrategyBase):
 
                 if need_increase:
                     price = 0
+                    quote_amount = 0
 
                     if asset == 'quote':
                         price = (order['price'] ** -1)
