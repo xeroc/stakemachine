@@ -732,7 +732,7 @@ class Strategy(StrategyBase):
                         funds_to_reserve = closer_own_order['amount'] * additional_reserve
                     self.log.debug('Partially filled order on opposite side, reserving funds for next {} order: '
                                    '{:.{prec}f} {}'.format(order_type, funds_to_reserve, own_symbol,
-                                   prec=own_precision))
+                                                           prec=own_precision))
                     asset_balance -= funds_to_reserve
 
                 if asset_balance > own_threshold:
@@ -1244,7 +1244,7 @@ class Strategy(StrategyBase):
             needed = order['base']['amount'] - order['for_sale']['amount']
             self.log.debug('Unable to replace partially filled {} order: avail/needed: {:.{prec}f}/{:.{prec}f} {}'
                            .format(order_type, asset_balance['amount'], needed, order['base']['symbol'],
-                           prec=precision))
+                                   prec=precision))
 
     def place_closer_order(self, asset, order, place_order=True, allow_partial=False, own_asset_limit=None,
                            opposite_asset_limit=None):
