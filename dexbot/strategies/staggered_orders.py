@@ -1267,7 +1267,6 @@ class Strategy(StrategyBase):
         order_type = ''
         quote_amount = 0
         symbol = ''
-        new_order = None
 
         # Define asset-dependent variables
         if asset == 'base':
@@ -1326,7 +1325,6 @@ class Strategy(StrategyBase):
             quote_amount = opposite_asset_amount
             limiter = base_amount
         elif asset == 'quote':
-            base_amount = opposite_asset_amount
             quote_amount = own_asset_amount
             limiter = quote_amount
             price = price ** -1
@@ -1382,7 +1380,6 @@ class Strategy(StrategyBase):
         balance = 0
         order_type = ''
         symbol = ''
-        new_order = None
         virtual_bound = self.market_center_price / math.sqrt(1 + self.target_spread)
 
         # Define asset-dependent variables
@@ -1411,7 +1408,6 @@ class Strategy(StrategyBase):
             own_asset_amount = order['base']['amount']
             opposite_asset_amount = own_asset_amount / price
         elif self.mode == 'neutral':
-            giown_asset_amount = order['base']['amount'] / math.sqrt(1 + self.increment)
             opposite_asset_amount = own_asset_amount / price
 
         limiter = 0
@@ -1421,7 +1417,6 @@ class Strategy(StrategyBase):
             quote_amount = opposite_asset_amount
             limiter = base_amount
         elif asset == 'quote':
-            base_amount = opposite_asset_amount
             quote_amount = own_asset_amount
             limiter = quote_amount
             price = price ** -1
