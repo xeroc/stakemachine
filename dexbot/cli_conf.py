@@ -217,8 +217,12 @@ def configure_worker(whiptail, worker_config):
 
         # If strategy has changed, create new config where base elements stay the same
         for config_item in StrategyBase.configure():
-            key = config_item[0]
-            new_worker_config[key] = worker_config[key]
+            try:
+                key = config_item[0]
+                new_worker_config[key] = worker_config[key]
+            except KeyError as error:
+                # In case using old configuration file and there are new fields, this passes missing key
+                pass
 
         # Add module separately to the config
         new_worker_config['module'] = worker_config['module']

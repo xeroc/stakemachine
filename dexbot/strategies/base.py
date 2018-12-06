@@ -613,21 +613,20 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
     def get_external_market_center_price(self):
         center_price = None
         self.log.debug('inside get_external_mcp, exchange: {} '.format(self.external_price_source))
-        market =  self.market.get_string('/')
+        market = self.market.get_string('/')
         self.log.debug('market: {}  '.format(market))
-        pf = PriceFeed(self.external_price_source, market)
-        pf.filter_symbols()
-        center_price = pf.get_center_price(None)
+        price_feed = PriceFeed(self.external_price_source, market)
+        price_feed.filter_symbols()
+        center_price = price_feed.get_center_price(None)
         self.log.debug('PriceFeed: {}'.format(center_price))
-        if center_price is None: # try USDT
-            center_price = pf.get_center_price("USDT")
+        if center_price is None:  # Try USDT
+            center_price = price_feed.get_center_price("USDT")
             self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
-            if center_price is None: # try consolidated
-                center_price = pf.get_consolidated_price()
+            if center_price is None:  # Try consolidated
+                center_price = price_feed.get_consolidated_price()
                 self.log.debug('Consolidated center price: {}'.format(center_price))
         return center_price
 
-                       
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
 
@@ -655,7 +654,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             # Calculate and return market center price. make sure buy_price has value
         if buy_price:
             center_price = buy_price * math.sqrt(sell_price / buy_price)        
-            self.log.debug('Inside get_market_center_price: {} '.format(center_price))
+            self.log.debug('Center price in get_market_center_price: {:.8f} '.format(center_price))
         return center_price
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):
@@ -1060,6 +1059,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         symbol = self.market['base']['symbol']
         precision = self.market['base']['precision']
         base_amount = truncate(price * amount, precision)
+        return_order_id = kwargs.pop('returnOrderId', self.returnOrderId)
 
         # Don't try to place an order of size 0
         if not base_amount:
@@ -1068,7 +1068,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if self.returnOrderId and self.balance(self.market['base']) < base_amount:
+        if return_order_id and self.balance(self.market['base']) < base_amount:
             self.log.critical("Insufficient buy balance, needed {} {}".format(base_amount, symbol))
             self.disabled = True
             return None
@@ -1083,14 +1083,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             expiration=self.expiration,
-            returnOrderId=self.returnOrderId,
+            returnOrderId=return_order_id,
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
 
         self.log.debug('Placed buy order {}'.format(buy_transaction))
-        if self.returnOrderId:
+        if return_order_id:
             buy_order = self.get_order(buy_transaction['orderid'], return_none=return_none)
             if buy_order and buy_order['deleted']:
                 # The API doesn't return data on orders that don't exist
@@ -1114,6 +1114,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         symbol = self.market['quote']['symbol']
         precision = self.market['quote']['precision']
         quote_amount = truncate(amount, precision)
+        return_order_id = kwargs.pop('returnOrderId', self.returnOrderId)
 
         # Don't try to place an order of size 0
         if not quote_amount:
@@ -1122,7 +1123,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if self.returnOrderId and self.balance(self.market['quote']) < quote_amount:
+        if return_order_id and self.balance(self.market['quote']) < quote_amount:
             self.log.critical("Insufficient sell balance, needed {} {}".format(amount, symbol))
             self.disabled = True
             return None
@@ -1137,14 +1138,14 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             Amount(amount=amount, asset=self.market["quote"]),
             account=self.account.name,
             expiration=self.expiration,
-            returnOrderId=self.returnOrderId,
+            returnOrderId=return_order_id,
             fee_asset=self.fee_asset['id'],
             *args,
             **kwargs
         )
 
         self.log.debug('Placed sell order {}'.format(sell_transaction))
-        if self.returnOrderId:
+        if return_order_id:
             sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
             if sell_order and sell_order['deleted']:
                 # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
