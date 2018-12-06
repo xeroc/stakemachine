@@ -819,8 +819,55 @@ class Strategy(StrategyBase):
             :return bool | True = all available funds was allocated
                            False = not all funds was allocated, can increase more orders next time
         """
+
+        def increase_single_order(asset, order, new_order_amount):
+            """ To avoid code doubling, use this unified function to increase single order
+
+                :param str | asset: 'base' or 'quote', depending if checking sell or buy
+                :param order | order: order needed to be increased
+                :param float | new_order_amount: BASE or QUOTE amount of a new order (depending on asset)
+
+            """
+            quote_amount = 0
+            price = 0
+            order_type = ''
+            order_amount = order['base']['amount']
+
+            if asset == 'quote':
+                order_type = 'sell'
+                price = (order['price'] ** -1)
+                quote_amount = new_order_amount
+            elif asset == 'base':
+                order_type = 'buy'
+                price = order['price']
+                quote_amount = new_order_amount / price
+
+            if asset_balance < new_order_amount - order['for_sale']['amount']:
+                # Balance should be enough to replace partially filled order
+                self.log.debug('Not enough balance to increase {} order at price {:.8f}'
+                               .format(order_type, price))
+                return True
+
+            self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
+                          .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
+            self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
+                           .format(order_type, self.mode, order_amount, price))
+            self.cancel_orders_wrapper(order)
+            if asset == 'quote':
+                if isinstance(order, VirtualOrder):
+                    self.place_virtual_sell_order(quote_amount, price)
+                else:
+                    self.place_market_sell_order(quote_amount, price)
+            elif asset == 'base':
+                if isinstance(order, VirtualOrder):
+                    self.place_virtual_buy_order(quote_amount, price)
+                else:
+                    self.place_market_buy_order(quote_amount, price)
+
+            # Only one increase at a time. This prevents running more than one increment round simultaneously
+            return False
+
         total_balance = 0
-        order_type = ''
         symbol = ''
         precision = 0
         new_order_amount = 0
@@ -828,12 +875,10 @@ class Strategy(StrategyBase):
 
         if asset == 'quote':
             total_balance = self.quote_total_balance
-            order_type = 'sell'
             symbol = self.market['quote']['symbol']
             precision = self.market['quote']['precision']
         elif asset == 'base':
             total_balance = self.base_total_balance
-            order_type = 'buy'
             symbol = self.market['base']['symbol']
             precision = self.market['base']['precision']
 
@@ -907,40 +952,8 @@ class Strategy(StrategyBase):
                             """
                             new_order_amount = closer_bound / (1 + self.increment * 0.2)
 
-                    quote_amount = 0
-                    price = 0
+                    return increase_single_order(asset, order, new_order_amount)
 
-                    if asset == 'quote':
-                        price = (order['price'] ** -1)
-                        quote_amount = new_order_amount
-                    elif asset == 'base':
-                        price = order['price']
-                        quote_amount = new_order_amount / price
-
-                    if asset_balance < new_order_amount - order['for_sale']['amount']:
-                        # Balance should be enough to replace partially filled order
-                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
-                                       .format(order_type, price))
-                        return True
-
-                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
-                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
-                                   .format(order_type, self.mode, order_amount, price))
-                    self.cancel_orders_wrapper(order)
-                    if asset == 'quote':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_sell_order(quote_amount, price)
-                        else:
-                            self.place_market_sell_order(quote_amount, price)
-                    elif asset == 'base':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_buy_order(quote_amount, price)
-                        else:
-                            self.place_market_buy_order(quote_amount, price)
-
-                    # Only one increase at a time. This prevents running more than one increment round simultaneously
-                    return False
         elif (self.mode == 'valley' or
               (self.mode == 'buy_slope' and asset == 'base') or
               (self.mode == 'sell_slope' and asset == 'quote')):
@@ -1029,40 +1042,8 @@ class Strategy(StrategyBase):
                     need_increase = True
 
                 if need_increase:
-                    price = 0
-                    quote_amount = 0
+                    return increase_single_order(asset, order, new_order_amount)
 
-                    if asset == 'quote':
-                        price = (order['price'] ** -1)
-                        quote_amount = new_order_amount
-                    elif asset == 'base':
-                        price = order['price']
-                        quote_amount = new_order_amount / price
-
-                    if asset_balance < new_order_amount - order['for_sale']['amount']:
-                        # Balance should be enough to replace partially filled order
-                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
-                                       .format(order_type, price))
-                        return True
-
-                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
-                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
-                                   .format(order_type, self.mode, order_amount, price))
-                    self.cancel_orders_wrapper(order)
-                    if asset == 'quote':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_sell_order(quote_amount, price)
-                        else:
-                            self.place_market_sell_order(quote_amount, price)
-                    elif asset == 'base':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_buy_order(quote_amount, price)
-                        else:
-                            self.place_market_buy_order(quote_amount, price)
-
-                    # One increase at a time. This prevents running more than one increment round simultaneously.
-                    return False
 
         elif self.mode == 'neutral':
             """ Starting from the furthest order, for each order, see if it is approximately
@@ -1148,41 +1129,7 @@ class Strategy(StrategyBase):
                     need_increase = True
 
                 if need_increase:
-                    price = 0
-                    quote_amount = 0
-
-                    if asset == 'quote':
-                        price = (order['price'] ** -1)
-                        quote_amount = new_order_amount
-                    elif asset == 'base':
-                        price = order['price']
-                        quote_amount = new_order_amount / price
-
-                    if asset_balance < new_order_amount - order['for_sale']['amount']:
-                        # Balance should be enough to replace partially filled order
-                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
-                                       .format(order_type, price))
-                        return True
-
-                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
-                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}'
-                                   ', amount: {:.8f}, price: {:.8f}'
-                                   .format(order_type, self.mode, order_amount, price))
-                    self.cancel_orders_wrapper(order)
-                    if asset == 'quote':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_sell_order(quote_amount, price)
-                        else:
-                            self.place_market_sell_order(quote_amount, price)
-                    elif asset == 'base':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_buy_order(quote_amount, price)
-                        else:
-                            self.place_market_buy_order(quote_amount, price)
-
-                    # One increase at a time. This prevents running more than one increment round simultaneously.
-                    return False
+                    return increase_single_order(asset, order, new_order_amount)
 
         return None
 
