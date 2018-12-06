@@ -836,10 +836,16 @@ class Strategy(StrategyBase):
             if asset == 'quote':
                 order_type = 'sell'
                 price = (order['price'] ** -1)
+                # New order amount must be at least x2 precision bigger
+                new_order_amount = max(new_order_amount,
+                                   order['base']['amount'] + 2 * 10 ** -self.market['quote']['precision'])
                 quote_amount = new_order_amount
             elif asset == 'base':
                 order_type = 'buy'
                 price = order['price']
+                # New order amount must be at least x2 precision bigger
+                new_order_amount = max(new_order_amount,
+                                       order['base']['amount'] + 2 * 10 ** -self.market['base']['precision'])
                 quote_amount = new_order_amount / price
 
             if asset_balance < new_order_amount - order['for_sale']['amount']:
