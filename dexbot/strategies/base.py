@@ -5,7 +5,6 @@ import logging
 import math
 import time
 
-from dexbot.basestrategy import BaseStrategy  # Todo: Once the old BaseStrategy deprecates, remove it.
 from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.statemachine import StateMachine
@@ -72,7 +71,7 @@ ConfigElement = collections.namedtuple('ConfigElement', 'key type default title 
 DetailElement = collections.namedtuple('DetailTab', 'type name title file')
 
 
-class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
+class StrategyBase(Storage, StateMachine, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
         most common methods needed by the strategy.
 
@@ -980,6 +979,16 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         updated_order = self.get_updated_limit_order(order)
         return Order(updated_order, bitshares_instance=self.bitshares)
+
+    def execute(self):
+        """ Execute a bundle of operations
+
+            :return: dict: transaction
+        """
+        self.bitshares.blocking = "head"
+        r = self.bitshares.txbuffer.broadcast()
+        self.bitshares.blocking = False
+        return r
 
     def is_buy_order(self, order):
         """ Check whether an order is buy order

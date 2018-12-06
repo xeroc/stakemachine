@@ -1769,7 +1769,7 @@ class Strategy(StrategyBase):
         self.disabled = True
 
     def pause(self):
-        """ Override pause() in BaseStrategy """
+        """ Override pause() """
         pass
 
     def purge(self):
