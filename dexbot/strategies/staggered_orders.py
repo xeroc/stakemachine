@@ -46,7 +46,7 @@ class Strategy(StrategyBase):
 
         return StrategyBase.configure(return_base_config) + [
             ConfigElement(
-                'mode', 'choice', 'mountain', 'Strategy mode',
+                'mode', 'choice', 'neutral', 'Strategy mode',
                 'How to allocate funds and profits. Doesn\'t effect existing orders, only future ones', modes),
             ConfigElement(
                 'spread', 'float', 6, 'Spread',
