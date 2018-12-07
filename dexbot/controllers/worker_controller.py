@@ -85,8 +85,8 @@ class WorkerController:
         return worker_data['mode']
 
     @staticmethod
-    def get_allow_instant_fill(worder_data):
-        return worder_data['allow_instant_fill']
+    def get_allow_instant_fill(worker_data):
+        return worker_data['allow_instant_fill']
 
     @staticmethod
     def get_assets(worker_data):
