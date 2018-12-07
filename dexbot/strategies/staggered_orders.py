@@ -1238,12 +1238,14 @@ class Strategy(StrategyBase):
         # Check for instant fill
         if asset == 'base':
             price = order['price'] * (1 + self.increment)
-            if not self.is_instant_fill_enabled and price > float(self.ticker().get('lowestAsk')) and place_order:
+            lowest_ask = float(self.ticker().get('lowestAsk'))
+            if not self.is_instant_fill_enabled and price > lowest_ask and lowest_ask > 0 and place_order:
                 self.log.info('Refusing to place an order which crosses lowest ask')
                 return None
         elif asset == 'quote':
             price = (order['price'] ** -1) / (1 + self.increment)
-            if not self.is_instant_fill_enabled and price < float(self.ticker().get('highestBid')) and place_order:
+            highest_bid = float(self.ticker().get('highestBid'))
+            if not self.is_instant_fill_enabled and price < highest_bid and highest_bid > 0 and place_order:
                 self.log.info('Refusing to place an order which crosses highest bid')
                 return None
 
