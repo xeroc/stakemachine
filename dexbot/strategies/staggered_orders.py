@@ -189,10 +189,14 @@ class Strategy(StrategyBase):
             self.log.debug('Using manual center price because of no sell or buy orders')
             self.market_center_price = self.center_price
 
-        # Still not have market_center_price? Empty market, don't continue
+        # On empty market we need manual center price anyway
         if not self.market_center_price:
-            self.log.warning('Cannot calculate center price on empty market, please set is manually')
-            return
+            if self.center_price:
+                self.market_center_price = self.center_price
+            else:
+                # Still not have market_center_price? Empty market, don't continue
+                self.log.warning('Cannot calculate center price on empty market, please set is manually')
+                return
 
         # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
         self.refresh_balances(use_cached_orders=True)
