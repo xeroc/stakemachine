@@ -830,7 +830,8 @@ class Strategy(StrategyBase):
                 :param str | asset: 'base' or 'quote', depending if checking sell or buy
                 :param order | order: order needed to be increased
                 :param float | new_order_amount: BASE or QUOTE amount of a new order (depending on asset)
-
+                :return bool | True = available funds was allocated, cannot allocate remainder
+                               False = not all funds was allocated, can increase more orders next time
             """
             quote_amount = 0
             price = 0
