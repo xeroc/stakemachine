@@ -201,9 +201,9 @@ class Strategy(StrategyBase):
         # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
         self.refresh_balances(use_cached_orders=True)
 
-        # Calculate asset thresholds
-        self.quote_asset_threshold = self.quote_total_balance / 20000
-        self.base_asset_threshold = self.base_total_balance / 20000
+        # Calculate asset thresholds once
+        if not (self.quote_asset_threshold or self.base_asset_threshold):
+            self.calculate_asset_thresholds()
 
         # Check market's price boundaries
         if self.market_center_price > self.upper_bound:
@@ -399,6 +399,22 @@ class Strategy(StrategyBase):
         """
         delta = datetime.now() - self.start
         self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
+
+    def calculate_asset_thresholds(self):
+        """ Calculate minimal asset thresholds to allocate.
+
+            The goal is to avoid trying to allocate too small amounts which may lead to "Trying to buy/sell 0"
+            situations.
+        """
+        # Keep at least N of precision
+        reserve_ratio = 10
+
+        if self.market['quote']['precision'] <= self.market['base']['precision']:
+            self.quote_asset_threshold = reserve_ratio * 10 ** -self.market['quote']['precision']
+            self.base_asset_threshold = self.quote_asset_threshold * self.market_center_price
+        else:
+            self.base_asset_threshold = reserve_ratio * 10 ** -self.market['base']['precision']
+            self.quote_asset_threshold = self.base_asset_threshold / self.market_center_price
 
     def refresh_balances(self, total_balances=True, use_cached_orders=False):
         """ This function is used to refresh account balances
