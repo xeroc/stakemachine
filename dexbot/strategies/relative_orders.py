@@ -1,7 +1,7 @@
 import math
 from datetime import datetime, timedelta
 
-from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement
+from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement, EXCHANGES
 from dexbot.qt_queue.idle_queue import idle_add
 
 
@@ -12,6 +12,10 @@ class Strategy(StrategyBase):
     @classmethod
     def configure(cls, return_base_config=True):
         return StrategyBase.configure(return_base_config) + [
+            ConfigElement('external_price_source', 'choice', EXCHANGES[0], 'External price source',
+                          'The bot will try to get price information from this source', EXCHANGES),
+            ConfigElement('external_feed', 'bool', False, 'External price feed',
+                          'Use external reference price instead of center price acquired from the market', None),
             ConfigElement('amount', 'float', 1, 'Amount',
                           'Fixed order size, expressed in quote asset, unless "relative order size" selected',
                           (0, None, 8, '')),
@@ -44,7 +48,8 @@ class Strategy(StrategyBase):
             ConfigElement('partial_fill_threshold', 'float', 30, 'Fill threshold',
                           'Order fill threshold to reset orders', (0, 100, 2, '%')),
             ConfigElement('reset_on_price_change', 'bool', False, 'Reset orders on center price change',
-                          'Reset orders when center price is changed more than threshold (set False for external feeds)', None),
+                          'Reset orders when center price is changed more than threshold '
+                          '(set False for external feeds)', None),
             ConfigElement('price_change_threshold', 'float', 2, 'Price change threshold',
                           'Define center price threshold to react on', (0, 100, 2, '%')),
             ConfigElement('custom_expiration', 'bool', False, 'Custom expiration',
@@ -80,19 +85,27 @@ class Strategy(StrategyBase):
 
         if not self.market_center_price:
             self.empty_market = True
-            
+
+        # Set external price source, defaults to False if not found
+        self.external_feed = self.worker.get('external_feed', False)
+        self.external_price_source = self.worker.get('external_price_source', None)
+
         # Worker parameters
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
+
         if self.is_center_price_dynamic:
             self.center_price = None
             self.center_price_depth = self.worker.get('center_price_depth', 0)
         else:
-            external_source = self.external_price_source
-            if external_source != 'none':
-                self.center_price = self.get_external_market_center_price()
+            if self.external_feed:
+                # Try getting center price from external source
+                self.center_price = self.get_external_market_center_price(self.external_price_source)
+
                 if self.center_price is None:
-                    self.center_price = self.worker["center_price"]  # Set as manual
+                    # Use manual center price as fallback
+                    self.center_price = self.worker["center_price"]
             else:
+                # Use manually set center price
                 self.center_price = self.worker["center_price"]
             
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
