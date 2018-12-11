@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>449</width>
-    <height>597</height>
+    <height>675</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,7 +32,7 @@
       <string>Worker Parameters</string>
      </property>
      <layout class="QFormLayout" name="formLayout">
-      <item row="0" column="0">
+      <item row="2" column="0">
        <widget class="QWidget" name="order_size_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -127,7 +127,7 @@
         </layout>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="2" column="1">
        <widget class="QWidget" name="amount_input_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -207,7 +207,7 @@
         </layout>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="3" column="0">
        <widget class="QWidget" name="relative_order_size_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -287,14 +287,14 @@
         </layout>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="3" column="1">
        <widget class="QCheckBox" name="relative_order_size_input">
         <property name="text">
          <string>Relative order size</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="4" column="0">
        <widget class="QWidget" name="spread_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -389,7 +389,7 @@
         </layout>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="spread_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -420,7 +420,7 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
+      <item row="5" column="0">
        <widget class="QWidget" name="dynamic_spread_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -500,14 +500,14 @@
         </layout>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="5" column="1">
        <widget class="QCheckBox" name="dynamic_spread_input">
         <property name="text">
          <string>Dynamic spread</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="6" column="0">
        <widget class="QWidget" name="market_depth_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -605,7 +605,7 @@
         </layout>
        </widget>
       </item>
-      <item row="4" column="1">
+      <item row="6" column="1">
        <widget class="QWidget" name="market_depth_amount_input_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -685,7 +685,7 @@
         </layout>
        </widget>
       </item>
-      <item row="5" column="0">
+      <item row="7" column="0">
        <widget class="QWidget" name="dynamic_spread_factor_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -783,7 +783,7 @@
         </layout>
        </widget>
       </item>
-      <item row="5" column="1">
+      <item row="7" column="1">
        <widget class="QDoubleSpinBox" name="dynamic_spread_factor_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -817,7 +817,7 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="0">
+      <item row="8" column="0">
        <widget class="QWidget" name="center_price_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -912,7 +912,7 @@
         </layout>
        </widget>
       </item>
-      <item row="6" column="1">
+      <item row="8" column="1">
        <widget class="QWidget" name="center_price_input_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1010,7 +1010,7 @@
         </layout>
        </widget>
       </item>
-      <item row="7" column="0">
+      <item row="9" column="0">
        <widget class="QWidget" name="center_price_dynamic_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1090,7 +1090,7 @@
         </layout>
        </widget>
       </item>
-      <item row="7" column="1">
+      <item row="9" column="1">
        <widget class="QCheckBox" name="center_price_dynamic_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -1109,7 +1109,7 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="0">
+      <item row="10" column="0">
        <widget class="QWidget" name="center_price_depth_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1207,7 +1207,7 @@
         </layout>
        </widget>
       </item>
-      <item row="8" column="1">
+      <item row="10" column="1">
        <widget class="QWidget" name="center_price_depth_input_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1287,7 +1287,7 @@
         </layout>
        </widget>
       </item>
-      <item row="9" column="0">
+      <item row="15" column="0">
        <widget class="QWidget" name="balance_offset_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1367,14 +1367,14 @@
         </layout>
        </widget>
       </item>
-      <item row="9" column="1">
+      <item row="15" column="1">
        <widget class="QCheckBox" name="center_price_offset_input">
         <property name="text">
          <string>Center price offset based on asset balances</string>
         </property>
        </widget>
       </item>
-      <item row="10" column="0">
+      <item row="16" column="0">
        <widget class="QWidget" name="manual_offset_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1469,7 +1469,7 @@
         </layout>
        </widget>
       </item>
-      <item row="10" column="1">
+      <item row="16" column="1">
        <widget class="QWidget" name="manual_offset_input_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1592,7 +1592,7 @@ QSlider::handle:horizontal {
         </layout>
        </widget>
       </item>
-      <item row="11" column="0">
+      <item row="17" column="0">
        <widget class="QWidget" name="reset_on_partial_fill_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1672,14 +1672,14 @@ QSlider::handle:horizontal {
         </layout>
        </widget>
       </item>
-      <item row="11" column="1">
+      <item row="17" column="1">
        <widget class="QCheckBox" name="reset_on_partial_fill_input">
         <property name="text">
          <string>Reset orders on partial fill</string>
         </property>
        </widget>
       </item>
-      <item row="12" column="0">
+      <item row="18" column="0">
        <widget class="QWidget" name="partial_fill_threshold_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1774,7 +1774,7 @@ QSlider::handle:horizontal {
         </layout>
        </widget>
       </item>
-      <item row="12" column="1">
+      <item row="18" column="1">
        <widget class="QDoubleSpinBox" name="partial_fill_threshold_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1805,7 +1805,7 @@ QSlider::handle:horizontal {
         </property>
        </widget>
       </item>
-      <item row="13" column="0">
+      <item row="19" column="0">
        <widget class="QWidget" name="reset_on_price_change_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1885,14 +1885,14 @@ QSlider::handle:horizontal {
         </layout>
        </widget>
       </item>
-      <item row="13" column="1">
+      <item row="19" column="1">
        <widget class="QCheckBox" name="reset_on_price_change_input">
         <property name="text">
          <string>Reset orders on center price change</string>
         </property>
        </widget>
       </item>
-      <item row="14" column="0">
+      <item row="20" column="0">
        <widget class="QWidget" name="price_change_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1987,7 +1987,7 @@ QSlider::handle:horizontal {
         </layout>
        </widget>
       </item>
-      <item row="14" column="1">
+      <item row="20" column="1">
        <widget class="QDoubleSpinBox" name="price_change_threshold_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -2018,7 +2018,7 @@ QSlider::handle:horizontal {
         </property>
        </widget>
       </item>
-      <item row="15" column="0">
+      <item row="21" column="0">
        <widget class="QWidget" name="balance_offset_wrap_4" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -2098,14 +2098,14 @@ QSlider::handle:horizontal {
         </layout>
        </widget>
       </item>
-      <item row="15" column="1">
+      <item row="21" column="1">
        <widget class="QCheckBox" name="custom_expiration_input">
         <property name="text">
          <string>Custom expiration</string>
         </property>
        </widget>
       </item>
-      <item row="16" column="0">
+      <item row="22" column="0">
        <widget class="QWidget" name="order_expiration_wrap" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -2200,7 +2200,7 @@ QSlider::handle:horizontal {
         </layout>
        </widget>
       </item>
-      <item row="16" column="1">
+      <item row="22" column="1">
        <widget class="QDoubleSpinBox" name="expiration_time_input">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -2231,6 +2231,198 @@ QSlider::handle:horizontal {
         </property>
         <property name="value">
          <double>5.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="13" column="0">
+       <widget class="QWidget" name="external_feed_wrap" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_23">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="external_feed_label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>External feed</string>
+           </property>
+           <property name="buddy">
+            <cstring>amount_input</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="external_feed_tooltip">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="cursor">
+            <cursorShape>WhatsThisCursor</cursorShape>
+           </property>
+           <property name="toolTip">
+            <string>The bot will try to get price information from this source</string>
+           </property>
+           <property name="text">
+            <string>?</string>
+           </property>
+           <property name="margin">
+            <number>5</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="13" column="1">
+       <widget class="QComboBox" name="external_price_source_input">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="currentIndex">
+         <number>-1</number>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="0">
+       <widget class="QWidget" name="extrenal_feed_wrap_2" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_25">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="external_feed_tooltip_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="font">
+            <font>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="cursor">
+            <cursorShape>WhatsThisCursor</cursorShape>
+           </property>
+           <property name="toolTip">
+            <string>Use external reference price instead of center price acquired from the market</string>
+           </property>
+           <property name="text">
+            <string>?</string>
+           </property>
+           <property name="margin">
+            <number>5</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="12" column="1">
+       <widget class="QCheckBox" name="external_feed_input">
+        <property name="text">
+         <string>Use external source for center price calculation</string>
         </property>
        </widget>
       </item>
