@@ -169,6 +169,10 @@ class RelativeOrdersController(StrategyController):
             self.view.strategy_widget.center_price_input.setDisabled(True)
             self.view.strategy_widget.center_price_depth_input.setDisabled(False)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(False)
+            self.view.strategy_widget.external_feed_input.setEnabled(True)
+
+            if self.view.strategy_widget.external_feed_input.isChecked():
+                self.view.strategy_widget.external_price_source_input.setEnabled(True)
 
             if self.view.strategy_widget.reset_on_price_change_input.isChecked():
                 self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
@@ -177,6 +181,9 @@ class RelativeOrdersController(StrategyController):
             self.view.strategy_widget.center_price_depth_input.setDisabled(True)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(True)
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+            self.view.strategy_widget.external_feed_input.setChecked(False)
+            self.view.strategy_widget.external_feed_input.setDisabled(True)
+            self.view.strategy_widget.external_price_source_input.setDisabled(True)
 
     def onchange_reset_on_partial_fill_input(self, checked):
         if checked:
