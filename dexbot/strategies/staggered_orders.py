@@ -115,7 +115,7 @@ class Strategy(StrategyBase):
             self.center_price = self.worker['center_price']
 
         if self.target_spread < self.increment:
-            self.log.error('Spread is more than increment, refusing to work because worker will make losses')
+            self.log.error('Spread must be more than increment, refusing to work because worker will make losses')
             self.disabled = True
 
         if self.operational_depth < 2:
