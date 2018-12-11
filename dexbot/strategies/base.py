@@ -71,6 +71,17 @@ ConfigElement = collections.namedtuple('ConfigElement', 'key type default title 
 """
 DetailElement = collections.namedtuple('DetailTab', 'type name title file')
 
+# External exchanges used to calculate center price
+EXCHANGES = [
+    # ('none', 'None. Use Manual or Bitshares DEX Price (default)'),
+    ('gecko', 'Coingecko'),
+    ('waves', 'Waves DEX'),
+    ('kraken', 'Kraken'),
+    ('bitfinex', 'Bitfinex'),
+    ('gdax', 'Gdax'),
+    ('binance', 'Binance')
+]
+
 
 class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
@@ -137,17 +148,6 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             :return: Returns a list of config elements
         """
 
-        # External exchanges used to calculate center price
-        exchanges = [
-            ('none', 'None. Use Manual or Bitshares DEX Price (default)'),
-            ('gecko', 'Coingecko'),
-            ('waves', 'Waves DEX'),
-            ('kraken', 'Kraken'),
-            ('bitfinex', 'Bitfinex'),
-            ('gdax', 'Gdax'),
-            ('binance', 'Binance')
-        ]
-      
         # Common configs
         base_config = [
             ConfigElement('account', 'string', '', 'Account',
@@ -156,8 +156,6 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             ConfigElement('market', 'string', 'USD:BTS', 'Market',
                           'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
                           r'[A-Z\.]+[:\/][A-Z\.]+'),
-            ConfigElement('external_center_price_source', 'choice', exchanges[0], 'External Source',
-                          'External Price Source, select one', exchanges),
             ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
                           r'[A-Z\.]+')
@@ -249,10 +247,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
-                 
-        # Set external price source
-        self.external_price_source = self.worker.get('external_center_price_source')
-        
+
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
 
@@ -610,15 +605,16 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         except IndexError:
             return None
 
-    def get_external_market_center_price(self):
+    def get_external_market_center_price(self, external_price_source):
         center_price = None
-        self.log.debug('inside get_external_mcp, exchange: {} '.format(self.external_price_source))
+        self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
         market = self.market.get_string('/')
         self.log.debug('market: {}  '.format(market))
-        price_feed = PriceFeed(self.external_price_source, market)
+        price_feed = PriceFeed(external_price_source, market)
         price_feed.filter_symbols()
         center_price = price_feed.get_center_price(None)
         self.log.debug('PriceFeed: {}'.format(center_price))
+
         if center_price is None:  # Try USDT
             center_price = price_feed.get_center_price("USDT")
             self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
