@@ -46,7 +46,7 @@ class Strategy(StrategyBase):
 
         return StrategyBase.configure(return_base_config) + [
             ConfigElement(
-                'mode', 'choice', 'mountain', 'Strategy mode',
+                'mode', 'choice', 'neutral', 'Strategy mode',
                 'How to allocate funds and profits. Doesn\'t effect existing orders, only future ones', modes),
             ConfigElement(
                 'spread', 'float', 6, 'Spread',
@@ -115,7 +115,7 @@ class Strategy(StrategyBase):
             self.center_price = self.worker['center_price']
 
         if self.target_spread < self.increment:
-            self.log.error('Spread is more than increment, refusing to work because worker will make losses')
+            self.log.error('Spread must be more than increment, refusing to work because worker will make losses')
             self.disabled = True
 
         if self.operational_depth < 2:
@@ -158,6 +158,10 @@ class Strategy(StrategyBase):
         # We do not waiting for order ids to be able to bundle operations
         self.returnOrderId = None
 
+        # Minimal order amounts depending on defined increment
+        self.order_min_base = 0
+        self.order_min_quote = 0
+
         # Minimal check interval is needed to prevent event queue accumulation
         self.min_check_interval = 1
         self.max_check_interval = 120
@@ -189,17 +193,24 @@ class Strategy(StrategyBase):
             self.log.debug('Using manual center price because of no sell or buy orders')
             self.market_center_price = self.center_price
 
-        # Still not have market_center_price? Empty market, don't continue
+        # On empty market we need manual center price anyway
         if not self.market_center_price:
-            self.log.warning('Cannot calculate center price on empty market, please set is manually')
-            return
+            if self.center_price:
+                self.market_center_price = self.center_price
+            else:
+                # Still not have market_center_price? Empty market, don't continue
+                self.log.warning('Cannot calculate center price on empty market, please set is manually')
+                return
 
         # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
         self.refresh_balances(use_cached_orders=True)
 
-        # Calculate asset thresholds
-        self.quote_asset_threshold = self.quote_total_balance / 20000
-        self.base_asset_threshold = self.base_total_balance / 20000
+        if not (self.order_min_base or self.order_min_quote):
+            self.calculate_min_amounts()
+
+        # Calculate asset thresholds once
+        if not (self.quote_asset_threshold or self.base_asset_threshold):
+            self.calculate_asset_thresholds()
 
         # Check market's price boundaries
         if self.market_center_price > self.upper_bound:
@@ -395,6 +406,28 @@ class Strategy(StrategyBase):
         """
         delta = datetime.now() - self.start
         self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
+
+    def calculate_min_amounts(self):
+        """ Calculate minimal order amounts depending on defined increment
+        """
+        self.order_min_base = 2 * 10 ** -self.market['base']['precision'] / self.increment
+        self.order_min_quote = 2 * 10 ** -self.market['quote']['precision'] / self.increment
+
+    def calculate_asset_thresholds(self):
+        """ Calculate minimal asset thresholds to allocate.
+
+            The goal is to avoid trying to allocate too small amounts which may lead to "Trying to buy/sell 0"
+            situations.
+        """
+        # Keep at least N of precision
+        reserve_ratio = 10
+
+        if self.market['quote']['precision'] <= self.market['base']['precision']:
+            self.quote_asset_threshold = reserve_ratio * 10 ** -self.market['quote']['precision']
+            self.base_asset_threshold = self.quote_asset_threshold * self.market_center_price
+        else:
+            self.base_asset_threshold = reserve_ratio * 10 ** -self.market['base']['precision']
+            self.quote_asset_threshold = self.base_asset_threshold / self.market_center_price
 
     def refresh_balances(self, total_balances=True, use_cached_orders=False):
         """ This function is used to refresh account balances
@@ -819,8 +852,62 @@ class Strategy(StrategyBase):
             :return bool | True = all available funds was allocated
                            False = not all funds was allocated, can increase more orders next time
         """
+
+        def increase_single_order(asset, order, new_order_amount):
+            """ To avoid code doubling, use this unified function to increase single order
+
+                :param str | asset: 'base' or 'quote', depending if checking sell or buy
+                :param order | order: order needed to be increased
+                :param float | new_order_amount: BASE or QUOTE amount of a new order (depending on asset)
+                :return bool | True = available funds was allocated, cannot allocate remainder
+                               False = not all funds was allocated, can increase more orders next time
+            """
+            quote_amount = 0
+            price = 0
+            order_type = ''
+            order_amount = order['base']['amount']
+
+            if asset == 'quote':
+                order_type = 'sell'
+                price = (order['price'] ** -1)
+                # New order amount must be at least x2 precision bigger
+                new_order_amount = max(new_order_amount,
+                                   order['base']['amount'] + 2 * 10 ** -self.market['quote']['precision'])
+                quote_amount = new_order_amount
+            elif asset == 'base':
+                order_type = 'buy'
+                price = order['price']
+                # New order amount must be at least x2 precision bigger
+                new_order_amount = max(new_order_amount,
+                                       order['base']['amount'] + 2 * 10 ** -self.market['base']['precision'])
+                quote_amount = new_order_amount / price
+
+            if asset_balance < new_order_amount - order['for_sale']['amount']:
+                # Balance should be enough to replace partially filled order
+                self.log.debug('Not enough balance to increase {} order at price {:.8f}'
+                               .format(order_type, price))
+                return True
+
+            self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
+                          .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
+            self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
+                           .format(order_type, self.mode, order_amount, price))
+            self.cancel_orders_wrapper(order)
+            if asset == 'quote':
+                if isinstance(order, VirtualOrder):
+                    self.place_virtual_sell_order(quote_amount, price)
+                else:
+                    self.place_market_sell_order(quote_amount, price)
+            elif asset == 'base':
+                if isinstance(order, VirtualOrder):
+                    self.place_virtual_buy_order(quote_amount, price)
+                else:
+                    self.place_market_buy_order(quote_amount, price)
+
+            # Only one increase at a time. This prevents running more than one increment round simultaneously
+            return False
+
         total_balance = 0
-        order_type = ''
         symbol = ''
         precision = 0
         new_order_amount = 0
@@ -828,12 +915,10 @@ class Strategy(StrategyBase):
 
         if asset == 'quote':
             total_balance = self.quote_total_balance
-            order_type = 'sell'
             symbol = self.market['quote']['symbol']
             precision = self.market['quote']['precision']
         elif asset == 'base':
             total_balance = self.base_total_balance
-            order_type = 'buy'
             symbol = self.market['base']['symbol']
             precision = self.market['base']['precision']
 
@@ -907,40 +992,8 @@ class Strategy(StrategyBase):
                             """
                             new_order_amount = closer_bound / (1 + self.increment * 0.2)
 
-                    quote_amount = 0
-                    price = 0
+                    return increase_single_order(asset, order, new_order_amount)
 
-                    if asset == 'quote':
-                        price = (order['price'] ** -1)
-                        quote_amount = new_order_amount
-                    elif asset == 'base':
-                        price = order['price']
-                        quote_amount = new_order_amount / price
-
-                    if asset_balance < new_order_amount - order['for_sale']['amount']:
-                        # Balance should be enough to replace partially filled order
-                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
-                                       .format(order_type, price))
-                        return True
-
-                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
-                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
-                                   .format(order_type, self.mode, order_amount, price))
-                    self.cancel_orders_wrapper(order)
-                    if asset == 'quote':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_sell_order(quote_amount, price)
-                        else:
-                            self.place_market_sell_order(quote_amount, price)
-                    elif asset == 'base':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_buy_order(quote_amount, price)
-                        else:
-                            self.place_market_buy_order(quote_amount, price)
-
-                    # Only one increase at a time. This prevents running more than one increment round simultaneously
-                    return False
         elif (self.mode == 'valley' or
               (self.mode == 'buy_slope' and asset == 'base') or
               (self.mode == 'sell_slope' and asset == 'quote')):
@@ -1029,40 +1082,7 @@ class Strategy(StrategyBase):
                     need_increase = True
 
                 if need_increase:
-                    price = 0
-                    quote_amount = 0
-
-                    if asset == 'quote':
-                        price = (order['price'] ** -1)
-                        quote_amount = new_order_amount
-                    elif asset == 'base':
-                        price = order['price']
-                        quote_amount = new_order_amount / price
-
-                    if asset_balance < new_order_amount - order['for_sale']['amount']:
-                        # Balance should be enough to replace partially filled order
-                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
-                                       .format(order_type, price))
-                        return True
-
-                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
-                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
-                                   .format(order_type, self.mode, order_amount, price))
-                    self.cancel_orders_wrapper(order)
-                    if asset == 'quote':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_sell_order(quote_amount, price)
-                        else:
-                            self.place_market_sell_order(quote_amount, price)
-                    elif asset == 'base':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_buy_order(quote_amount, price)
-                        else:
-                            self.place_market_buy_order(quote_amount, price)
-
-                    # One increase at a time. This prevents running more than one increment round simultaneously.
-                    return False
+                    return increase_single_order(asset, order, new_order_amount)
 
         elif self.mode == 'neutral':
             """ Starting from the furthest order, for each order, see if it is approximately
@@ -1148,41 +1168,7 @@ class Strategy(StrategyBase):
                     need_increase = True
 
                 if need_increase:
-                    price = 0
-                    quote_amount = 0
-
-                    if asset == 'quote':
-                        price = (order['price'] ** -1)
-                        quote_amount = new_order_amount
-                    elif asset == 'base':
-                        price = order['price']
-                        quote_amount = new_order_amount / price
-
-                    if asset_balance < new_order_amount - order['for_sale']['amount']:
-                        # Balance should be enough to replace partially filled order
-                        self.log.debug('Not enough balance to increase {} order at price {:.8f}'
-                                       .format(order_type, price))
-                        return True
-
-                    self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
-                                  .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
-                    self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}'
-                                   ', amount: {:.8f}, price: {:.8f}'
-                                   .format(order_type, self.mode, order_amount, price))
-                    self.cancel_orders_wrapper(order)
-                    if asset == 'quote':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_sell_order(quote_amount, price)
-                        else:
-                            self.place_market_sell_order(quote_amount, price)
-                    elif asset == 'base':
-                        if isinstance(order, VirtualOrder):
-                            self.place_virtual_buy_order(quote_amount, price)
-                        else:
-                            self.place_market_buy_order(quote_amount, price)
-
-                    # One increase at a time. This prevents running more than one increment round simultaneously.
-                    return False
+                    return increase_single_order(asset, order, new_order_amount)
 
         return None
 
@@ -1281,12 +1267,14 @@ class Strategy(StrategyBase):
         # Check for instant fill
         if asset == 'base':
             price = order['price'] * (1 + self.increment)
-            if not self.is_instant_fill_enabled and price > float(self.ticker().get('lowestAsk')) and place_order:
+            lowest_ask = float(self.ticker().get('lowestAsk'))
+            if not self.is_instant_fill_enabled and price > lowest_ask and lowest_ask > 0 and place_order:
                 self.log.info('Refusing to place an order which crosses lowest ask')
                 return None
         elif asset == 'quote':
             price = (order['price'] ** -1) / (1 + self.increment)
-            if not self.is_instant_fill_enabled and price < float(self.ticker().get('highestBid')) and place_order:
+            highest_bid = float(self.ticker().get('highestBid'))
+            if not self.is_instant_fill_enabled and price < highest_bid and highest_bid > 0 and place_order:
                 self.log.info('Refusing to place an order which crosses highest bid')
                 return None
 
@@ -1329,26 +1317,42 @@ class Strategy(StrategyBase):
             limiter = quote_amount
             price = price ** -1
 
+        # Make sure new order is bigger than allowed minimum
+        hard_limit = 0
+        if place_order:
+            corrected_quote_amount = self.check_min_order_size(quote_amount, price)
+            if corrected_quote_amount > quote_amount:
+                self.log.debug('Correcting closer order amount to minimal allowed')
+                quote_amount = corrected_quote_amount
+                base_amount = quote_amount * price
+                if asset == 'base':
+                    hard_limit = base_amount
+                elif asset == 'quote':
+                    hard_limit = quote_amount
+                limiter = hard_limit
+
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place closer {} order; need/avail: {:.8f}/{:.8f}'
                                .format(order_type, limiter, balance))
                 place_order = False
-            elif allow_partial:
+            elif allow_partial and balance > hard_limit:
                 self.log.debug('Limiting {} order amount to available asset balance: {} {}'
                                .format(order_type, balance, symbol))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
                     quote_amount = balance
+            else:
+                self.log.debug('Not enough balance to place minimal allowed order')
+                place_order = False
 
         if place_order and asset == 'base':
             virtual_bound = self.market_center_price / math.sqrt(1 + self.target_spread)
             orders_count = self.calc_buy_orders_count(virtual_bound, price)
             if orders_count > self.operational_depth and isinstance(order, VirtualOrder):
                 # Allow to place closer order only if current is virtual
-
                 self.log.info('Placing virtual closer buy order')
                 new_order = self.place_virtual_buy_order(quote_amount, price)
             else:
@@ -1421,19 +1425,36 @@ class Strategy(StrategyBase):
             limiter = quote_amount
             price = price ** -1
 
+        # Make sure new order is bigger than allowed minimum
+        hard_limit = 0
+        if place_order:
+            corrected_quote_amount = self.check_min_order_size(quote_amount, price)
+            if corrected_quote_amount > quote_amount:
+                self.log.debug('Correcting further order amount to minimal allowed')
+                quote_amount = corrected_quote_amount
+                base_amount = quote_amount * price
+                if asset == 'base':
+                    hard_limit = base_amount
+                elif asset == 'quote':
+                    hard_limit = quote_amount
+                limiter = hard_limit
+
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place further {} order; need/avail: {:.8f}/{:.8f}'
+                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.8f}/{:.8f}'
                                .format(order_type, limiter, balance))
                 place_order = False
-            elif allow_partial:
+            elif allow_partial and balance > hard_limit:
                 self.log.debug('Limiting {} order amount to available asset balance: {} {}'
                                .format(order_type, balance, symbol))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
                     quote_amount = balance
+            else:
+                self.log.debug('Not enough balance to place minimal allowed order')
+                place_order = False
 
         if place_order and asset == 'base':
             orders_count = self.calc_buy_orders_count(virtual_bound, price)
@@ -1534,6 +1555,12 @@ class Strategy(StrategyBase):
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
+            # Make sure new order is bigger than allowed minimum
+            corrected_amount = self.check_min_order_size(amount_quote, price)
+            if corrected_amount > amount_quote:
+                self.log.warning('Placing increased order because calculated size is less than allowed minimum')
+                amount_quote = corrected_amount
+
             if sell_orders_count > self.operational_depth:
                 order = self.place_virtual_sell_order(amount_quote, price)
             else:
@@ -1654,6 +1681,12 @@ class Strategy(StrategyBase):
         amount_quote = int(float(amount_quote) * 10 ** precision) / (10 ** precision)
 
         if place_order:
+            # Make sure new order is bigger than allowed minimum
+            corrected_amount = self.check_min_order_size(amount_quote, price)
+            if corrected_amount > amount_quote:
+                self.log.warning('Placing increased order because calculated size is less than allowed minimum')
+                amount_quote = corrected_amount
+
             if buy_orders_count > self.operational_depth:
                 order = self.place_virtual_buy_order(amount_quote, price)
             else:
@@ -1688,6 +1721,20 @@ class Strategy(StrategyBase):
             orders_count += 1
             price_low = price_low * (1 + self.increment)
         return orders_count
+
+    def check_min_order_size(self, amount, price):
+        """ Check if order size is less than minimal allowed size
+
+            :param float | amount: Order amount in QUOTE
+            :param float | price: Order price in BASE
+            :return float | new_amount: passed amount or minimal allowed amount
+        """
+        if (amount < self.order_min_quote or
+                amount * price < self.order_min_base):
+            self.log.debug('Too small order, base: {:.8f}/{:.8f}, quote: {}/{}'
+                           .format(amount * price, self.order_min_base, amount, self.order_min_quote))
+            return max(self.order_min_quote, self.order_min_base / price)
+        return amount
 
     def place_virtual_buy_order(self, amount, price):
         """ Place a virtual buy order
