@@ -1084,7 +1084,6 @@ class Strategy(StrategyBase):
                 if need_increase:
                     return increase_single_order(asset, order, new_order_amount)
 
-
         elif self.mode == 'neutral':
             """ Starting from the furthest order, for each order, see if it is approximately
                 maximum size.
