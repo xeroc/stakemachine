@@ -1844,7 +1844,7 @@ class Strategy(StrategyBase):
         else:
             order_ids = None
 
-        total_balance = self.total_balance(order_ids)
+        total_balance = self.count_asset(order_ids)
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 
         # Prevent division by zero
