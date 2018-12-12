@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>449</width>
-    <height>675</height>
+    <height>687</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -2333,6 +2333,12 @@ QSlider::handle:horizontal {
        <widget class="QComboBox" name="external_price_source_input">
         <property name="enabled">
          <bool>true</bool>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>170</width>
+          <height>16777215</height>
+         </size>
         </property>
         <property name="currentIndex">
          <number>-1</number>
