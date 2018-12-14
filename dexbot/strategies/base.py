@@ -606,7 +606,11 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             return None
 
     def get_external_market_center_price(self, external_price_source):
-        center_price = None
+        """ Get center price from an external market for current market pair
+
+            :param external_price_source: External market name
+            :return: Center price as float
+        """
         self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
         market = self.market.get_string('/')
         self.log.debug('market: {}  '.format(market))
