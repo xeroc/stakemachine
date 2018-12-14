@@ -80,15 +80,22 @@ class Strategy(StrategyBase):
         self.error_onAccount = self.error
 
         # Market status
-        self.market_center_price = self.get_market_center_price(suppress_errors=True)        
         self.empty_market = False
 
-        if not self.market_center_price:
-            self.empty_market = True
+        # Get market center price from Bitshares
+        self.market_center_price = self.get_market_center_price(suppress_errors=True)
 
         # Set external price source, defaults to False if not found
         self.external_feed = self.worker.get('external_feed', False)
         self.external_price_source = self.worker.get('external_price_source', None)
+
+        if self.external_feed:
+            # Get external center price from given source
+            self.external_market_center_price = self.get_external_market_center_price(self.external_price_source)
+
+        if not self.market_center_price:
+            # Bitshares has no center price making it an empty market or one that has only one sided orders
+            self.empty_market = True
 
         # Worker parameters
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
@@ -97,16 +104,8 @@ class Strategy(StrategyBase):
             self.center_price = None
             self.center_price_depth = self.worker.get('center_price_depth', 0)
         else:
-            if self.external_feed:
-                # Try getting center price from external source
-                self.center_price = self.get_external_market_center_price(self.external_price_source)
-
-                if self.center_price is None:
-                    # Use manual center price as fallback
-                    self.center_price = self.worker["center_price"]
-            else:
-                # Use manually set center price
-                self.center_price = self.worker["center_price"]
+            # Use manually set center price
+            self.center_price = self.worker["center_price"]
             
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)
@@ -146,7 +145,7 @@ class Strategy(StrategyBase):
             return
 
         # Check if market has center price when using dynamic center price
-        if self.empty_market and (self.is_center_price_dynamic or self.dynamic_spread):
+        if not self.external_feed and self.empty_market and (self.is_center_price_dynamic or self.dynamic_spread):
             self.log.info('Market is empty and using dynamic market parameters. Waiting for market change...')
             return
 
@@ -203,7 +202,12 @@ class Strategy(StrategyBase):
 
         if self.is_center_price_dynamic:
             # Calculate center price from the market orders
-            if self.center_price_depth > 0:
+
+            if self.external_feed:
+                # Try getting center price from external source
+                center_price = self.get_external_market_center_price(self.external_price_source)
+
+            if self.center_price_depth > 0 and not self.external_feed:
                 # Calculate with quote amount if given
                 center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
 
@@ -404,6 +408,8 @@ class Strategy(StrategyBase):
 
         # Check center price change when using market center price with reset option on change
         if self.is_reset_on_price_change and self.is_center_price_dynamic:
+            # This doesn't use external price feed because it is not allowed to be active
+            # same time as reset_on_price_change
             spread = self.spread
 
             # Calculate spread if dynamic spread option in use, this calculation includes own orders on the market
