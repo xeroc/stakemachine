@@ -37,6 +37,9 @@ async def fetch_ticker(exchange, symbol):
 def get_ccxt_price(symbol, exchange_name):
     """ Get all tickers from multiple exchanges using async """
     center_price = None
+
+    async_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(async_loop)
     exchange = getattr(accxt, exchange_name)({'verbose': False})
     ticker = asyncio.get_event_loop().run_until_complete(fetch_ticker(exchange, symbol))
     if ticker:

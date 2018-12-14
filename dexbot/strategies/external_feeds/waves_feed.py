@@ -16,6 +16,8 @@ def get_last_price(base, quote):
     current_price = None
     try:
         market_bq = MARKET_URL + quote + '/' + base  # external exchange format
+        async_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(async_loop)
         ticker = asyncio.get_event_loop().run_until_complete(get_json(WAVES_URL + market_bq))
         current_price = ticker['24h_close']
     except Exception as exeption:
@@ -24,6 +26,8 @@ def get_last_price(base, quote):
 
 
 def get_waves_symbols():
+    async_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(async_loop)
     symbol_list = asyncio.get_event_loop().run_until_complete(get_json(WAVES_URL + SYMBOLS_URL))
     return symbol_list
 
