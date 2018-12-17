@@ -116,9 +116,9 @@ class RelativeOrdersController(StrategyController):
         widget.custom_expiration_input.clicked.connect(self.onchange_custom_expiration_input)
 
         # Trigger the onchange events once
-        self.onchange_external_feed_input(widget.external_feed_input.isChecked())
         self.onchange_relative_order_size_input(widget.relative_order_size_input.isChecked())
         self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+        self.onchange_external_feed_input(widget.external_feed_input.isChecked())
         self.onchange_dynamic_spread_input(widget.dynamic_spread_input.isChecked())
         self.onchange_reset_on_partial_fill_input(widget.reset_on_partial_fill_input.isChecked())
         self.onchange_reset_on_price_change_input(widget.reset_on_price_change_input.isChecked())
@@ -138,7 +138,9 @@ class RelativeOrdersController(StrategyController):
 
             self.view.strategy_widget.reset_on_price_change_input.setChecked(False)
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+            self.view.strategy_widget.center_price_depth_input.setDisabled(True)
         else:
+            self.view.strategy_widget.center_price_depth_input.setEnabled(True)
             self.view.strategy_widget.external_price_source_input.setDisabled(True)
 
     def onchange_manual_offset_input(self):
@@ -198,6 +200,7 @@ class RelativeOrdersController(StrategyController):
             # Disable external price feed
             self.view.strategy_widget.external_feed_input.setChecked(False)
             self.view.strategy_widget.external_price_source_input.setDisabled(True)
+            self.view.strategy_widget.center_price_depth_input.setEnabled(True)
         else:
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
 
