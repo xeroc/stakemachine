@@ -127,6 +127,12 @@ class Storage(dict):
         db_worker.clear_orders(worker)
         db_worker.clear(worker)
 
+    @staticmethod
+    def store_balance_entry(account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price,
+                            timestamp):
+        db_worker.save_balance(account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price,
+                               timestamp)
+
 
 class DatabaseWorker(threading.Thread):
     """ Thread safe database worker
@@ -303,6 +309,18 @@ class DatabaseWorker(threading.Thread):
             for row in results:
                 result[row.order_id] = json.loads(row.order)
         self._set_result(token, result)
+
+    def save_balance(self, account, worker, base_total, base_symbol,
+                     quote_total, quote_symbol, center_price, timestamp):
+        self.execute_noreturn(self._save_balance, account, worker, base_total, base_symbol,
+                              quote_total, quote_symbol, center_price, timestamp)
+
+    def _save_balance(self, account, worker, base_total, base_symbol,
+                      quote_total, quote_symbol, center_price, timestamp):
+        balance = Balances(account, worker, base_total, base_symbol,
+                           quote_total, quote_symbol, center_price, timestamp)
+        self.session.add(balance)
+        self.session.commit()
 
 
 # Derive sqlite file directory

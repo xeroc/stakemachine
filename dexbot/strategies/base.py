@@ -1198,6 +1198,25 @@ class StrategyBase(Storage, StateMachine, Events):
                 else:
                     raise
 
+    def store_profit_estimation_data(self):
+        """ Save total quote, total base, center_price, and datetime in to the database
+        """
+        self.store_balance_entry(self.config.get('account'),
+                                 self.worker_name,
+                                 self.balance(self.base_asset).get('amount'),
+                                 self.market['base'].get('symbol'),
+                                 self.balance(self.quote_asset).get('amount'),
+                                 self.market['quote'].get('symbol'),
+                                 self.get_market_center_price(),
+                                 time.time())
+
+    def get_profit_estimation_data(self, seconds):
+        """ Get balance history closest to the given time
+
+            :returns The data as dict from the first timestamp going backwards from seconds argument
+        """
+        pass
+
     def write_order_log(self, worker_name, order):
         """ Write order log to csv file
 

@@ -353,6 +353,9 @@ class Strategy(StrategyBase):
         """
         delta = datetime.now() - self.last_check
 
+        # Store current available balance and balance in orders to the database for profit calculation purpose
+        self.store_profit_estimation_data()
+
         # Only allow to check orders whether minimal time passed
         if delta < timedelta(seconds=self.min_check_interval) and not self.initializing:
             self.log.debug('Ignoring market_update event as min_check_interval is not passed')
