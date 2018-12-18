@@ -168,6 +168,7 @@ class Strategy(StrategyBase):
         self.current_check_interval = self.min_check_interval
 
         if self.view:
+            self.update_gui_profit()
             self.update_gui_slider()
 
     def maintain_strategy(self, *args, **kwargs):
@@ -400,6 +401,9 @@ class Strategy(StrategyBase):
 
         self.last_check = datetime.now()
         self.log_maintenance_time()
+
+        # Update profit estimate
+        self.update_gui_profit()
 
     def log_maintenance_time(self):
         """ Measure time from self.start and print a log message
@@ -1830,30 +1834,6 @@ class Strategy(StrategyBase):
         if not (self.counter or 0) % 3:
             self.maintain_strategy()
         self.counter += 1
-
-    def update_gui_slider(self):
-        ticker = self.market.ticker()
-        latest_price = ticker.get('latest', {}).get('price', None)
-
-        if not latest_price:
-            return
-
-        orders = self.fetch_orders()
-        if orders:
-            order_ids = orders.keys()
-        else:
-            order_ids = None
-
-        total_balance = self.count_asset(order_ids)
-        total = (total_balance['quote'] * latest_price) + total_balance['base']
-
-        # Prevent division by zero
-        if not total:
-            percentage = 50
-        else:
-            percentage = (total_balance['base'] / total) * 100
-
-        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
 
 
 class VirtualOrder(dict):

@@ -10,6 +10,7 @@ from dexbot.storage import Storage
 from dexbot.statemachine import StateMachine
 from dexbot.helper import truncate
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
+from dexbot.qt_queue.idle_queue import idle_add
 
 from events import Events
 import bitshares.exceptions
@@ -1201,21 +1202,24 @@ class StrategyBase(Storage, StateMachine, Events):
     def store_profit_estimation_data(self):
         """ Save total quote, total base, center_price, and datetime in to the database
         """
-        self.store_balance_entry(self.config.get('account'),
-                                 self.worker_name,
-                                 self.balance(self.base_asset).get('amount'),
-                                 self.market['base'].get('symbol'),
-                                 self.balance(self.quote_asset).get('amount'),
-                                 self.market['quote'].get('symbol'),
-                                 self.get_market_center_price(),
-                                 time.time())
+        account = self.config['workers'][self.worker_name].get('account')
+        base_amount = self.balance(self.base_asset).get('amount')
+        base_symbol = self.market['base'].get('symbol')
+        quote_amount = self.balance(self.quote_asset).get('amount')
+        quote_symbol = self.market['quote'].get('symbol')
+        center_price = self.get_market_center_price()
+        timestamp = time.time()
+
+        self.store_balance_entry(account, self.worker_name, base_amount, base_symbol,
+                                 quote_amount, quote_symbol, center_price, timestamp)
 
     def get_profit_estimation_data(self, seconds):
         """ Get balance history closest to the given time
 
             :returns The data as dict from the first timestamp going backwards from seconds argument
         """
-        pass
+        return self.get_balance_history(self.config['workers'][self.worker_name].get('account'),
+                                        self.worker_name, seconds)
 
     def write_order_log(self, worker_name, order):
         """ Write order log to csv file
@@ -1408,3 +1412,53 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Sort orders by price
         return sorted(orders, key=lambda order: order['price'], reverse=reverse)
+
+    # GUI updaters
+    def update_gui_slider(self):
+        ticker = self.market.ticker()
+        latest_price = ticker.get('latest', {}).get('price', None)
+        if not latest_price:
+            return
+
+        order_ids = None
+        orders = self.fetch_orders()
+
+        if orders:
+            order_ids = orders.keys()
+
+        total_balance = self.count_asset(order_ids)
+        total = (total_balance['quote'] * latest_price) + total_balance['base']
+
+        if not total:  # Prevent division by zero
+            percentage = 50
+        else:
+            percentage = (total_balance['base'] / total) * 100
+        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
+        self['slider'] = percentage
+
+    def update_gui_profit(self):
+        profit = 0
+        time_range = 60 * 60 * 24 * 7  # 7 days
+        current_time = time.time()
+        timestamp = current_time - time_range
+
+        # Fetch the balance from history
+        old_data = self.get_balance_history(self.config['workers'][self.worker_name].get('account'), self.worker_name,
+                                            timestamp)
+        if old_data:
+            earlier_base = old_data.base_total
+            earlier_quote = old_data.quote_total
+            earlier_price = old_data.center_price
+
+            balances = self.count_asset(return_asset='base')
+            base = balances['base'].get('amount')
+            quote = balances['quote'].get('amount')
+
+            # Calculate profit
+            base_roi = base / earlier_base
+            quote_roi = quote / earlier_quote
+            profit = round(math.sqrt(base_roi * quote_roi), 3)
+
+        # Add to idle que
+        idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
+        self['profit'] = profit
