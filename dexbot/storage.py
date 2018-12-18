@@ -128,10 +128,16 @@ class Storage(dict):
         db_worker.clear(worker)
 
     @staticmethod
-    def store_balance_entry(account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price,
-                            timestamp):
-        db_worker.save_balance(account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price,
-                               timestamp)
+    def store_balance_entry(account, worker, base_total, base_symbol, quote_total, quote_symbol,
+                            center_price, timestamp):
+        balance = Balances(account, worker, base_total, base_symbol,
+                           quote_total, quote_symbol, center_price, timestamp)
+        # Save balance to db
+        db_worker.save_balance(balance)
+
+    @staticmethod
+    def get_balance_history(account, worker, timestamp):
+        return db_worker.get_balance(account, worker, timestamp)
 
 
 class DatabaseWorker(threading.Thread):
@@ -310,17 +316,26 @@ class DatabaseWorker(threading.Thread):
                 result[row.order_id] = json.loads(row.order)
         self._set_result(token, result)
 
-    def save_balance(self, account, worker, base_total, base_symbol,
-                     quote_total, quote_symbol, center_price, timestamp):
-        self.execute_noreturn(self._save_balance, account, worker, base_total, base_symbol,
-                              quote_total, quote_symbol, center_price, timestamp)
+    def save_balance(self, balance):
+        self.execute_noreturn(self._save_balance, balance)
 
-    def _save_balance(self, account, worker, base_total, base_symbol,
-                      quote_total, quote_symbol, center_price, timestamp):
-        balance = Balances(account, worker, base_total, base_symbol,
-                           quote_total, quote_symbol, center_price, timestamp)
+    def _save_balance(self, balance):
         self.session.add(balance)
         self.session.commit()
+
+    def get_balance(self, account, worker, timestamp):
+        return self.execute(self._get_balance, account, worker, timestamp)
+
+    def _get_balance(self, account, worker, timestamp, token):
+        """ Get first item that has smaller or same time as given timestamp and matches account and worker name
+        """
+        result = self.session.query(Balances).filter(
+            Balances.account == account,
+            Balances.worker == worker,
+            Balances.timestamp < timestamp
+        ).first()
+
+        self._set_result(token, result)
 
 
 # Derive sqlite file directory
