@@ -1448,7 +1448,6 @@ class StrategyBase(Storage, StateMachine, Events):
         if old_data:
             earlier_base = old_data.base_total
             earlier_quote = old_data.quote_total
-            earlier_price = old_data.center_price
 
             balances = self.count_asset(return_asset='base')
             base = balances['base'].get('amount')
