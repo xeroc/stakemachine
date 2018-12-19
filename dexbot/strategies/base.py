@@ -1448,17 +1448,25 @@ class StrategyBase(Storage, StateMachine, Events):
         if old_data:
             earlier_base = old_data.base_total
             earlier_quote = old_data.quote_total
+            old_center_price = old_data.center_price
 
-            # Check that the earlier base and quote are not 0, to avoid ZeroDivision error
-            if earlier_base != 0 or earlier_quote != 0:
-                base_balance = self.count_asset(return_asset='base')
-                quote_balance = self.count_asset(return_asset='quote')
-                base = truncate(base_balance['base'].get('amount'), self.market['base']['precision'])
-                quote = truncate(quote_balance['quote'].get('amount'), self.market['quote']['precision'])
+            # Calculate max theoretical balances based on starting price
+            old_maxquantity_base = earlier_base + earlier_quote * old_center_price
+            old_maxquantity_quote = earlier_quote + earlier_base / old_center_price
 
-                base_roi = base / earlier_base
-                quote_roi = quote / earlier_quote
-                profit = round((100 / math.sqrt(base_roi * quote_roi)) - 100)
+            # Current balances
+            balance = self.count_asset()
+            base_balance = balance['base']
+            quote_balance = balance['quote']
+
+            # Calculate max theoretical current balances
+            center_price = self.get_market_center_price()
+            maxquantity_base = base_balance + quote_balance * center_price
+            maxquantity_quote = quote_balance + base_balance / center_price
+
+            base_roi = maxquantity_base / old_maxquantity_base
+            quote_roi = maxquantity_quote / old_maxquantity_quote
+            profit = round(math.sqrt(base_roi * quote_roi) - 1, 4)
 
         # Add to idle que
         idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
