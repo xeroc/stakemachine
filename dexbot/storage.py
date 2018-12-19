@@ -136,8 +136,8 @@ class Storage(dict):
         db_worker.save_balance(balance)
 
     @staticmethod
-    def get_balance_history(account, worker, timestamp):
-        return db_worker.get_balance(account, worker, timestamp)
+    def get_balance_history(account, worker, timestamp, base_asset, quote_asset):
+        return db_worker.get_balance(account, worker, timestamp, base_asset, quote_asset)
 
 
 class DatabaseWorker(threading.Thread):
@@ -323,16 +323,18 @@ class DatabaseWorker(threading.Thread):
         self.session.add(balance)
         self.session.commit()
 
-    def get_balance(self, account, worker, timestamp):
-        return self.execute(self._get_balance, account, worker, timestamp)
+    def get_balance(self, account, worker, timestamp, base_asset, quote_asset):
+        return self.execute(self._get_balance, account, worker, timestamp, base_asset, quote_asset)
 
-    def _get_balance(self, account, worker, timestamp, token):
+    def _get_balance(self, account, worker, timestamp, base_asset, quote_asset, token):
         """ Get first item that has smaller or same time as given timestamp and matches account and worker name
         """
         result = self.session.query(Balances).filter(
             Balances.account == account,
             Balances.worker == worker,
-            Balances.timestamp < timestamp
+            Balances.base_symbol == base_asset,
+            Balances.quote_symbol == quote_asset,
+            Balances.timestamp > timestamp
         ).first()
 
         self._set_result(token, result)
