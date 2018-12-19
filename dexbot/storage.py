@@ -327,7 +327,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._get_balance, account, worker, timestamp, base_asset, quote_asset)
 
     def _get_balance(self, account, worker, timestamp, base_asset, quote_asset, token):
-        """ Get first item that has smaller or same time as given timestamp and matches account and worker name
+        """ Get first item that has bigger time as given timestamp and matches account and worker name
         """
         result = self.session.query(Balances).filter(
             Balances.account == account,
