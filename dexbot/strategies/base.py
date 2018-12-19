@@ -1444,19 +1444,21 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Fetch the balance from history
         old_data = self.get_balance_history(self.config['workers'][self.worker_name].get('account'), self.worker_name,
-                                            timestamp)
+                                            timestamp, self.base_asset, self.quote_asset)
         if old_data:
             earlier_base = old_data.base_total
             earlier_quote = old_data.quote_total
 
-            balances = self.count_asset(return_asset='base')
-            base = balances['base'].get('amount')
-            quote = balances['quote'].get('amount')
+            # Check that the earlier base and quote are not 0, to avoid ZeroDivision error
+            if earlier_base != 0 or earlier_quote != 0:
+                base_balance = self.count_asset(return_asset='base')
+                quote_balance = self.count_asset(return_asset='quote')
+                base = truncate(base_balance['base'].get('amount'), self.market['base']['precision'])
+                quote = truncate(quote_balance['quote'].get('amount'), self.market['quote']['precision'])
 
-            # Calculate profit
-            base_roi = base / earlier_base
-            quote_roi = quote / earlier_quote
-            profit = round(math.sqrt(base_roi * quote_roi), 3)
+                base_roi = base / earlier_base
+                quote_roi = quote / earlier_quote
+                profit = round((100 / math.sqrt(base_roi * quote_roi)) - 100)
 
         # Add to idle que
         idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
