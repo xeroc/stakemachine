@@ -205,6 +205,7 @@ class Strategy(StrategyBase):
         # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
         self.refresh_balances(use_cached_orders=True)
 
+        # Calculate minimal orders amounts based on asset precision
         if not (self.order_min_base or self.order_min_quote):
             self.calculate_min_amounts()
 
