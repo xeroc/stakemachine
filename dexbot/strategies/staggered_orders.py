@@ -8,7 +8,6 @@ from bitshares.dex import Dex
 from bitshares.amount import Amount
 
 from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement
-from dexbot.qt_queue.idle_queue import idle_add
 
 
 class Strategy(StrategyBase):
