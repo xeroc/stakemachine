@@ -403,7 +403,8 @@ class Strategy(StrategyBase):
         self.log_maintenance_time()
 
         # Update profit estimate
-        self.update_gui_profit()
+        if self.view:
+            self.update_gui_profit()
 
     def log_maintenance_time(self):
         """ Measure time from self.start and print a log message
