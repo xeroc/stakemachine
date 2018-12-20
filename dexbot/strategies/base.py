@@ -1452,8 +1452,8 @@ class StrategyBase(Storage, StateMachine, Events):
             old_center_price = old_data.center_price
 
             # Calculate max theoretical balances based on starting price
-            old_maxquantity_base = earlier_base + earlier_quote * old_center_price
-            old_maxquantity_quote = earlier_quote + earlier_base / old_center_price
+            old_max_quantity_base = earlier_base + earlier_quote * old_center_price
+            old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
 
             # Current balances
             balance = self.count_asset()
@@ -1462,11 +1462,11 @@ class StrategyBase(Storage, StateMachine, Events):
 
             # Calculate max theoretical current balances
             center_price = self.get_market_center_price()
-            maxquantity_base = base_balance + quote_balance * center_price
-            maxquantity_quote = quote_balance + base_balance / center_price
+            max_quantity_base = base_balance + quote_balance * center_price
+            max_quantity_quote = quote_balance + base_balance / center_price
 
-            base_roi = maxquantity_base / old_maxquantity_base
-            quote_roi = maxquantity_quote / old_maxquantity_quote
+            base_roi = max_quantity_base / old_max_quantity_base
+            quote_roi = max_quantity_quote / old_max_quantity_quote
             profit = round(math.sqrt(base_roi * quote_roi) - 1, 4)
 
         # Add to idle que
