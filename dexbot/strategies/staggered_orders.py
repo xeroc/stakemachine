@@ -1,4 +1,5 @@
 import sys
+import time
 import math
 import traceback
 import bitsharesapi.exceptions
@@ -125,6 +126,7 @@ class Strategy(StrategyBase):
         # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
         self.bootstrapping = True
         self.market_center_price = None
+        self.old_center_price = None
         self.buy_orders = []
         self.sell_orders = []
         self.real_buy_orders = []
@@ -204,6 +206,9 @@ class Strategy(StrategyBase):
 
         # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
         self.refresh_balances(use_cached_orders=True)
+
+        # Store balance entry for profit estimation if needed
+        self.store_profit_estimation_data()
 
         # Calculate minimal orders amounts based on asset precision
         if not (self.order_min_base or self.order_min_quote):
@@ -618,6 +623,40 @@ class Strategy(StrategyBase):
             return True
         return False
 
+    def store_profit_estimation_data(self, force=False):
+        """ Stores balance history entry if center price moved enough
+
+            :param bool | force: True = force store data, False = store data only on center price change
+        """
+        need_store = False
+        account = self.config['workers'][self.worker_name].get('account')
+
+        if force:
+            need_store = True
+
+        # If old center price is not set, try fetch from the db
+        if not self.old_center_price and not force:
+            old_data = self.get_recent_balance_entry(account, self.worker_name, self.base_asset, self.quote_asset)
+            if old_data:
+                self.old_center_price = old_data.center_price
+            else:
+                need_store = True
+
+        if self.old_center_price and self.market_center_price and not force:
+            # Check if center price changed more than increment
+            diff = abs(self.old_center_price - self.market_center_price) / self.old_center_price
+            if diff > self.increment:
+                self.log.debug('Center price change is {:.2%}, need to store balance data'.format(diff))
+                need_store = True
+
+        if need_store and self.market_center_price:
+            timestamp = time.time()
+            self.log.debug('Storing balance data at center price {:.8f}'.format(self.market_center_price))
+            self.store_balance_entry(account, self.worker_name, self.base_total_balance, self.base_asset,
+                                     self.quote_total_balance, self.quote_asset, self.market_center_price, timestamp)
+            # Cache center price for later comparisons
+            self.old_center_price = self.market_center_price
+
     def allocate_asset(self, asset, asset_balance):
         """ Allocates available asset balance as buy or sell orders.
 
@@ -741,6 +780,11 @@ class Strategy(StrategyBase):
                 else:
                     # Opposite side probably reached range bound, allow to place partial order
                     self.place_closer_order(asset, closest_own_order, allow_partial=True)
+
+                # Store balance data whether new actual spread will match target spread
+                if self.actual_spread + self.increment >= self.target_spread and not self.bitshares.txbuffer.is_empty():
+                    # Tranasctions are not yet sent, so balance refresh is not needed
+                    self.store_profit_estimation_data(force=True)
             elif not opposite_orders:
                 # Do not try to do anything than placing closer order whether there is no opposite orders
                 return
