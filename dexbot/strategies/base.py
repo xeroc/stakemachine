@@ -1202,10 +1202,11 @@ class StrategyBase(Storage, StateMachine, Events):
     def store_profit_estimation_data(self):
         """ Save total quote, total base, center_price, and datetime in to the database
         """
+        assets = self.count_asset()
         account = self.config['workers'][self.worker_name].get('account')
-        base_amount = self.balance(self.base_asset).get('amount')
+        base_amount = assets['base']
         base_symbol = self.market['base'].get('symbol')
-        quote_amount = self.balance(self.quote_asset).get('amount')
+        quote_amount = assets['quote']
         quote_symbol = self.market['quote'].get('symbol')
         center_price = self.get_market_center_price()
         timestamp = time.time()
