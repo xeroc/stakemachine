@@ -1767,7 +1767,7 @@ class Strategy(StrategyBase):
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
-        self.log.info('Placing a virtual buy order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a virtual buy order with {:.{prec}f} {} @ {:.8f}'
                       .format(order['base']['amount'], symbol, price, prec=precision))
         self.virtual_orders.append(order)
 
@@ -1796,7 +1796,7 @@ class Strategy(StrategyBase):
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
-        self.log.info('Placing a virtual sell order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a virtual sell order with {:.{prec}f} {} @ {:.8f}'
                       .format(amount, symbol, price, prec=precision))
         self.virtual_orders.append(order)
 

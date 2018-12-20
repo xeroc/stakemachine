@@ -1083,7 +1083,7 @@ class StrategyBase(Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a buy order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a buy order with {:.{prec}f} {} @ {:.8f}'
                       .format(base_amount, symbol, price, prec=precision))
 
         # Place the order
@@ -1138,7 +1138,7 @@ class StrategyBase(Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a sell order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a sell order with {:.{prec}f} {} @ {:.8f}'
                       .format(quote_amount, symbol, price, prec=precision))
 
         # Place the order
