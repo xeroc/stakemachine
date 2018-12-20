@@ -1258,16 +1258,19 @@ class Strategy(StrategyBase):
         order_type = ''
         quote_amount = 0
         symbol = ''
+        precision = 0
 
         # Define asset-dependent variables
         if asset == 'base':
             order_type = 'buy'
             balance = self.base_balance['amount']
             symbol = self.base_balance['symbol']
+            precision = self.market['base']['precision']
         elif asset == 'quote':
             order_type = 'sell'
             balance = self.quote_balance['amount']
             symbol = self.quote_balance['symbol']
+            precision = self.market['quote']['precision']
 
         # Check for instant fill
         if asset == 'base':
@@ -1339,12 +1342,12 @@ class Strategy(StrategyBase):
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.8f}/{:.8f}'
-                               .format(order_type, limiter, balance))
+                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
+                               .format(order_type, limiter, balance, prec=precision))
                 place_order = False
             elif allow_partial and balance > hard_limit:
-                self.log.debug('Limiting {} order amount to available asset balance: {} {}'
-                               .format(order_type, balance, symbol))
+                self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
+                               .format(order_type, balance, symbol, prec=precision))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
@@ -1389,6 +1392,7 @@ class Strategy(StrategyBase):
         balance = 0
         order_type = ''
         symbol = ''
+        precision = 0
         virtual_bound = self.market_center_price / math.sqrt(1 + self.target_spread)
 
         # Define asset-dependent variables
@@ -1396,10 +1400,12 @@ class Strategy(StrategyBase):
             order_type = 'buy'
             balance = self.base_balance['amount']
             symbol = self.base_balance['symbol']
+            precision = self.market['base']['precision']
         elif asset == 'quote':
             order_type = 'sell'
             balance = self.quote_balance['amount']
             symbol = self.quote_balance['symbol']
+            precision = self.market['quote']['precision']
 
         price = order['price'] / (1 + self.increment)
 
@@ -1447,12 +1453,12 @@ class Strategy(StrategyBase):
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place further {} order; need/avail: {:.8f}/{:.8f}'
-                               .format(order_type, limiter, balance))
+                self.log.debug('Not enough balance to place further {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
+                               .format(order_type, limiter, balance, prec=precision))
                 place_order = False
             elif allow_partial and balance > hard_limit:
-                self.log.debug('Limiting {} order amount to available asset balance: {} {}'
-                               .format(order_type, balance, symbol))
+                self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
+                               .format(order_type, balance, symbol, prec=precision))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
