@@ -139,6 +139,10 @@ class Storage(dict):
     def get_balance_history(account, worker, timestamp, base_asset, quote_asset):
         return db_worker.get_balance(account, worker, timestamp, base_asset, quote_asset)
 
+    @staticmethod
+    def get_recent_balance_entry(account, worker, base_asset, quote_asset):
+        return db_worker.get_recent_balance_entry(account, worker, base_asset, quote_asset)
+
 
 class DatabaseWorker(threading.Thread):
     """ Thread safe database worker
@@ -339,6 +343,20 @@ class DatabaseWorker(threading.Thread):
 
         self._set_result(token, result)
 
+    def get_recent_balance_entry(self, account, worker, base_asset, quote_asset):
+        return self.execute(self._get_recent_balance_entry, account, worker, base_asset, quote_asset)
+
+    def _get_recent_balance_entry(self, account, worker, base_asset, quote_asset, token):
+        """ Get most recent balance history item that matches account and worker name
+        """
+        result = self.session.query(Balances).filter(
+            Balances.account == account,
+            Balances.worker == worker,
+            Balances.base_symbol == base_asset,
+            Balances.quote_symbol == quote_asset,
+        ).order_by(Balances.id.desc()).first()
+
+        self._set_result(token, result)
 
 # Derive sqlite file directory
 data_dir = user_data_dir(APP_NAME, AUTHOR)
