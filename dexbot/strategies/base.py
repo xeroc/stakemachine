@@ -1202,10 +1202,11 @@ class StrategyBase(Storage, StateMachine, Events):
     def store_profit_estimation_data(self):
         """ Save total quote, total base, center_price, and datetime in to the database
         """
+        assets = self.count_asset()
         account = self.config['workers'][self.worker_name].get('account')
-        base_amount = self.balance(self.base_asset).get('amount')
+        base_amount = assets['base']
         base_symbol = self.market['base'].get('symbol')
-        quote_amount = self.balance(self.quote_asset).get('amount')
+        quote_amount = assets['quote']
         quote_symbol = self.market['quote'].get('symbol')
         center_price = self.get_market_center_price()
         timestamp = time.time()
@@ -1453,12 +1454,12 @@ class StrategyBase(Storage, StateMachine, Events):
             if earlier_base != 0 or earlier_quote != 0:
                 base_balance = self.count_asset(return_asset='base')
                 quote_balance = self.count_asset(return_asset='quote')
-                base = truncate(base_balance['base'].get('amount'), self.market['base']['precision'])
-                quote = truncate(quote_balance['quote'].get('amount'), self.market['quote']['precision'])
+                base = base_balance['base'].get('amount')
+                quote = quote_balance['quote'].get('amount')
 
                 base_roi = base / earlier_base
                 quote_roi = quote / earlier_quote
-                profit = round((100 / math.sqrt(base_roi * quote_roi)) - 100)
+                profit = round((math.sqrt(base_roi * quote_roi) - 1) * 100, 3)
 
         # Add to idle que
         idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
