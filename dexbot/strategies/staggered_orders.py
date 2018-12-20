@@ -1447,7 +1447,7 @@ class Strategy(StrategyBase):
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.8f}/{:.8f}'
+                self.log.debug('Not enough balance to place further {} order; need/avail: {:.8f}/{:.8f}'
                                .format(order_type, limiter, balance))
                 place_order = False
             elif allow_partial and balance > hard_limit:
