@@ -74,7 +74,7 @@ class Strategy(StrategyBase):
                 'Allow to execute orders by market', None),
             ConfigElement(
                 'operational_depth', 'int', 10, 'Operational depth',
-                'Order depth to maintain on books', (2, None, None))
+                'Order depth to maintain on books', (2, 9999999, None))
         ]
 
     @classmethod
