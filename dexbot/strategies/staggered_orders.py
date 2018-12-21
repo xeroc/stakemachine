@@ -674,6 +674,7 @@ class Strategy(StrategyBase):
         own_threshold = 0
         own_symbol = ''
         own_precision = 0
+        opposite_precision = 0
         opposite_symbol = ''
         increase_finished = False
 
@@ -685,6 +686,7 @@ class Strategy(StrategyBase):
             opposite_orders = self.sell_orders
             own_threshold = self.base_asset_threshold
             own_precision = self.market['base']['precision']
+            opposite_precision = self.market['quote']['precision']
         elif asset == 'quote':
             order_type = 'sell'
             own_symbol = self.quote_balance['symbol']
@@ -693,6 +695,7 @@ class Strategy(StrategyBase):
             opposite_orders = self.buy_orders
             own_threshold = self.quote_asset_threshold
             own_precision = self.market['quote']['precision']
+            opposite_precision = self.market['quote']['precision']
 
         if own_orders:
             # Get currently the furthest and closest orders
@@ -754,27 +757,27 @@ class Strategy(StrategyBase):
                     if self.mode == 'mountain':
                         opposite_asset_limit = closest_opposite_order['base']['amount'] * (1 + self.increment)
                         own_asset_limit = None
-                        self.log.debug('Limiting {} order by opposite order: {} {}'.format(
-                                       order_type, opposite_asset_limit, opposite_symbol))
+                        self.log.debug('Limiting {} order by opposite order: {:.{prec}f} {}'.format(
+                                       order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision))
                     elif ((self.mode == 'buy_slope' and asset == 'base') or
                             (self.mode == 'sell_slope' and asset == 'quote')):
                         opposite_asset_limit = None
                         own_asset_limit = closest_opposite_order['quote']['amount']
-                        self.log.debug('Limiting {} order by opposite order: {} {}'
-                                       .format(order_type, own_asset_limit, own_symbol))
+                        self.log.debug('Limiting {} order by opposite order: {:.{prec}f} {}'
+                                       .format(order_type, own_asset_limit, own_symbol, prec=own_precision))
                     elif self.mode == 'neutral':
                         opposite_asset_limit = closest_opposite_order['base']['amount'] * \
                                                math.sqrt(1 + self.increment)
                         own_asset_limit = None
-                        self.log.debug('Limiting {} order by opposite order: {} {}'.format(
-                                       order_type, opposite_asset_limit, opposite_symbol))
+                        self.log.debug('Limiting {} order by opposite order: {:.{prec}f} {}'.format(
+                                       order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision))
                     elif (self.mode == 'valley' or
                           (self.mode == 'buy_slope' and asset == 'quote') or
                           (self.mode == 'sell_slope' and asset == 'base')):
                             opposite_asset_limit = closest_opposite_order['base']['amount']
                             own_asset_limit = None
-                            self.log.debug('Limiting {} order by opposite order: {} {}'.format(
-                                           order_type, opposite_asset_limit, opposite_symbol))
+                            self.log.debug('Limiting {} order by opposite order: {:.{prec}f} {}'.format(
+                                           order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision))
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                             opposite_asset_limit=opposite_asset_limit, allow_partial=False)
                 else:
