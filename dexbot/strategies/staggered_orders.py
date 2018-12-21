@@ -143,6 +143,7 @@ class Strategy(StrategyBase):
         self.quote_asset_threshold = 0
         self.base_asset_threshold = 0
         self.min_increase_factor = 1.15
+        self.mountain_max_increase_mode = False
         # Initial balance history elements should not be equal to avoid immediate bootstrap turn off
         self.quote_balance_history = [1, 2, 3]
         self.base_balance_history = [1, 2, 3]
@@ -997,6 +998,7 @@ class Strategy(StrategyBase):
             for order in orders:
                 order_index = orders.index(order)
                 order_amount = order['base']['amount']
+                is_closest_order = False
 
                 # This check prevents choosing order with index lower than the list length
                 if order_index == 0:
@@ -1004,6 +1006,7 @@ class Strategy(StrategyBase):
                     # This allows our closest order amount exceed highest opposite-side order amount
                     closer_order = order
                     closer_bound = closer_order['base']['amount'] * (1 + self.increment)
+                    is_closest_order = True
                 else:
                     closer_order = orders[order_index - 1]
                     closer_bound = closer_order['base']['amount']
@@ -1023,7 +1026,28 @@ class Strategy(StrategyBase):
                 if (further_bound > order_amount * (1 + self.increment / 10) < closer_bound and
                         further_bound - order_amount >= order_amount * self.increment / 2):
                     # Calculate new order size and place the order to the market
+                    """ To prevent moving liquidity away from center, let new order be no more than `order_amount *
+                        increase_factor`. This is for situations when we increasing order on side which was previously
+                        bigger. Example: buy side, amounts in QUOTE:
+                        [1000 1000 1000 100 100 100 <center>]
+
+                        Without increase_factor:
+                        [1000 1000 1000 1000 100 100 <center>]
+
+                        With increase_factor:
+                        [1000 1000 1000 200 100 100 <center>]
+                        [1000 1000 1000 200 200 100 <center>]
+                        [1000 1000 1000 200 200 200 <center>]
+
+                        At the same time, we want MAX orders size increase for ALL orders in case of external transfer
+                        of new funds. To achieve this we are setting self.mountain_max_increase_mode flag when
+                        examining furthest order.
+                    """
                     new_order_amount = further_bound
+
+                    if not self.mountain_max_increase_mode:
+                        increase_factor = max(1 + self.increment, self.min_increase_factor)
+                        new_order_amount = min(further_bound, order_amount * increase_factor)
 
                     if is_least_order:
                         new_orders_sum = 0
@@ -1032,8 +1056,7 @@ class Strategy(StrategyBase):
                             amount = amount * (1 + self.increment)
                             new_orders_sum += amount
                         # To reduce allocation rounds, increase furthest order more
-                        new_order_amount = order_amount * (total_balance / new_orders_sum) \
-                            * (1 + self.increment * 0.75)
+                        new_order_amount = order_amount * (total_balance / new_orders_sum) * (1 + self.increment)
 
                         if new_order_amount < closer_bound:
                             """ This is for situations when calculated new_order_amount is not big enough to
@@ -1043,6 +1066,14 @@ class Strategy(StrategyBase):
                                 increased.
                             """
                             new_order_amount = closer_bound / (1 + self.increment * 0.2)
+                        else:
+                            # Set bypass flag to not limit next orders
+                            self.mountain_max_increase_mode = True
+                            self.log.debug('Activating max increase mode for mountain mode')
+                    elif is_closest_order and self.mountain_max_increase_mode:
+                        # Turn off bypass flag when reaching closest order
+                        self.log.debug('Deactivating max increase mode for mountain mode')
+                        self.mountain_max_increase_mode = False
 
                     return increase_single_order(asset, order, new_order_amount)
 
