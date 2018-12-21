@@ -783,7 +783,7 @@ class Strategy(StrategyBase):
 
                 # Store balance data whether new actual spread will match target spread
                 if self.actual_spread + self.increment >= self.target_spread and not self.bitshares.txbuffer.is_empty():
-                    # Tranasctions are not yet sent, so balance refresh is not needed
+                    # Transactions are not yet sent, so balance refresh is not needed
                     self.store_profit_estimation_data(force=True)
             elif not opposite_orders:
                 # Do not try to do anything than placing closer order whether there is no opposite orders
