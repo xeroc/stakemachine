@@ -1,6 +1,6 @@
 pyqt5==5.11.3
 pyqt-distutils==0.7.3
-pyinstaller==3.3.1
+pyinstaller==3.4
 click-datetime==0.2
 cryptography==2.3
 aiohttp==3.0.1
