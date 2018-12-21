@@ -1,4 +1,5 @@
 import sys
+import time
 import math
 import traceback
 import bitsharesapi.exceptions
@@ -8,7 +9,6 @@ from bitshares.dex import Dex
 from bitshares.amount import Amount
 
 from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement
-from dexbot.qt_queue.idle_queue import idle_add
 
 
 class Strategy(StrategyBase):
@@ -126,6 +126,7 @@ class Strategy(StrategyBase):
         # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
         self.bootstrapping = True
         self.market_center_price = None
+        self.old_center_price = None
         self.buy_orders = []
         self.sell_orders = []
         self.real_buy_orders = []
@@ -168,6 +169,7 @@ class Strategy(StrategyBase):
         self.current_check_interval = self.min_check_interval
 
         if self.view:
+            self.update_gui_profit()
             self.update_gui_slider()
 
     def maintain_strategy(self, *args, **kwargs):
@@ -205,6 +207,10 @@ class Strategy(StrategyBase):
         # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
         self.refresh_balances(use_cached_orders=True)
 
+        # Store balance entry for profit estimation if needed
+        self.store_profit_estimation_data()
+
+        # Calculate minimal orders amounts based on asset precision
         if not (self.order_min_base or self.order_min_quote):
             self.calculate_min_amounts()
 
@@ -400,6 +406,10 @@ class Strategy(StrategyBase):
 
         self.last_check = datetime.now()
         self.log_maintenance_time()
+
+        # Update profit estimate
+        if self.view:
+            self.update_gui_profit()
 
     def log_maintenance_time(self):
         """ Measure time from self.start and print a log message
@@ -613,6 +623,40 @@ class Strategy(StrategyBase):
             return True
         return False
 
+    def store_profit_estimation_data(self, force=False):
+        """ Stores balance history entry if center price moved enough
+
+            :param bool | force: True = force store data, False = store data only on center price change
+        """
+        need_store = False
+        account = self.config['workers'][self.worker_name].get('account')
+
+        if force:
+            need_store = True
+
+        # If old center price is not set, try fetch from the db
+        if not self.old_center_price and not force:
+            old_data = self.get_recent_balance_entry(account, self.worker_name, self.base_asset, self.quote_asset)
+            if old_data:
+                self.old_center_price = old_data.center_price
+            else:
+                need_store = True
+
+        if self.old_center_price and self.market_center_price and not force:
+            # Check if center price changed more than increment
+            diff = abs(self.old_center_price - self.market_center_price) / self.old_center_price
+            if diff > self.increment:
+                self.log.debug('Center price change is {:.2%}, need to store balance data'.format(diff))
+                need_store = True
+
+        if need_store and self.market_center_price:
+            timestamp = time.time()
+            self.log.debug('Storing balance data at center price {:.8f}'.format(self.market_center_price))
+            self.store_balance_entry(account, self.worker_name, self.base_total_balance, self.base_asset,
+                                     self.quote_total_balance, self.quote_asset, self.market_center_price, timestamp)
+            # Cache center price for later comparisons
+            self.old_center_price = self.market_center_price
+
     def allocate_asset(self, asset, asset_balance):
         """ Allocates available asset balance as buy or sell orders.
 
@@ -736,6 +780,11 @@ class Strategy(StrategyBase):
                 else:
                     # Opposite side probably reached range bound, allow to place partial order
                     self.place_closer_order(asset, closest_own_order, allow_partial=True)
+
+                # Store balance data whether new actual spread will match target spread
+                if self.actual_spread + self.increment >= self.target_spread and not self.bitshares.txbuffer.is_empty():
+                    # Transactions are not yet sent, so balance refresh is not needed
+                    self.store_profit_estimation_data(force=True)
             elif not opposite_orders:
                 # Do not try to do anything than placing closer order whether there is no opposite orders
                 return
@@ -1253,16 +1302,19 @@ class Strategy(StrategyBase):
         order_type = ''
         quote_amount = 0
         symbol = ''
+        precision = 0
 
         # Define asset-dependent variables
         if asset == 'base':
             order_type = 'buy'
             balance = self.base_balance['amount']
             symbol = self.base_balance['symbol']
+            precision = self.market['base']['precision']
         elif asset == 'quote':
             order_type = 'sell'
             balance = self.quote_balance['amount']
             symbol = self.quote_balance['symbol']
+            precision = self.market['quote']['precision']
 
         # Check for instant fill
         if asset == 'base':
@@ -1334,12 +1386,12 @@ class Strategy(StrategyBase):
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.8f}/{:.8f}'
-                               .format(order_type, limiter, balance))
+                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
+                               .format(order_type, limiter, balance, prec=precision))
                 place_order = False
             elif allow_partial and balance > hard_limit:
-                self.log.debug('Limiting {} order amount to available asset balance: {} {}'
-                               .format(order_type, balance, symbol))
+                self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
+                               .format(order_type, balance, symbol, prec=precision))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
@@ -1384,6 +1436,7 @@ class Strategy(StrategyBase):
         balance = 0
         order_type = ''
         symbol = ''
+        precision = 0
         virtual_bound = self.market_center_price / math.sqrt(1 + self.target_spread)
 
         # Define asset-dependent variables
@@ -1391,10 +1444,12 @@ class Strategy(StrategyBase):
             order_type = 'buy'
             balance = self.base_balance['amount']
             symbol = self.base_balance['symbol']
+            precision = self.market['base']['precision']
         elif asset == 'quote':
             order_type = 'sell'
             balance = self.quote_balance['amount']
             symbol = self.quote_balance['symbol']
+            precision = self.market['quote']['precision']
 
         price = order['price'] / (1 + self.increment)
 
@@ -1442,12 +1497,12 @@ class Strategy(StrategyBase):
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.8f}/{:.8f}'
-                               .format(order_type, limiter, balance))
+                self.log.debug('Not enough balance to place further {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
+                               .format(order_type, limiter, balance, prec=precision))
                 place_order = False
             elif allow_partial and balance > hard_limit:
-                self.log.debug('Limiting {} order amount to available asset balance: {} {}'
-                               .format(order_type, balance, symbol))
+                self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
+                               .format(order_type, balance, symbol, prec=precision))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
@@ -1756,7 +1811,7 @@ class Strategy(StrategyBase):
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
-        self.log.info('Placing a virtual buy order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a virtual buy order with {:.{prec}f} {} @ {:.8f}'
                       .format(order['base']['amount'], symbol, price, prec=precision))
         self.virtual_orders.append(order)
 
@@ -1785,7 +1840,7 @@ class Strategy(StrategyBase):
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
-        self.log.info('Placing a virtual sell order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a virtual sell order with {:.{prec}f} {} @ {:.8f}'
                       .format(amount, symbol, price, prec=precision))
         self.virtual_orders.append(order)
 
@@ -1830,30 +1885,6 @@ class Strategy(StrategyBase):
         if not (self.counter or 0) % 3:
             self.maintain_strategy()
         self.counter += 1
-
-    def update_gui_slider(self):
-        ticker = self.market.ticker()
-        latest_price = ticker.get('latest', {}).get('price', None)
-
-        if not latest_price:
-            return
-
-        orders = self.fetch_orders()
-        if orders:
-            order_ids = orders.keys()
-        else:
-            order_ids = None
-
-        total_balance = self.count_asset(order_ids)
-        total = (total_balance['quote'] * latest_price) + total_balance['base']
-
-        # Prevent division by zero
-        if not total:
-            percentage = 50
-        else:
-            percentage = (total_balance['base'] / total) * 100
-
-        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
 
 
 class VirtualOrder(dict):
