@@ -1196,6 +1196,9 @@ class StrategyBase(Storage, StateMachine, Events):
                         self.log.warning("retrying on '{}'".format(str(exception)))
                         self.bitshares.txbuffer.clear()
                         time.sleep(6)  # Wait at least a BitShares block
+                elif "Assert Exception: delta.amount > 0: Insufficient Balance" in str(exception):
+                    self.log.critical('Insufficient balance of fee asset')
+                    raise
                 else:
                     raise
 
