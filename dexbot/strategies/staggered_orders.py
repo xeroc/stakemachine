@@ -398,11 +398,11 @@ class Strategy(StrategyBase):
             else:
                 side_to_cancel = 'sell'
 
-        if side_to_cancel == 'buy':
+        if side_to_cancel == 'buy' and self.buy_orders:
             self.log.info('Free balances are not changing, bootstrap is off and target spread is not reached. '
                           'Cancelling lowest buy order as a fallback')
             self.cancel_orders_wrapper(self.buy_orders[-1])
-        elif side_to_cancel == 'sell':
+        elif side_to_cancel == 'sell' and self.sell_orders:
             self.log.info('Free balances are not changing, bootstrap is off and target spread is not reached. '
                           'Cancelling highest sell order as a fallback')
             self.cancel_orders_wrapper(self.sell_orders[-1])
