@@ -1501,6 +1501,7 @@ class Strategy(StrategyBase):
             own_asset_amount = order['base']['amount']
             opposite_asset_amount = own_asset_amount / price
         elif self.mode == 'neutral':
+            own_asset_amount = order['base']['amount'] / math.sqrt(1 + self.increment)
             opposite_asset_amount = own_asset_amount / price
 
         limiter = 0
