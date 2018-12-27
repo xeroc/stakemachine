@@ -1519,7 +1519,8 @@ class Strategy(StrategyBase):
         if place_order:
             corrected_quote_amount = self.check_min_order_size(quote_amount, price)
             if corrected_quote_amount > quote_amount:
-                self.log.debug('Correcting further order amount to minimal allowed')
+                self.log.debug('Correcting further order amount to minimal allowed: {} -> {}'
+                               .format(quote_amount, corrected_quote_amount))
                 quote_amount = corrected_quote_amount
                 base_amount = quote_amount * price
                 if asset == 'base':
