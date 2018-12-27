@@ -219,16 +219,6 @@ class Strategy(StrategyBase):
         if not (self.quote_asset_threshold or self.base_asset_threshold):
             self.calculate_asset_thresholds()
 
-        # Check market's price boundaries
-        if self.market_center_price > self.upper_bound:
-            self.log.debug('Overriding upper bound by market center price: {} -> {:.8f}'
-                           .format(self.upper_bound, self.market_center_price))
-            self.upper_bound = self.market_center_price
-        elif self.market_center_price < self.lower_bound:
-            self.log.debug('Overriding lower bound by market center price: {} -> {:.8f}'
-                           .format(self.lower_bound, self.market_center_price))
-            self.lower_bound = self.market_center_price
-
         # Remove orders that exceed boundaries
         success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
         if not success:
@@ -1361,11 +1351,17 @@ class Strategy(StrategyBase):
             if not self.is_instant_fill_enabled and price > lowest_ask and lowest_ask > 0 and place_order:
                 self.log.info('Refusing to place an order which crosses lowest ask')
                 return None
+            if price > self.upper_bound:
+                self.log.warning('Refusing to place buy order which crosses upper bound')
+                return None
         elif asset == 'quote':
             price = (order['price'] ** -1) / (1 + self.increment)
             highest_bid = float(self.ticker().get('highestBid'))
             if not self.is_instant_fill_enabled and price < highest_bid and highest_bid > 0 and place_order:
                 self.log.info('Refusing to place an order which crosses highest bid')
+                return None
+            if price < self.lower_bound:
+                self.log.warning('Refusing to place sell order which crosses lower bound')
                 return None
 
         # For next steps we do not need inverted price for sell orders
