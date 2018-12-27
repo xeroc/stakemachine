@@ -1430,7 +1430,7 @@ class Strategy(StrategyBase):
                     quote_amount = balance / price
                 elif asset == 'quote':
                     quote_amount = balance
-            else:
+            elif place_order:
                 self.log.debug('Not enough balance to place minimal allowed order')
                 place_order = False
 
@@ -1543,7 +1543,7 @@ class Strategy(StrategyBase):
                     quote_amount = balance / price
                 elif asset == 'quote':
                     quote_amount = balance
-            else:
+            elif place_order:
                 self.log.debug('Not enough balance to place minimal allowed order')
                 place_order = False
 
