@@ -6,9 +6,12 @@ matrix:
     python: '3.6'
   - os: osx
     language: generic
+    python: '3.6'
     before_install:
     - brew update
 install:
+  - pip install pyinstaller
+  - pip install --upgrade setuptools
   - make install
 script:
   - echo "@TODO - Running tests..."
