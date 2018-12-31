@@ -106,6 +106,7 @@ class RelativeOrdersController(StrategyController):
         widget = self.view.strategy_widget
 
         # Event connecting
+        widget.external_feed_input.clicked.connect(self.onchange_external_feed_input)
         widget.relative_order_size_input.clicked.connect(self.onchange_relative_order_size_input)
         widget.dynamic_spread_input.clicked.connect(self.onchange_dynamic_spread_input)
         widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
@@ -117,6 +118,7 @@ class RelativeOrdersController(StrategyController):
         # Trigger the onchange events once
         self.onchange_relative_order_size_input(widget.relative_order_size_input.isChecked())
         self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+        self.onchange_external_feed_input(widget.external_feed_input.isChecked())
         self.onchange_dynamic_spread_input(widget.dynamic_spread_input.isChecked())
         self.onchange_reset_on_partial_fill_input(widget.reset_on_partial_fill_input.isChecked())
         self.onchange_reset_on_price_change_input(widget.reset_on_price_change_input.isChecked())
@@ -129,6 +131,17 @@ class RelativeOrdersController(StrategyController):
         values = super().values
         values['manual_offset'] = values['manual_offset'] / 10
         return values
+
+    def onchange_external_feed_input(self, checked):
+        if checked:
+            self.view.strategy_widget.external_price_source_input.setDisabled(False)
+
+            self.view.strategy_widget.reset_on_price_change_input.setChecked(False)
+            self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+            self.view.strategy_widget.center_price_depth_input.setDisabled(True)
+        else:
+            self.view.strategy_widget.center_price_depth_input.setEnabled(True)
+            self.view.strategy_widget.external_price_source_input.setDisabled(True)
 
     def onchange_manual_offset_input(self):
         value = self.view.strategy_widget.manual_offset_input.value() / 10
@@ -158,6 +171,10 @@ class RelativeOrdersController(StrategyController):
             self.view.strategy_widget.center_price_input.setDisabled(True)
             self.view.strategy_widget.center_price_depth_input.setDisabled(False)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(False)
+            self.view.strategy_widget.external_feed_input.setEnabled(True)
+
+            if self.view.strategy_widget.external_feed_input.isChecked():
+                self.view.strategy_widget.external_price_source_input.setEnabled(True)
 
             if self.view.strategy_widget.reset_on_price_change_input.isChecked():
                 self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
@@ -166,6 +183,9 @@ class RelativeOrdersController(StrategyController):
             self.view.strategy_widget.center_price_depth_input.setDisabled(True)
             self.view.strategy_widget.reset_on_price_change_input.setDisabled(True)
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
+            self.view.strategy_widget.external_feed_input.setChecked(False)
+            self.view.strategy_widget.external_feed_input.setDisabled(True)
+            self.view.strategy_widget.external_price_source_input.setDisabled(True)
 
     def onchange_reset_on_partial_fill_input(self, checked):
         if checked:
@@ -176,6 +196,11 @@ class RelativeOrdersController(StrategyController):
     def onchange_reset_on_price_change_input(self, checked):
         if checked and self.view.strategy_widget.center_price_dynamic_input.isChecked():
             self.view.strategy_widget.price_change_threshold_input.setDisabled(False)
+
+            # Disable external price feed
+            self.view.strategy_widget.external_feed_input.setChecked(False)
+            self.view.strategy_widget.external_price_source_input.setDisabled(True)
+            self.view.strategy_widget.center_price_depth_input.setEnabled(True)
         else:
             self.view.strategy_widget.price_change_threshold_input.setDisabled(True)
 

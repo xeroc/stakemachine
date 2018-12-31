@@ -9,6 +9,8 @@ from ruamel import yaml
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
 
+from dexbot.config import Config
+
 log = logging.getLogger(__name__)
 
 
@@ -120,12 +122,9 @@ def unlock(f):
 def configfile(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        try:
-            ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
-        except FileNotFoundError:
-            alert("Looking for the config file in %s\nNot found!\n"
-                  "Try running 'dexbot configure' to generate\n" % ctx.obj['configfile'])
-            sys.exit(78)  # 'configuration error' in sysexits.h
+        if not os.path.isfile(ctx.obj["configfile"]):
+            Config(path=ctx.obj['configfile'])
+        ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 
