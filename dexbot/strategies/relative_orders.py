@@ -370,6 +370,9 @@ class Strategy(StrategyBase):
         """
         delta = datetime.now() - self.last_check
 
+        # Store current available balance and balance in orders to the database for profit calculation purpose
+        self.store_profit_estimation_data()
+
         # Only allow to check orders whether minimal time passed
         if delta < timedelta(seconds=self.min_check_interval) and not self.initializing:
             self.log.debug('Ignoring market_update event as min_check_interval is not passed')
@@ -437,37 +440,6 @@ class Strategy(StrategyBase):
 
         if self.view:
             self.update_gui_slider()
+            self.update_gui_profit()
 
         self.last_check = datetime.now()
-
-    # GUI updaters
-    def update_gui_profit(self):
-        # Fixme: profit calculation doesn't work this way, figure out a better way to do this.
-        if self.initial_balance:
-            profit = round((self.orders_balance(None) - self.initial_balance) / self.initial_balance, 3)
-        else:
-            profit = 0
-        idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
-        self['profit'] = profit
-
-    def update_gui_slider(self):
-        ticker = self.market.ticker()
-        latest_price = ticker.get('latest', {}).get('price', None)
-        if not latest_price:
-            return
-
-        order_ids = None
-        orders = self.fetch_orders()
-
-        if orders:
-            order_ids = orders.keys()
-
-        total_balance = self.count_asset(order_ids)
-        total = (total_balance['quote'] * latest_price) + total_balance['base']
-
-        if not total:  # Prevent division by zero
-            percentage = 50
-        else:
-            percentage = (total_balance['base'] / total) * 100
-        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
-        self['slider'] = percentage

@@ -105,7 +105,15 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.quote_asset_label.setText(values[0])
 
     def set_worker_profit(self, value):
+        green = '#99F75C'
+        red = '#f75b5b'
+
         value = float(value)
+        if value < 0:
+            self.profit_label.setStyleSheet('color: {}'.format(red))
+        else:
+            self.profit_label.setStyleSheet('color: {}'.format(green))
+
         if value >= 0:
             value = '+' + str(value)
 

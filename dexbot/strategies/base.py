@@ -5,12 +5,12 @@ import logging
 import math
 import time
 
-from dexbot.basestrategy import BaseStrategy  # Todo: Once the old BaseStrategy deprecates, remove it.
 from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.statemachine import StateMachine
 from dexbot.helper import truncate
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
+from dexbot.qt_queue.idle_queue import idle_add
 
 from events import Events
 import bitshares.exceptions
@@ -83,7 +83,7 @@ EXCHANGES = [
 ]
 
 
-class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
+class StrategyBase(Storage, StateMachine, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
         most common methods needed by the strategy.
 
@@ -981,6 +981,16 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
         updated_order = self.get_updated_limit_order(order)
         return Order(updated_order, bitshares_instance=self.bitshares)
 
+    def execute(self):
+        """ Execute a bundle of operations
+
+            :return: dict: transaction
+        """
+        self.bitshares.blocking = "head"
+        r = self.bitshares.txbuffer.broadcast()
+        self.bitshares.blocking = False
+        return r
+
     def is_buy_order(self, order):
         """ Check whether an order is buy order
 
@@ -1073,7 +1083,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a buy order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a buy order with {:.{prec}f} {} @ {:.8f}'
                       .format(base_amount, symbol, price, prec=precision))
 
         # Place the order
@@ -1128,7 +1138,7 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
             self.disabled = True
             return None
 
-        self.log.info('Placing a sell order for {:.{prec}f} {} @ {:.8f}'
+        self.log.info('Placing a sell order with {:.{prec}f} {} @ {:.8f}'
                       .format(quote_amount, symbol, price, prec=precision))
 
         # Place the order
@@ -1188,6 +1198,29 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
                         time.sleep(6)  # Wait at least a BitShares block
                 else:
                     raise
+
+    def store_profit_estimation_data(self):
+        """ Save total quote, total base, center_price, and datetime in to the database
+        """
+        assets = self.count_asset()
+        account = self.config['workers'][self.worker_name].get('account')
+        base_amount = assets['base']
+        base_symbol = self.market['base'].get('symbol')
+        quote_amount = assets['quote']
+        quote_symbol = self.market['quote'].get('symbol')
+        center_price = self.get_market_center_price()
+        timestamp = time.time()
+
+        self.store_balance_entry(account, self.worker_name, base_amount, base_symbol,
+                                 quote_amount, quote_symbol, center_price, timestamp)
+
+    def get_profit_estimation_data(self, seconds):
+        """ Get balance history closest to the given time
+
+            :returns The data as dict from the first timestamp going backwards from seconds argument
+        """
+        return self.get_balance_history(self.config['workers'][self.worker_name].get('account'),
+                                        self.worker_name, seconds)
 
     def write_order_log(self, worker_name, order):
         """ Write order log to csv file
@@ -1380,3 +1413,62 @@ class StrategyBase(BaseStrategy, Storage, StateMachine, Events):
 
         # Sort orders by price
         return sorted(orders, key=lambda order: order['price'], reverse=reverse)
+
+    # GUI updaters
+    def update_gui_slider(self):
+        ticker = self.market.ticker()
+        latest_price = ticker.get('latest', {}).get('price', None)
+        if not latest_price:
+            return
+
+        order_ids = None
+        orders = self.fetch_orders()
+
+        if orders:
+            order_ids = orders.keys()
+
+        total_balance = self.count_asset(order_ids)
+        total = (total_balance['quote'] * latest_price) + total_balance['base']
+
+        if not total:  # Prevent division by zero
+            percentage = 50
+        else:
+            percentage = (total_balance['base'] / total) * 100
+        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
+        self['slider'] = percentage
+
+    def update_gui_profit(self):
+        profit = 0
+        time_range = 60 * 60 * 24 * 7  # 7 days
+        current_time = time.time()
+        timestamp = current_time - time_range
+
+        # Fetch the balance from history
+        old_data = self.get_balance_history(self.config['workers'][self.worker_name].get('account'), self.worker_name,
+                                            timestamp, self.base_asset, self.quote_asset)
+        if old_data:
+            earlier_base = old_data.base_total
+            earlier_quote = old_data.quote_total
+            old_center_price = old_data.center_price
+
+            # Calculate max theoretical balances based on starting price
+            old_max_quantity_base = earlier_base + earlier_quote * old_center_price
+            old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
+
+            # Current balances
+            balance = self.count_asset()
+            base_balance = balance['base']
+            quote_balance = balance['quote']
+
+            # Calculate max theoretical current balances
+            center_price = self.get_market_center_price()
+            max_quantity_base = base_balance + quote_balance * center_price
+            max_quantity_quote = quote_balance + base_balance / center_price
+
+            base_roi = max_quantity_base / old_max_quantity_base
+            quote_roi = max_quantity_quote / old_max_quantity_quote
+            profit = round(math.sqrt(base_roi * quote_roi) - 1, 4)
+
+        # Add to idle que
+        idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
+        self['profit'] = profit

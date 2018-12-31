@@ -8,7 +8,7 @@ from appdirs import user_data_dir
 from . import helper
 from dexbot import APP_NAME, AUTHOR
 
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -44,6 +44,30 @@ class Orders(Base):
         self.worker = worker
         self.order_id = order_id
         self.order = order
+
+
+class Balances(Base):
+    __tablename__ = 'balances'
+
+    id = Column(Integer, primary_key=True)
+    account = Column(String)
+    worker = Column(String)
+    base_total = Column(Float)
+    base_symbol = Column(String)
+    quote_total = Column(Float)
+    quote_symbol = Column(String)
+    center_price = Column(Float)
+    timestamp = Column(Integer)
+
+    def __init__(self, account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp):
+        self.account = account
+        self.worker = worker
+        self.base_total = base_total
+        self.base_symbol = base_symbol
+        self.quote_total = quote_total
+        self.quote_symbol = quote_symbol
+        self.center_price = center_price
+        self.timestamp = timestamp
 
 
 class Storage(dict):
@@ -102,6 +126,22 @@ class Storage(dict):
     def clear_worker_data(worker):
         db_worker.clear_orders(worker)
         db_worker.clear(worker)
+
+    @staticmethod
+    def store_balance_entry(account, worker, base_total, base_symbol, quote_total, quote_symbol,
+                            center_price, timestamp):
+        balance = Balances(account, worker, base_total, base_symbol,
+                           quote_total, quote_symbol, center_price, timestamp)
+        # Save balance to db
+        db_worker.save_balance(balance)
+
+    @staticmethod
+    def get_balance_history(account, worker, timestamp, base_asset, quote_asset):
+        return db_worker.get_balance(account, worker, timestamp, base_asset, quote_asset)
+
+    @staticmethod
+    def get_recent_balance_entry(account, worker, base_asset, quote_asset):
+        return db_worker.get_recent_balance_entry(account, worker, base_asset, quote_asset)
 
 
 class DatabaseWorker(threading.Thread):
@@ -280,6 +320,43 @@ class DatabaseWorker(threading.Thread):
                 result[row.order_id] = json.loads(row.order)
         self._set_result(token, result)
 
+    def save_balance(self, balance):
+        self.execute_noreturn(self._save_balance, balance)
+
+    def _save_balance(self, balance):
+        self.session.add(balance)
+        self.session.commit()
+
+    def get_balance(self, account, worker, timestamp, base_asset, quote_asset):
+        return self.execute(self._get_balance, account, worker, timestamp, base_asset, quote_asset)
+
+    def _get_balance(self, account, worker, timestamp, base_asset, quote_asset, token):
+        """ Get first item that has bigger time as given timestamp and matches account and worker name
+        """
+        result = self.session.query(Balances).filter(
+            Balances.account == account,
+            Balances.worker == worker,
+            Balances.base_symbol == base_asset,
+            Balances.quote_symbol == quote_asset,
+            Balances.timestamp > timestamp
+        ).first()
+
+        self._set_result(token, result)
+
+    def get_recent_balance_entry(self, account, worker, base_asset, quote_asset):
+        return self.execute(self._get_recent_balance_entry, account, worker, base_asset, quote_asset)
+
+    def _get_recent_balance_entry(self, account, worker, base_asset, quote_asset, token):
+        """ Get most recent balance history item that matches account and worker name
+        """
+        result = self.session.query(Balances).filter(
+            Balances.account == account,
+            Balances.worker == worker,
+            Balances.base_symbol == base_asset,
+            Balances.quote_symbol == quote_asset,
+        ).order_by(Balances.id.desc()).first()
+
+        self._set_result(token, result)
 
 # Derive sqlite file directory
 data_dir = user_data_dir(APP_NAME, AUTHOR)
