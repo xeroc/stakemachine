@@ -88,13 +88,13 @@ class PriceFeed:
         price = None
         if self._exchange not in self._alt_exchanges:
             price = get_ccxt_price(symbol, self._exchange)
-            debug("use ccxt exchange ", self._exchange, ' symbol ', symbol, ' price:', price)
+            debug('Use ccxt exchange {} symbol {} price: {}'.format(self.exchange, symbol, price))
         elif self._exchange == 'gecko':
             price = get_gecko_price(symbol_=symbol)
-            debug("gecko exchange - ", self._exchange, ' symbol ', symbol, ' price:', price)
+            debug('Use ccxt exchange {} symbol {} price: {}'.format(self.exchange, symbol, price))
         elif self._exchange == 'waves':
             price = get_waves_price(symbol_=symbol)
-            debug("use waves -", self._exchange, ' symbol ', symbol, ' price:', price)
+            debug('Use waves exchange {} symbol {} price: {}'.format(self.exchange, symbol, price))
         return price
 
     def get_center_price(self, type):

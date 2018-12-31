@@ -19,7 +19,11 @@ async def get_json(url):
 
 def _get_market_price(base, quote):
     try:
+        async_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(async_loop)
+
         coin_list = asyncio.get_event_loop().run_until_complete(get_json(GECKO_COINS_URL + 'list'))
+
         quote_name = check_gecko_symbol_exists(coin_list, quote.lower())
         lookup_pair = "?vs_currency=" + base.lower() + "&ids=" + quote_name
         market_url = GECKO_COINS_URL + 'markets' + lookup_pair

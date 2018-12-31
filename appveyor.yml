@@ -4,8 +4,8 @@ image: Visual Studio 2015
 
 environment:
   matrix:
-    # Python 3.5.3 - 64-bit
-    - PYTHON: "C:\\Python35-x64"
+    # Python 3.6.6 - 64-bit
+    - PYTHON: "C:\\Python36-x64"
 
 #---------------------------------#
 #        Build                    #
@@ -18,7 +18,7 @@ configuration: Release
 install:
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;C:\MinGW\bin
   - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
-  - copy c:\Python35-x64\python.exe c:\Python35-x64\python3.exe
+  - copy c:\Python36-x64\python.exe c:\Python36-x64\python3.exe
   - python --version
   - make install
 
