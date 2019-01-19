@@ -494,8 +494,8 @@ class StrategyBase(Storage, StateMachine, Events):
     def get_allocated_assets(self, order_ids=None, return_asset=False):
         """ Returns the amount of QUOTE and BASE allocated in orders, and that do not show up in available balance
 
-            :param list | order_ids:
-            :param bool | return_asset:
+            :param list | order_ids: order ids to analyze
+            :param bool | return_asset: true if returned values should be Amount instances
             :return: Dictionary of QUOTE and BASE amounts
         """
         if not order_ids:
@@ -510,6 +510,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         for order_id in order_ids:
             order = self.get_updated_order(order_id)
+            # get_updated_order() may return None, so filter out
             if not order:
                 continue
             asset_id = order['base']['asset']['id']
