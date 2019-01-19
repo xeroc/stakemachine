@@ -158,7 +158,11 @@ class StrategyBase(Storage, StateMachine, Events):
                           r'[A-Z0-9\.]+[:\/][A-Z0-9\.]+'),
             ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
-                          r'[A-Z\.]+')
+                          r'[A-Z\.]+'),
+            ConfigElement('operational_percent_quote', 'float', 0, 'QUOTE balance %',
+                          'Max % of QUOTE asset available to this worker', (0, None, 2, '%')),
+            ConfigElement('operational_percent_base', 'float', 0, 'BASE balance %',
+                          'Max % of BASE asset available to this worker', (0, None, 2, '%')),
         ]
 
         if return_base_config:
@@ -230,8 +234,10 @@ class StrategyBase(Storage, StateMachine, Events):
         # Redirect this event to also call order placed and order matched
         self.onMarketUpdate += self._callbackPlaceFillOrders
 
+        self.assets_intersections_data = None
         if config:
             self.config = config
+            self.assets_intersections_data = Config.assets_intersections(config)
         else:
             self.config = config = Config.get_worker_config_file(name)
 
@@ -247,6 +253,9 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
+
+        self.operational_percent_quote = self.worker.get('operational_percent_quote', 0) / 100
+        self.operational_percent_base = self.worker.get('operational_percent_base', 0) / 100
 
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
@@ -515,6 +524,27 @@ class StrategyBase(Storage, StateMachine, Events):
             base = Amount(base, base_asset)
 
         return {'quote': quote, 'base': base}
+
+    def get_worker_share_for_asset(self, asset):
+        """ Returns operational percent of asset available to the worker
+
+            :param str | asset: Which asset should be checked
+            :return: float: a value between 0-1 representing a percent
+        """
+        intersections_data = self.assets_intersections_data[self.account.name][asset]
+
+        if asset == self.market['base']['symbol']:
+            if self.operational_percent_base:
+                return self.operational_percent_base
+            else:
+                return (1 - intersections_data['sum_pct']) / intersections_data['num_zero_workers']
+        elif asset == self.market['quote']['symbol']:
+            if self.operational_percent_quote:
+                return self.operational_percent_quote
+            else:
+                return (1 - intersections_data['sum_pct']) / intersections_data['num_zero_workers']
+        else:
+            self.log.error('Got asset which is not used by this worker')
 
     def get_market_buy_orders(self, depth=10):
         """ Fetches most recent data and returns list of buy orders.
