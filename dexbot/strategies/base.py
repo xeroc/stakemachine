@@ -408,7 +408,7 @@ class StrategyBase(Storage, StateMachine, Events):
                 quote_total += balance['amount']
 
         # Calculate value of the orders in unit of measure
-        orders = self.get_own_orders
+        orders = self.own_orders
         for order in orders:
             if order['base']['symbol'] == self.quote_asset:
                 # Pick sell orders order's BASE amount, which is same as worker's QUOTE, to worker's BASE
@@ -479,7 +479,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         if order_ids is None:
             # Get all orders from Blockchain
-            order_ids = [order['id'] for order in self.get_own_orders]
+            order_ids = [order['id'] for order in self.own_orders]
         if order_ids:
             orders_balance = self.get_allocated_assets(order_ids)
             quote += orders_balance['quote']
@@ -948,6 +948,40 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return sell_orders
 
+    def get_own_orders(self, refresh=True):
+        """ Return the account's open orders in the current market
+
+            :param bool | refresh: Use most recent data
+            :return: List of Order objects
+        """
+        orders = []
+
+        # Refresh account data
+        if refresh:
+            self.account.refresh()
+
+        for order in self.account.openorders:
+            if self.worker["market"] == order.market and self.account.openorders:
+                orders.append(order)
+
+        return orders
+
+    def get_all_own_orders(self, refresh=True):
+        """ Return the worker's open orders in all markets
+
+            :param bool | refresh: Use most recent data
+            :return: List of Order objects
+        """
+        # Refresh account data
+        if refresh:
+            self.account.refresh()
+
+        orders = []
+        for order in self.account.openorders:
+            orders.append(order)
+
+        return orders
+
     def get_own_buy_orders(self, orders=None):
         """ Get own buy orders from current market, or from a set of orders passed for this function.
 
@@ -955,7 +989,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
-            orders = self.get_own_orders
+            orders = self.own_orders
 
         return self.filter_buy_orders(orders)
 
@@ -966,7 +1000,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
-            orders = self.get_own_orders
+            orders = self.own_orders
 
         return self.filter_sell_orders(orders)
 
@@ -1356,38 +1390,16 @@ class StrategyBase(Storage, StateMachine, Events):
         return self.worker['market'].split('/')[0]
 
     @property
-    def all_own_orders(self, refresh=True):
+    def all_own_orders(self):
         """ Return the worker's open orders in all markets
-
-            :param bool | refresh: Use most recent data
-            :return: List of Order objects
         """
-        # Refresh account data
-        if refresh:
-            self.account.refresh()
-
-        orders = []
-        for order in self.account.openorders:
-            orders.append(order)
-
-        return orders
+        return self.get_all_own_orders()
 
     @property
-    def get_own_orders(self):
+    def own_orders(self):
         """ Return the account's open orders in the current market
-
-            :return: List of Order objects
         """
-        orders = []
-
-        # Refresh account data
-        self.account.refresh()
-
-        for order in self.account.openorders:
-            if self.worker["market"] == order.market and self.account.openorders:
-                orders.append(order)
-
-        return orders
+        return self.get_own_orders()
 
     @property
     def market(self):

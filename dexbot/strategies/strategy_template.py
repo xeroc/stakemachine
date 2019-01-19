@@ -173,7 +173,7 @@ class Strategy(StrategyBase):
             return
 
         order_ids = None
-        orders = self.get_own_orders
+        orders = self.own_orders
 
         if orders:
             order_ids = [order['id'] for order in orders if 'id' in order]
