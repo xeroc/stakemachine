@@ -728,6 +728,10 @@ class StrategyBase(Storage, StateMachine, Events):
                     quote_amount += missing_amount
                     break
 
+        # Prevent division by zero
+        if not quote_amount:
+            return 0.0
+
         return base_amount / quote_amount
 
     def get_market_orders(self, depth=1, updated=True):
@@ -830,6 +834,10 @@ class StrategyBase(Storage, StateMachine, Events):
                     base_amount += missing_amount
                     quote_amount += missing_amount / order['price']
                     break
+
+        # Prevent division by zero
+        if not quote_amount:
+            return 0.0
 
         return base_amount / quote_amount
 
