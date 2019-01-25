@@ -2,16 +2,16 @@
 FROM ubuntu:18.04
 
 # Update Ubuntu Software repository
-RUN		apt-get update
-RUN		apt-get install -y software-properties-common
-RUN 	add-apt-repository  universe
+RUN	apt-get update
+RUN	apt-get install -y software-properties-common
+RUN add-apt-repository  universe
 
 # Install  dependencies and then DEXBot
 RUN apt-get install -y --install-recommends gcc libssl-dev python3-pip python3-dev python3-async whiptail inetutils-ping wget sudo git
 
 # Install app dependencies
 
-RUN  pip3 install pyyaml
+RUN pip3 install pyyaml
 RUN pip3 install uptick
 RUN pip3 install tabulate
 RUN pip3 install ruamel.yaml
