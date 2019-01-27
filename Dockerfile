@@ -6,7 +6,7 @@ RUN	apt-get update
 RUN	apt-get install -y software-properties-common
 RUN add-apt-repository  universe
 
-# Install  dependencies and then DEXBot
+# Install  dependencies
 RUN apt-get install -y --install-recommends gcc libssl-dev python3-pip python3-dev python3-async whiptail inetutils-ping wget sudo git
 
 # Install app dependencies
@@ -20,10 +20,9 @@ RUN pip3 install ccxt
 
 # Download and Install  DEXBot
 
-RUN wget  https://github.com/Codaone/DEXBot/archive/0.9.5.tar.gz
-RUN tar zxvpf 0.9.5.tar.gz && rm -rf  0.9.5.tar.gz
-RUN cd DEXBot-0.9.5
-WORKDIR DEXBot-0.9.5
+RUN git clone https://github.com/Codaone/DEXBot.git  /home/Dexbot/
+RUN cd /home/Dexbot/
+WORKDIR /home/Dexbot/
 RUN make
 RUN make install-user
 
