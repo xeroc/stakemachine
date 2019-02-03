@@ -298,10 +298,9 @@ def test_increase_order_sizes_valley_smaller_closest_orders(worker, do_initial_a
     assert worker.sell_orders[0]['base']['amount'] == initial_quote
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/444')
 def test_increase_order_sizes_valley_imbalaced_small_further(worker, do_initial_allocation, increase_until_allocated):
-    """
-        TODO: test stub for https://github.com/Codaone/DEXBot/pull/484
+    """ If furthest orders are smaller than closest, they should be increased first.
+        See https://github.com/Codaone/DEXBot/issues/444 for details
 
         Buy side, amounts in BASE:
 
@@ -334,19 +333,22 @@ def test_increase_order_sizes_valley_imbalaced_small_further(worker, do_initial_
         worker.place_market_buy_order(to_buy, further_order['price'])
         worker.refresh_orders()
 
-    # Drop excess balance, the goal is to keep balance to only increase furthest orders
-    amount = Amount(
-        base_limit * num_orders_to_cancel, worker.market['base']['symbol'], bitshares_instance=worker.bitshares
-    )
+    # Drop excess balance to only allow to one increase round
+    worker.refresh_balances()
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
+    to_keep = base_limit * (increase_factor - 1) * num_orders_to_cancel * 2 * 1.01
+    to_drop = worker.base_balance['amount'] - to_keep
+    amount = Amount(to_drop, worker.market['base']['symbol'], bitshares_instance=worker.bitshares)
     worker.bitshares.reserve(amount, account=worker.account)
 
     increase_until_allocated(worker)
 
     for i in range(1, num_orders_to_cancel):
-        assert worker.buy_orders[-i]['base']['amount'] == worker.buy_orders[i - 1]['base']['amount']
+        further_order_amount = worker.buy_orders[-i]['base']['amount']
+        closer_order_amount = worker.buy_orders[i - 1]['base']['amount']
+        assert further_order_amount == closer_order_amount
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/586')
 def test_increase_order_sizes_valley_closest_order(worker, do_initial_allocation, issue_asset):
     """ Should test proper calculation of closest order: order should not be less that min_increase_factor
     """
@@ -631,10 +633,9 @@ def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_
     assert worker.sell_orders[0]['base']['amount'] == initial_quote
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/444')
 def test_increase_order_sizes_neutral_imbalaced_small_further(worker, do_initial_allocation, increase_until_allocated):
-    """
-        TODO: test stub for https://github.com/Codaone/DEXBot/pull/484
+    """ If furthest orders are smaller than closest, they should be increased first.
+        See https://github.com/Codaone/DEXBot/issues/444 for details
 
         Buy side, amounts in BASE:
 
@@ -645,7 +646,6 @@ def test_increase_order_sizes_neutral_imbalaced_small_further(worker, do_initial
         10 10 10 100 100 10 10 10 <center>
     """
     worker = do_initial_allocation(worker, 'neutral')
-    increase_until_allocated(worker)
 
     # Cancel several closest orders
     num_orders_to_cancel = 3
@@ -658,28 +658,37 @@ def test_increase_order_sizes_neutral_imbalaced_small_further(worker, do_initial
     # Place limited orders
     initial_base = worker.buy_orders[0]['base']['amount']
     base_limit = initial_base / 2
-    for i in range(0, num_orders_to_cancel):
-        worker.place_closer_order('base', worker.buy_orders[0], own_asset_limit=base_limit)
-        # place_further_order() doesn't have own_asset_limit, so do own calculation
-        further_order = worker.place_further_order('base', worker.buy_orders[-1], place_order=False)
-        worker.place_market_buy_order(base_limit / further_order['price'], further_order['price'])
+    # Apply limit only for first order
+    worker.place_closer_order('base', worker.buy_orders[0], own_asset_limit=base_limit)
+    # place_further_order() doesn't have own_asset_limit, so do own calculation
+    further_order = worker.place_further_order('base', worker.buy_orders[-1], place_order=False)
+    worker.place_market_buy_order(base_limit / further_order['price'], further_order['price'])
+    worker.refresh_orders()
+
+    # Place remainig limited orders
+    for i in range(1, num_orders_to_cancel):
+        worker.place_closer_order('base', worker.buy_orders[0])
+        worker.place_further_order('base', worker.buy_orders[-1])
         worker.refresh_orders()
 
-    # Drop excess balance, the goal is to keep balance to only increase furthest orders
-    amount = Amount(
-        base_limit * num_orders_to_cancel, worker.market['base']['symbol'], bitshares_instance=worker.bitshares
-    )
+    # Drop excess balance to only allow to one increase round
+    worker.refresh_balances()
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
+    to_keep = base_limit * (increase_factor - 1) * num_orders_to_cancel * 2 * 1.1
+    to_drop = worker.base_balance['amount'] - to_keep
+    amount = Amount(to_drop, worker.market['base']['symbol'], bitshares_instance=worker.bitshares)
     worker.bitshares.reserve(amount, account=worker.account)
 
     increase_until_allocated(worker)
 
     for i in range(1, num_orders_to_cancel):
-        # TODO: this is a simple check without precise calculation
+        # This is a simple check without precise calculation
         # We're roughly checking that new furthest orders are not exceed new closest orders
-        assert worker.buy_orders[-i]['base']['amount'] < worker.buy_orders[i - 1]['base']['amount']
+        further_order_amount = worker.buy_orders[-i]['base']['amount']
+        closer_order_amount = worker.buy_orders[i - 1]['base']['amount']
+        assert further_order_amount < closer_order_amount
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/586')
 def test_increase_order_sizes_neutral_closest_order(worker, do_initial_allocation, issue_asset):
     """ Should test proper calculation of closest order: order should not be less that min_increase_factor
     """
@@ -695,9 +704,9 @@ def test_increase_order_sizes_neutral_closest_order(worker, do_initial_allocatio
     worker.increase_order_sizes('base', worker.base_balance, previous_buy_orders)
     worker.refresh_orders()
 
-    assert worker.buy_orders[0]['base']['amount'] - previous_buy_orders[0]['base']['amount'] >= previous_buy_orders[0][
-        'base'
-    ]['amount'] * (increase_factor - 1)
+    assert worker.buy_orders[0]['base']['amount'] - previous_buy_orders[0]['base']['amount'] == pytest.approx(
+        previous_buy_orders[0]['base']['amount'] * (increase_factor - 1), rel=(1 ** -worker.market['base']['precision'])
+    )
 
 
 def test_increase_order_sizes_buy_slope(worker, do_initial_allocation, issue_asset, increase_until_allocated):
