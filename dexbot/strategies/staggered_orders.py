@@ -710,7 +710,7 @@ class Strategy(StrategyBase):
                 # Target spread is reached, let's allocate remaining funds
                 if not self.check_partial_fill(closest_own_order, fill_threshold=0):
                     """ Detect partially filled order on the own side and reserve funds to replace order in case
-                        opposite oreder will be fully filled.
+                        opposite order will be fully filled.
                     """
                     funds_to_reserve = closest_own_order['base']['amount']
                     self.log.debug('Partially filled order on own side, reserving funds to replace: '
