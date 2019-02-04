@@ -757,6 +757,11 @@ class Strategy(StrategyBase):
                                .format(order_type, self.actual_spread, self.target_spread + self.increment))
                 if self.bootstrapping:
                     self.place_closer_order(asset, closest_own_order)
+                elif opposite_orders and self.actual_spread - self.increment < self.target_spread + self.increment:
+                    """ Place max-sized closer order if only one order needed to reach target spread (avoid unneeded
+                        increases)
+                    """
+                    self.place_closer_order(asset, closest_own_order, allow_partial=True)
                 elif opposite_orders:
                     # Place order limited by size of the opposite-side order
                     if self.mode == 'mountain':
@@ -860,6 +865,15 @@ class Strategy(StrategyBase):
                 # Refresh balances to make "reserved" funds available
                 self.refresh_balances(use_cached_orders=True)
                 self.replace_partially_filled_order(closest_own_order)
+            elif (increase_finished and not self.check_partial_fill(closest_opposite_order, fill_threshold=(
+                    1 - self.partial_fill_threshold)) and self.bitshares.txbuffer.is_empty()):
+                # Dust order on opposite side, cancel dust order and place closer order
+                # Require empty txbuffer to avoid rare condition when order may be already canceled from
+                # replace_partially_filled_order() call
+                self.log.info('Cancelling dust order at opposite side, placing closer {} order'.format(order_type))
+                self.cancel_orders_wrapper(closest_opposite_order)
+                self.refresh_balances(use_cached_orders=True)
+                self.place_closer_order(asset, closest_own_order, allow_partial=True)
         else:
             # Place first buy order as close to the lower bound as possible
             self.bootstrapping = True
