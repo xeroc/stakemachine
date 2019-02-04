@@ -546,21 +546,33 @@ class Strategy(StrategyBase):
     def restore_virtual_orders(self):
         """ Create virtual further orders in batch manner. This helps to place further orders quickly on startup.
         """
-        if self.buy_orders:
-            furthest_order = self.real_buy_orders[-1]
-            while furthest_order['price'] > self.lower_bound * (1 + self.increment):
-                furthest_order = self.place_further_order('base', furthest_order, virtual=True)
-                if not isinstance(furthest_order, VirtualOrder):
-                    # Failed to place order
-                    break
+        if self.buy_orders and self.sell_orders:
+            # Load orders from the database
+            orders = self.fetch_orders()
+            if orders:
+                self.log.info('Loading virtual orders from database')
+                for k, v in orders.items():
+                    self.virtual_orders.append(VirtualOrder(v))
+            else:
+                if self.buy_orders:
+                    furthest_order = self.real_buy_orders[-1]
+                    while furthest_order['price'] > self.lower_bound * (1 + self.increment):
+                        furthest_order = self.place_further_order('base', furthest_order, virtual=True)
+                        if not isinstance(furthest_order, VirtualOrder):
+                            # Failed to place order
+                            break
 
-        if self.sell_orders:
-            furthest_order = self.real_sell_orders[-1]
-            while furthest_order['price'] ** -1 < self.upper_bound / (1 + self.increment):
-                furthest_order = self.place_further_order('quote', furthest_order, virtual=True)
-                if not isinstance(furthest_order, VirtualOrder):
-                    # Failed to place order
-                    break
+                if self.sell_orders:
+                    furthest_order = self.real_sell_orders[-1]
+                    while furthest_order['price'] ** -1 < self.upper_bound / (1 + self.increment):
+                        furthest_order = self.place_further_order('quote', furthest_order, virtual=True)
+                        if not isinstance(furthest_order, VirtualOrder):
+                            # Failed to place order
+                            break
+        else:
+            # No real orders, assume we need to bootstrap, purge old orders
+            self.log.info('No real orders, purging old virtual orders')
+            self.clear_orders()
 
         # Set "restored" flag anyway to not break initial bootstrap
         self.virtual_orders_restored = True
@@ -1849,6 +1861,8 @@ class Strategy(StrategyBase):
 
         order = VirtualOrder()
         order['price'] = price
+        # Assign price as id because we just need some unique id
+        order['id'] = order['price']
 
         quote_asset = Amount(amount, self.market['quote']['symbol'])
         order['quote'] = quote_asset
@@ -1864,6 +1878,8 @@ class Strategy(StrategyBase):
         # Immediately lower avail balance
         self.base_balance['amount'] -= order['base']['amount']
 
+        self.save_order(order)
+
         return order
 
     def place_virtual_sell_order(self, amount, price):
@@ -1877,6 +1893,8 @@ class Strategy(StrategyBase):
         precision = self.market['quote']['precision']
 
         order = VirtualOrder()
+        # Use not inverted price as unique id (inverted will cause intersections with buy orders)
+        order['id'] = price
         order['price'] = price ** -1
 
         quote_asset = Amount(amount * price, self.market['base']['symbol'])
@@ -1893,6 +1911,8 @@ class Strategy(StrategyBase):
         # Immediately lower avail balance
         self.quote_balance['amount'] -= order['base']['amount']
 
+        self.save_order(order)
+
         return order
 
     def cancel_orders_wrapper(self, orders, **kwargs):
@@ -1902,11 +1922,15 @@ class Strategy(StrategyBase):
         if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
 
-        virtual_orders = [order['price'] for order in orders if isinstance(order, VirtualOrder)]
-        real_orders = [order for order in orders if 'id' in order]
+        virtual_orders = [order for order in orders if isinstance(order, VirtualOrder)]
+        real_orders = [order for order in orders if not isinstance(order, VirtualOrder)]
 
-        # Just rebuild virtual orders list to avoid calling Asset's __eq__ method
-        self.virtual_orders = [order for order in self.virtual_orders if order['price'] not in virtual_orders]
+        if virtual_orders:
+            # Just rebuild virtual orders list to avoid calling Asset's __eq__ method
+            self.virtual_orders = [order for order in self.virtual_orders if order not in virtual_orders]
+            # Also remove virtual order from database
+            for order in virtual_orders:
+                self.remove_order(order)
 
         if real_orders:
             return self.cancel_orders(real_orders, **kwargs)
