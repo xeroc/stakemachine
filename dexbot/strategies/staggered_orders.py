@@ -605,12 +605,20 @@ class Strategy(StrategyBase):
             quote_amount = order['quote']['amount']
             price = order['price']
             self.log.info('Replacing virtual buy order with real order')
-            new_order = self.place_market_buy_order(quote_amount, price, returnOrderId=True)
+            try:
+                new_order = self.place_market_buy_order(quote_amount, price, returnOrderId=True)
+            except bitsharesapi.exceptions.RPCError as e:
+                self.log.exception('Error broadcasting trx:')
+                return False
         else:
             quote_amount = order['base']['amount']
             price = order['price'] ** -1
             self.log.info('Replacing virtual sell order with real order')
-            new_order = self.place_market_sell_order(quote_amount, price, returnOrderId=True)
+            try:
+                new_order = self.place_market_sell_order(quote_amount, price, returnOrderId=True)
+            except bitsharesapi.exceptions.RPCError as e:
+                self.log.exception('Error broadcasting trx:')
+                return False
 
         if new_order:
             # Cancel virtual order
