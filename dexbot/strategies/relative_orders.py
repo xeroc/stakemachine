@@ -171,7 +171,7 @@ class Strategy(StrategyBase):
         self.counter += 1
 
     @property
-    def amount_quote(self):
+    def amount_to_sell(self):
         """ Get quote amount, calculate if order size is relative
         """
         if self.is_relative_order_size:
@@ -181,7 +181,7 @@ class Strategy(StrategyBase):
             return self.order_size
 
     @property
-    def amount_base(self):
+    def amount_to_buy(self):
         """ Get base amount, calculate if order size is relative
         """
         if self.is_relative_order_size:
@@ -244,20 +244,20 @@ class Strategy(StrategyBase):
         order_ids = []
         expected_num_orders = 0
 
-        amount_base = self.amount_base
-        amount_quote = self.amount_quote
+        amount_to_buy = self.amount_to_buy
+        amount_to_sell = self.amount_to_sell
 
         # Buy Side
-        if amount_base:
-            buy_order = self.place_market_buy_order(amount_base, self.buy_price, True)
+        if amount_to_buy:
+            buy_order = self.place_market_buy_order(amount_to_buy, self.buy_price, True)
             if buy_order:
                 self.save_order(buy_order)
                 order_ids.append(buy_order['id'])
             expected_num_orders += 1
 
         # Sell Side
-        if amount_quote:
-            sell_order = self.place_market_sell_order(amount_quote, self.sell_price, True)
+        if amount_to_sell:
+            sell_order = self.place_market_sell_order(amount_to_sell, self.sell_price, True)
             if sell_order:
                 self.save_order(sell_order)
                 order_ids.append(sell_order['id'])
