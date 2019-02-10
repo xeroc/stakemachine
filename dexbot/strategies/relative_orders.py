@@ -174,22 +174,32 @@ class Strategy(StrategyBase):
     def amount_to_sell(self):
         """ Get quote amount, calculate if order size is relative
         """
+        amount = self.order_size
         if self.is_relative_order_size:
             quote_balance = float(self.balance(self.market["quote"]))
-            return quote_balance * (self.order_size / 100)
-        else:
-            return self.order_size
+            amount = quote_balance * (self.order_size / 100)
+
+        # Sell / receive amount should match x2 of minimal possible fraction of asset
+        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
+                amount * self.sell_price < 2 * 10 ** -self.market['base']['precision']):
+            amount = 0
+        return amount
 
     @property
     def amount_to_buy(self):
         """ Get base amount, calculate if order size is relative
         """
+        amount = self.order_size
         if self.is_relative_order_size:
             base_balance = float(self.balance(self.market["base"]))
             # amount = % of balance / buy_price = amount combined with calculated price to give % of balance
-            return base_balance * (self.order_size / 100) / self.buy_price
-        else:
-            return self.order_size
+            amount = base_balance * (self.order_size / 100) / self.buy_price
+
+        # Sell / receive amount should match x2 of minimal possible fraction of asset
+        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
+                amount * self.buy_price < 2 * 10 ** -self.market['base']['precision']):
+            amount = 0
+        return amount
 
     def calculate_order_prices(self):
         # Set center price as None, in case dynamic has not amount given, center price is calculated from market orders
