@@ -1420,7 +1420,11 @@ class StrategyBase(Storage, StateMachine, Events):
             return None
         if 'id' in order_id:
             order_id = order_id['id']
-        order = Order(order_id)
+        try:
+            order = Order(order_id)
+        except Exception:
+            log.error('Got an exception getting order id {}'.format(order_id))
+            raise
         if return_none and order['deleted']:
             return None
         return order
