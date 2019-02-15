@@ -155,7 +155,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
             latency = -1
 
         if latency != -1:
-            return  "ver {} - Node delay: {:.2f}ms".format(__version__, latency)
+            return "ver {} - Node delay: {:.2f}ms".format(__version__, latency)
         else:
             return "ver {} - Node disconnected".format(__version__)
 
