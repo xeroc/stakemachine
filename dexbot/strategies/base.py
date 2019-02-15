@@ -516,13 +516,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         return {'quote': quote, 'base': base}
 
-    def get_market_fee(self):
-        """ Returns the fee percentage for buying specified asset
-
-            :return: Fee percentage in decimal form (0.025)
-        """
-        return self.fee_asset.market_fee_percent
-
     def get_market_buy_orders(self, depth=10):
         """ Fetches most recent data and returns list of buy orders.
 
@@ -698,7 +691,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         if not market_buy_orders:
             market_buy_orders = self.get_market_buy_orders(depth=self.fetch_depth)
-        market_fee = self.get_market_fee()
+        market_fee = self.market['base'].market_fee_percent
 
         target_amount = asset_amount * (1 + market_fee)
 
@@ -805,7 +798,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         if not market_sell_orders:
             market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
-        market_fee = self.get_market_fee()
+        market_fee = self.market['quote'].market_fee_percent
 
         target_amount = asset_amount * (1 + market_fee)
 
