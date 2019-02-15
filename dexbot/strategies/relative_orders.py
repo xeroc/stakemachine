@@ -171,25 +171,35 @@ class Strategy(StrategyBase):
         self.counter += 1
 
     @property
-    def amount_quote(self):
+    def amount_to_sell(self):
         """ Get quote amount, calculate if order size is relative
         """
+        amount = self.order_size
         if self.is_relative_order_size:
             quote_balance = float(self.balance(self.market["quote"]))
-            return quote_balance * (self.order_size / 100)
-        else:
-            return self.order_size
+            amount = quote_balance * (self.order_size / 100)
+
+        # Sell / receive amount should match x2 of minimal possible fraction of asset
+        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
+                amount * self.sell_price < 2 * 10 ** -self.market['base']['precision']):
+            amount = 0
+        return amount
 
     @property
-    def amount_base(self):
+    def amount_to_buy(self):
         """ Get base amount, calculate if order size is relative
         """
+        amount = self.order_size
         if self.is_relative_order_size:
             base_balance = float(self.balance(self.market["base"]))
             # amount = % of balance / buy_price = amount combined with calculated price to give % of balance
-            return base_balance * (self.order_size / 100) / self.buy_price
-        else:
-            return self.order_size
+            amount = base_balance * (self.order_size / 100) / self.buy_price
+
+        # Sell / receive amount should match x2 of minimal possible fraction of asset
+        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
+                amount * self.buy_price < 2 * 10 ** -self.market['base']['precision']):
+            amount = 0
+        return amount
 
     def calculate_order_prices(self):
         # Set center price as None, in case dynamic has not amount given, center price is calculated from market orders
@@ -244,20 +254,20 @@ class Strategy(StrategyBase):
         order_ids = []
         expected_num_orders = 0
 
-        amount_base = self.amount_base
-        amount_quote = self.amount_quote
+        amount_to_buy = self.amount_to_buy
+        amount_to_sell = self.amount_to_sell
 
         # Buy Side
-        if amount_base:
-            buy_order = self.place_market_buy_order(amount_base, self.buy_price, True)
+        if amount_to_buy:
+            buy_order = self.place_market_buy_order(amount_to_buy, self.buy_price, True)
             if buy_order:
                 self.save_order(buy_order)
                 order_ids.append(buy_order['id'])
             expected_num_orders += 1
 
         # Sell Side
-        if amount_quote:
-            sell_order = self.place_market_sell_order(amount_quote, self.sell_price, True)
+        if amount_to_sell:
+            sell_order = self.place_market_sell_order(amount_to_sell, self.sell_price, True)
             if sell_order:
                 self.save_order(sell_order)
                 order_ids.append(sell_order['id'])
