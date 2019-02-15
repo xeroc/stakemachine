@@ -728,6 +728,10 @@ class StrategyBase(Storage, StateMachine, Events):
                     quote_amount += missing_amount
                     break
 
+        # Prevent division by zero
+        if not quote_amount:
+            return 0.0
+
         return base_amount / quote_amount
 
     def get_market_orders(self, depth=1, updated=True):
@@ -830,6 +834,10 @@ class StrategyBase(Storage, StateMachine, Events):
                     base_amount += missing_amount
                     quote_amount += missing_amount / order['price']
                     break
+
+        # Prevent division by zero
+        if not quote_amount:
+            return 0.0
 
         return base_amount / quote_amount
 
@@ -1225,6 +1233,48 @@ class StrategyBase(Storage, StateMachine, Events):
         return self.get_balance_history(self.config['workers'][self.worker_name].get('account'),
                                         self.worker_name, seconds)
 
+    def calc_profit(self):
+        """ Calculate relative profit for the current worker
+        """
+        profit = 0
+        time_range = 60 * 60 * 24 * 7  # 7 days
+        current_time = time.time()
+        timestamp = current_time - time_range
+
+        # Fetch the balance from history
+        old_data = self.get_balance_history(self.config['workers'][self.worker_name].get('account'), self.worker_name,
+                                            timestamp, self.base_asset, self.quote_asset)
+        if old_data:
+            earlier_base = old_data.base_total
+            earlier_quote = old_data.quote_total
+            old_center_price = old_data.center_price
+            center_price = self.get_market_center_price()
+
+            if not (old_center_price or center_price):
+                return profit
+
+            # Calculate max theoretical balances based on starting price
+            old_max_quantity_base = earlier_base + earlier_quote * old_center_price
+            old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
+
+            if not (old_max_quantity_base or old_max_quantity_quote):
+                return profit
+
+            # Current balances
+            balance = self.count_asset()
+            base_balance = balance['base']
+            quote_balance = balance['quote']
+
+            # Calculate max theoretical current balances
+            max_quantity_base = base_balance + quote_balance * center_price
+            max_quantity_quote = quote_balance + base_balance / center_price
+
+            base_roi = max_quantity_base / old_max_quantity_base
+            quote_roi = max_quantity_quote / old_max_quantity_quote
+            profit = round(math.sqrt(base_roi * quote_roi) - 1, 4)
+
+        return profit
+
     def write_order_log(self, worker_name, order):
         """ Write order log to csv file
 
@@ -1370,7 +1420,11 @@ class StrategyBase(Storage, StateMachine, Events):
             return None
         if 'id' in order_id:
             order_id = order_id['id']
-        order = Order(order_id)
+        try:
+            order = Order(order_id)
+        except Exception:
+            log.error('Got an exception getting order id {}'.format(order_id))
+            raise
         if return_none and order['deleted']:
             return None
         return order
@@ -1441,37 +1495,8 @@ class StrategyBase(Storage, StateMachine, Events):
         self['slider'] = percentage
 
     def update_gui_profit(self):
-        profit = 0
-        time_range = 60 * 60 * 24 * 7  # 7 days
-        current_time = time.time()
-        timestamp = current_time - time_range
+        profit = self.calc_profit()
 
-        # Fetch the balance from history
-        old_data = self.get_balance_history(self.config['workers'][self.worker_name].get('account'), self.worker_name,
-                                            timestamp, self.base_asset, self.quote_asset)
-        if old_data:
-            earlier_base = old_data.base_total
-            earlier_quote = old_data.quote_total
-            old_center_price = old_data.center_price
-
-            # Calculate max theoretical balances based on starting price
-            old_max_quantity_base = earlier_base + earlier_quote * old_center_price
-            old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
-
-            # Current balances
-            balance = self.count_asset()
-            base_balance = balance['base']
-            quote_balance = balance['quote']
-
-            # Calculate max theoretical current balances
-            center_price = self.get_market_center_price()
-            max_quantity_base = base_balance + quote_balance * center_price
-            max_quantity_quote = quote_balance + base_balance / center_price
-
-            base_roi = max_quantity_base / old_max_quantity_base
-            quote_roi = max_quantity_quote / old_max_quantity_quote
-            profit = round(math.sqrt(base_roi * quote_roi) - 1, 4)
-
-        # Add to idle que
+        # Add to idle queue
         idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
         self['profit'] = profit
