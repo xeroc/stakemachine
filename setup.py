@@ -6,8 +6,7 @@ from distutils.command import build as build_module
 
 cmd_class = {}
 console_scripts = ['dexbot-cli = dexbot.cli:main']
-install_requires = [
-]
+install_requires = []
 
 
 class BuildCommand(build_module.build):

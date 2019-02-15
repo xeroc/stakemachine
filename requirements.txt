@@ -9,7 +9,7 @@ yarl==1.1.0
 ccxt==1.17.434
 pywaves==0.8.20
 bitshares==0.2.1
-uptick==0.2.0
+uptick==0.2.1
 ruamel.yaml>=0.15.37
 appdirs>=1.4.3
 pycryptodomex==3.6.4
