@@ -444,8 +444,10 @@ class StrategyBase(Storage, StateMachine, Events):
         if not success and len(orders) > 1 and not batch_only:
             # One of the order cancels failed, cancel the orders one by one
             for order in orders:
-                self._cancel_orders(order)
-        return True
+                success = self._cancel_orders(order)
+                if not success:
+                    return False
+        return success
 
     def count_asset(self, order_ids=None, return_asset=False):
         """ Returns the combined amount of the given order ids and the account balance
