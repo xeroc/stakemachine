@@ -429,16 +429,15 @@ def test_increase_order_sizes_mountain_direction(worker, do_initial_allocation, 
                 break
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/585')
 def test_increase_order_sizes_mountain_furthest_order(worker, do_initial_allocation, issue_asset):
     """ Should test proper calculation of furthest order: try to maximize, don't allow too small increase
     """
     do_initial_allocation(worker, 'mountain')
     worker.mode = 'mountain'
 
-    # Add balance to increase 2 orders
+    # Add balance to increase ~2 orders
     increase_factor = max(1 + worker.increment, worker.min_increase_factor)
-    to_issue = worker.buy_orders[0]['base']['amount'] * (increase_factor - 1) * 2
+    to_issue = worker.buy_orders[-1]['base']['amount'] * (increase_factor - 1) * 2.2
     issue_asset(worker.market['base']['symbol'], to_issue, worker.account.name)
 
     previous_buy_orders = worker.buy_orders
@@ -446,9 +445,10 @@ def test_increase_order_sizes_mountain_furthest_order(worker, do_initial_allocat
     worker.increase_order_sizes('base', worker.base_balance, previous_buy_orders)
     worker.refresh_orders()
 
-    assert worker.buy_orders[-1]['base']['amount'] - previous_buy_orders[-1]['base']['amount'] >= previous_buy_orders[
-        -1
-    ]['base']['amount'] * (increase_factor - 1)
+    assert worker.buy_orders[-1]['base']['amount'] - previous_buy_orders[-1]['base']['amount'] == pytest.approx(
+        previous_buy_orders[-1]['base']['amount'] * (increase_factor - 1),
+        rel=(1 ** -worker.market['base']['precision']),
+    )
 
 
 def test_increase_order_sizes_mountain_imbalanced(worker, do_initial_allocation):

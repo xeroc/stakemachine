@@ -970,29 +970,26 @@ class Strategy(StrategyBase):
                         examining furthest order.
                     """
                     new_order_amount = further_bound
+                    increase_factor = max(1 + self.increment, self.min_increase_factor)
 
                     if not self.mountain_max_increase_mode:
-                        increase_factor = max(1 + self.increment, self.min_increase_factor)
+                        # Smooth increase for orders between furthest and closest (see docstring example)
                         new_order_amount = min(further_bound, order_amount * increase_factor)
 
                     if is_least_order:
+                        new_order_amount = order_amount * increase_factor
                         new_orders_sum = 0
                         amount = order_amount
                         for o in orders:
                             amount = amount * (1 + self.increment)
                             new_orders_sum += amount
-                        # To reduce allocation rounds, increase furthest order more
-                        new_order_amount = order_amount * (total_balance / new_orders_sum)
+                        # To reduce allocation rounds, increase furthest order more if we can
+                        increased_amount = order_amount * (total_balance / new_orders_sum)
 
-                        if new_order_amount < closer_bound:
-                            """ This is for situations when calculated new_order_amount is not big enough to
-                                allocate all funds. Use partial-increment increase, so we'll got at least one full
-                                increase round.  Whether we will just use `new_order_amount = further_bound`, we will
-                                get less than one full allocation round, thus leaving closest-to-center order not
-                                increased.
-                            """
-                            new_order_amount = closer_bound / (1 + self.increment * 0.2)
-                        else:
+                        if increased_amount > new_order_amount:
+                            self.log.debug('Correcting furthest order amount from {:.{prec}f} to: {:.{prec}f} {}'
+                                           .format(new_order_amount, increased_amount, symbol, prec=precision))
+                            new_order_amount = increased_amount
                             # Set bypass flag to not limit next orders
                             self.mountain_max_increase_mode = True
                             self.log.debug('Activating max increase mode for mountain mode')
