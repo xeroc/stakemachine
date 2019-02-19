@@ -32,7 +32,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Before you can start using DEXBot, you need to create a wallet.</string>
+      <string>Before you can start using DEXBot, you need to create an uptick wallet.</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -42,7 +42,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Wallet password is used to encrypt your BitShares account private keys.</string>
+      <string>The Uptick Wallet password is used to encrypt your BitShares account private keys.</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -88,7 +88,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="password_label">
            <property name="text">
-            <string>Wallet password</string>
+            <string>Uptick Wallet password</string>
            </property>
            <property name="buddy">
             <cstring>password_input</cstring>
