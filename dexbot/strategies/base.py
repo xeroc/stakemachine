@@ -1112,12 +1112,13 @@ class StrategyBase(Storage, StateMachine, Events):
         else:
             return True
 
-    def place_market_sell_order(self, amount, price, return_none=False, *args, **kwargs):
+    def place_market_sell_order(self, amount, price, return_none=False, invert=False, *args, **kwargs):
         """ Places a sell order in the market
 
             :param float | amount: Order amount in QUOTE
             :param float | price: Order price in BASE
             :param bool | return_none:
+            :param bool | invert: True = return inverted sell order
             :param args:
             :param kwargs:
             :return:
@@ -1161,8 +1162,9 @@ class StrategyBase(Storage, StateMachine, Events):
             if sell_order and sell_order['deleted']:
                 # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
                 sell_order = self.calculate_order_data(sell_order, amount, price)
-                sell_order.invert()
                 self.recheck_orders = True
+            if sell_order and invert:
+                sell_order.invert()
             return sell_order
         else:
             return True
