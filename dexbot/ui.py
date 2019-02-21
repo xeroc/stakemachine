@@ -1,4 +1,5 @@
 import os
+import os.path
 import sys
 import logging
 import logging.config
@@ -43,7 +44,8 @@ def verbose(f):
         logger.addHandler(ch)
 
         # Logging to a file
-        fh = logging.FileHandler('dexbot.log')
+        filename = os.path.join(os.path.dirname(sys.argv[0]), 'dexbot.log')
+        fh = logging.FileHandler(filename)
         fh.setFormatter(formatter2)
         logger.addHandler(fh)
 
