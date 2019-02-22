@@ -151,7 +151,7 @@ def setup_systemd(whiptail, config):
         path = os.path.expanduser(path)
         pathlib.Path(path).mkdir(parents=True, exist_ok=True)
         password = whiptail.prompt(
-            "The wallet password\n"
+            "The uptick wallet password\n"
             "NOTE: this will be saved on disc so the worker can run unattended. "
             "This means anyone with access to this computer's files can spend all your money",
             password=True)

@@ -99,19 +99,21 @@ def unlock(f):
                 else:
                     if systemd:
                         # No user available to interact with
-                        log.critical("Passphrase not available, exiting")
+                        log.critical("Uptick Passphrase not available, exiting")
                         sys.exit(78)  # 'configuration error' in sysexits.h
                     pwd = click.prompt(
-                        "Current Wallet Passphrase", hide_input=True)
+                        "Current Uptick Wallet Passphrase", hide_input=True)
                 ctx.bitshares.wallet.unlock(pwd)
             else:
                 if systemd:
                     # No user available to interact with
-                    log.critical("Wallet not installed, cannot run")
+                    log.critical("Uptick Wallet not installed, cannot run")
                     sys.exit(78)
-                click.echo("No wallet installed yet. Creating ...")
+                click.echo("No Uptick wallet installed yet. \n" + 
+                           "This is a password for encrypting " +
+                           "the file that contains your private keys.  Creating ...")
                 pwd = click.prompt(
-                    "Wallet Encryption Passphrase",
+                    "Uptick Wallet Encryption Passphrase",
                     hide_input=True,
                     confirmation_prompt=True)
                 ctx.bitshares.wallet.create(pwd)
