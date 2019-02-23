@@ -185,6 +185,8 @@ class WorkerController:
 
     @classmethod
     def validate_account_not_in_use(cls, account):
+        """ Check whether account is used by another worker
+        """
         workers = Config().workers_data
         for worker_name, worker in workers.items():
             if worker['account'] == account:
@@ -216,8 +218,6 @@ class WorkerController:
             private_key = self.view.private_key_input.text()
             if not self.validate_account_name(account):
                 error_texts.append("Account doesn't exist.")
-            if not self.validate_account_not_in_use(account):
-                error_texts.append('Use a different account. "{}" is already in use.'.format(account))
             if not self.validate_private_key(account, private_key):
                 error_texts.append('Private key is invalid.')
             elif private_key and not self.validate_private_key_type(account, private_key):
