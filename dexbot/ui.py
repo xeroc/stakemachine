@@ -44,7 +44,9 @@ def verbose(f):
         logger.addHandler(ch)
 
         # Logging to a file
-        filename = os.path.join(os.path.dirname(sys.argv[0]), 'dexbot.log')
+        filename = ctx.obj.get('logfile')
+        if not filename:
+            filename = os.path.join(os.path.dirname(sys.argv[0]), 'dexbot.log')
         fh = logging.FileHandler(filename)
         fh.setFormatter(formatter2)
         logger.addHandler(fh)

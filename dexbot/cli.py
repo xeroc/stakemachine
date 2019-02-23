@@ -46,6 +46,11 @@ initialize_data_folders()
     default=DEFAULT_CONFIG_FILE,
 )
 @click.option(
+    '--logfile',
+    default=None,
+    help='Override logfile location'
+)
+@click.option(
     '--verbose',
     '-v',
     type=int,
