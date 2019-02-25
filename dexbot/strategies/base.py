@@ -425,13 +425,23 @@ class StrategyBase(Storage, StateMachine, Events):
         # Fixme: Make sure that decimal precision is correct.
         return base_total + quote_total
 
-    def cancel_all_orders(self):
-        """ Cancel all orders of the worker's account
-        """
-        self.log.info('Canceling all orders')
+    def cancel_all_orders(self, all_markets=False):
+        """ Cancel all orders of the worker's market or all markets
 
-        if self.all_own_orders:
-            self.cancel_orders(self.all_own_orders)
+            :param bool | all_markets: True = cancel orders on all markets
+        """
+        orders_to_cancel = []
+
+        if all_markets:
+            self.log.info('Canceling all account orders')
+            orders_to_cancel = self.all_own_orders
+        else:
+            self.log.info('Canceling all orders on market {}/{}'
+                          .format(self.market['quote']['symbol'], self.market['base']['symbol']))
+            orders_to_cancel = self.own_orders
+
+        if orders_to_cancel:
+            self.cancel_orders(orders_to_cancel)
 
         self.log.info("Orders canceled")
 
