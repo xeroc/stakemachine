@@ -153,6 +153,9 @@ class StrategyBase(Storage, StateMachine, Events):
             ConfigElement('account', 'string', '', 'Account',
                           'BitShares account name for the bot to operate with',
                           ''),
+            ConfigElement('wif', 'string', '', 'WIF Key',
+                          'BitShares WIF Key for the bot to operate with',
+                          ''),
             ConfigElement('market', 'string', 'USD:BTS', 'Market',
                           'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
                           r'[A-Z\.]+[:\/][A-Z\.]+'),
@@ -240,6 +243,8 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Get Bitshares account and market for this worker
         self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
+        self._wifkey = self.worker.get('wif')
+
         self._market = Market(config["workers"][name]["market"], bitshares_instance=self.bitshares)
 
         # Recheck flag - Tell the strategy to check for updated orders
