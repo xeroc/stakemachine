@@ -144,8 +144,8 @@ class NoWhiptail:
             i += 1
         click.echo("\n")
         ret = click.prompt("Your choice:", type=int, default=default + 1)
-        ret = items[ret - 1]
-        return ret[0]
+        element_number = min(ret - 1, len(items) - 1)
+        return items[element_number][0]
 
     def radiolist(self, msg='', items=()):
         d = 0
