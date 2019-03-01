@@ -12,10 +12,10 @@ class Strategy(StrategyBase):
     @classmethod
     def configure(cls, return_base_config=True):
         return StrategyBase.configure(return_base_config) + [
-            ConfigElement('external_price_source', 'choice', EXCHANGES[0], 'External price source',
-                          'The bot will try to get price information from this source', EXCHANGES),
             ConfigElement('external_feed', 'bool', False, 'External price feed',
                           'Use external reference price instead of center price acquired from the market', None),
+            ConfigElement('external_price_source', 'choice', EXCHANGES[0], 'External price source',
+                          'The bot will try to get price information from this source', EXCHANGES),
             ConfigElement('amount', 'float', 1, 'Amount',
                           'Fixed order size, expressed in quote asset, unless "relative order size" selected',
                           (0, None, 8, '')),
@@ -87,7 +87,7 @@ class Strategy(StrategyBase):
 
         # Set external price source, defaults to False if not found
         self.external_feed = self.worker.get('external_feed', False)
-        self.external_price_source = self.worker.get('external_price_source', None)
+        self.external_price_source = self.worker.get('external_price_source', 'gecko')
 
         if self.external_feed:
             # Get external center price from given source
