@@ -25,6 +25,11 @@ from dexbot.whiptail import get_whiptail
 from dexbot.strategies.base import StrategyBase
 import dexbot.helper
 
+from bitshares.account import Account
+from bitshares.exceptions import KeyAlreadyInStoreException
+from bitsharesbase.account import PrivateKey
+
+
 STRATEGIES = [
     {'tag': 'relative',
      'class': 'dexbot.strategies.relative_orders',
@@ -88,6 +93,7 @@ def process_config_element(elem, whiptail, config):
                 txt = whiptail.prompt(
                     title, config.get(
                         elem.key, elem.default))
+        print("string ", elem.key, txt, sep=":") ## debug statement
         config[elem.key] = txt
 
     if elem.type == "bool":
@@ -241,6 +247,51 @@ def configure_worker(whiptail, worker_config):
     return worker_config
 
 
+
+def add_private_key(bitshares, private_key):
+    wallet = bitshares.wallet
+    try:
+        wallet.addPrivateKey(private_key)
+    except KeyAlreadyInStoreException:
+        # Private key already added
+        pass
+
+
+def validate_account_name(bitshares, account):
+    if not account:
+        return False
+    try:
+        Account(account, bitshares_instance=bitshares)
+        return True
+    except bitshares.exceptions.AccountDoesNotExistsException:
+        return False
+
+
+def validate_private_key(bitshares, account, private_key):
+    wallet = bitshares.wallet
+    if not private_key:
+        # Check if the private key is already in the database
+        accounts = wallet.getAccounts()
+        if any(account == d['name'] for d in accounts):
+            return True
+        return False
+
+    try:
+        pubkey = format(PrivateKey(private_key).pubkey,bitshares.prefix)
+    except ValueError:
+        return False
+
+    accounts = wallet.getAllAccounts(pubkey)
+    account_names = [account['name'] for account in accounts]
+    print("Account names found in wallet:", account_names, sep=':')
+
+    if account in account_names:
+        return True
+    else:
+        return False
+
+
+
 def configure_dexbot(config, ctx):
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
@@ -258,7 +309,8 @@ def configure_dexbot(config, ctx):
             [('NEW', 'Create a new worker'),
              ('DEL', 'Delete a worker'),
              ('EDIT', 'Edit a worker'),
-             ('CONF', 'Redo general config')])
+             ('ADD', 'Add a bitshares account'),
+             ('NODES', 'Redo node config')])
 
         if action == 'EDIT':
             worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
@@ -275,7 +327,24 @@ def configure_dexbot(config, ctx):
         elif action == 'NEW':
             txt = whiptail.prompt("Your name for the new worker")
             config['workers'][txt] = configure_worker(whiptail, {})
-        elif action == 'CONF':
+        elif action == 'ADD':
+            account = whiptail.prompt("Your Account Name")
+            private_key = whiptail.prompt("Your Private Key")
+            print(account, private_key, sep=":")
+
+            if not validate_account_name(bitshares_instance, account):
+                print("account name does not exist")
+            else:
+                print("account name is valid")
+
+            if validate_private_key(bitshares_instance, account, private_key):
+                print("Private key and account are valid")
+                add_private_key(private_key)
+                print("adding private key")
+            else:
+                print("private key and account do not match")
+                
+        elif action == 'NODES':
             choice = whiptail.node_radiolist(
                 msg="Choose node",
                 items=select_choice(config['node'][0], [(index, index) for index in config['node']])
