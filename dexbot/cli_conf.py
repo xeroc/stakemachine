@@ -311,68 +311,65 @@ def configure_dexbot(config, ctx):
         setup_systemd(whiptail, config)
     else:
         bitshares_instance = ctx.bitshares
-        action = whiptail.menu(
-            "You have an existing configuration.\nSelect an action:",
-            [('NEW', 'Create a new worker'),
-             ('LIST', 'Select your active workers'),
-             ('DEL', 'Delete a worker'),
-             ('EDIT', 'Edit a worker'),
-             ('ADD', 'Add a bitshares account'),
-             ('NODES', 'Edit Node Selection'),
-             ('ADD_NODE', 'Add Node')])
+        
+        while True:
+            action = whiptail.menu(
+                "You have an existing configuration.\nSelect an action:",
+                [('NEW', 'Create a new worker'),
+                 ('LIST', 'List your workers'),
+                 ('DEL', 'Delete a worker'),
+                 ('EDIT', 'Edit a worker'),
+                 ('ADD', 'Add a bitshares account'),
+                 ('SHOW', 'Show bitshares accounts'),
+                 ('NODES', 'Edit Node Selection'),
+                 ('ADD_NODE', 'Add Your Node'),
+                 ('EXIT', 'Quit this application')])
 
-        if action =='LIST':
-            active_workers = [index for index in workers]            
-#            active_workers = [(index, index) for index in workers]
-            print(active_workers)            
-
-            my_choices = whiptail.checklist('Select Active Workers',
-                                            items=active_workers,
-                                            prefix=' - ')        
-            print(my_choices)
-                        
-        elif action == 'EDIT':
-            worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
-            config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name])
-
-            strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
-            strategy.clear_all_worker_data()
-        elif action == 'DEL':
-            worker_name = whiptail.menu("Select worker to delete", [(index, index) for index in workers])
-            del config['workers'][worker_name]
-
-            strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
-            strategy.clear_all_worker_data()
-        elif action == 'NEW':
-            txt = whiptail.prompt("Your name for the new worker")
-            config['workers'][txt] = configure_worker(whiptail, {})
-        elif action == 'ADD':
-            account = whiptail.prompt("Your Account Name")
-            private_key = whiptail.prompt("Your Private Key", password=True)
-            print(account, private_key, sep=":")
-
-            if not validate_account_name(bitshares_instance, account):
-                whiptail.alert("Account name does not exist.")
-            if validate_private_key(bitshares_instance, account, private_key):
-                whiptail.alert("Private key and account are valid, Adding private Key")                
-                add_private_key(bitshares_instance, private_key)
-            else:
-                whiptail.alert("Private key and account do not match.")
-
-        elif action == 'NODES':
-            choice = whiptail.node_radiolist(
-                msg="Choose node",
-                items=select_choice(config['node'][0], [(index, index) for index in config['node']])
-            )
-            # Move selected node as first item in the config file's node list
-            config['node'].remove(choice)
-            config['node'].insert(0, choice)
-
-        elif action == 'ADD_NODE':
-            txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
-            config['node'][0] = txt
-            ## overrides the top position
+            if action == 'EXIT':
+                break
+            elif action =='LIST':
+                my_list = whiptail.menu("List of Your Workers", [(index, index) for index in workers])
+            elif action == 'EDIT':
+                worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
+                config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name])
+                strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
+                strategy.clear_all_worker_data()
+            elif action == 'DEL':
+                worker_name = whiptail.menu("Select worker to delete", [(index, index) for index in workers])
+                del config['workers'][worker_name]
+                strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
+                strategy.clear_all_worker_data()
+            elif action == 'NEW':
+                txt = whiptail.prompt("Your name for the new worker")
+                config['workers'][txt] = configure_worker(whiptail, {})
+            elif action == 'ADD':
+                account = whiptail.prompt("Your Account Name")
+                private_key = whiptail.prompt("Your Private Key", password=True)
+                if not validate_account_name(bitshares_instance, account):
+                    whiptail.alert("Account name does not exist.")
+                if validate_private_key(bitshares_instance, account, private_key):
+                        whiptail.alert("Private key and account are valid, Adding private Key")                
+                        add_private_key(bitshares_instance, private_key)
+                else:
+                    whiptail.alert("Private key and account do not match.")                
+            elif action =='SHOW':
+                wallet = bitshares_instance.wallet
+                accounts = wallet.getAccounts()
+                account_list = [(i['name'], i['type']) for i in accounts]
+                action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
+            elif action == 'ADD_NODE':
+                txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
+                config['node'][0] = txt
+                ## overrides the top position            
+            elif action == 'NODES':
+                choice = whiptail.node_radiolist(
+                    msg="Choose node",
+                    items=select_choice(config['node'][0],
+                                        [(index, index) for index in config['node']]))
+                # Move selected node as first item in the config file's node list
+                config['node'].remove(choice)
+                config['node'].insert(0, choice)
+                setup_systemd(whiptail, config)
             
-            setup_systemd(whiptail, config)
     whiptail.clear()
     return config
