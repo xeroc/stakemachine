@@ -93,7 +93,7 @@ def process_config_element(elem, whiptail, config):
                 txt = whiptail.prompt(
                     title, config.get(
                         elem.key, elem.default))
-        print("string ", elem.key, txt, sep=":") ## debug statement
+#        print("string ", elem.key, txt, sep=":") ## debug statement
         config[elem.key] = txt
 
     if elem.type == "bool":
@@ -282,7 +282,6 @@ def validate_private_key(bitshares, account, private_key):
 
     accounts = wallet.getAllAccounts(pubkey)
     account_names = [account['name'] for account in accounts]
-    print("Account names found in wallet:", account_names, sep=':')
     
     if account in account_names:
         return True
