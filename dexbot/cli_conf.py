@@ -326,6 +326,8 @@ def configure_dexbot(config, ctx):
                  ('EXIT', 'Quit this application')])
 
             if action == 'EXIT':
+                ## cancel will also exit the application. but this is a clearer label
+                ## todo: modify cancel to be "Quit" or "Exit"
                 break
             elif action =='LIST':
                 my_list = whiptail.menu("List of Your Workers", [(index, index) for index in workers])
