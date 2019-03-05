@@ -247,7 +247,6 @@ def configure_worker(whiptail, worker_config):
     return worker_config
 
 
-
 def add_private_key(bitshares, private_key):
     wallet = bitshares.wallet
     try:
@@ -274,7 +273,7 @@ def validate_private_key(bitshares, account, private_key):
         accounts = wallet.getAccounts()
         if any(account == d['name'] for d in accounts):
             return True
-        return False
+        return False    
 
     try:
         pubkey = format(PrivateKey(private_key).pubkey,bitshares.prefix)
@@ -284,12 +283,20 @@ def validate_private_key(bitshares, account, private_key):
     accounts = wallet.getAllAccounts(pubkey)
     account_names = [account['name'] for account in accounts]
     print("Account names found in wallet:", account_names, sep=':')
-
+    
     if account in account_names:
         return True
     else:
         return False
 
+
+def validate_private_key_type(self, account, private_key):
+    account = Account(account)
+    pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
+    key_type = self.bitshares.wallet.getKeyType(account, pubkey)
+    if key_type != 'active' and key_type != 'owner':
+        return False
+    return True
 
 
 def configure_dexbot(config, ctx):
@@ -307,12 +314,24 @@ def configure_dexbot(config, ctx):
         action = whiptail.menu(
             "You have an existing configuration.\nSelect an action:",
             [('NEW', 'Create a new worker'),
+             ('LIST', 'Select your active workers'),
              ('DEL', 'Delete a worker'),
              ('EDIT', 'Edit a worker'),
              ('ADD', 'Add a bitshares account'),
-             ('NODES', 'Redo node config')])
+             ('NODES', 'Edit Node Selection'),
+             ('ADD_NODE', 'Add Node')])
 
-        if action == 'EDIT':
+        if action =='LIST':
+            active_workers = [index for index in workers]            
+#            active_workers = [(index, index) for index in workers]
+            print(active_workers)            
+
+            my_choices = whiptail.checklist('Select Active Workers',
+                                            items=active_workers,
+                                            prefix=' - ')        
+            print(my_choices)
+                        
+        elif action == 'EDIT':
             worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
             config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name])
 
@@ -329,21 +348,17 @@ def configure_dexbot(config, ctx):
             config['workers'][txt] = configure_worker(whiptail, {})
         elif action == 'ADD':
             account = whiptail.prompt("Your Account Name")
-            private_key = whiptail.prompt("Your Private Key")
+            private_key = whiptail.prompt("Your Private Key", password=True)
             print(account, private_key, sep=":")
 
             if not validate_account_name(bitshares_instance, account):
-                print("account name does not exist")
-            else:
-                print("account name is valid")
-
+                whiptail.alert("Account name does not exist.")
             if validate_private_key(bitshares_instance, account, private_key):
-                print("Private key and account are valid")
-                add_private_key(private_key)
-                print("adding private key")
+                whiptail.alert("Private key and account are valid, Adding private Key")                
+                add_private_key(bitshares_instance, private_key)
             else:
-                print("private key and account do not match")
-                
+                whiptail.alert("Private key and account do not match.")
+
         elif action == 'NODES':
             choice = whiptail.node_radiolist(
                 msg="Choose node",
@@ -353,6 +368,11 @@ def configure_dexbot(config, ctx):
             config['node'].remove(choice)
             config['node'].insert(0, choice)
 
+        elif action == 'ADD_NODE':
+            txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
+            config['node'][0] = txt
+            ## overrides the top position
+            
             setup_systemd(whiptail, config)
     whiptail.clear()
     return config
