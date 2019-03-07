@@ -324,7 +324,7 @@ def configure_dexbot(config, ctx):
                  ('HELP', 'Where to get help'),
                  ('EXIT', 'Quit this application')])
 
-            my_workers = [(index, index) for index in workers])
+            my_workers = [(index, index) for index in workers]
             
             if action == 'EXIT':
                 ## cancel will also exit the application. but this is a clearer label
@@ -344,7 +344,7 @@ def configure_dexbot(config, ctx):
                 strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
                 strategy.clear_all_worker_data()
             elif action == 'NEW':
-                txt = whiptail.prompt("Your name for the new worker")
+                txt = whiptail.prompt("Your name for the new worker. Don't forget to add your bitshares key (main menu)")
                 config['workers'][txt] = configure_worker(whiptail, {})
             elif action == 'ADD':
                 account = whiptail.prompt("Your Account Name")
