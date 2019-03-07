@@ -93,7 +93,6 @@ def process_config_element(elem, whiptail, config):
                 txt = whiptail.prompt(
                     title, config.get(
                         elem.key, elem.default))
-#        print("string ", elem.key, txt, sep=":") ## debug statement
         config[elem.key] = txt
 
     if elem.type == "bool":
@@ -325,12 +324,14 @@ def configure_dexbot(config, ctx):
                  ('HELP', 'Where to get help'),
                  ('EXIT', 'Quit this application')])
 
+            my_workers = [(index, index) for index in workers])
+            
             if action == 'EXIT':
                 ## cancel will also exit the application. but this is a clearer label
                 ## todo: modify cancel to be "Quit" or "Exit"
                 break
-            elif action =='LIST':
-                my_list = whiptail.menu("List of Your Workers", [(index, index) for index in workers])
+            elif action =='LIST':            
+                my_list = whiptail.menu("List of Your Workers", my_workers)
                 
             elif action == 'EDIT':
                 worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
@@ -359,7 +360,10 @@ def configure_dexbot(config, ctx):
                 wallet = bitshares_instance.wallet
                 accounts = wallet.getAccounts()
                 account_list = [(i['name'], i['type']) for i in accounts]
+                if len(account_list) ==  0:
+                    account_list = [('none', 'none')]                    
                 action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
+
             elif action == 'ADD_NODE':
                 txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
                 config['node'][0] = txt
