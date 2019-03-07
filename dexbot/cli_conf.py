@@ -322,6 +322,7 @@ def configure_dexbot(config, ctx):
                  ('SHOW', 'Show bitshares accounts'),
                  ('NODES', 'Edit Node Selection'),
                  ('ADD_NODE', 'Add Your Node'),
+                 ('HELP', 'Where to get help'),
                  ('EXIT', 'Quit this application')])
 
             if action == 'EXIT':
@@ -330,6 +331,7 @@ def configure_dexbot(config, ctx):
                 break
             elif action =='LIST':
                 my_list = whiptail.menu("List of Your Workers", [(index, index) for index in workers])
+                
             elif action == 'EDIT':
                 worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
                 config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name])
@@ -371,6 +373,8 @@ def configure_dexbot(config, ctx):
                 config['node'].remove(choice)
                 config['node'].insert(0, choice)
                 setup_systemd(whiptail, config)
-            
+            elif action == 'HELP':
+                whiptail.alert("Please see https://github.com/Codaone/DEXBot/wiki")
+                
     whiptail.clear()
     return config
