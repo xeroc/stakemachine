@@ -545,34 +545,68 @@ class Strategy(StrategyBase):
 
     def restore_virtual_orders(self):
         """ Create virtual further orders in batch manner. This helps to place further orders quickly on startup.
-        """
-        if self.buy_orders and self.sell_orders:
-            # Load orders from the database
-            orders = self.fetch_orders()
-            if orders:
-                self.log.info('Loading virtual orders from database')
-                for k, v in orders.items():
-                    self.virtual_orders.append(VirtualOrder(v))
-            else:
-                if self.buy_orders:
-                    furthest_order = self.real_buy_orders[-1]
-                    while furthest_order['price'] > self.lower_bound * (1 + self.increment):
-                        furthest_order = self.place_further_order('base', furthest_order, virtual=True)
-                        if not isinstance(furthest_order, VirtualOrder):
-                            # Failed to place order
-                            break
 
-                if self.sell_orders:
-                    furthest_order = self.real_sell_orders[-1]
-                    while furthest_order['price'] ** -1 < self.upper_bound / (1 + self.increment):
-                        furthest_order = self.place_further_order('quote', furthest_order, virtual=True)
-                        if not isinstance(furthest_order, VirtualOrder):
-                            # Failed to place order
-                            break
-        else:
+            If we have both buy and sell real orders, restore both. If we have only one type of orders, restore
+            corresponding virtual orders and purge opposite orders.
+        """
+        def place_further_buy_orders():
+            furthest_order = self.real_buy_orders[-1]
+            while furthest_order['price'] > self.lower_bound * (1 + self.increment):
+                furthest_order = self.place_further_order('base', furthest_order, virtual=True)
+                if not isinstance(furthest_order, VirtualOrder):
+                    # Failed to place order
+                    break
+
+        def place_further_sell_orders():
+            furthest_order = self.real_sell_orders[-1]
+            while furthest_order['price'] ** -1 < self.upper_bound / (1 + self.increment):
+                furthest_order = self.place_further_order('quote', furthest_order, virtual=True)
+                if not isinstance(furthest_order, VirtualOrder):
+                    # Failed to place order
+                    break
+
+        # Load orders from the database. fetch_orders() return dict, we're transforming it into list
+        stored_orders = self.fetch_orders().values()
+        stored_buy_orders = self.filter_buy_orders(stored_orders)
+        stored_sell_orders = self.filter_sell_orders(stored_orders, invert=False)
+
+        if not self.buy_orders and not self.sell_orders:
             # No real orders, assume we need to bootstrap, purge old orders
             self.log.info('No real orders, purging old virtual orders')
             self.clear_orders()
+        elif self.buy_orders and self.sell_orders:
+            if stored_orders:
+                self.log.info('Loading virtual orders from database')
+                for order in stored_orders:
+                    self.virtual_orders.append(VirtualOrder(order))
+            else:
+                place_further_buy_orders()
+                place_further_sell_orders()
+        elif self.buy_orders and not self.sell_orders:
+            # Only buy orders, purge stored sell orders
+            if stored_sell_orders:
+                self.log.info('Purging virtual sell orders because of no real sell orders')
+                for order in stored_sell_orders:
+                    self.remove_order(order)
+
+            if stored_buy_orders:
+                self.log.info('Loading virtual buy orders from database')
+                for order in stored_buy_orders:
+                    self.virtual_orders.append(VirtualOrder(order))
+            else:
+                place_further_buy_orders()
+        elif not self.buy_orders and self.sell_orders:
+            if stored_buy_orders:
+                self.log.info('Purging virtual buy orders because of no real buy orders')
+                for order in stored_buy_orders:
+                    self.remove_order(order)
+
+            if stored_sell_orders:
+                self.log.info('Loading virtual sell orders from database')
+                for order in stored_sell_orders:
+                    self.virtual_orders.append(VirtualOrder(order))
+            else:
+                place_further_sell_orders()
 
         # Set "restored" flag anyway to not break initial bootstrap
         self.virtual_orders_restored = True
