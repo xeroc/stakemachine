@@ -566,7 +566,8 @@ class Strategy(StrategyBase):
                     break
 
         # Load orders from the database. fetch_orders() return dict, we're transforming it into list
-        stored_orders = self.fetch_orders().values()
+        orders = self.fetch_orders()
+        stored_orders = orders.values() if orders else []
         stored_buy_orders = self.filter_buy_orders(stored_orders)
         stored_sell_orders = self.filter_sell_orders(stored_orders, invert=False)
 
