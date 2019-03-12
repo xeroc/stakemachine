@@ -18,16 +18,14 @@ import pathlib
 import os
 import os.path
 import sys
-import re
 import subprocess
 
 from dexbot.whiptail import get_whiptail
 from dexbot.strategies.base import StrategyBase
-import dexbot.helper
+from dexbot.strategies.base_config import BaseConfig
+from dexbot.cli_helper import ConfigValidator, select_choice, process_config_element
 
-from bitshares.account import Account
-from bitshares.exceptions import KeyAlreadyInStoreException
-from bitsharesbase.account import PrivateKey
+import dexbot.helper
 
 
 STRATEGIES = [
@@ -67,65 +65,6 @@ Environment=UNLOCK={passwd}
 [Install]
 WantedBy=default.target
 """
-
-
-def select_choice(current, choices):
-    """ For the radiolist, get us a list with the current value selected """
-    return [(tag, text, (current == tag and "ON") or "OFF")
-            for tag, text in choices]
-
-
-def process_config_element(elem, whiptail, config):
-    """ Process an item of configuration metadata display a widget as appropriate
-        d: the Dialog object
-        config: the config dictionary for this worker
-    """
-    if elem.description:
-        title = '{} - {}'.format(elem.title, elem.description)
-    else:
-        title = elem.title
-
-    if elem.type == "string":
-        txt = whiptail.prompt(title, config.get(elem.key, elem.default))
-        if elem.extra:
-            while not re.match(elem.extra, txt):
-                whiptail.alert("The value is not valid")
-                txt = whiptail.prompt(
-                    title, config.get(
-                        elem.key, elem.default))
-        config[elem.key] = txt
-
-    if elem.type == "bool":
-        value = config.get(elem.key, elem.default)
-        value = 'yes' if value else 'no'
-        config[elem.key] = whiptail.confirm(title, value)
-
-    if elem.type in ("float", "int"):
-        while True:
-            if elem.type == 'int':
-                template = '{}'
-            else:
-                template = '{:.8f}'
-            txt = whiptail.prompt(title, template.format(config.get(elem.key, elem.default)))
-            try:
-                if elem.type == "int":
-                    val = int(txt)
-                else:
-                    val = float(txt)
-                if val < elem.extra[0]:
-                    whiptail.alert("The value is too low")
-                elif elem.extra[1] and val > elem.extra[1]:
-                    whiptail.alert("the value is too high")
-                else:
-                    break
-            except ValueError:
-                whiptail.alert("Not a valid value")
-        config[elem.key] = val
-
-    if elem.type == "choice":
-        config[elem.key] = whiptail.radiolist(title, select_choice(
-            config.get(elem.key, elem.default), elem.extra))
-
 
 def dexbot_service_running():
     """ Return True if dexbot service is running
@@ -180,10 +119,10 @@ def get_strategy_tag(strategy_class):
     for strategy in STRATEGIES:
         if strategy_class == strategy['class']:
             return strategy['tag']
-    return None
+    return None        
 
 
-def configure_worker(whiptail, worker_config):
+def configure_worker(whiptail, worker_config, bitshares_instance):
     # By default always editing
     editing = True
 
@@ -219,9 +158,8 @@ def configure_worker(whiptail, worker_config):
     # Check if strategy has changed and editing existing worker
     if editing and default_strategy != get_strategy_tag(worker_config['module']):
         new_worker_config = {}
-
         # If strategy has changed, create new config where base elements stay the same
-        for config_item in StrategyBase.configure():
+        for config_item in BaseConfig.configure():
             try:
                 key = config_item[0]
                 new_worker_config[key] = worker_config[key]
@@ -235,88 +173,52 @@ def configure_worker(whiptail, worker_config):
 
     # Use class metadata for per-worker configuration
     config_elems = strategy_class.configure()
+    validator = ConfigValidator(whiptail, bitshares_instance)
+
     if config_elems:
         # Strategy options
         for elem in config_elems:
-            process_config_element(elem, whiptail, worker_config)
+            if not editing and (elem.key == "account"):
+                # only allow WIF addition for new workers
+                account_name = validator.add_account()
+                if account_name is False:
+                    return  # quit configuration if can't get WIF added
+                else:
+                    worker_config[elem.key] = account_name
+            else: # account name only for edit worker
+                process_config_element(elem, whiptail, worker_config)          
     else:
         whiptail.alert(
             "This worker type does not have configuration information. "
             "You will have to check the worker code and add configuration values to config.yml if required")
+
     return worker_config
-
-
-def add_private_key(bitshares, private_key):
-    wallet = bitshares.wallet
-    try:
-        wallet.addPrivateKey(private_key)
-    except KeyAlreadyInStoreException:
-        # Private key already added
-        pass
-
-
-def validate_account_name(bitshares, account):
-    if not account:
-        return False
-    try:
-        Account(account, bitshares_instance=bitshares)
-        return True
-    except bitshares.exceptions.AccountDoesNotExistsException:
-        return False
-
-
-def validate_private_key(bitshares, account, private_key):
-    wallet = bitshares.wallet
-    if not private_key:
-        # Check if the private key is already in the database
-        accounts = wallet.getAccounts()
-        if any(account == d['name'] for d in accounts):
-            return True
-        return False    
-
-    try:
-        pubkey = format(PrivateKey(private_key).pubkey,bitshares.prefix)
-    except ValueError:
-        return False
-
-    accounts = wallet.getAllAccounts(pubkey)
-    account_names = [account['name'] for account in accounts]
-    
-    if account in account_names:
-        return True
-    else:
-        return False
-
-
-def validate_private_key_type(self, account, private_key):
-    account = Account(account)
-    pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
-    key_type = self.bitshares.wallet.getKeyType(account, pubkey)
-    if key_type != 'active' and key_type != 'owner':
-        return False
-    return True
 
 
 def configure_dexbot(config, ctx):
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
+    bitshares_instance = ctx.bitshares
+    validator = ConfigValidator(whiptail, bitshares_instance)
+        
     if not workers:
         while True:
             txt = whiptail.prompt("Your name for the worker")
-            config['workers'] = {txt: configure_worker(whiptail, {})}
-            if not whiptail.confirm("Set up another worker?\n(DEXBot can run multiple workers in one instance)"):
-                break
+            if len(txt) == 0:
+                whiptail.alert("Worker name cannot be blank. ")
+            else:
+                config['workers'] = {txt: configure_worker(whiptail, {}, bitshares_instance)}
+                if not whiptail.confirm("Set up another worker?\n(DEXBot can run multiple workers in one instance)"):
+                    break
         setup_systemd(whiptail, config)
     else:
-        bitshares_instance = ctx.bitshares
-        
         while True:
             action = whiptail.menu(
                 "You have an existing configuration.\nSelect an action:",
-                [('NEW', 'Create a new worker'),
-                 ('LIST', 'List your workers'),
-                 ('DEL', 'Delete a worker'),
+                [('LIST', 'List your workers'),
+                 ('NEW', 'Create a new worker'),
                  ('EDIT', 'Edit a worker'),
+                 ('DEL', 'Delete a worker'),
                  ('ADD', 'Add a bitshares account'),
                  ('SHOW', 'Show bitshares accounts'),
                  ('NODES', 'Edit Node Selection'),
@@ -325,45 +227,42 @@ def configure_dexbot(config, ctx):
                  ('EXIT', 'Quit this application')])
 
             my_workers = [(index, index) for index in workers]
-            
+
             if action == 'EXIT':
                 ## cancel will also exit the application. but this is a clearer label
-                ## todo: modify cancel to be "Quit" or "Exit"
+                ## Todo: modify cancel to be "Quit" or "Exit" for the whiptail menu item. 
                 break
-            elif action =='LIST':            
-                my_list = whiptail.menu("List of Your Workers", my_workers)
-                
+            elif action =='LIST':                                
+                # list workers, then provide option to list config of workers                
+                worker_name = whiptail.menu("List of Your Workers. Select to view Configuration.", my_workers)
+                content = config['workers'][worker_name]
+                worker_content =  list(content.items())
+                worker_list = [[str(i) for i in pairs] for pairs in worker_content]
+                worker_list = [tuple(i) for i in worker_list]
+                whiptail.menu(worker_name, worker_list)
+
             elif action == 'EDIT':
-                worker_name = whiptail.menu("Select worker to edit", [(index, index) for index in workers])
-                config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name])
+                worker_name = whiptail.menu("Select worker to edit", my_workers)
+                config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name], bitshares_instance)
                 strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
                 strategy.clear_all_worker_data()
+
             elif action == 'DEL':
-                worker_name = whiptail.menu("Select worker to delete", [(index, index) for index in workers])
+                worker_name = whiptail.menu("Select worker to delete", my_workers)
                 del config['workers'][worker_name]
                 strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
                 strategy.clear_all_worker_data()
             elif action == 'NEW':
-                txt = whiptail.prompt("Your name for the new worker. Don't forget to add your bitshares key (main menu)")
-                config['workers'][txt] = configure_worker(whiptail, {})
-            elif action == 'ADD':
-                account = whiptail.prompt("Your Account Name")
-                private_key = whiptail.prompt("Your Private Key", password=True)
-                if not validate_account_name(bitshares_instance, account):
-                    whiptail.alert("Account name does not exist.")
-                if validate_private_key(bitshares_instance, account, private_key):
-                        whiptail.alert("Private key and account are valid, Adding private Key")                
-                        add_private_key(bitshares_instance, private_key)
+                txt = whiptail.prompt("Your name for the new worker. ")
+                if len(txt) == 0:
+                    whiptail.alert("Worker name cannot be blank. ")
                 else:
-                    whiptail.alert("Private key and account do not match.")                
-            elif action =='SHOW':
-                wallet = bitshares_instance.wallet
-                accounts = wallet.getAccounts()
-                account_list = [(i['name'], i['type']) for i in accounts]
-                if len(account_list) ==  0:
-                    account_list = [('none', 'none')]                    
+                    config['workers'][txt] = configure_worker(whiptail, {}, bitshares_instance)
+            elif action == 'ADD':
+                validator.add_account()
+            elif action =='SHOW':                
+                account_list = validator.list_accounts()
                 action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
-
             elif action == 'ADD_NODE':
                 txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
                 config['node'][0] = txt
