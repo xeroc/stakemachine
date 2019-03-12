@@ -18,12 +18,12 @@ import pathlib
 import os
 import os.path
 import sys
+import re
 import subprocess
 
 from dexbot.whiptail import get_whiptail
 from dexbot.strategies.base import StrategyBase
-from dexbot.strategies.base_config import BaseConfig
-from dexbot.cli_helper import ConfigValidator, select_choice, process_config_element
+from dexbot.cli_helper import ConfigValidator
 
 import dexbot.helper
 
@@ -122,6 +122,64 @@ def get_strategy_tag(strategy_class):
     return None        
 
 
+def select_choice(current, choices):
+    """ For the radiolist, get us a list with the current value selected """
+    return [(tag, text, (current == tag and "ON") or "OFF")
+            for tag, text in choices]
+
+
+def process_config_element(elem, whiptail, config):
+    """ Process an item of configuration metadata display a widget as appropriate
+        d: the Dialog object
+        config: the config dictionary for this worker
+    """
+    if elem.description:
+        title = '{} - {}'.format(elem.title, elem.description)
+    else:
+        title = elem.title
+
+    if elem.type == "string":
+        txt = whiptail.prompt(title, config.get(elem.key, elem.default))
+        if elem.extra:
+            while not re.match(elem.extra, txt):
+                whiptail.alert("The value is not valid")
+                txt = whiptail.prompt(
+                    title, config.get(
+                        elem.key, elem.default))
+        config[elem.key] = txt
+
+    if elem.type == "bool":
+        value = config.get(elem.key, elem.default)
+        value = 'yes' if value else 'no'
+        config[elem.key] = whiptail.confirm(title, value)
+
+    if elem.type in ("float", "int"):
+        while True:
+            if elem.type == 'int':
+                template = '{}'
+            else:
+                template = '{:.8f}'
+            txt = whiptail.prompt(title, template.format(config.get(elem.key, elem.default)))
+            try:
+                if elem.type == "int":
+                    val = int(txt)
+                else:
+                    val = float(txt)
+                if val < elem.extra[0]:
+                    whiptail.alert("The value is too low")
+                elif elem.extra[1] and val > elem.extra[1]:
+                    whiptail.alert("the value is too high")
+                else:
+                    break
+            except ValueError:
+                whiptail.alert("Not a valid value")
+        config[elem.key] = val
+
+    if elem.type == "choice":
+        config[elem.key] = whiptail.radiolist(title, select_choice(
+            config.get(elem.key, elem.default), elem.extra))
+
+
 def configure_worker(whiptail, worker_config, bitshares_instance):
     # By default always editing
     editing = True
@@ -159,7 +217,7 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
     if editing and default_strategy != get_strategy_tag(worker_config['module']):
         new_worker_config = {}
         # If strategy has changed, create new config where base elements stay the same
-        for config_item in BaseConfig.configure():
+        for config_item in StrategyBase.configure():
             try:
                 key = config_item[0]
                 new_worker_config[key] = worker_config[key]
