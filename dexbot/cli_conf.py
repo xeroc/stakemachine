@@ -74,9 +74,11 @@ def select_choice(current, choices):
 
 
 def process_config_element(elem, whiptail, config):
-    """ Process an item of configuration metadata display a widget as appropriate
-        d: the Dialog object
-        config: the config dictionary for this worker
+    """ Process an item of configuration metadata, display a widget as appropriate
+
+        :param base_config.ConfigElement elem: config element
+        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+        :param collections.OrderedDict config: the config dictionary for this worker
     """
     if elem.description:
         title = '{} - {}'.format(elem.title, elem.description)
@@ -137,6 +139,11 @@ def dexbot_service_running():
 
 
 def setup_systemd(whiptail, config):
+    """ Setup systemd unit to auto-start dexbot
+
+        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+        :param dexbot.config.Config config: dexbot config
+    """
     if not os.path.exists("/etc/systemd"):
         return  # No working systemd
 
@@ -175,6 +182,12 @@ def setup_systemd(whiptail, config):
 
 
 def get_strategy_tag(strategy_class):
+    """ Obtain tag for a strategy
+
+        :param str strategy_class: strategy class name, example: dexbot.strategies.foo_bar
+
+        It may seems that tags may be common accross strategies, but it is not. Every strategy must use unique tag.
+    """
     for strategy in STRATEGIES:
         if strategy_class == strategy['class']:
             return strategy['tag']
@@ -182,6 +195,12 @@ def get_strategy_tag(strategy_class):
 
 
 def configure_worker(whiptail, worker_config, bitshares_instance):
+    """ Single worker configurator
+
+        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+        :param collections.OrderedDict worker_config: the config dictionary for this worker
+        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+    """
     # By default always editing
     editing = True
 
@@ -255,6 +274,9 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
 
 
 def configure_dexbot(config, ctx):
+    """ Main `cli configure` entrypoint
+        :param dexbot.config.Config config: dexbot config
+    """
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
     bitshares_instance = ctx.bitshares
