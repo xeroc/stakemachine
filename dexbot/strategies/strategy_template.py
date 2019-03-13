@@ -47,7 +47,7 @@ class Strategy(StrategyBase):
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        return StrategyConfig.configure_details(return_base_config)
+        return StrategyConfig.configure_details(include_default_tabs)
 
     def __init__(self, *args, **kwargs):
         # Initializes StrategyBase class
