@@ -73,12 +73,12 @@ def select_choice(current, choices):
             for tag, text in choices]
 
 
-def process_config_element(elem, whiptail, config):
+def process_config_element(elem, whiptail, worker_config):
     """ Process an item of configuration metadata, display a widget as appropriate
 
         :param base_config.ConfigElement elem: config element
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param collections.OrderedDict config: the config dictionary for this worker
+        :param collections.OrderedDict worker_config: the config dictionary for this worker
     """
     if elem.description:
         title = '{} - {}'.format(elem.title, elem.description)
@@ -86,19 +86,19 @@ def process_config_element(elem, whiptail, config):
         title = elem.title
 
     if elem.type == "string":
-        txt = whiptail.prompt(title, config.get(elem.key, elem.default))
+        txt = whiptail.prompt(title, worker_config.get(elem.key, elem.default))
         if elem.extra:
             while not re.match(elem.extra, txt):
                 whiptail.alert("The value is not valid")
                 txt = whiptail.prompt(
-                    title, config.get(
+                    title, worker_config.get(
                         elem.key, elem.default))
-        config[elem.key] = txt
+        worker_config[elem.key] = txt
 
     if elem.type == "bool":
-        value = config.get(elem.key, elem.default)
+        value = worker_config.get(elem.key, elem.default)
         value = 'yes' if value else 'no'
-        config[elem.key] = whiptail.confirm(title, value)
+        worker_config[elem.key] = whiptail.confirm(title, value)
 
     if elem.type in ("float", "int"):
         while True:
@@ -106,7 +106,7 @@ def process_config_element(elem, whiptail, config):
                 template = '{}'
             else:
                 template = '{:.8f}'
-            txt = whiptail.prompt(title, template.format(config.get(elem.key, elem.default)))
+            txt = whiptail.prompt(title, template.format(worker_config.get(elem.key, elem.default)))
             try:
                 if elem.type == "int":
                     val = int(txt)
@@ -120,11 +120,11 @@ def process_config_element(elem, whiptail, config):
                     break
             except ValueError:
                 whiptail.alert("Not a valid value")
-        config[elem.key] = val
+        worker_config[elem.key] = val
 
     if elem.type == "choice":
-        config[elem.key] = whiptail.radiolist(title, select_choice(
-            config.get(elem.key, elem.default), elem.extra))
+        worker_config[elem.key] = whiptail.radiolist(title, select_choice(
+            worker_config.get(elem.key, elem.default), elem.extra))
 
 
 def dexbot_service_running():
