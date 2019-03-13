@@ -8,6 +8,7 @@ import click
 from ruamel import yaml
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
+from bitshares.exceptions import WrongMasterPasswordException
 
 from dexbot.config import Config
 
@@ -105,7 +106,7 @@ def unlock(f):
                         "Current Uptick Wallet Passphrase", hide_input=True)
                 try:
                     ctx.bitshares.wallet.unlock(pwd)
-                except Exception:
+                except WrongMasterPasswordException:
                     log.critical("Password error, exiting")
                     sys.exit(78)
             else:
