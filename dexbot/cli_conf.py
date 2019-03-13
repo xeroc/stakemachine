@@ -67,62 +67,6 @@ WantedBy=default.target
 """
 
 
-def dexbot_service_running():
-    """ Return True if dexbot service is running
-    """
-    cmd = 'systemctl --user status dexbot'
-    output = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-    for line in output.stdout.readlines():
-        if b'Active:' in line and b'(running)' in line:
-            return True
-    return False
-
-
-def setup_systemd(whiptail, config):
-    if not os.path.exists("/etc/systemd"):
-        return  # No working systemd
-
-    if not whiptail.confirm(
-            "Do you want to run dexbot as a background (daemon) process?"):
-        config['systemd_status'] = 'disabled'
-        return
-
-    redo_setup = False
-    if os.path.exists(SYSTEMD_SERVICE_NAME):
-        redo_setup = whiptail.confirm('Redo systemd setup?', 'no')
-
-    if not os.path.exists(SYSTEMD_SERVICE_NAME) or redo_setup:
-        path = '~/.local/share/systemd/user'
-        path = os.path.expanduser(path)
-        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
-        password = whiptail.prompt(
-            "The uptick wallet password\n"
-            "NOTE: this will be saved on disc so the worker can run unattended. "
-            "This means anyone with access to this computer's files can spend all your money",
-            password=True)
-
-        # Because we hold password be restrictive
-        fd = os.open(SYSTEMD_SERVICE_NAME, os.O_WRONLY | os.O_CREAT, 0o600)
-        with open(fd, "w") as fp:
-            fp.write(
-                SYSTEMD_SERVICE_FILE.format(
-                    exe=sys.argv[0],
-                    passwd=password,
-                    homedir=os.path.expanduser("~")))
-        # The dexbot service file was edited, reload the daemon configs
-        os.system('systemctl --user daemon-reload')
-
-    # Signal cli.py to set the unit up after writing config file
-    config['systemd_status'] = 'enabled'
-
-
-def get_strategy_tag(strategy_class):
-    for strategy in STRATEGIES:
-        if strategy_class == strategy['class']:
-            return strategy['tag']
-    return None
-
-
 def select_choice(current, choices):
     """ For the radiolist, get us a list with the current value selected """
     return [(tag, text, (current == tag and "ON") or "OFF")
@@ -179,6 +123,62 @@ def process_config_element(elem, whiptail, config):
     if elem.type == "choice":
         config[elem.key] = whiptail.radiolist(title, select_choice(
             config.get(elem.key, elem.default), elem.extra))
+
+
+def dexbot_service_running():
+    """ Return True if dexbot service is running
+    """
+    cmd = 'systemctl --user status dexbot'
+    output = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    for line in output.stdout.readlines():
+        if b'Active:' in line and b'(running)' in line:
+            return True
+    return False
+
+
+def setup_systemd(whiptail, config):
+    if not os.path.exists("/etc/systemd"):
+        return  # No working systemd
+
+    if not whiptail.confirm(
+            "Do you want to run dexbot as a background (daemon) process?"):
+        config['systemd_status'] = 'disabled'
+        return
+
+    redo_setup = False
+    if os.path.exists(SYSTEMD_SERVICE_NAME):
+        redo_setup = whiptail.confirm('Redo systemd setup?', 'no')
+
+    if not os.path.exists(SYSTEMD_SERVICE_NAME) or redo_setup:
+        path = '~/.local/share/systemd/user'
+        path = os.path.expanduser(path)
+        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+        password = whiptail.prompt(
+            "The uptick wallet password\n"
+            "NOTE: this will be saved on disc so the worker can run unattended. "
+            "This means anyone with access to this computer's files can spend all your money",
+            password=True)
+
+        # Because we hold password be restrictive
+        fd = os.open(SYSTEMD_SERVICE_NAME, os.O_WRONLY | os.O_CREAT, 0o600)
+        with open(fd, "w") as fp:
+            fp.write(
+                SYSTEMD_SERVICE_FILE.format(
+                    exe=sys.argv[0],
+                    passwd=password,
+                    homedir=os.path.expanduser("~")))
+        # The dexbot service file was edited, reload the daemon configs
+        os.system('systemctl --user daemon-reload')
+
+    # Signal cli.py to set the unit up after writing config file
+    config['systemd_status'] = 'enabled'
+
+
+def get_strategy_tag(strategy_class):
+    for strategy in STRATEGIES:
+        if strategy_class == strategy['class']:
+            return strategy['tag']
+    return None
 
 
 def configure_worker(whiptail, worker_config, bitshares_instance):
