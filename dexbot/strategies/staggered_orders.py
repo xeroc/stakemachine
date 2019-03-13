@@ -11,6 +11,7 @@ from bitshares.amount import Amount
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.staggered_config import StaggeredConfig
 
+
 class Strategy(StrategyBase):
     """ Staggered Orders strategy """
 
@@ -21,7 +22,7 @@ class Strategy(StrategyBase):
     @classmethod
     def configure_details(cls, include_default_tabs=True):
         return StaggeredConfig.configure_details(include_default_tabs)
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -550,7 +551,7 @@ class Strategy(StrategyBase):
             self.log.info('Replacing virtual buy order with real order')
             try:
                 new_order = self.place_market_buy_order(quote_amount, price, returnOrderId=True)
-            except bitsharesapi.exceptions.RPCError as e:
+            except bitsharesapi.exceptions.RPCError:
                 self.log.exception('Error broadcasting trx:')
                 return False
         else:
@@ -559,7 +560,7 @@ class Strategy(StrategyBase):
             self.log.info('Replacing virtual sell order with real order')
             try:
                 new_order = self.place_market_sell_order(quote_amount, price, returnOrderId=True)
-            except bitsharesapi.exceptions.RPCError as e:
+            except bitsharesapi.exceptions.RPCError:
                 self.log.exception('Error broadcasting trx:')
                 return False
 
@@ -869,8 +870,9 @@ class Strategy(StrategyBase):
                 order_type = 'sell'
                 price = (order['price'] ** -1)
                 # New order amount must be at least x2 precision bigger
-                new_order_amount = max(new_order_amount,
-                                   order['base']['amount'] + 2 * 10 ** -self.market['quote']['precision'])
+                new_order_amount = max(
+                    new_order_amount, order['base']['amount'] + 2 * 10 ** -self.market['quote']['precision']
+                )
                 quote_amount = new_order_amount
             elif asset == 'base':
                 order_type = 'buy'
@@ -1062,7 +1064,7 @@ class Strategy(StrategyBase):
                 else:
                     """ Special processing for the closest order.
 
-                        Calculate new order amount based on orders count, but do not allow to perform too small 
+                        Calculate new order amount based on orders count, but do not allow to perform too small
                         increase rounds. New lowest buy / highest sell should be higher by at least one increment.
                     """
                     closer_order_bound = closest_order_bound
@@ -1103,7 +1105,7 @@ class Strategy(StrategyBase):
                 elif (order_amount_normalized < closer_order_bound and
                         closer_order_bound - order_amount >= order_amount * self.increment / 2):
                     """ Check whether order amount is less than closer or order and the diff is more than 50% of one
-                        increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with 
+                        increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with
                         diff 80% an order may have an actual difference like 30% from closer and 70% from further.
                     """
                     new_order_amount = closer_order_bound

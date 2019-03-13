@@ -1,8 +1,8 @@
 import collections
 
-""" Strategies need to specify their own configuration values, so each strategy can have a class method 'configure' 
+""" Strategies need to specify their own configuration values, so each strategy can have a class method 'configure'
     which returns a list of ConfigElement named tuples.
-    
+
     Tuple fields as follows:
         - Key: The key in the bot config dictionary that gets saved back to config.yml
         - Type: "int", "float", "bool", "string" or "choice"
@@ -19,36 +19,36 @@ import collections
 """
 ConfigElement = collections.namedtuple('ConfigElement', 'key type default title description extra')
 
-""" Strategies have different needs for the details they want to show for the user. These elements help to build a 
-    custom details window for the strategy. 
+""" Strategies have different needs for the details they want to show for the user. These elements help to build a
+    custom details window for the strategy.
 
     Tuple fields as follows:
         - Type: 'graph', 'text', 'table'
         - Name: The name of the tab, shows at the top
         - Title: The title is shown inside the tab
         - File: Tabs can also show data from files, pass on the file name including the file extension
-                in strategy's `configure_details`. 
-                
+                in strategy's `configure_details`.
+
                 Below folders and representative file types that inside the folders.
-                
+
                 Location        File extensions
                 ---------------------------
                 dexbot/graphs   .png, .jpg
                 dexbot/data     .csv
                 dexbot/logs     .log, .txt (.csv, will print as raw data)
-                
-          NOTE: To avoid conflicts with other custom strategies, when generating names for files, use slug or worker's 
+
+          NOTE: To avoid conflicts with other custom strategies, when generating names for files, use slug or worker's
           name when generating files or create custom folders. Add relative path to 'file' parameter if file is in
           custom folder inside default folders. Like shown below:
-          
+
           `DetailElement('log', 'Worker log', 'Log of worker's actions', 'my_custom_folder/example_worker.log')`
 """
 DetailElement = collections.namedtuple('DetailTab', 'type name title file')
 
 
-class BaseConfig(): 
+class BaseConfig():
 
-    @classmethod 
+    @classmethod
     def configure(cls, return_base_config=True):
         """ Return a list of ConfigElement objects defining the configuration values for this class.
 
@@ -78,7 +78,7 @@ class BaseConfig():
         if return_base_config:
             return base_config
         return []
-    
+
     @classmethod
     def configure_details(cls, include_default_tabs=True):
         """ Return a list of ConfigElement objects defining the configuration values for this class.

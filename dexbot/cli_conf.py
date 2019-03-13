@@ -66,6 +66,7 @@ Environment=UNLOCK={passwd}
 WantedBy=default.target
 """
 
+
 def dexbot_service_running():
     """ Return True if dexbot service is running
     """
@@ -119,7 +120,7 @@ def get_strategy_tag(strategy_class):
     for strategy in STRATEGIES:
         if strategy_class == strategy['class']:
             return strategy['tag']
-    return None        
+    return None
 
 
 def select_choice(current, choices):
@@ -221,7 +222,7 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
             try:
                 key = config_item[0]
                 new_worker_config[key] = worker_config[key]
-            except KeyError as error:
+            except KeyError:
                 # In case using old configuration file and there are new fields, this passes missing key
                 pass
 
@@ -243,8 +244,8 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
                     return  # quit configuration if can't get WIF added
                 else:
                     worker_config[elem.key] = account_name
-            else: # account name only for edit worker
-                process_config_element(elem, whiptail, worker_config)          
+            else:  # account name only for edit worker
+                process_config_element(elem, whiptail, worker_config)
     else:
         whiptail.alert(
             "This worker type does not have configuration information. "
@@ -258,7 +259,7 @@ def configure_dexbot(config, ctx):
     workers = config.get('workers', {})
     bitshares_instance = ctx.bitshares
     validator = ConfigValidator(whiptail, bitshares_instance)
-        
+
     if not workers:
         while True:
             txt = whiptail.prompt("Your name for the worker")
@@ -287,21 +288,22 @@ def configure_dexbot(config, ctx):
             my_workers = [(index, index) for index in workers]
 
             if action == 'EXIT':
-                ## cancel will also exit the application. but this is a clearer label
-                ## Todo: modify cancel to be "Quit" or "Exit" for the whiptail menu item. 
+                # cancel will also exit the application. but this is a clearer label
+                # Todo: modify cancel to be "Quit" or "Exit" for the whiptail menu item.
                 break
-            elif action =='LIST':                                
-                # list workers, then provide option to list config of workers                
+            elif action == 'LIST':
+                # list workers, then provide option to list config of workers
                 worker_name = whiptail.menu("List of Your Workers. Select to view Configuration.", my_workers)
                 content = config['workers'][worker_name]
-                worker_content =  list(content.items())
+                worker_content = list(content.items())
                 worker_list = [[str(i) for i in pairs] for pairs in worker_content]
                 worker_list = [tuple(i) for i in worker_list]
                 whiptail.menu(worker_name, worker_list)
 
             elif action == 'EDIT':
                 worker_name = whiptail.menu("Select worker to edit", my_workers)
-                config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name], bitshares_instance)
+                config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name],
+                                                                  bitshares_instance)
                 strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
                 strategy.clear_all_worker_data()
 
@@ -318,13 +320,13 @@ def configure_dexbot(config, ctx):
                     config['workers'][txt] = configure_worker(whiptail, {}, bitshares_instance)
             elif action == 'ADD':
                 validator.add_account()
-            elif action =='SHOW':                
+            elif action == 'SHOW':
                 account_list = validator.list_accounts()
                 action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
             elif action == 'ADD_NODE':
                 txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
                 config['node'][0] = txt
-                ## overrides the top position            
+                # overrides the top position
             elif action == 'NODES':
                 choice = whiptail.node_radiolist(
                     msg="Choose node",
@@ -336,6 +338,6 @@ def configure_dexbot(config, ctx):
                 setup_systemd(whiptail, config)
             elif action == 'HELP':
                 whiptail.alert("Please see https://github.com/Codaone/DEXBot/wiki")
-                
+
     whiptail.clear()
     return config

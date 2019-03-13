@@ -1,7 +1,8 @@
-from dexbot.strategies.base_config import BaseConfig, ConfigElement, DetailElement
+from dexbot.strategies.base_config import BaseConfig, ConfigElement
+
 
 class StaggeredConfig(BaseConfig):
-    
+
     @classmethod
     def configure(cls, return_base_config=True):
         """ Modes description:

@@ -1,13 +1,10 @@
-from dexbot.whiptail import get_whiptail
-
 import bitshares
 from bitshares.instance import shared_bitshares_instance
-from bitshares.asset import Asset
 from bitshares.account import Account
-from bitshares.exceptions import KeyAlreadyInStoreException, AccountDoesNotExistsException
+from bitshares.exceptions import KeyAlreadyInStoreException
 from bitsharesbase.account import PrivateKey
 
-        
+
 class ConfigValidator:
     """ validation methods borrowed from gui WorkerController for Cli
     """
@@ -62,11 +59,11 @@ class ConfigValidator:
         except KeyAlreadyInStoreException:
             # Private key already added
             pass
-        
+
     def list_accounts(self):
         accounts = self.bitshares.wallet.getAccounts()
         account_list = [(i['name'], i['type']) for i in accounts]
-        if len(account_list) ==  0:
+        if len(account_list) == 0:
             account_list = [('none', 'none')]
         return account_list
 
@@ -74,7 +71,7 @@ class ConfigValidator:
         # this method modeled off of worker_controller in gui
         account = self.whiptail.prompt("Your Account Name")
         private_key = self.whiptail.prompt("Your Private Key", password=True)
-                    
+
         if not self.validate_account_name(account):
             self.whiptail.alert("Account name does not exist.")
             return False
@@ -84,15 +81,14 @@ class ConfigValidator:
         if private_key and not self.validate_private_key_type(account, private_key):
             self.whiptail.alert("Please use active private key.")
             return False
-        
+
         self.add_private_key(private_key)
         self.whiptail.alert("Private Key added successfully.")
         return account
 
-
     def del_account(self):
         # Todo: implement in the cli_conf
-        account = self.whiptail.prompt("Account Name")
+        # account = self.whiptail.prompt("Account Name")
         public_key = self.whiptail.prompt("Public Key", password=True)
         wallet = self.bitshares.wallet
         try:

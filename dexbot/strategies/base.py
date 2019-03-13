@@ -1,6 +1,5 @@
 import datetime
 import copy
-import collections
 import logging
 import math
 import time
@@ -26,6 +25,7 @@ from bitshares.price import FilledOrder, Order, UpdateCallOrder
 
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
+
 
 class StrategyBase(Storage, StateMachine, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
@@ -65,16 +65,15 @@ class StrategyBase(Storage, StateMachine, Events):
         They can log events. If a problem occurs they can't fix they should set self.disabled = True and
         throw an exception. The framework catches all exceptions thrown from event handlers and logs appropriately.
     """
-    
+
     @classmethod
     def configure(cls, return_base_config=True):
         return BaseConfig.configure(return_base_config)
-           
+
     @classmethod
     def configure_details(cls, include_default_tabs=True):
         return BaseConfig.configure_details(include_default_tabs)
 
-    
     __events__ = [
         'onAccount',
         'onMarketUpdate',
@@ -86,7 +85,6 @@ class StrategyBase(Storage, StateMachine, Events):
         'error_onMarketUpdate',
         'error_ontick',
     ]
-
 
     def __init__(self,
                  name,
@@ -543,7 +541,7 @@ class StrategyBase(Storage, StateMachine, Events):
                 self.log.critical("Cannot estimate center price, there is no highest bid.")
                 self.disabled = True
                 return None
-            
+
         if sell_price is None or sell_price == 0.0:
             if not suppress_errors:
                 self.log.critical("Cannot estimate center price, there is no lowest ask.")
@@ -551,7 +549,7 @@ class StrategyBase(Storage, StateMachine, Events):
                 return None
             # Calculate and return market center price. make sure buy_price has value
         if buy_price:
-            center_price = buy_price * math.sqrt(sell_price / buy_price)        
+            center_price = buy_price * math.sqrt(sell_price / buy_price)
             self.log.debug('Center price in get_market_center_price: {:.8f} '.format(center_price))
         return center_price
 

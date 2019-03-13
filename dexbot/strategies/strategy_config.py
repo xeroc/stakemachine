@@ -1,5 +1,6 @@
 from dexbot.strategies.base_config import BaseConfig, ConfigElement, DetailElement
 
+
 class StrategyConfig(BaseConfig):
     """ this is the configuration template for the strategy_template class
     """
@@ -7,12 +8,12 @@ class StrategyConfig(BaseConfig):
     @classmethod
     def configure(cls, return_base_config=True):
         """ This function is used to auto generate fields for GUI
-        
+
             :param return_base_config: If base config is used in addition to this configuration.
             :return: List of ConfigElement(s)
         """
 
-        """ As a demonstration this template has two fields in the worker configuration. Upper and lower bound. 
+        """ As a demonstration this template has two fields in the worker configuration. Upper and lower bound.
             Documentation of ConfigElements can be found from base.py.
         """
         return BaseConfig.configure(return_base_config) + [
@@ -23,7 +24,6 @@ class StrategyConfig(BaseConfig):
                           'The top price in the range',
                           (0, 10000000, 8, '')),
         ]
-
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
@@ -39,4 +39,3 @@ class StrategyConfig(BaseConfig):
             DetailElement('table', 'Orders', 'Data from csv file', 'example.csv'),
             DetailElement('text', 'Log', 'Log data', 'example.log')
         ]
-    

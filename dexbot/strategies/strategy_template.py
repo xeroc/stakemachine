@@ -1,5 +1,5 @@
 # Python imports
-import math
+# import math
 
 # Project imports
 from dexbot.strategies.base import StrategyBase
@@ -7,9 +7,10 @@ from dexbot.strategies.strategy_config import StrategyConfig
 from dexbot.qt_queue.idle_queue import idle_add
 
 # Third party imports
-from bitshares.market import Market
+# from bitshares.market import Market
 
 STRATEGY_NAME = 'Strategy Template'
+
 
 class Strategy(StrategyBase):
     """ <strategy_name>
@@ -47,7 +48,7 @@ class Strategy(StrategyBase):
     @classmethod
     def configure_details(cls, include_default_tabs=True):
         return StrategyConfig.configure_details(return_base_config)
-    
+
     def __init__(self, *args, **kwargs):
         # Initializes StrategyBase class
         super().__init__(*args, **kwargs)
@@ -73,14 +74,14 @@ class Strategy(StrategyBase):
            - Market has been updated = self.onMarketUpdate
 
            These events are tied to methods which decide how the loop goes, unless the strategy is static, which
-           means that it will only do one thing and never do 
+           means that it will only do one thing and never do
        """
 
         # Get view
         self.view = kwargs.get('view')
 
         """ Worker parameters
-            
+
             There values are taken from the worker's config file.
             Name of the worker is passed in the **kwargs.
         """
@@ -90,7 +91,7 @@ class Strategy(StrategyBase):
         self.lower_bound = self.worker.get('lower_bound')
 
         """ Strategy variables
-            
+
             These variables are for the strategy only and should be initialized here if wanted into self's scope.
         """
         self.market_center_price = 0

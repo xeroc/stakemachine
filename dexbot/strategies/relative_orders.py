@@ -3,12 +3,12 @@ from datetime import datetime, timedelta
 
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.relative_config import RelativeConfig
-from dexbot.qt_queue.idle_queue import idle_add
+
 
 class Strategy(StrategyBase):
     """ Relative Orders strategy
     """
-    
+
     @classmethod
     def configure(cls, return_base_config=True):
         return RelativeConfig.configure(return_base_config)
@@ -60,7 +60,7 @@ class Strategy(StrategyBase):
         else:
             # Use manually set center price
             self.center_price = self.worker["center_price"]
-            
+
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)
         self.manual_offset = self.worker.get('manual_offset', 0) / 100

@@ -1,8 +1,9 @@
-from dexbot.strategies.base_config import BaseConfig, ConfigElement, DetailElement
+from dexbot.strategies.base_config import BaseConfig, ConfigElement
+
 
 class RelativeConfig(BaseConfig):
 
-    @classmethod 
+    @classmethod
     def configure(cls, return_base_config=True):
         """ Return a list of ConfigElement objects defining the configuration values for this class.
 
@@ -25,8 +26,8 @@ class RelativeConfig(BaseConfig):
             ('gdax', 'Gdax'),
             ('binance', 'Binance')
         ]
-    
-        relative_orders_config =  [
+
+        relative_orders_config = [
             ConfigElement('external_feed', 'bool', False, 'External price feed',
                           'Use external reference price instead of center price acquired from the market', None),
             ConfigElement('external_price_source', 'choice', 'gecko', 'External price source',
@@ -73,22 +74,21 @@ class RelativeConfig(BaseConfig):
                           'Define custom order expiration time to force orders reset more often, seconds',
                           (30, 157680000, ''))
         ]
-        
+
         if return_base_config:
             return BaseConfig.configure(return_base_config) + relative_orders_config
         return []
-    
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
         """ Return a list of ConfigElement objects defining the configuration values for this class.
-        
+
             User interfaces should then generate widgets based on these values, gather data and save back to
             the config dictionary for the worker.
 
             NOTE: When overriding you almost certainly will want to call the ancestor and then
             add your config values to the list.
-        
+
             :param include_default_tabs: bool:
             :return: Returns a list of Detail elements
         """
