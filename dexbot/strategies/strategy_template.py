@@ -2,7 +2,8 @@
 import math
 
 # Project imports
-from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement
+from dexbot.strategies.base import StrategyBase
+from dexbot.strategies.strategy_config import StrategyConfig
 from dexbot.qt_queue.idle_queue import idle_add
 
 # Third party imports
@@ -10,11 +11,10 @@ from bitshares.market import Market
 
 STRATEGY_NAME = 'Strategy Template'
 
-
 class Strategy(StrategyBase):
     """ <strategy_name>
 
-        Replace <stragegy_name> with the name of the strategy.
+        Replace <strategy_name> with the name of the strategy.
 
         This is a template strategy which can be used to create custom strategies easier. The base for the strategy is
         ready. It is recommended comment the strategy and functions to help other developers to make changes.
@@ -40,42 +40,14 @@ class Strategy(StrategyBase):
 
         NOTE: Change this comment section to describe the strategy.
     """
-
     @classmethod
     def configure(cls, return_base_config=True):
-        """ This function is used to auto generate fields for GUI
-
-            :param return_base_config: If base config is used in addition to this configuration.
-            :return: List of ConfigElement(s)
-        """
-
-        """ As a demonstration this template has two fields in the worker configuration. Upper and lower bound. 
-            Documentation of ConfigElements can be found from base.py.
-        """
-        return StrategyBase.configure(return_base_config) + [
-            ConfigElement('lower_bound', 'float', 1, 'Lower bound',
-                          'The bottom price in the range',
-                          (0, 10000000, 8, '')),
-            ConfigElement('upper_bound', 'float', 10, 'Upper bound',
-                          'The top price in the range',
-                          (0, 10000000, 8, '')),
-        ]
+        return StrategyConfig.configure(return_base_config)
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        """ This function defines the tabs for detailed view of the worker. Further documentation is found in base.py
-
-            :param include_default_tabs: If default tabs are included as well
-            :return: List of DetailElement(s)
-
-            NOTE: Add files to user data folders to see how they behave as an example.
-        """
-        return StrategyBase.configure_details(include_default_tabs) + [
-            DetailElement('graph', 'Graph', 'Graph', 'graph.jpg'),
-            DetailElement('table', 'Orders', 'Data from csv file', 'example.csv'),
-            DetailElement('text', 'Log', 'Log data', 'example.log')
-        ]
-
+        return StrategyConfig.configure_details(return_base_config)
+    
     def __init__(self, *args, **kwargs):
         # Initializes StrategyBase class
         super().__init__(*args, **kwargs)

@@ -103,7 +103,11 @@ def unlock(f):
                         sys.exit(78)  # 'configuration error' in sysexits.h
                     pwd = click.prompt(
                         "Current Uptick Wallet Passphrase", hide_input=True)
-                ctx.bitshares.wallet.unlock(pwd)
+                try:
+                    ctx.bitshares.wallet.unlock(pwd)
+                except Exception as exception:
+                    log.critical("Password error, exiting")
+                    sys.exit(78)
             else:
                 if systemd:
                     # No user available to interact with
@@ -116,7 +120,7 @@ def unlock(f):
                     "Uptick Wallet Encryption Passphrase",
                     hide_input=True,
                     confirmation_prompt=True)
-                ctx.bitshares.wallet.create(pwd)
+                ctx.bitshares.wallet.create(pwd)                
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 
