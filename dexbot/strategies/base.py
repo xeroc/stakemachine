@@ -1321,7 +1321,7 @@ class StrategyBase(Storage, StateMachine, Events):
         try:
             order = Order(order_id)
         except Exception:
-            log.error('Got an exception getting order id {}'.format(order_id))
+            logging.getLogger(__name__).error('Got an exception getting order id {}'.format(order_id))
             raise
         if return_none and order['deleted']:
             return None
