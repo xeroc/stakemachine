@@ -68,7 +68,8 @@ WantedBy=default.target
 
 
 def select_choice(current, choices):
-    """ For the radiolist, get us a list with the current value selected """
+    """ For the radiolist, get us a list with the current value selected
+    """
     return [(tag, text, (current == tag and "ON") or "OFF")
             for tag, text in choices]
 
@@ -275,6 +276,7 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
 
 def configure_dexbot(config, ctx):
     """ Main `cli configure` entrypoint
+
         :param dexbot.config.Config config: dexbot config
     """
     whiptail = get_whiptail('DEXBot configure')
