@@ -318,10 +318,10 @@ def configure_dexbot(config, ctx):
                 # list workers, then provide option to list config of workers
                 worker_name = whiptail.menu("List of Your Workers. Select to view Configuration.", my_workers)
                 content = config['workers'][worker_name]
-                worker_content = list(content.items())
-                worker_list = [[str(i) for i in pairs] for pairs in worker_content]
-                worker_list = [tuple(i) for i in worker_list]
-                whiptail.menu(worker_name, worker_list)
+                text = '\n'
+                for key, value in content.items():
+                    text += '{}: {}\n'.format(key, value)
+                whiptail.view_text(text, pager=False)
 
             elif action == 'EDIT':
                 worker_name = whiptail.menu("Select worker to edit", my_workers)
