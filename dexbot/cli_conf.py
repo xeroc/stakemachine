@@ -23,7 +23,7 @@ import subprocess
 
 from dexbot.whiptail import get_whiptail
 from dexbot.strategies.base import StrategyBase
-from dexbot.cli_helper import ConfigValidator
+from dexbot.config_validator import ConfigValidator
 
 import dexbot.helper
 
@@ -252,14 +252,13 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
 
     # Use class metadata for per-worker configuration
     config_elems = strategy_class.configure()
-    validator = ConfigValidator(whiptail, bitshares_instance)
 
     if config_elems:
         # Strategy options
         for elem in config_elems:
             if not editing and (elem.key == "account"):
                 # only allow WIF addition for new workers
-                account_name = validator.add_account()
+                account_name = add_account(whiptail, bitshares_instance)
                 if account_name is False:
                     return  # quit configuration if can't get WIF added
                 else:
@@ -282,7 +281,6 @@ def configure_dexbot(config, ctx):
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
     bitshares_instance = ctx.bitshares
-    validator = ConfigValidator(whiptail, bitshares_instance)
 
     if not workers:
         while True:
@@ -343,9 +341,9 @@ def configure_dexbot(config, ctx):
                 else:
                     config['workers'][txt] = configure_worker(whiptail, {}, bitshares_instance)
             elif action == 'ADD':
-                validator.add_account()
+                add_account(whiptail, bitshares_instance)
             elif action == 'SHOW':
-                account_list = validator.list_accounts()
+                account_list = list_accounts(bitshares_instance)
                 action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
             elif action == 'ADD_NODE':
                 txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
@@ -365,3 +363,52 @@ def configure_dexbot(config, ctx):
 
     whiptail.clear()
     return config
+
+
+def add_account(whiptail, bitshares_instance):
+    """ "Add account" dialog
+
+        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+    """
+    validator = ConfigValidator(bitshares_instance)
+
+    account = whiptail.prompt("Your Account Name")
+    private_key = whiptail.prompt("Your Private Key", password=True)
+
+    if not validator.validate_account_name(account):
+        whiptail.alert("Account name does not exist.")
+        return False
+    if not validator.validate_private_key(account, private_key):
+        whiptail.alert("Private key is invalid")
+        return False
+    if private_key and not validator.validate_private_key_type(account, private_key):
+        whiptail.alert("Please use active private key.")
+        return False
+
+    validator.add_private_key(private_key)
+    whiptail.alert("Private Key added successfully.")
+    return account
+
+
+def del_account(self):
+    # Todo: implement in the cli_conf
+    # account = self.whiptail.prompt("Account Name")
+    public_key = self.whiptail.prompt("Public Key", password=True)
+    wallet = self.bitshares.wallet
+    try:
+        wallet.removePrivateKeyFromPublicKey(public_key)
+    except Exception:
+        pass
+
+
+def list_accounts(bitshares_instance):
+    """ Get all accounts installed in local wallet
+
+        :return: list of tuples ('account_name', 'key_type')
+    """
+    accounts = bitshares_instance.wallet.getAccounts()
+    account_list = [(i['name'], i['type']) for i in accounts]
+    if len(account_list) == 0:
+        account_list = [('none', 'none')]
+    return account_list
