@@ -89,12 +89,12 @@ def run(ctx):
         signal.signal(signal.SIGTERM, kill_workers)
         signal.signal(signal.SIGINT, kill_workers)
         try:
-            # These signals are UNIX-only territory, will ValueError here on Windows
+            # These signals are UNIX-only territory, will ValueError or AttributeError here on Windows (depending on
+            # python version)
             signal.signal(signal.SIGHUP, kill_workers)
             # TODO: reload config on SIGUSR1
             # signal.signal(signal.SIGUSR1, lambda x, y: worker.do_next_tick(worker.reread_config))
-        except AttributeError:
-        # except ValueError:
+        except (ValueError, AttributeError):
             log.debug("Cannot set all signals -- not available on this platform")
         if ctx.obj['systemd']:
             try:
