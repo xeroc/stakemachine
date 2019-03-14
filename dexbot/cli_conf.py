@@ -373,6 +373,7 @@ def add_account(whiptail, bitshares_instance):
 
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
         :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+        :return str: user-supplied account name
     """
     validator = ConfigValidator(bitshares_instance)
 
