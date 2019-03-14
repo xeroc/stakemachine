@@ -300,8 +300,9 @@ def configure_dexbot(config, ctx):
                 [('LIST', 'List your workers'),
                  ('NEW', 'Create a new worker'),
                  ('EDIT', 'Edit a worker'),
-                 ('DEL', 'Delete a worker'),
+                 ('DEL_WORKER', 'Delete a worker'),
                  ('ADD', 'Add a bitshares account'),
+                 ('DEL_ACCOUNT', 'Delete a bitshares account'),
                  ('SHOW', 'Show bitshares accounts'),
                  ('NODES', 'Edit Node Selection'),
                  ('ADD_NODE', 'Add Your Node'),
@@ -345,6 +346,8 @@ def configure_dexbot(config, ctx):
                     config['workers'][worker_name] = configure_worker(whiptail, {}, bitshares_instance)
             elif action == 'ADD':
                 add_account(whiptail, bitshares_instance)
+            elif action == 'DEL_ACCOUNT':
+                del_account(whiptail, bitshares_instance)
             elif action == 'SHOW':
                 account_list = list_accounts(bitshares_instance)
                 action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
@@ -398,15 +401,15 @@ def add_account(whiptail, bitshares_instance):
     return account
 
 
-def del_account(self):
-    # Todo: implement in the cli_conf
-    # account = self.whiptail.prompt("Account Name")
-    public_key = self.whiptail.prompt("Public Key", password=True)
-    wallet = self.bitshares.wallet
-    try:
-        wallet.removePrivateKeyFromPublicKey(public_key)
-    except Exception:
-        pass
+def del_account(whiptail, bitshares_instance):
+    """ Delete account from the wallet
+
+        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+    """
+    account = whiptail.prompt("Account Name")
+    wallet = bitshares_instance.wallet
+    wallet.removeAccount(account)
 
 
 def list_accounts(bitshares_instance):
