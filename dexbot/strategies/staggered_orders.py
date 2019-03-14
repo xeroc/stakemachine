@@ -8,8 +8,8 @@ from functools import reduce
 from bitshares.dex import Dex
 from bitshares.amount import Amount
 
-from dexbot.strategies.base import StrategyBase
-from dexbot.strategies.staggered_config import StaggeredConfig
+from .base import StrategyBase
+from .config_parts.staggered_config import StaggeredConfig
 
 
 class Strategy(StrategyBase):

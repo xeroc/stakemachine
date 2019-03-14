@@ -2,8 +2,8 @@
 # import math
 
 # Project imports
-from dexbot.strategies.base import StrategyBase
-from dexbot.strategies.strategy_config import StrategyConfig
+from .base import StrategyBase
+from .config_parts.strategy_config import StrategyConfig
 from dexbot.qt_queue.idle_queue import idle_add
 
 # Third party imports

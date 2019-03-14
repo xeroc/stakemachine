@@ -1,4 +1,4 @@
-from dexbot.strategies.base_config import BaseConfig, ConfigElement
+from .base_config import BaseConfig, ConfigElement
 
 
 class RelativeConfig(BaseConfig):

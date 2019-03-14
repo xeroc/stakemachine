@@ -1,8 +1,8 @@
 import math
 from datetime import datetime, timedelta
 
-from dexbot.strategies.base import StrategyBase
-from dexbot.strategies.relative_config import RelativeConfig
+from .base import StrategyBase
+from .config_parts.relative_config import RelativeConfig
 
 
 class Strategy(StrategyBase):
