@@ -258,11 +258,11 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
         for elem in config_elems:
             if not editing and (elem.key == "account"):
                 # only allow WIF addition for new workers
-                account_name = add_account(whiptail, bitshares_instance)
-                if account_name is False:
-                    return  # quit configuration if can't get WIF added
-                else:
-                    worker_config[elem.key] = account_name
+                account_name = None
+                # Query user until correct account and key provided
+                while not account_name:
+                    account_name = add_account(whiptail, bitshares_instance)
+                worker_config[elem.key] = account_name
             else:  # account name only for edit worker
                 process_config_element(elem, whiptail, worker_config)
     else:
