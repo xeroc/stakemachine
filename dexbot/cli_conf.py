@@ -389,8 +389,11 @@ def add_account(whiptail, bitshares_instance):
         whiptail.alert("Please use active private key.")
         return False
 
-    validator.add_private_key(private_key)
-    whiptail.alert("Private Key added successfully.")
+    # User can supply empty private key if it was added earlier
+    if private_key:
+        validator.add_private_key(private_key)
+        whiptail.alert("Private Key added successfully.")
+
     return account
 
 
