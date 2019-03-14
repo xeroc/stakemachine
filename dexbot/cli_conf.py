@@ -281,6 +281,7 @@ def configure_dexbot(config, ctx):
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
     bitshares_instance = ctx.bitshares
+    validator = ConfigValidator(bitshares_instance)
 
     if not workers:
         while True:
@@ -335,11 +336,13 @@ def configure_dexbot(config, ctx):
                 strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
                 strategy.clear_all_worker_data()
             elif action == 'NEW':
-                txt = whiptail.prompt("Your name for the new worker. ")
-                if len(txt) == 0:
+                worker_name = whiptail.prompt("Your name for the new worker. ")
+                if not worker_name:
                     whiptail.alert("Worker name cannot be blank. ")
+                elif not validator.validate_worker_name(worker_name):
+                    whiptail.alert('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
                 else:
-                    config['workers'][txt] = configure_worker(whiptail, {}, bitshares_instance)
+                    config['workers'][worker_name] = configure_worker(whiptail, {}, bitshares_instance)
             elif action == 'ADD':
                 add_account(whiptail, bitshares_instance)
             elif action == 'SHOW':
