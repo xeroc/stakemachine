@@ -48,7 +48,7 @@ initialize_data_folders()
 @click.option(
     '--logfile',
     default=None,
-    help='Override logfile location'
+    help='Override logfile location (example: ~/dexbot.log)'
 )
 @click.option(
     '--verbose',
