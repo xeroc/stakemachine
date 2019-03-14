@@ -70,8 +70,8 @@ class ConfigValidator:
             return False
         return True
 
-    @classmethod
-    def validate_worker_name(cls, worker_name, old_worker_name=None):
+    @staticmethod
+    def validate_worker_name(worker_name, old_worker_name=None):
         """ Check whether worker name is unique or not
 
             :param str worker_name: name of the new worker
@@ -85,8 +85,8 @@ class ConfigValidator:
             return True
         return True
 
-    @classmethod
-    def validate_account_not_in_use(cls, account):
+    @staticmethod
+    def validate_account_not_in_use(account):
         """ Check whether account is already used for another worker or not
 
             :param str account: bitshares account name
@@ -108,8 +108,8 @@ class ConfigValidator:
         except AssetDoesNotExistsException:
             return False
 
-    @classmethod
-    def validate_market(cls, base_asset, quote_asset):
+    @staticmethod
+    def validate_market(base_asset, quote_asset):
         """ Check whether market tickers is not the same
 
             :param str base_asset: BASE asset ticker
