@@ -99,7 +99,7 @@ class Whiptail:
     def view_text(self, text, **kwargs):
         """Whiptail wants a file but we want to provide a text string"""
         fd, nam = tempfile.mkstemp()
-        f = os.fdopen(fd)
+        f = os.fdopen(fd, 'w')
         f.write(text)
         f.close()
         self.view_file(nam)
