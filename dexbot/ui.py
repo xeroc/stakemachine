@@ -46,6 +46,7 @@ def verbose(f):
         # Logging to a file
         filename = ctx.obj.get('logfile')
         if not filename:
+            # By default, log to a file located where the script is
             filename = os.path.join(os.path.dirname(sys.argv[0]), 'dexbot.log')
         fh = logging.FileHandler(filename)
         fh.setFormatter(formatter2)
