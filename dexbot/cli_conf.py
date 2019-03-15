@@ -415,10 +415,14 @@ def del_account(whiptail, bitshares_instance):
 def list_accounts(bitshares_instance):
     """ Get all accounts installed in local wallet in format suitable for Whiptail.menu()
 
+        Returning format is compatible both with Whiptail and NoWhiptail.
+
         :return: list of tuples (int, 'account_name - key_type')
     """
     accounts = bitshares_instance.wallet.getAccounts()
-    account_list = [(num, '{} - {}'.format(account['name'], account['type'])) for num, account in enumerate(accounts)]
+    account_list = [
+        (str(num), '{} - {}'.format(account['name'], account['type'])) for num, account in enumerate(accounts)
+    ]
     if not account_list:
-        account_list = [(0, 'none - none')]
+        account_list = [('0', 'none - none')]
     return account_list
