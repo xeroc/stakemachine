@@ -159,6 +159,11 @@ class NoWhiptail:
             d += 1
         return self.menu(msg, [(k, v) for k, v, s in items], default=default)
 
+    def node_radiolist(self, *args, **kwargs):
+        """ Proxy stub to maintain compatibility with Whiptail class
+        """
+        return self.radiolist(*args, **kwargs)
+
     def clear(self):
         pass  # Don't tidy the screen
 
