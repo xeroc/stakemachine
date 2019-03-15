@@ -357,7 +357,7 @@ def configure_dexbot(config, ctx):
                 # overrides the top position
             elif action == 'NODES':
                 choice = whiptail.node_radiolist(
-                    msg="Choose node",
+                    msg="Choose your preferred node",
                     items=select_choice(config['node'][0],
                                         [(index, index) for index in config['node']]))
                 # Move selected node as first item in the config file's node list
