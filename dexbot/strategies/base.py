@@ -1473,13 +1473,7 @@ class StrategyBase(Storage, StateMachine, Events):
         if not latest_price:
             return
 
-        order_ids = None
-        orders = self.fetch_orders()
-
-        if orders:
-            order_ids = orders.keys()
-
-        total_balance = self.count_asset(order_ids)
+        total_balance = self.count_asset()
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 
         if not total:  # Prevent division by zero
