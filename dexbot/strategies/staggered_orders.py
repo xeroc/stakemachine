@@ -1,7 +1,6 @@
 import sys
 import time
 import math
-import traceback
 import bitsharesapi.exceptions
 from datetime import datetime, timedelta
 from functools import reduce
@@ -302,9 +301,7 @@ class Strategy(StrategyBase):
                 """ Handle exception without stopping the worker. The goal is to handle race condition when partially
                     filled order was further filled before we actually replaced them.
                 """
-                self.log.warning('Got exception during broadcasting trx:')
-                traceback.print_exc(file=sys.stdout)
-                self.log.warning('Ignoring that exception and continue')
+                self.log.exception('Got exception during broadcasting trx:')
                 return
         self.bitshares.bundle = False
 
