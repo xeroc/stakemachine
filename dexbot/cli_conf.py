@@ -353,8 +353,8 @@ def configure_dexbot(config, ctx):
                 action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
             elif action == 'ADD_NODE':
                 txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
-                config['node'][0] = txt
-                # overrides the top position
+                # Insert new node on top of the list
+                config['node'].insert(0, txt)
             elif action == 'NODES':
                 choice = whiptail.node_radiolist(
                     msg="Choose your preferred node",
