@@ -280,21 +280,17 @@ class Strategy(StrategyBase):
         # BASE asset check
         if self.base_balance > self.base_asset_threshold:
             # Allocate available BASE funds
-            base_allocated = False
             self.allocate_asset('base', self.base_balance)
-        else:
-            base_allocated = True
 
         # QUOTE asset check
         if self.quote_balance > self.quote_asset_threshold:
             # Allocate available QUOTE funds
-            quote_allocated = False
             self.allocate_asset('quote', self.quote_balance)
-        else:
-            quote_allocated = True
 
         # Send pending operations
+        trx_executed = False
         if not self.bitshares.txbuffer.is_empty():
+            trx_executed = True
             try:
                 self.execute()
             except bitsharesapi.exceptions.RPCError:
@@ -334,7 +330,8 @@ class Strategy(StrategyBase):
         # Do not continue whether balances are changing or bootstrap is on
         if (self.bootstrapping or
                 self.base_balance_history[0] != self.base_balance_history[2] or
-                self.quote_balance_history[0] != self.quote_balance_history[2]):
+                self.quote_balance_history[0] != self.quote_balance_history[2] or
+                trx_executed):
             self.last_check = datetime.now()
             self.log_maintenance_time()
             return
@@ -361,42 +358,11 @@ class Strategy(StrategyBase):
                 self.last_check = datetime.now()
                 self.log_maintenance_time()
                 return
-
-        # What amount of quote may be obtained if buy using avail base balance
-        can_obtain_quote = self.base_balance['amount'] * self.market_center_price
-        side_to_cancel = None
-
-        """ The logic is following: compare on which side we have bigger free balance, then cancel furthest order on
-            that side to be able to place closer order. This is for situations when amount obtained from previous trade
-            is not enough to place closer order.
-        """
-        if can_obtain_quote > self.quote_balance['amount'] and not base_allocated:
-            side_to_cancel = 'buy'
-        elif self.quote_balance['amount'] > can_obtain_quote and not quote_allocated:
-            side_to_cancel = 'sell'
-
-        if not side_to_cancel:
-            """ Balance-based cancel logic didn't give a result, so use logic based on distance to market center
-            """
-            # Measure which price is closer to the center
-            buy_distance = self.market_center_price - highest_buy_price
-            sell_distance = lowest_sell_price - self.market_center_price
-
-            if buy_distance > sell_distance:
-                side_to_cancel = 'buy'
-            else:
-                side_to_cancel = 'sell'
-
-        if side_to_cancel == 'buy' and self.buy_orders:
-            self.log.info('Free balances are not changing, bootstrap is off and target spread is not reached. '
-                          'Cancelling lowest buy order as a fallback')
-            self.cancel_orders_wrapper(self.buy_orders[-1])
-        elif side_to_cancel == 'sell' and self.sell_orders:
-            self.log.info('Free balances are not changing, bootstrap is off and target spread is not reached. '
-                          'Cancelling highest sell order as a fallback')
-            self.cancel_orders_wrapper(self.sell_orders[-1])
-        else:
-            self.log.info('Target spread is not reached but cannot determine what furthest order to cancel')
+            elif self.buy_orders:
+                # If target spread is not reached and no balance to allocate, cancel lowest buy order
+                self.log.info('Free balances are not changing, bootstrap is off and target spread is not reached. '
+                              'Cancelling lowest buy order as a fallback')
+                self.cancel_orders_wrapper(self.buy_orders[-1])
 
         self.last_check = datetime.now()
         self.log_maintenance_time()
@@ -780,8 +746,9 @@ class Strategy(StrategyBase):
                             own_asset_limit = None
                             self.log.debug('Limiting {} order by opposite order: {:.{prec}f} {}'.format(
                                            order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision))
+                    allow_partial = True if asset == 'quote' else False
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
-                                            opposite_asset_limit=opposite_asset_limit, allow_partial=False)
+                                            opposite_asset_limit=opposite_asset_limit, allow_partial=allow_partial)
                 else:
                     # Opposite side probably reached range bound, allow to place partial order
                     self.place_closer_order(asset, closest_own_order, allow_partial=True)
@@ -1430,7 +1397,10 @@ class Strategy(StrategyBase):
                 self.log.debug('Not enough balance to place closer {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
                                .format(order_type, limiter, balance, prec=precision))
                 place_order = False
-            elif allow_partial and balance > hard_limit:
+            # Closer order should not be less than threshold
+            elif (allow_partial and
+                    balance > hard_limit and
+                    balance > order['base']['amount'] * self.partial_fill_threshold):
                 self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
                                .format(order_type, balance, symbol, prec=precision))
                 if asset == 'base':
