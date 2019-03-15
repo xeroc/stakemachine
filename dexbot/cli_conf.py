@@ -149,7 +149,7 @@ def setup_systemd(whiptail, config):
         return  # No working systemd
 
     if not whiptail.confirm(
-            "Do you want to run dexbot as a background (daemon) process?"):
+            "Do you want to run dexbot as a background (daemon) process?", default="no"):
         config['systemd_status'] = 'disabled'
         return
 
