@@ -46,6 +46,12 @@ initialize_data_folders()
     default=DEFAULT_CONFIG_FILE,
 )
 @click.option(
+    '--logfile',
+    default=None,
+    type=click.Path(dir_okay=False, writable=True),
+    help='Override logfile location (example: ~/dexbot.log)'
+)
+@click.option(
     '--verbose',
     '-v',
     type=int,
@@ -59,7 +65,7 @@ initialize_data_folders()
 @click.option(
     '--pidfile',
     '-p',
-    type=str,
+    type=click.Path(dir_okay=False, writable=True),
     default='',
     help='File to write PID')
 @click.pass_context
