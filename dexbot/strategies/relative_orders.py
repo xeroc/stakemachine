@@ -41,7 +41,7 @@ class Strategy(StrategyBase):
 
         # Set external price source, defaults to False if not found
         self.external_feed = self.worker.get('external_feed', False)
-        self.external_price_source = self.worker.get('external_price_source', None)
+        self.external_price_source = self.worker.get('external_price_source', 'gecko')
 
         if self.external_feed:
             # Get external center price from given source
