@@ -331,7 +331,7 @@ def configure_dexbot(config, ctx):
                 strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
                 strategy.clear_all_worker_data()
 
-            elif action == 'DEL':
+            elif action == 'DEL_WORKER':
                 worker_name = whiptail.menu("Select worker to delete", my_workers)
                 del config['workers'][worker_name]
                 strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
