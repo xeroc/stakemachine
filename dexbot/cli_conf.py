@@ -331,7 +331,7 @@ def configure_dexbot(config, ctx):
                     worker_name = whiptail.menu("Select worker to edit", my_workers)
                     config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name],
                                                                       bitshares_instance)
-                    strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
+                    strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=ctx.config)
                     strategy.clear_all_worker_data()
                 else:
                     whiptail.view_text('No workers to edit.', pager=False)
@@ -339,7 +339,11 @@ def configure_dexbot(config, ctx):
                 if len(my_workers):
                     worker_name = whiptail.menu("Select worker to delete", my_workers)
                     del config['workers'][worker_name]
-                    strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
+                    # Pass ctx.config which is a loaded config (see ui.py configfile()), while `config` in a Config()
+                    # instance, which is empty dict, but capable of returning keys via __getitem__(). We need to pass
+                    # loaded config into StrategyBase to avoid loading a default config and preserve `--configfile`
+                    # option
+                    strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=ctx.config)
                     strategy.clear_all_worker_data()
                 else:
                     whiptail.view_text('No workers to delete.', pager=False)
