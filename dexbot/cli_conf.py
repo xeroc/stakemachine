@@ -312,30 +312,37 @@ def configure_dexbot(config, ctx):
             my_workers = [(index, index) for index in workers]
 
             if action == 'EXIT':
-                # cancel will also exit the application. but this is a clearer label
+                # Cancel will also exit the application. but this is a clearer label
                 # Todo: modify cancel to be "Quit" or "Exit" for the whiptail menu item.
                 break
             elif action == 'LIST':
-                # list workers, then provide option to list config of workers
-                worker_name = whiptail.menu("List of Your Workers. Select to view Configuration.", my_workers)
-                content = config['workers'][worker_name]
-                text = '\n'
-                for key, value in content.items():
-                    text += '{}: {}\n'.format(key, value)
-                whiptail.view_text(text, pager=False)
-
+                if len(my_workers):
+                    # List workers, then provide option to list config of workers
+                    worker_name = whiptail.menu("List of Your Workers. Select to view Configuration.", my_workers)
+                    content = config['workers'][worker_name]
+                    text = '\n'
+                    for key, value in content.items():
+                        text += '{}: {}\n'.format(key, value)
+                    whiptail.view_text(text, pager=False)
+                else:
+                    whiptail.view_text('No workers to view.', pager=False)
             elif action == 'EDIT':
-                worker_name = whiptail.menu("Select worker to edit", my_workers)
-                config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name],
-                                                                  bitshares_instance)
-                strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
-                strategy.clear_all_worker_data()
-
+                if len(my_workers):
+                    worker_name = whiptail.menu("Select worker to edit", my_workers)
+                    config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name],
+                                                                      bitshares_instance)
+                    strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
+                    strategy.clear_all_worker_data()
+                else:
+                    whiptail.view_text('No workers to edit.', pager=False)
             elif action == 'DEL_WORKER':
-                worker_name = whiptail.menu("Select worker to delete", my_workers)
-                del config['workers'][worker_name]
-                strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
-                strategy.clear_all_worker_data()
+                if len(my_workers):
+                    worker_name = whiptail.menu("Select worker to delete", my_workers)
+                    del config['workers'][worker_name]
+                    strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=config)
+                    strategy.clear_all_worker_data()
+                else:
+                    whiptail.view_text('No workers to delete.', pager=False)
             elif action == 'NEW':
                 worker_name = whiptail.prompt("Your name for the new worker. ")
                 if not worker_name:
