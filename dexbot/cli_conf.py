@@ -187,7 +187,7 @@ def get_strategy_tag(strategy_class):
 
         :param str strategy_class: strategy class name, example: dexbot.strategies.foo_bar
 
-        It may seems that tags may be common accross strategies, but it is not. Every strategy must use unique tag.
+        It may seems that tags may be common across strategies, but it is not. Every strategy must use unique tag.
     """
     for strategy in STRATEGIES:
         if strategy_class == strategy['class']:
