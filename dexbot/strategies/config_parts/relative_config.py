@@ -75,9 +75,7 @@ class RelativeConfig(BaseConfig):
                           (30, 157680000, ''))
         ]
 
-        if return_base_config:
-            return BaseConfig.configure(return_base_config) + relative_orders_config
-        return []
+        return BaseConfig.configure(return_base_config) + relative_orders_config
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
