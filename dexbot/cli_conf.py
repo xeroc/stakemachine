@@ -325,7 +325,7 @@ def configure_dexbot(config, ctx):
                         text += '{}: {}\n'.format(key, value)
                     whiptail.view_text(text, pager=False)
                 else:
-                    whiptail.view_text('No workers to view.', pager=False)
+                    whiptail.alert('No workers to view.')
             elif action == 'EDIT':
                 if len(my_workers):
                     worker_name = whiptail.menu("Select worker to edit", my_workers)
@@ -334,7 +334,7 @@ def configure_dexbot(config, ctx):
                     strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=ctx.config)
                     strategy.clear_all_worker_data()
                 else:
-                    whiptail.view_text('No workers to edit.', pager=False)
+                    whiptail.alert('No workers to edit.')
             elif action == 'DEL_WORKER':
                 if len(my_workers):
                     worker_name = whiptail.menu("Select worker to delete", my_workers)
@@ -346,7 +346,7 @@ def configure_dexbot(config, ctx):
                     strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=ctx.config)
                     strategy.clear_all_worker_data()
                 else:
-                    whiptail.view_text('No workers to delete.', pager=False)
+                    whiptail.alert('No workers to delete.')
             elif action == 'NEW':
                 worker_name = whiptail.prompt("Your name for the new worker. ")
                 if not worker_name:
