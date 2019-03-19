@@ -331,8 +331,6 @@ def configure_dexbot(config, ctx):
                     worker_name = whiptail.menu("Select worker to edit", my_workers)
                     config['workers'][worker_name] = configure_worker(whiptail, config['workers'][worker_name],
                                                                       bitshares_instance)
-                    strategy = StrategyBase(worker_name, bitshares_instance=bitshares_instance, config=ctx.config)
-                    strategy.clear_all_worker_data()
                 else:
                     whiptail.alert('No workers to edit.')
             elif action == 'DEL_WORKER':
