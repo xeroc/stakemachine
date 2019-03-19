@@ -361,7 +361,10 @@ def configure_dexbot(config, ctx):
                 del_account(whiptail, bitshares_instance)
             elif action == 'SHOW':
                 account_list = list_accounts(bitshares_instance)
-                action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
+                if account_list:
+                    action = whiptail.menu("Bitshares Account List (Name - Type)", account_list)
+                else:
+                    whiptail.alert('You do not have any bitshares accounts in the wallet')
             elif action == 'ADD_NODE':
                 txt = whiptail.prompt("Your name for the new node: e.g. wss://dexnode.net/ws")
                 # Insert new node on top of the list
@@ -434,6 +437,4 @@ def list_accounts(bitshares_instance):
     account_list = [
         (str(num), '{} - {}'.format(account['name'], account['type'])) for num, account in enumerate(accounts)
     ]
-    if not account_list:
-        account_list = [('0', 'none - none')]
     return account_list
