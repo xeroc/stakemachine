@@ -3,7 +3,7 @@ import collections
 """ Strategies need to specify their own configuration values, so each strategy can have a class method 'configure'
     which returns a list of ConfigElement named tuples.
 
-    Tuple fields as follows:
+    Tuple fields as fgitollows:
         - Key: The key in the bot config dictionary that gets saved back to config.yml
         - Type: "int", "float", "bool", "string" or "choice"
         - Default: The default value, must be same type as the Type defined
