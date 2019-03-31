@@ -1,52 +1,40 @@
-#!/usr/bin/python3
 import threading
-import unittest
 import logging
 import time
-import os
+import pytest
 
 from dexbot.worker import WorkerInfrastructure
 
-from bitshares.bitshares import BitShares
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 
-TEST_CONFIG = {
-    'node': 'wss://node.testnet.bitshares.eu',
-    'bots': {
-        'echo':
-        {
-            'account': 'aud.bot.test4',
-            'market': 'TESTUSD:TEST',
-            'module': 'dexbot.strategies.echo'
-        }
+@pytest.fixture(scope='module')
+def account(prepare_account):
+    account = prepare_account({'MYBASE': 10000, 'MYQUOTE': 2000})
+    return account
+
+
+@pytest.fixture(scope='module')
+def config(bitshares, account):
+    config = {
+        'node': '{}'.format(bitshares.rpc.url),
+        'workers': {
+            'echo': {'account': '{}'.format(account), 'market': 'MYQUOTE/MYBASE', 'module': 'dexbot.strategies.echo'}
+        },
     }
-}
-
-# User needs to put a key in
-KEYS = [os.environ['DEXBOT_TEST_WIF']]
+    return config
 
 
-class TestDexbot(unittest.TestCase):
+def test_worker_infrastructure(bitshares, config):
+    """ Test whether dexbot core is able to work
+    """
+    worker_infrastructure = WorkerInfrastructure(config=config, bitshares_instance=bitshares)
 
-    def test_dexbot(self):
-        bitshares_instance = BitShares(node=TEST_CONFIG['node'], keys=KEYS)
-        worker_infrastructure = WorkerInfrastructure(config=TEST_CONFIG,
-                                                     bitshares_instance=bitshares_instance)
+    def wait_then_stop():
+        time.sleep(1)
+        worker_infrastructure.do_next_tick(worker_infrastructure.stop(pause=True))
 
-        def wait_then_stop():
-            time.sleep(20)
-            worker_infrastructure.do_next_tick(worker_infrastructure.stop)
-
-        stopper = threading.Thread(target=wait_then_stop)
-        stopper.start()
-        worker_infrastructure.run()
-        stopper.join()
-
-
-if __name__ == '__main__':
-    unittest.main()
+    stopper = threading.Thread(target=wait_then_stop)
+    stopper.start()
+    worker_infrastructure.run()
+    stopper.join()
