@@ -33,8 +33,8 @@ class StrategyBase(Storage, StateMachine, Events):
 
         All prices are passed and returned as BASE/QUOTE.
         (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
-         - Buy orders reserve BASE
-         - Sell orders reserve QUOTE
+        - Buy orders reserve BASE
+        - Sell orders reserve QUOTE
 
         Strategy inherits:
             * :class:`dexbot.storage.Storage` : Stores data to sqlite database
@@ -354,10 +354,11 @@ class StrategyBase(Storage, StateMachine, Events):
         """ Returns the combined amount of the given order ids and the account balance
             The amounts are returned in quote and base assets of the market
 
+            Todo: When would we want the sum of a subset of orders? Why order_ids? Maybe just specify asset?
+
             :param list | order_ids: list of order ids to be added to the balance
             :param bool | return_asset: true if returned values should be Amount instances
             :return: dict with keys quote and base
-            Todo: When would we want the sum of a subset of orders? Why order_ids? Maybe just specify asset?
         """
         quote = 0
         base = 0
@@ -899,7 +900,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """ Check whether an order is buy order
 
             :param dict | order: dict or Order object
-            :return bool
+            :return: bool
         """
         # Check if the order is buy order, by comparing asset symbol of the order and the market
         if order['base']['symbol'] == self.market['base']['symbol']:
@@ -929,7 +930,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """ Check whether an order is sell order
 
             :param dict | order: dict or Order object
-            :return bool
+            :return: bool
         """
         # Check if the order is sell order, by comparing asset symbol of the order and the market
         if order['base']['symbol'] == self.market['quote']['symbol']:
