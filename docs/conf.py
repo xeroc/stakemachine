@@ -48,8 +48,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'DEXBot'
-copyright = '2017, ChainSquad GmbH'
-author = 'Fabian Schuh'
+copyright = '2017-2019, DEXBot Team and contributors'
+author = 'DEXBot Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -224,7 +224,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   (master_doc, 'DEXBot.tex', 'DEXBot Documentation',
-   'Fabian Schuh', 'manual'),
+   'DEXBot Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
