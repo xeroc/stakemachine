@@ -38,6 +38,11 @@ apidoc_output_dir = 'reference'
 apidoc_excluded_paths = ['tests']
 apidoc_separate_modules = True
 
+# Mock some modules to fix building on readthedocs.io as we cannot just install
+# everything from requirements.txt as readthedocs doesn't allow cpython modules
+# building
+autodoc_mock_imports = ['PyQt5', 'bitshares', 'bitsharesapi', 'bitsharesbase']
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
