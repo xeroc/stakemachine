@@ -82,3 +82,6 @@ dexbot/views/ui/**/*_ui.py
 dexbot/resources/*_rc.py
 archive
 *~
+
+# Keep readthedocs config
+!.readthedocs.yml
