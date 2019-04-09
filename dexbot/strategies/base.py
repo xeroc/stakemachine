@@ -22,6 +22,7 @@ from bitshares.dex import Dex
 from bitshares.instance import shared_bitshares_instance
 from bitshares.market import Market
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
+from bitshares.utils import formatTime
 
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
@@ -1102,6 +1103,18 @@ class StrategyBase(Storage, StateMachine, Events):
                         self.log.warning("retrying on '{}'".format(str(exception)))
                         self.bitshares.txbuffer.clear()
                         time.sleep(6)  # Wait at least a BitShares block
+                elif "trx.expiration <= now + chain_parameters.maximum_time_until_expiration" in str(exception):
+                    if tries > MAX_TRIES:
+                        info = self.bitshares.info()
+                        raise Exception('Too much difference between node block time and trx expiration, please change '
+                                        'the node. Block time: {}, local time: {}'
+                                        .format(info['time'], formatTime(datetime.datetime.utcnow())))
+                    else:
+                        tries += 1
+                        self.log.warning('Too much difference between node block time and trx expiration, switching '
+                                         'node')
+                        self.bitshares.txbuffer.clear()
+                        self.bitshares.rpc.next()
                 elif "Assert Exception: delta.amount > 0: Insufficient Balance" in str(exception):
                     self.log.critical('Insufficient balance of fee asset')
                     raise
