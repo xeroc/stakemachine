@@ -32,9 +32,6 @@ def _get_market_price(base, quote):
         current_price = None
         for entry in ticker:
             current_price = entry['current_price']
-            high_24h = entry['high_24h']
-            low_24h = entry['low_24h']
-            total_volume = entry['total_volume']
         return current_price
     except TypeError:
         return None
