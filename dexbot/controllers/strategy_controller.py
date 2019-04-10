@@ -1,7 +1,3 @@
-import collections
-
-from dexbot.views.errors import gui_error
-
 from PyQt5 import QtWidgets
 
 
