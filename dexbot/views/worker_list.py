@@ -98,7 +98,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
     @gui_error
     def handle_open_settings(self):
         settings_dialog = SettingsView()
-        return_value = settings_dialog.exec_()
+        settings_dialog.exec_()
 
     @staticmethod
     def handle_open_documentation():
