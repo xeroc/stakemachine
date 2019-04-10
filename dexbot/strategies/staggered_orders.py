@@ -688,10 +688,10 @@ class Strategy(StrategyBase):
                     elif (self.mode == 'valley' or
                           (self.mode == 'buy_slope' and asset == 'quote') or
                           (self.mode == 'sell_slope' and asset == 'base')):
-                            opposite_asset_limit = closest_opposite_order['base']['amount']
-                            own_asset_limit = None
-                            self.log.debug('Limiting {} order by opposite order: {:.{prec}f} {}'.format(
-                                           order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision))
+                        opposite_asset_limit = closest_opposite_order['base']['amount']
+                        own_asset_limit = None
+                        self.log.debug('Limiting {} order by opposite order: {:.{prec}f} {}'.format(
+                            order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision))
                     allow_partial = True if asset == 'quote' else False
                     self.place_closer_order(asset, closest_own_order, own_asset_limit=own_asset_limit,
                                             opposite_asset_limit=opposite_asset_limit, allow_partial=allow_partial)
