@@ -25,9 +25,9 @@ lint:
 	flake8 dexbot/
 
 pep-test:
-	pip install flake8==3.7.7
+	python3 -m pip install flake8==3.7.7
 	flake8 dexbot/
-	pip uninstall -y flake8 pyflakes pycodestyle mccabe
+	python3 -m pip uninstall -y flake8 pyflakes pycodestyle mccabe
 
 build: pip
 	python3 setup.py build
