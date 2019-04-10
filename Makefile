@@ -22,11 +22,11 @@ pip-user:
 	python3 -m pip install --user -r requirements.txt
 
 lint:
-	flake8 dexbot/
+	flake8 dexbot/ tests/
 
 pep-test:
 	python3 -m pip install flake8==3.7.7
-	flake8 dexbot/
+	flake8 dexbot/ tests/
 	python3 -m pip uninstall -y flake8 pyflakes pycodestyle mccabe
 
 build: pip
