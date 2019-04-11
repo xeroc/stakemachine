@@ -86,7 +86,7 @@ try:
     def find_external_strategies():
         """Use setuptools introspection to find third-party strategies the user may have installed.
         Packages that provide a strategy should export a setuptools "entry point" (see setuptools docs)
-        with group "dexbot.strategy", "name" is the display name of the strategy. 
+        with group "dexbot.strategy", "name" is the display name of the strategy.
         Only set the module not any attribute (because it would always be a class called "Strategy")
         If you want a handwritten graphical UI, define "Ui_Form" and "StrategyController" in the same module
 

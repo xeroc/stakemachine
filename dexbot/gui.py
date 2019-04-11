@@ -16,7 +16,7 @@ class App(QApplication):
         super(App, self).__init__(sys_argv)
 
         config = Config()
-        bitshares_instance = BitShares(config['node'], num_retries=-1)
+        bitshares_instance = BitShares(config['node'], num_retries=-1, expiration=60)
 
         # Wallet unlock
         unlock_ctrl = WalletController(bitshares_instance)
