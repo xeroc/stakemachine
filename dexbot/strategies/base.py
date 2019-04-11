@@ -6,7 +6,6 @@ import time
 
 from dexbot.config import Config
 from dexbot.storage import Storage
-from dexbot.statemachine import StateMachine
 from dexbot.helper import truncate
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
 from dexbot.qt_queue.idle_queue import idle_add
@@ -28,7 +27,7 @@ from bitshares.utils import formatTime
 MAX_TRIES = 3
 
 
-class StrategyBase(Storage, StateMachine, Events):
+class StrategyBase(Storage, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
         most common methods needed by the strategy.
 
@@ -39,7 +38,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         Strategy inherits:
             * :class:`dexbot.storage.Storage` : Stores data to sqlite database
-            * :class:`dexbot.statemachine.StateMachine`
             * ``Events``
 
         Available attributes:
@@ -108,9 +106,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Storage
         Storage.__init__(self, name)
-
-        # Statemachine
-        StateMachine.__init__(self, name)
 
         # Events
         Events.__init__(self)
