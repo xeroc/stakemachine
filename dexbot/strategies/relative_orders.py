@@ -5,7 +5,7 @@ from .base import StrategyBase
 from .config_parts.relative_config import RelativeConfig
 
 
-class Strategy(StrategyBase):
+class RelativeStrategy(StrategyBase):
     """ Relative Orders strategy
     """
 

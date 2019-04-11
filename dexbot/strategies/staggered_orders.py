@@ -10,7 +10,7 @@ from .base import StrategyBase
 from .config_parts.staggered_config import StaggeredConfig
 
 
-class Strategy(StrategyBase):
+class StaggeredStrategy(StrategyBase):
     """ Staggered Orders strategy """
 
     @classmethod
