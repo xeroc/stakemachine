@@ -1,5 +1,5 @@
-from PyQt5 import Qt, QtCore, QtWidgets
-
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt
 
 class FlowLayout(QtWidgets.QLayout):
 
