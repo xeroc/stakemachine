@@ -7,7 +7,7 @@ from dexbot.controllers.wallet_controller import WalletController
 from dexbot.views.unlock_wallet import UnlockWalletView
 from dexbot.views.create_wallet import CreateWalletView
 
-from PyQt5.Qt import QApplication
+from PyQt5.QtWidgets import QApplication
 from bitshares import BitShares
 
 
