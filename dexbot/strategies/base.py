@@ -7,7 +7,6 @@ import time
 from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.helper import truncate
-from dexbot.strategies.external_feeds.price_feed import PriceFeed
 from dexbot.qt_queue.idle_queue import idle_add
 from .config_parts.base_config import BaseConfig
 
@@ -15,6 +14,7 @@ from events import Events
 import bitshares.exceptions
 import bitsharesapi
 import bitsharesapi.exceptions
+
 from bitshares.account import Account
 from bitshares.amount import Amount, Asset
 from bitshares.dex import Dex
@@ -42,9 +42,6 @@ class StrategyBase(Storage, Events):
 
         Available attributes:
             * ``worker.bitshares``: instance of ´`bitshares.BitShares()``
-            * ``worker.add_state``: Add a specific state
-            * ``worker.set_state``: Set finite state machine
-            * ``worker.get_state``: Change state of state machine
             * ``worker.account``: The Account object of this worker
             * ``worker.market``: The market used by this worker
             * ``worker.orders``: List of open orders of the worker's account in the worker's market
@@ -100,9 +97,6 @@ class StrategyBase(Storage, Events):
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
-
-        # Dex instance used to get different fees for the market
-        self.dex = Dex(self.bitshares)
 
         # Storage
         Storage.__init__(self, name)
@@ -313,39 +307,6 @@ class StrategyBase(Storage, Events):
         # Fixme: Make sure that decimal precision is correct.
         return base_total + quote_total
 
-    def cancel_all_orders(self):
-        """ Cancel all orders of the worker's account
-        """
-        self.log.info('Canceling all orders')
-
-        if self.all_own_orders:
-            self.cancel_orders(self.all_own_orders)
-
-        self.log.info("Orders canceled")
-
-    def cancel_orders(self, orders, batch_only=False):
-        """ Cancel specific order(s)
-
-            :param list | orders: List of orders to cancel
-            :param bool | batch_only: Try cancel orders only in batch mode without one-by-one fallback
-            :return:
-        """
-        if not isinstance(orders, (list, set, tuple)):
-            orders = [orders]
-
-        orders = [order['id'] for order in orders if 'id' in order]
-
-        success = self._cancel_orders(orders)
-        if not success and batch_only:
-            return False
-        if not success and len(orders) > 1 and not batch_only:
-            # One of the order cancels failed, cancel the orders one by one
-            for order in orders:
-                success = self._cancel_orders(order)
-                if not success:
-                    return False
-        return success
-
     def count_asset(self, order_ids=None, return_asset=False):
         """ Returns the combined amount of the given order ids and the account balance
             The amounts are returned in quote and base assets of the market
@@ -415,109 +376,6 @@ class StrategyBase(Storage, Events):
 
         return {'quote': quote, 'base': base}
 
-    def get_market_buy_orders(self, depth=10):
-        """ Fetches most recent data and returns list of buy orders.
-
-            :param int | depth: Amount of buy orders returned, Default=10
-            :return: List of market sell orders
-        """
-        orders = self.get_market_orders(depth=depth)
-        buy_orders = self.filter_buy_orders(orders)
-        return buy_orders
-
-    def get_market_sell_orders(self, depth=10):
-        """ Fetches most recent data and returns list of sell orders.
-
-            :param int | depth: Amount of sell orders returned, Default=10
-            :return: List of market sell orders
-        """
-        orders = self.get_market_orders(depth=depth)
-        sell_orders = self.filter_sell_orders(orders)
-        return sell_orders
-
-    def get_highest_market_buy_order(self, orders=None):
-        """ Returns the highest buy order that is not own, regardless of order size.
-
-            :param list | orders: Optional list of orders, if none given fetch newest from market
-            :return: Highest market buy order or None
-        """
-        if not orders:
-            orders = self.get_market_buy_orders(1)
-
-        try:
-            order = orders[0]
-        except IndexError:
-            self.log.info('Market has no buy orders.')
-            return None
-
-        return order
-
-    def get_highest_own_buy_order(self, orders=None):
-        """ Returns highest own buy order.
-
-            :param list | orders:
-            :return: Highest own buy order by price at the market or None
-        """
-        if not orders:
-            orders = self.get_own_buy_orders()
-
-        try:
-            return orders[0]
-        except IndexError:
-            return None
-
-    def get_lowest_market_sell_order(self, orders=None):
-        """ Returns the lowest sell order that is not own, regardless of order size.
-
-            :param list | orders: Optional list of orders, if none given fetch newest from market
-            :return: Lowest market sell order or None
-        """
-        if not orders:
-            orders = self.get_market_sell_orders(1)
-
-        try:
-            order = orders[0]
-        except IndexError:
-            self.log.info('Market has no sell orders.')
-            return None
-
-        return order
-
-    def get_lowest_own_sell_order(self, orders=None):
-        """ Returns lowest own sell order.
-
-            :param list | orders:
-            :return: Lowest own sell order by price at the market
-        """
-        if not orders:
-            orders = self.get_own_sell_orders()
-
-        try:
-            return orders[0]
-        except IndexError:
-            return None
-
-    def get_external_market_center_price(self, external_price_source):
-        """ Get center price from an external market for current market pair
-
-            :param external_price_source: External market name
-            :return: Center price as float
-        """
-        self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
-        market = self.market.get_string('/')
-        self.log.debug('market: {}  '.format(market))
-        price_feed = PriceFeed(external_price_source, market)
-        price_feed.filter_symbols()
-        center_price = price_feed.get_center_price(None)
-        self.log.debug('PriceFeed: {}'.format(center_price))
-
-        if center_price is None:  # Try USDT
-            center_price = price_feed.get_center_price("USDT")
-            self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
-            if center_price is None:  # Try consolidated
-                center_price = price_feed.get_consolidated_price()
-                self.log.debug('Consolidated center price: {}'.format(center_price))
-        return center_price
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
