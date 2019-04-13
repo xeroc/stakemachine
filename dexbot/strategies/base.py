@@ -7,7 +7,6 @@ import time
 from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.helper import truncate
-from dexbot.strategies.external_feeds.price_feed import PriceFeed
 from dexbot.qt_queue.idle_queue import idle_add
 from .config_parts.base_config import BaseConfig
 
@@ -496,28 +495,6 @@ class StrategyBase(Storage, Events):
             return orders[0]
         except IndexError:
             return None
-
-    def get_external_market_center_price(self, external_price_source):
-        """ Get center price from an external market for current market pair
-
-            :param external_price_source: External market name
-            :return: Center price as float
-        """
-        self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
-        market = self.market.get_string('/')
-        self.log.debug('market: {}  '.format(market))
-        price_feed = PriceFeed(external_price_source, market)
-        price_feed.filter_symbols()
-        center_price = price_feed.get_center_price(None)
-        self.log.debug('PriceFeed: {}'.format(center_price))
-
-        if center_price is None:  # Try USDT
-            center_price = price_feed.get_center_price("USDT")
-            self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
-            if center_price is None:  # Try consolidated
-                center_price = price_feed.get_consolidated_price()
-                self.log.debug('Consolidated center price: {}'.format(center_price))
-        return center_price
 
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
