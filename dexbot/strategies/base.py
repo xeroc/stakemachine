@@ -150,12 +150,12 @@ class StrategyBase(Storage, Events):
 
         if fee_asset_symbol:
             try:
-                self.fee_asset = Asset(fee_asset_symbol)
+                self.fee_asset = Asset(fee_asset_symbol, bitshares_instance=self.bitshares)
             except bitshares.exceptions.AssetDoesNotExistsException:
-                self.fee_asset = Asset('1.3.0')
+                self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
         else:
             # If there is no fee asset, use BTS
-            self.fee_asset = Asset('1.3.0')
+            self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
 
         # CER cache
         self.core_exchange_rate = None
@@ -1302,7 +1302,7 @@ class StrategyBase(Storage, Events):
             :return: float | amount of fee_asset to pay fee
         """
         if isinstance(fee_asset, str):
-            fee_asset = Asset(fee_asset)
+            fee_asset = Asset(fee_asset, bitshares_instance=self.bitshares)
 
         if fee_asset['id'] == '1.3.0':
             # Fee asset is BTS, so no further calculations are needed
