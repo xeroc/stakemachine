@@ -1773,10 +1773,10 @@ class Strategy(StrategyBase):
         order = VirtualOrder()
         order['price'] = price
 
-        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        base_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
@@ -1802,10 +1802,10 @@ class Strategy(StrategyBase):
         order = VirtualOrder()
         order['price'] = price ** -1
 
-        quote_asset = Amount(amount * price, self.market['base']['symbol'])
+        quote_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount, self.market['quote']['symbol'])
+        base_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
