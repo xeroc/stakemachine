@@ -1,7 +1,7 @@
 from bitshares.instance import shared_bitshares_instance
 
 
-class BitsharesOrderEngine:
+class OrderEngine:
 
     def __init__(self,
                  bitshares_instance=None):

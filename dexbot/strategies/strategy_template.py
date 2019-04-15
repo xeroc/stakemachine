@@ -12,7 +12,7 @@ from dexbot.qt_queue.idle_queue import idle_add
 STRATEGY_NAME = 'Strategy Template'
 
 
-class TemplateStrategy(StrategyBase):
+class Strategy(StrategyBase):
     """ <strategy_name>
 
         Replace <strategy_name> with the name of the strategy.
