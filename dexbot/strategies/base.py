@@ -270,10 +270,10 @@ class StrategyBase(Storage, Events):
         return balance
 
     def calculate_order_data(self, order, amount, price):
-        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
         order['price'] = price
-        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        base_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         return order
 
@@ -376,8 +376,8 @@ class StrategyBase(Storage, Events):
             base += orders_balance['base']
 
         if return_asset:
-            quote = Amount(quote, quote_asset)
-            base = Amount(base, base_asset)
+            quote = Amount(quote, quote_asset, bitshares_instance=self.bitshares)
+            base = Amount(base, base_asset, bitshares_instance=self.bitshares)
 
         return {'quote': quote, 'base': base}
 
@@ -410,8 +410,8 @@ class StrategyBase(Storage, Events):
 
         # Return as Amount objects instead of only float values
         if return_asset:
-            quote = Amount(quote, quote_asset)
-            base = Amount(base, base_asset)
+            quote = Amount(quote, quote_asset, bitshares_instance=self.bitshares)
+            base = Amount(base, base_asset, bitshares_instance=self.bitshares)
 
         return {'quote': quote, 'base': base}
 
@@ -990,7 +990,7 @@ class StrategyBase(Storage, Events):
         buy_transaction = self.retry_action(
             self.market.buy,
             price,
-            Amount(amount=amount, asset=self.market["quote"]),
+            Amount(amount=amount, asset=self.market["quote"], bitshares_instance=self.bitshares),
             account=self.account.name,
             expiration=self.expiration,
             returnOrderId=return_order_id,
@@ -1046,7 +1046,7 @@ class StrategyBase(Storage, Events):
         sell_transaction = self.retry_action(
             self.market.sell,
             price,
-            Amount(amount=amount, asset=self.market["quote"]),
+            Amount(amount=amount, asset=self.market["quote"], bitshares_instance=self.bitshares),
             account=self.account.name,
             expiration=self.expiration,
             returnOrderId=return_order_id,
