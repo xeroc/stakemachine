@@ -119,7 +119,7 @@ class WorkerInfrastructure(threading.Thread):
                 continue
             elif self.workers[worker_name].disabled:
                 self.workers[worker_name].log.error('Worker "{}" is disabled'.format(worker_name))
-                self.config["workers"].pop(worker_name)
+                self.workers.pop(worker_name)
                 continue
             try:
                 self.workers[worker_name].ontick(data)
@@ -137,9 +137,11 @@ class WorkerInfrastructure(threading.Thread):
 
         self.config_lock.acquire()
         for worker_name, worker in self.config["workers"].items():
-            if self.workers[worker_name].disabled:
+            if worker_name not in self.workers:
+                continue
+            elif self.workers[worker_name].disabled:
                 self.workers[worker_name].log.error('Worker "{}" is disabled'.format(worker_name))
-                self.config["workers"].pop(worker_name)
+                self.workers.pop(worker_name)
                 continue
             if worker["market"] == data.market:
                 try:
@@ -156,9 +158,11 @@ class WorkerInfrastructure(threading.Thread):
         self.config_lock.acquire()
         account = account_update.account
         for worker_name, worker in self.config["workers"].items():
-            if self.workers[worker_name].disabled:
+            if worker_name not in self.workers:
+                continue
+            elif self.workers[worker_name].disabled:
                 self.workers[worker_name].log.error('Worker "{}" is disabled'.format(worker_name))
-                self.config["workers"].pop(worker_name)
+                self.workers.pop(worker_name)
                 continue
             if worker["account"] == account["name"]:
                 try:
