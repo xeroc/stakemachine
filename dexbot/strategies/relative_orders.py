@@ -5,6 +5,7 @@ from .base import StrategyBase
 from .config_parts.relative_config import RelativeConfig
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
 
+
 class Strategy(StrategyBase):
     """ Relative Orders strategy
     """
@@ -118,8 +119,7 @@ class Strategy(StrategyBase):
         """ Ticks come in on every block. We need to periodically check orders because cancelled orders
             do not triggers a market_update event
         """
-        if (self.is_reset_on_price_change and not
-                self.counter % 8):
+        if (self.is_reset_on_price_change and not self.counter % 8):
             self.log.debug('Checking orders by tick threshold')
             self.check_orders()
         self.counter += 1
