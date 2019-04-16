@@ -1,14 +1,15 @@
 import logging
 from bitshares.instance import shared_bitshares_instance
 
-
 class PriceFeed:
 
-    def __init__(self, market):
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 market,
+                 bitshares_instance=None):
+
         self._market = market
         self.ticker = self.market.ticker
-        self.disabled = False  # temporary while we figure out
+        self.disabled = False  # temporary while I figure out what this does
 
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
