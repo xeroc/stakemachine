@@ -16,7 +16,7 @@ from bitsharesbase.chains import known_chains
 
 # Note: chain_id is generated from genesis.json, every time it's changes you need to get new chain_id from
 # `bitshares.rpc.get_chain_properties()`
-known_chains["TEST"]["chain_id"] = "5f0c72a2637f4938507f06d87e07be5d8015c32d720dce468d6d9a30db79947b"
+known_chains["TEST"]["chain_id"] = "c74ddb39b3a233445dd95d7b6fc2d0fa4ba666698db26b53855d94fffcc460af"
 
 PRIVATE_KEYS = ['5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3']
 DEFAULT_ACCOUNT = 'init0'

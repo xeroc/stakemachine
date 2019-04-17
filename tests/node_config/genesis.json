@@ -194,7 +194,7 @@
       ],
       "scale": 10000
     },
-    "block_interval": 5,
+    "block_interval": 1,
     "maintenance_interval": 86400,
     "maintenance_skip_slots": 3,
     "committee_proposal_review_period": 1209600,
