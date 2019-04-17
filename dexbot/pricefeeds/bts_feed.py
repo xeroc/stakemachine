@@ -1,13 +1,9 @@
-import datetime
 import copy
 import logging
 import math
-import time
 
 from bitshares.instance import shared_bitshares_instance
-from bitshares.market import Market
-from bitshares.price import FilledOrder, Order, UpdateCallOrder
-from bitshares.utils import formatTime
+from bitshares.price import Order
 
 class PriceFeed:
 
@@ -17,7 +13,7 @@ class PriceFeed:
 
         self._market = market
         self.ticker = self.market.ticker
-        self.disabled = False  # temporary while I figure out what this does
+        self.disabled = False  # flag for suppress errors
 
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
