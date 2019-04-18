@@ -1,8 +1,7 @@
 from bitshares.bitshares import BitShares
 from bitshares.market import Market
-#from bitshares.price import Order
 
-from dexbot.pricefeeds.bts_feed import PriceFeed
+from dexbot.pricefeeds.bts_feed import BitsharesPriceFeed
 
 node_url = "wss://api.fr.bitsharesdex.com/ws"
 
@@ -17,13 +16,13 @@ print("Bitshares Price Feed Test")
 market = Market("USD:BTS")
 print(market.ticker())
 
-pf = PriceFeed(market=market, bitshares_instance=bts)
+pf = BitsharesPriceFeed(market=market, bitshares_instance=bts)
 
 market = pf.market
-print("Market we are examining:", market, sep=':')
+print("\nMarket we are examining:", market, sep=':')
 
 center_price = pf.get_market_center_price(base_amount=0, quote_amount=0, suppress_errors=False)
-print("center price:", center_price, sep=':')
+print("\nCenter price:", center_price, sep=':')
 
 print("\nList of buy orders:")
 buy_orders = pf.get_market_buy_orders(depth=10)
@@ -53,8 +52,15 @@ print("market sell price", mkt_sell_price, sep=':')
 mkt_spread = pf.get_market_spread(quote_amount=0, base_amount=0)
 print("market spread", mkt_spread, sep=':')
 
+highest = pf.get_highest_market_buy_order(asc_buy_orders)
+print("Highest market buy order", highest, sep=':')
+
+lowest = pf.get_lowest_market_sell_order(sell_orders)
+print("Lowest market sell order", lowest, sep=':')
+
 
 # todo:
-# filter buy/sell orders (2)
-# get_updated_limit_order (static method)
+
+# get_updated_limit_order (static method) resolve the usage across 2 classes
+# refactor get_market_buy/sell_price to use orders instead of "exclude_own_price"
 

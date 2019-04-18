@@ -5,8 +5,18 @@ import math
 from bitshares.instance import shared_bitshares_instance
 from bitshares.price import Order
 
-class PriceFeed:
+class BitsharesPriceFeed:
+    """
+            Price Feed class enables usage of Bitshares DEX for market center and order
+            book pricing, without requiring a registered account. It may be use for both
+            strategy and indicator analysis tools.
 
+           All prices are passed and returned as BASE/QUOTE.
+           (In the BREAD/USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
+            - Buy orders reserve BASE
+            - Sell orders reserve QUOTE
+
+    """
     def __init__(self,
                  market,
                  bitshares_instance=None):
@@ -35,8 +45,9 @@ class PriceFeed:
             :return: Returns a list of orders or None
         """
         orders = self.bitshares.rpc.get_limit_orders(self.market['base']['id'], self.market['quote']['id'], depth)
-        if updated:
-            orders = [self.get_updated_limit_order(o) for o in orders]
+#        if updated:
+#            orders = [self.get_updated_limit_order(o) for o in orders]
+        # ## todo: how to best split between order/pricefeed?
         orders = [Order(o, bitshares_instance=self.bitshares) for o in orders]
         return orders
 
@@ -86,6 +97,39 @@ class PriceFeed:
 
         return sell_orders
 
+    def get_highest_market_buy_order(self, orders=None):
+        """ Returns the highest buy order that is not own, regardless of order size.
+
+            :param list | orders: Optional list of orders, if none given fetch newest from market
+            :return: Highest market buy order or None
+        """
+        if not orders:
+            orders = self.get_market_buy_orders(1)
+
+        try:
+            order = orders[0]
+        except IndexError:
+            self.log.info('Market has no buy orders.')
+            return None
+
+        return order
+
+    def get_lowest_market_sell_order(self, orders=None):
+        """ Returns the lowest sell order that is not own, regardless of order size.
+
+            :param list | orders: Optional list of orders, if none given fetch newest from market
+            :return: Lowest market sell order or None
+        """
+        if not orders:
+            orders = self.get_market_sell_orders(1)
+
+        try:
+            order = orders[0]
+        except IndexError:
+            self.log.info('Market has no sell orders.')
+            return None
+
+        return order
 
     def get_market_buy_orders(self, depth=10):
         """ Fetches most recent data and returns list of buy orders.
@@ -107,7 +151,7 @@ class PriceFeed:
         sell_orders = self.filter_sell_orders(orders)
         return sell_orders
 
-    def get_market_buy_price(self, quote_amount=0, base_amount=0):
+    def get_market_buy_price(self, quote_amount=0, base_amount=0): # TODO: refactor to use orders instead of exclude_own_orders
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
             moving average or weighted moving average
 
@@ -171,7 +215,7 @@ class PriceFeed:
 
         return base_amount / quote_amount
 
-    def get_market_sell_price(self, quote_amount=0, base_amount=0):
+    def get_market_sell_price(self, quote_amount=0, base_amount=0):# TODO: refactor to use orders instead of exclude_own_orders
         """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
             enhanced with moving average or weighted moving average.
 
@@ -288,21 +332,6 @@ class PriceFeed:
         """
         return self._market
 
-    @staticmethod
-    def get_updated_limit_order(limit_order):
-        """ Returns a modified limit_order so that when passed to Order class,
-            will return an Order object with updated amount values
-
-            :param limit_order: an item of Account['limit_orders'] or bitshares.rpc.get_limit_orders()
-            :return: Order
-        """
-        order = copy.deepcopy(limit_order)
-        price = float(order['sell_price']['base']['amount']) / float(order['sell_price']['quote']['amount'])
-        base_amount = float(order['for_sale'])
-        quote_amount = base_amount / price
-        order['sell_price']['base']['amount'] = base_amount
-        order['sell_price']['quote']['amount'] = quote_amount
-        return order
 
     @staticmethod
     def sort_orders_by_price(orders, sort='DESC'):
