@@ -404,6 +404,22 @@ class BitsharesOrderEngine(Storage, Events):
 
         return {'quote': quote, 'base': base}
 
+    def get_market_orders(self, depth=1, updated=True):
+        """ Returns orders from the current market. Orders are sorted by price.
+
+            get_market_orders() call does not have any depth limit.
+
+            :param int | depth: Amount of orders per side will be fetched, default=1
+            :param bool | updated: Return updated orders. "Updated" means partially filled orders will represent
+                                   remainders and not just initial amounts
+            :return: Returns a list of orders or None
+        """
+        orders = self.bitshares.rpc.get_limit_orders(self.market['base']['id'], self.market['quote']['id'], depth)
+        if updated:
+            orders = [self.get_updated_limit_order(o) for o in orders]
+        orders = [Order(o, bitshares_instance=self.bitshares) for o in orders]
+        return orders
+
     def get_order_cancellation_fee(self, fee_asset):
         """ Returns the order cancellation fee in the specified asset.
 

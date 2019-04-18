@@ -34,22 +34,29 @@ class BitsharesPriceFeed:
             logging.getLogger('dexbot.pricefeed_log'), {}
         )
 
-    def get_market_orders(self, depth=1, updated=True):
+    def get_limit_orders(self, depth=1):
         """ Returns orders from the current market. Orders are sorted by price.
 
-            get_market_orders() call does not have any depth limit.
-
+            get_limit_orders() call does not have any depth limit.
             :param int | depth: Amount of orders per side will be fetched, default=1
-            :param bool | updated: Return updated orders. "Updated" means partially filled orders will represent
-                                   remainders and not just initial amounts
             :return: Returns a list of orders or None
         """
         orders = self.bitshares.rpc.get_limit_orders(self.market['base']['id'], self.market['quote']['id'], depth)
-#        if updated:
-#            orders = [self.get_updated_limit_order(o) for o in orders]
-        # ## todo: how to best split between order/pricefeed?
         orders = [Order(o, bitshares_instance=self.bitshares) for o in orders]
         return orders
+
+    def get_orderbook_orders(self, depth=1):
+        """ Returns orders from the current market split in bids and asks. Orders are sorted by price.
+
+            Market.orderbook() call has hard-limit of depth=50 enforced by bitshares node.
+
+            bids = buy orders
+            asks = sell orders
+
+            :param int | depth: Amount of orders per side will be fetched, default=1
+            :return: Returns a dictionary of orders or None
+        """
+        return self.market.orderbook(depth)
 
     def filter_buy_orders(self, orders, sort=None):
         """ Return own buy orders from list of orders. Can be used to pick buy orders from a list
@@ -137,7 +144,7 @@ class BitsharesPriceFeed:
             :param int | depth: Amount of buy orders returned, Default=10
             :return: List of market sell orders
         """
-        orders = self.get_market_orders(depth=depth)
+        orders = self.get_limit_orders(depth=depth)
         buy_orders = self.filter_buy_orders(orders)
         return buy_orders
 
@@ -147,7 +154,7 @@ class BitsharesPriceFeed:
             :param int | depth: Amount of sell orders returned, Default=10
             :return: List of market sell orders
         """
-        orders = self.get_market_orders(depth=depth)
+        orders = self.get_limit_orders(depth=depth)
         sell_orders = self.filter_sell_orders(orders)
         return sell_orders
 
