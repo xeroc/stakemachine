@@ -404,6 +404,34 @@ class BitsharesOrderEngine(Storage, Events):
 
         return {'quote': quote, 'base': base}
 
+    def get_highest_own_buy_order(self, orders=None):
+        """ Returns highest own buy order.
+
+            :param list | orders:
+            :return: Highest own buy order by price at the market or None
+        """
+        if not orders:
+            orders = self.get_own_buy_orders()
+
+        try:
+            return orders[0]
+        except IndexError:
+            return None
+
+    def get_lowest_own_sell_order(self, orders=None):
+        """ Returns lowest own sell order.
+
+            :param list | orders:
+            :return: Lowest own sell order by price at the market
+        """
+        if not orders:
+            orders = self.get_own_sell_orders()
+
+        try:
+            return orders[0]
+        except IndexError:
+            return None
+
     def get_market_orders(self, depth=1, updated=True):
         """ Returns orders from the current market. Orders are sorted by price.
 
@@ -441,6 +469,28 @@ class BitsharesOrderEngine(Storage, Events):
         fees = self.dex.returnFees()
         limit_order_create = fees['limit_order_create']
         return self.convert_fee(limit_order_create['fee'], fee_asset)
+
+    def get_own_buy_orders(self, orders=None):
+        """ Get own buy orders from current market, or from a set of orders passed for this function.
+
+            :return: List of buy orders
+        """
+        if not orders:
+            # List of orders was not given so fetch everything from the market
+            orders = self.get_own_orders
+
+        return self.filter_buy_orders(orders)
+
+    def get_own_sell_orders(self, orders=None):
+        """ Get own sell orders from current market
+
+            :return: List of sell orders
+        """
+        if not orders:
+            # List of orders was not given so fetch everything from the market
+            orders = self.get_own_orders
+
+        return self.filter_sell_orders(orders)
 
     def get_own_spread(self):
         """ Returns the difference between own closest opposite orders.
@@ -875,7 +925,7 @@ class BitsharesOrderEngine(Storage, Events):
 
         return orders
 
-    @property #todo: duplicate definition, also in price feed
+    @property #todo: duplicate property, also in price feed
     def market(self):
         """ Return the market object as :class:`bitshares.market.Market`
         """

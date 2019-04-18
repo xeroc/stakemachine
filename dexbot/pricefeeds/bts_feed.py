@@ -7,8 +7,8 @@ from bitshares.price import Order
 
 class BitsharesPriceFeed:
     """
-            Price Feed class enables usage of Bitshares DEX for market center and order
-            book pricing, without requiring a registered account. It may be use for both
+            This Price Feed class enables usage of Bitshares DEX for market center and order
+            book pricing, without requiring a registered account. It may be used for both
             strategy and indicator analysis tools.
 
            All prices are passed and returned as BASE/QUOTE.
@@ -35,7 +35,7 @@ class BitsharesPriceFeed:
         )
 
     def get_limit_orders(self, depth=1):
-        """ Returns orders from the current market. Orders are sorted by price.
+        """ Returns orders from the current market. Orders are sorted by price. Does not require account info.
 
             get_limit_orders() call does not have any depth limit.
             :param int | depth: Amount of orders per side will be fetched, default=1
@@ -158,7 +158,8 @@ class BitsharesPriceFeed:
         sell_orders = self.filter_sell_orders(orders)
         return sell_orders
 
-    def get_market_buy_price(self, quote_amount=0, base_amount=0): # TODO: refactor to use orders instead of exclude_own_orders
+    def get_market_buy_price(self, quote_amount=0, base_amount=0):
+        # TODO: refactor to use orders instead of exclude_own_orders
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
             moving average or weighted moving average
 
@@ -222,7 +223,8 @@ class BitsharesPriceFeed:
 
         return base_amount / quote_amount
 
-    def get_market_sell_price(self, quote_amount=0, base_amount=0):# TODO: refactor to use orders instead of exclude_own_orders
+    def get_market_sell_price(self, quote_amount=0, base_amount=0):
+        # TODO: refactor to use orders instead of exclude_own_orders
         """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
             enhanced with moving average or weighted moving average.
 
