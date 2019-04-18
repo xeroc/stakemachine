@@ -24,7 +24,7 @@ from bitshares.utils import formatTime
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
 
-
+## this is TEMPORARY CLASS before we move the Orders out
 class BitsharesOrderEngine(Storage, Events):
     """
         All prices are passed and returned as BASE/QUOTE.
@@ -769,7 +769,7 @@ class BitsharesOrderEngine(Storage, Events):
                 else:
                     raise
 
-    def store_profit_estimation_data(self):
+    def store_profit_estimation_data(self): # todo: move this method into strategy
         """ Save total quote, total base, center_price, and datetime in to the database
         """
         assets = self.count_asset()
@@ -792,7 +792,7 @@ class BitsharesOrderEngine(Storage, Events):
         return self.get_balance_history(self.config['workers'][self.worker_name].get('account'),
                                         self.worker_name, seconds)
 
-    def calc_profit(self):
+    def calc_profit(self): # todo: move this method into strategy
         """ Calculate relative profit for the current worker
         """
         profit = 0
