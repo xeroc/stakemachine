@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from .base import StrategyBase
 from .config_parts.relative_config import RelativeConfig
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
-from dexbot.orderengines.bts_engine import BitsharesOrderEngine
-from dexbot.pricefeeds.bts_feed import BitsharesPriceFeed
+from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
+from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 
 #class Strategy(StrategyBase):
 
