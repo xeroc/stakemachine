@@ -40,7 +40,7 @@ for order in asc_buy_orders:
 sell_orders = pf.get_market_sell_orders(depth=10)
 print("\nMarket Sell Orders", sell_orders, sep=':')
 
-mkt_orders = pf.get_market_orders(depth=1, updated=True)
+mkt_orders = pf.get_limit_orders(depth=1)
 print("\nMarket Orders", mkt_orders, sep=":")
 
 mkt_buy_price = pf.get_market_buy_price(quote_amount=0, base_amount=0)
@@ -60,7 +60,4 @@ print("Lowest market sell order", lowest, sep=':')
 
 
 # todo:
-
-# get_updated_limit_order (static method) resolve the usage across 2 classes
-# refactor get_market_buy/sell_price to use orders instead of "exclude_own_price"
 
