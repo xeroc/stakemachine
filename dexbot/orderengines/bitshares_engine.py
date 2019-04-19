@@ -1,20 +1,18 @@
-import copy
 import datetime
+import copy
 import logging
-import math
 import time
+#import math
 
 from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.helper import truncate
-from dexbot.qt_queue.idle_queue import idle_add
-from dexbot.strategies.config_parts.base_config import BaseConfig
 
-from events import Events
 import bitshares.exceptions
 import bitsharesapi
 import bitsharesapi.exceptions
-from bitshares.account import Account
+
+#from bitshares.account import Account
 from bitshares.amount import Amount, Asset
 from bitshares.dex import Dex
 from bitshares.instance import shared_bitshares_instance
@@ -22,13 +20,16 @@ from bitshares.market import Market
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.utils import formatTime
 
+from events import Events
+
+
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
 
-## this is TEMPORARY CLASS before we move the Orders out
+
 class BitsharesOrderEngine(Storage, Events):
     """
-        All prices are passed and returned as BASE/QUOTE.
+       All prices are passed and returned as BASE/QUOTE.
         (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
          - Buy orders reserve BASE
          - Sell orders reserve QUOTE
@@ -38,53 +39,16 @@ class BitsharesOrderEngine(Storage, Events):
             * ``Events`` :The websocket endpoint of BitShares has notifications that are subscribed to
                             and dispatched by dexbot. This uses python's native Events
 
-        Available attributes:
-            * ``worker.bitshares``: instance of ´`bitshares.BitShares()``
-            * ``worker.account``: The Account object of this worker
-            * ``worker.market``: The market used by this worker
-            * ``worker.orders``: List of open orders of the worker's account in the worker's market
-            * ``worker.balance``: List of assets and amounts available in the worker's account
-            * ``worker.log``: a per-worker logger (actually LoggerAdapter) adds worker-specific context:
-                worker name & account (Because some UIs might want to display per-worker logs)
-
-        Also, Worker inherits :class:`dexbot.storage.Storage`
-        which allows to permanently store data in a sqlite database
-        using:
     """
-    # put configure methods in strategies
-    @classmethod
-    def configure(cls, return_base_config=True):
-        return BaseConfig.configure(return_base_config)
-
-    @classmethod
-    def configure_details(cls, include_default_tabs=True):
-        return BaseConfig.configure_details(include_default_tabs)
-
-    """
-    Events are bitshares websocket specific
-    """
-    __events__ = [
-        'onAccount',
-        'onMarketUpdate',
-        'onOrderMatched',
-        'onOrderPlaced',
-        'ontick',
-        'onUpdateCallOrder',
-        'error_onAccount',
-        'error_onMarketUpdate',
-        'error_ontick',
-    ]
 
     def __init__(self,
                  name,
                  config=None,
-                 onAccount=None,
-                 onOrderMatched=None,
-                 onOrderPlaced=None,
-                 onMarketUpdate=None,
-                 onUpdateCallOrder=None,
-                 ontick=None,
+                 account=None,
+                 market=None,
+                 fee_asset_symbol=None,
                  bitshares_instance=None,
+                 bitshares_bundle=None,
                  *args,
                  **kwargs):
 
@@ -100,34 +64,18 @@ class BitsharesOrderEngine(Storage, Events):
         # Events
         Events.__init__(self)
 
-        if ontick:
-            self.ontick += ontick
-        if onMarketUpdate:
-            self.onMarketUpdate += onMarketUpdate
-        if onAccount:
-            self.onAccount += onAccount
-        if onOrderMatched:
-            self.onOrderMatched += onOrderMatched
-        if onOrderPlaced:
-            self.onOrderPlaced += onOrderPlaced
-        if onUpdateCallOrder:
-            self.onUpdateCallOrder += onUpdateCallOrder
-
         # Redirect this event to also call order placed and order matched
         self.onMarketUpdate += self._callbackPlaceFillOrders
 
         if config:
             self.config = config
         else:
-            self.config = config = Config.get_worker_config_file(name)
-
-        # Get worker's parameters from the config
-        self.worker = config["workers"][name]
+            self.config = Config.get_worker_config_file(name)
 
         # Get Bitshares account and market for this worker
-        self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
+        self._account = account
 
-        self._market = Market(config["workers"][name]["market"], bitshares_instance=self.bitshares)
+        self._market = market
 
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
@@ -136,7 +84,7 @@ class BitsharesOrderEngine(Storage, Events):
         self.fetch_depth = 8
 
         # Set fee asset
-        fee_asset_symbol = self.worker.get('fee_asset')
+        fee_asset_symbol = fee_asset_symbol
 
         if fee_asset_symbol:
             try:
@@ -154,7 +102,7 @@ class BitsharesOrderEngine(Storage, Events):
         self.ticker = self.market.ticker
 
         # Settings for bitshares instance
-        self.bitshares.bundle = bool(self.worker.get("bundle", False))
+        self.bitshares.bundle = bitshares_bundle
 
         # Disabled flag - this flag can be flipped to True by a worker and will be reset to False after reset only
         self.disabled = False
@@ -164,17 +112,6 @@ class BitsharesOrderEngine(Storage, Events):
 
         # buy/sell actions will return order id by default
         self.returnOrderId = 'head'
-
-        # A private logger that adds worker identify data to the LogRecord
-        self.log = logging.LoggerAdapter(
-            logging.getLogger('dexbot.per_worker'),
-            {
-                'worker_name': name,
-                'account': self.worker['account'],
-                'market': self.worker['market'],
-                'is_disabled': lambda: self.disabled
-            }
-        )
 
         self.orders_log = logging.LoggerAdapter(
             logging.getLogger('dexbot.orders_log'), {}
@@ -587,29 +524,6 @@ class BitsharesOrderEngine(Storage, Events):
         else:
             return False
 
-    def pause(self):
-        """ Pause the worker
-
-            Note: By default pause cancels orders, but this can be overridden by strategy
-        """
-        # Cancel all orders from the market
-        self.cancel_all_orders()
-
-        # Removes worker's orders from local database
-        self.clear_orders()
-
-    def clear_all_worker_data(self):
-        """ Clear all the worker data from the database and cancel all orders
-        """
-        # Removes worker's orders from local database
-        self.clear_orders()
-
-        # Cancel all orders from the market
-        self.cancel_all_orders()
-
-        # Finally clear all worker data from the database
-        self.clear()
-
     def place_market_buy_order(self, amount, price, return_none=False, *args, **kwargs):
         """ Places a buy order in the market
 
@@ -770,103 +684,6 @@ class BitsharesOrderEngine(Storage, Events):
                 else:
                     raise
 
-    def store_profit_estimation_data(self): # todo: move this method into strategy
-        """ Save total quote, total base, center_price, and datetime in to the database
-        """
-        assets = self.count_asset()
-        account = self.config['workers'][self.worker_name].get('account')
-        base_amount = assets['base']
-        base_symbol = self.market['base'].get('symbol')
-        quote_amount = assets['quote']
-        quote_symbol = self.market['quote'].get('symbol')
-        center_price = self.get_market_center_price()
-        timestamp = time.time()
-
-        self.store_balance_entry(account, self.worker_name, base_amount, base_symbol,
-                                 quote_amount, quote_symbol, center_price, timestamp)
-
-    def get_profit_estimation_data(self, seconds):
-        """ Get balance history closest to the given time
-
-            :returns The data as dict from the first timestamp going backwards from seconds argument
-        """
-        return self.get_balance_history(self.config['workers'][self.worker_name].get('account'),
-                                        self.worker_name, seconds)
-
-    def calc_profit(self): # todo: move this method into strategy
-        """ Calculate relative profit for the current worker
-        """
-        profit = 0
-        time_range = 60 * 60 * 24 * 7  # 7 days
-        current_time = time.time()
-        timestamp = current_time - time_range
-
-        # Fetch the balance from history
-        old_data = self.get_balance_history(self.config['workers'][self.worker_name].get('account'), self.worker_name,
-                                            timestamp, self.base_asset, self.quote_asset)
-        if old_data:
-            earlier_base = old_data.base_total
-            earlier_quote = old_data.quote_total
-            old_center_price = old_data.center_price
-            center_price = self.get_market_center_price()
-
-            if not (old_center_price or center_price):
-                return profit
-
-            # Calculate max theoretical balances based on starting price
-            old_max_quantity_base = earlier_base + earlier_quote * old_center_price
-            old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
-
-            if not (old_max_quantity_base or old_max_quantity_quote):
-                return profit
-
-            # Current balances
-            balance = self.count_asset()
-            base_balance = balance['base']
-            quote_balance = balance['quote']
-
-            # Calculate max theoretical current balances
-            max_quantity_base = base_balance + quote_balance * center_price
-            max_quantity_quote = quote_balance + base_balance / center_price
-
-            base_roi = max_quantity_base / old_max_quantity_base
-            quote_roi = max_quantity_quote / old_max_quantity_quote
-            profit = round(math.sqrt(base_roi * quote_roi) - 1, 4)
-
-        return profit
-
-    def write_order_log(self, worker_name, order):
-        """ Write order log to csv file
-
-            :param string | worker_name: Name of the worker
-            :param object | order: Order that was fulfilled
-        """
-        operation_type = 'TRADE'
-
-        if order['base']['symbol'] == self.market['base']['symbol']:
-            base_symbol = order['base']['symbol']
-            base_amount = -order['base']['amount']
-            quote_symbol = order['quote']['symbol']
-            quote_amount = order['quote']['amount']
-        else:
-            base_symbol = order['quote']['symbol']
-            base_amount = order['quote']['amount']
-            quote_symbol = order['base']['symbol']
-            quote_amount = -order['base']['amount']
-
-        message = '{};{};{};{};{};{};{};{}'.format(
-            worker_name,
-            order['id'],
-            operation_type,
-            base_symbol,
-            base_amount,
-            quote_symbol,
-            quote_amount,
-            datetime.datetime.now().isoformat()
-        )
-
-        self.orders_log.info(message)
-
     @property
     def account(self):
         """ Return the full account as :class:`bitshares.account.Account` object!
@@ -885,14 +702,6 @@ class BitsharesOrderEngine(Storage, Events):
         return self._account.balances
 
     @property
-    def base_asset(self):
-        return self.worker['market'].split('/')[1]
-
-    @property
-    def quote_asset(self):
-        return self.worker['market'].split('/')[0]
-
-    @property
     def all_own_orders(self, refresh=True):
         """ Return the worker's open orders in all markets
 
@@ -909,24 +718,7 @@ class BitsharesOrderEngine(Storage, Events):
 
         return orders
 
-    @property
-    def get_own_orders(self):
-        """ Return the account's open orders in the current market
-
-            :return: List of Order objects
-        """
-        orders = []
-
-        # Refresh account data
-        self.account.refresh()
-
-        for order in self.account.openorders:
-            if self.worker["market"] == order.market and self.account.openorders:
-                orders.append(order)
-
-        return orders
-
-    @property #todo: duplicate property, also in price feed
+    @property #todo: duplicate property, also in price feed, collisions possible?
     def market(self):
         """ Return the market object as :class:`bitshares.market.Market`
         """
@@ -1005,34 +797,3 @@ class BitsharesOrderEngine(Storage, Events):
             return None
         return order
 
-    @staticmethod
-    def purge_all_local_worker_data(worker_name):
-        """ Removes worker's data and orders from local sqlite database
-
-            :param worker_name: Name of the worker to be removed
-        """
-        Storage.clear_worker_data(worker_name)
-
-    # GUI updaters
-    def update_gui_slider(self):
-        ticker = self.market.ticker()
-        latest_price = ticker.get('latest', {}).get('price', None)
-        if not latest_price:
-            return
-
-        total_balance = self.count_asset()
-        total = (total_balance['quote'] * latest_price) + total_balance['base']
-
-        if not total:  # Prevent division by zero
-            percentage = 50
-        else:
-            percentage = (total_balance['base'] / total) * 100
-        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
-        self['slider'] = percentage
-
-    def update_gui_profit(self):
-        profit = self.calc_profit()
-
-        # Add to idle queue
-        idle_add(self.view.set_worker_profit, self.worker_name, float(profit))
-        self['profit'] = profit

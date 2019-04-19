@@ -2,15 +2,13 @@ import math
 from datetime import datetime, timedelta
 
 from .base import StrategyBase
+
 from .config_parts.relative_config import RelativeConfig
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
-from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
 from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 
-#class Strategy(StrategyBase):
 
-# this inheritance is temporary before we finish refactoring strategybase
-class Strategy(BitsharesOrderEngine, BitsharesPriceFeed):
+class Strategy(StrategyBase, BitsharesPriceFeed):
     """ Relative Orders strategy
     """
 

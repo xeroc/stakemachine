@@ -6,14 +6,12 @@ from functools import reduce
 from bitshares.dex import Dex
 from bitshares.amount import Amount
 
-#from .base import StrategyBase
+from .base import StrategyBase
 from .config_parts.staggered_config import StaggeredConfig
-from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
 from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 
-#class Strategy(StrategyBase):
 # this inheritance is temporary before we finish refactoring strategybase
-class Strategy(BitsharesOrderEngine, BitsharesPriceFeed):
+class Strategy(StrategyBase, BitsharesPriceFeed):
     """ Staggered Orders strategy """
 
     @classmethod
