@@ -2,7 +2,6 @@ import datetime
 import copy
 import logging
 import time
-#import math
 
 from dexbot.config import Config
 from dexbot.storage import Storage
@@ -12,7 +11,6 @@ import bitshares.exceptions
 import bitsharesapi
 import bitsharesapi.exceptions
 
-#from bitshares.account import Account
 from bitshares.amount import Amount, Asset
 from bitshares.dex import Dex
 from bitshares.instance import shared_bitshares_instance
@@ -718,7 +716,7 @@ class BitsharesOrderEngine(Storage, Events):
 
         return orders
 
-    @property #todo: duplicate property, also in price feed, collisions possible?
+    @property #todo: duplicate property, also in price feed
     def market(self):
         """ Return the market object as :class:`bitshares.market.Market`
         """

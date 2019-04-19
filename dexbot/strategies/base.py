@@ -1,12 +1,7 @@
-'''
-import datetime
-import copy
-'''
 import logging
 import math
 import time
 
-#from dexbot.helper import truncate
 from dexbot.config import Config
 from dexbot.storage import Storage
 from dexbot.qt_queue.idle_queue import idle_add
@@ -20,15 +15,6 @@ from bitshares.account import Account
 from bitshares.amount import Asset
 from bitshares.instance import shared_bitshares_instance
 from bitshares.market import Market
-
-'''
-from bitshares.amount import Amount
-import bitsharesapi
-import bitsharesapi.exceptions
-from bitshares.dex import Dex
-from bitshares.price import FilledOrder, Order, UpdateCallOrder
-from bitshares.utils import formatTime
-'''
 
 from events import Events
 
@@ -106,9 +92,6 @@ class StrategyBase(BitsharesOrderEngine):
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
-
-        # Dex instance used to get different fees for the market
-#        self.dex = Dex(self.bitshares)
 
         # Storage
         Storage.__init__(self, name)
