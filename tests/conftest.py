@@ -66,7 +66,13 @@ def bitshares_testnet(session_id, unused_port, docker_manager):
         image='bitshares/bitshares-core:testnet',
         name='bitshares-testnet-{}'.format(session_id),
         ports={'8091': port},
-        volumes={'{}/tests/node_config'.format(os.path.abspath('.')): {'bind': '/etc/bitshares/', 'mode': 'ro'}},
+        volumes={
+            '{}/tests/node_config'.format(os.path.abspath('.')): {'bind': '/etc/bitshares/', 'mode': 'ro'},
+            '{}/tests/node_config/logging.ini'.format(os.path.abspath('.')): {
+                'bind': '/var/lib/bitshares/logging.ini',
+                'mode': 'ro',
+            },
+        },
         detach=True,
     )
     container.service_port = port
