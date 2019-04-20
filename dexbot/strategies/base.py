@@ -1314,8 +1314,7 @@ class StrategyBase(Storage, Events):
                 self.core_exchange_rate = temp_market.ticker()['core_exchange_rate']
             return fee_amount * self.core_exchange_rate['base']['amount']
 
-    @staticmethod
-    def get_order(order_id, return_none=True):
+    def get_order(self, order_id, return_none=True):
         """ Get Order object with order_id
 
             :param str | dict order_id: blockchain object id of the order can be an order dict with the id key in it
@@ -1327,7 +1326,7 @@ class StrategyBase(Storage, Events):
         if 'id' in order_id:
             order_id = order_id['id']
         try:
-            order = Order(order_id)
+            order = Order(order_id, blockchain_instance=self.bitshares)
         except Exception:
             logging.getLogger(__name__).error('Got an exception getting order id {}'.format(order_id))
             raise
