@@ -15,7 +15,6 @@
 
 import sys
 import os
-import shlex
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -31,7 +30,18 @@ sys.path.insert(0, os.path.abspath('..'))
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc"]
+extensions = ['sphinx.ext.autodoc', 'sphinxcontrib.apidoc']
+
+# apidoc settings
+apidoc_module_dir = '../dexbot'
+apidoc_output_dir = 'reference'
+apidoc_excluded_paths = ['tests']
+apidoc_separate_modules = True
+
+# Mock some modules to fix building on readthedocs.io as we cannot just install
+# everything from requirements.txt as readthedocs doesn't allow cpython modules
+# building
+autodoc_mock_imports = ['PyQt5', 'bitshares', 'bitsharesapi', 'bitsharesbase']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -49,8 +59,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'DEXBot'
-copyright = '2017, ChainSquad GmbH'
-author = 'Fabian Schuh'
+copyright = '2017-2019, DEXBot Team and contributors'
+author = 'DEXBot Team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -225,7 +235,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   (master_doc, 'DEXBot.tex', 'DEXBot Documentation',
-   'Fabian Schuh', 'manual'),
+   'DEXBot Team', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

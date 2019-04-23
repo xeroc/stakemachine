@@ -9,6 +9,7 @@ Basics
 
    setup
    configuration
+   manual
 
 Strategies
 ----------
@@ -16,20 +17,16 @@ Strategies
 .. toctree::
    :maxdepth: 1
 
-   wall
-
 Developing own Strategies
 -------------------------
 
 .. toctree::
    :maxdepth: 1
 
-   manual
-   basestrategy
    storage
    statemachine
+   strategybase
    events
-   echo
 
 Indices and tables
 ==================
