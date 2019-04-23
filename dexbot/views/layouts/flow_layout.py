@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt
 
+
 class FlowLayout(QtWidgets.QLayout):
 
     def __init__(self, parent=None, margin=0, spacing=-1):
