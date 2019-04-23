@@ -205,7 +205,7 @@ class WorkerInfrastructure(threading.Thread):
                 self.config['workers'].pop(worker_name)
 
             self.accounts.remove(account)
-            if pause:
+            if pause and worker_name in self.workers:
                 self.workers[worker_name].pause()
             self.workers.pop(worker_name, None)
         else:
