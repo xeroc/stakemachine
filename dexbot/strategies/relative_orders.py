@@ -5,10 +5,8 @@ from .base import StrategyBase
 
 from .config_parts.relative_config import RelativeConfig
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
-from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 
-
-class Strategy(StrategyBase, BitsharesPriceFeed):
+class Strategy(StrategyBase):
     """ Relative Orders strategy
     """
 

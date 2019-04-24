@@ -8,10 +8,8 @@ from bitshares.amount import Amount
 
 from .base import StrategyBase
 from .config_parts.staggered_config import StaggeredConfig
-from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 
-# this inheritance is temporary before we finish refactoring strategybase
-class Strategy(StrategyBase, BitsharesPriceFeed):
+class Strategy(StrategyBase):
     """ Staggered Orders strategy """
 
     @classmethod

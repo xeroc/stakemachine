@@ -8,7 +8,7 @@ from dexbot.qt_queue.idle_queue import idle_add
 from .config_parts.base_config import BaseConfig
 
 from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
-#from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
+from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 
 import bitshares.exceptions
 from bitshares.account import Account
@@ -22,7 +22,7 @@ from events import Events
 MAX_TRIES = 3
 
 
-class StrategyBase(BitsharesOrderEngine):
+class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
     """ A strategy based on this class is intended to work in one market. This class contains
         most common methods needed by the strategy.
 
