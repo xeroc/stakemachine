@@ -1,4 +1,4 @@
-pyqt5==5.11.3
+pyqt5==5.10
 pyqt-distutils==0.7.3
 pyinstaller==3.4
 click-datetime==0.2
@@ -8,3 +8,12 @@ requests>=2.20.0
 yarl==1.1.0
 ccxt==1.17.434
 pywaves==0.8.20
+bitshares==0.2.1
+uptick==0.2.1
+ruamel.yaml>=0.15.37
+appdirs>=1.4.3
+pycryptodomex==3.6.4
+websocket-client==0.54.0
+sdnotify==0.3.2
+sqlalchemy==1.2.11
+click==7.0

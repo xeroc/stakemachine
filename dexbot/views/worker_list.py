@@ -98,7 +98,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
     @gui_error
     def handle_open_settings(self):
         settings_dialog = SettingsView()
-        return_value = settings_dialog.exec_()
+        settings_dialog.exec_()
 
     @staticmethod
     def handle_open_documentation():
@@ -137,26 +137,30 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.statusbar_updater_first_run = False
                 time.sleep(1)
 
-            idle_add(self.set_statusbar_message)
+            msg = self.get_statusbar_message()
+            idle_add(self.set_statusbar_message, msg)
             runner_count = 0
             # Wait for 30s but do it in 0.5s pieces to not prevent closing the app
             while not self.closing and runner_count < 60:
                 runner_count += 1
                 time.sleep(0.5)
 
-    def set_statusbar_message(self):
+    def get_statusbar_message(self):
         node = self.config['node']
         try:
             start = time.time()
-            BitSharesNodeRPC(node, num_retries=1)
+            rpc = BitSharesNodeRPC(node, num_retries=1)
             latency = (time.time() - start) * 1000
         except BaseException:
             latency = -1
 
         if latency != -1:
-            self.status_bar.showMessage("ver {} - Node delay: {:.2f}ms".format(__version__, latency))
+            return "ver {} - Node delay: {:.2f}ms - node: {}".format(__version__, latency, rpc.url)
         else:
-            self.status_bar.showMessage("ver {} - Node disconnected".format(__version__))
+            return "ver {} - Node disconnected".format(__version__)
+
+    def set_statusbar_message(self, msg):
+        self.status_bar.showMessage(msg)
 
     def set_worker_status(self, worker_name, level, status):
         if worker_name != 'NONE':

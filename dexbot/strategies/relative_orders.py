@@ -1,8 +1,8 @@
 import math
 from datetime import datetime, timedelta
 
-from dexbot.strategies.base import StrategyBase, ConfigElement, DetailElement, EXCHANGES
-from dexbot.qt_queue.idle_queue import idle_add
+from .base import StrategyBase
+from .config_parts.relative_config import RelativeConfig
 
 
 class Strategy(StrategyBase):
@@ -11,57 +11,11 @@ class Strategy(StrategyBase):
 
     @classmethod
     def configure(cls, return_base_config=True):
-        return StrategyBase.configure(return_base_config) + [
-            ConfigElement('external_price_source', 'choice', EXCHANGES[0], 'External price source',
-                          'The bot will try to get price information from this source', EXCHANGES),
-            ConfigElement('external_feed', 'bool', False, 'External price feed',
-                          'Use external reference price instead of center price acquired from the market', None),
-            ConfigElement('amount', 'float', 1, 'Amount',
-                          'Fixed order size, expressed in quote asset, unless "relative order size" selected',
-                          (0, None, 8, '')),
-            ConfigElement('relative_order_size', 'bool', False, 'Relative order size',
-                          'Amount is expressed as a percentage of the account balance of quote/base asset', None),
-            ConfigElement('spread', 'float', 5, 'Spread',
-                          'The percentage difference between buy and sell', (0, 100, 2, '%')),
-            ConfigElement('dynamic_spread', 'bool', False, 'Dynamic spread',
-                          'Enable dynamic spread which overrides the spread field', None),
-            ConfigElement('market_depth_amount', 'float', 0, 'Market depth',
-                          'From which depth will market spread be measured? (QUOTE amount)',
-                          (0.00000001, 1000000000, 8, '')),
-            ConfigElement('dynamic_spread_factor', 'float', 1, 'Dynamic spread factor',
-                          'How many percent will own spread be compared to market spread?',
-                          (0.01, 1000, 2, '%')),
-            ConfigElement('center_price', 'float', 0, 'Center price',
-                          'Fixed center price expressed in base asset: base/quote', (0, None, 8, '')),
-            ConfigElement('center_price_dynamic', 'bool', True, 'Measure center price from market orders',
-                          'Estimate the center from closest opposite orders or from a depth', None),
-            ConfigElement('center_price_depth', 'float', 0, 'Measurement depth',
-                          'Cumulative quote amount from which depth center price will be measured',
-                          (0.00000001, 1000000000, 8, '')),
-            ConfigElement('center_price_offset', 'bool', False, 'Center price offset based on asset balances',
-                          'Automatically adjust orders up or down based on the imbalance of your assets', None),
-            ConfigElement('manual_offset', 'float', 0, 'Manual center price offset',
-                          "Manually adjust orders up or down. "
-                          "Works independently of other offsets and doesn't override them", (-50, 100, 2, '%')),
-            ConfigElement('reset_on_partial_fill', 'bool', True, 'Reset orders on partial fill',
-                          'Reset orders when buy or sell order is partially filled', None),
-            ConfigElement('partial_fill_threshold', 'float', 30, 'Fill threshold',
-                          'Order fill threshold to reset orders', (0, 100, 2, '%')),
-            ConfigElement('reset_on_price_change', 'bool', False, 'Reset orders on center price change',
-                          'Reset orders when center price is changed more than threshold '
-                          '(set False for external feeds)', None),
-            ConfigElement('price_change_threshold', 'float', 2, 'Price change threshold',
-                          'Define center price threshold to react on', (0, 100, 2, '%')),
-            ConfigElement('custom_expiration', 'bool', False, 'Custom expiration',
-                          'Override order expiration time to trigger a reset', None),
-            ConfigElement('expiration_time', 'int', 157680000, 'Order expiration time',
-                          'Define custom order expiration time to force orders reset more often, seconds',
-                          (30, 157680000, ''))
-        ]
+        return RelativeConfig.configure(return_base_config)
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        return StrategyBase.configure_details(include_default_tabs) + []
+        return RelativeConfig.configure_details(include_default_tabs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,7 +41,7 @@ class Strategy(StrategyBase):
 
         # Set external price source, defaults to False if not found
         self.external_feed = self.worker.get('external_feed', False)
-        self.external_price_source = self.worker.get('external_price_source', None)
+        self.external_price_source = self.worker.get('external_price_source', 'gecko')
 
         if self.external_feed:
             # Get external center price from given source
@@ -106,7 +60,7 @@ class Strategy(StrategyBase):
         else:
             # Use manually set center price
             self.center_price = self.worker["center_price"]
-            
+
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)
         self.manual_offset = self.worker.get('manual_offset', 0) / 100
@@ -171,25 +125,35 @@ class Strategy(StrategyBase):
         self.counter += 1
 
     @property
-    def amount_quote(self):
+    def amount_to_sell(self):
         """ Get quote amount, calculate if order size is relative
         """
+        amount = self.order_size
         if self.is_relative_order_size:
             quote_balance = float(self.balance(self.market["quote"]))
-            return quote_balance * (self.order_size / 100)
-        else:
-            return self.order_size
+            amount = quote_balance * (self.order_size / 100)
+
+        # Sell / receive amount should match x2 of minimal possible fraction of asset
+        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
+                amount * self.sell_price < 2 * 10 ** -self.market['base']['precision']):
+            amount = 0
+        return amount
 
     @property
-    def amount_base(self):
+    def amount_to_buy(self):
         """ Get base amount, calculate if order size is relative
         """
+        amount = self.order_size
         if self.is_relative_order_size:
             base_balance = float(self.balance(self.market["base"]))
             # amount = % of balance / buy_price = amount combined with calculated price to give % of balance
-            return base_balance * (self.order_size / 100) / self.buy_price
-        else:
-            return self.order_size
+            amount = base_balance * (self.order_size / 100) / self.buy_price
+
+        # Sell / receive amount should match x2 of minimal possible fraction of asset
+        if (amount < 2 * 10 ** -self.market['quote']['precision'] or
+                amount * self.buy_price < 2 * 10 ** -self.market['base']['precision']):
+            amount = 0
+        return amount
 
     def calculate_order_prices(self):
         # Set center price as None, in case dynamic has not amount given, center price is calculated from market orders
@@ -244,20 +208,20 @@ class Strategy(StrategyBase):
         order_ids = []
         expected_num_orders = 0
 
-        amount_base = self.amount_base
-        amount_quote = self.amount_quote
+        amount_to_buy = self.amount_to_buy
+        amount_to_sell = self.amount_to_sell
 
         # Buy Side
-        if amount_base:
-            buy_order = self.place_market_buy_order(amount_base, self.buy_price, True)
+        if amount_to_buy:
+            buy_order = self.place_market_buy_order(amount_to_buy, self.buy_price, True)
             if buy_order:
                 self.save_order(buy_order)
                 order_ids.append(buy_order['id'])
             expected_num_orders += 1
 
         # Sell Side
-        if amount_quote:
-            sell_order = self.place_market_sell_order(amount_quote, self.sell_price, True)
+        if amount_to_sell:
+            sell_order = self.place_market_sell_order(amount_to_sell, self.sell_price, True)
             if sell_order:
                 self.save_order(sell_order)
                 order_ids.append(sell_order['id'])

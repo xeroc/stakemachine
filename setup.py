@@ -6,17 +6,7 @@ from distutils.command import build as build_module
 
 cmd_class = {}
 console_scripts = ['dexbot-cli = dexbot.cli:main']
-install_requires = [
-    'bitshares==0.2.1',
-    'uptick==0.2.0',
-    'click',
-    'sqlalchemy',
-    'ruamel.yaml>=0.15.37',
-    'sdnotify',
-    'appdirs>=1.4.3',
-    'pycryptodomex==3.6.4',
-    'websocket-client==0.54.0'
-]
+install_requires = []
 
 
 class BuildCommand(build_module.build):
