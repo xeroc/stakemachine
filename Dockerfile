@@ -13,8 +13,8 @@ ENV DEXBOT_REPO_PATH $DEXBOT_HOME_PATH/repo
 ENV PATH $DEXBOT_HOME_PATH/.local/bin:$PATH
 
 # Update Ubuntu Software repository
-RUN	apt-get update
-RUN	apt-get install -y software-properties-common
+RUN apt-get update
+RUN apt-get install -y software-properties-common
 RUN add-apt-repository universe
 
 # Install  dependencies
@@ -33,4 +33,3 @@ RUN pip3 install --user pyyaml uptick tabulate ruamel.yaml sqlalchemy ccxt
 RUN git clone https://github.com/Codaone/DEXBot.git -b $VERSION $DEXBOT_REPO_PATH
 RUN cd $DEXBOT_REPO_PATH && make install-user
 RUN rm -rf $DEXBOT_REPO_PATH
-
