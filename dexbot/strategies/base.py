@@ -524,7 +524,7 @@ class StrategyBase(Storage, Events):
 
             :param float | base_amount:
             :param float | quote_amount:
-            :param bool | suppress_errors:
+            :param bool suppress_errors: True = return None on errors, False = disable worker
             :return: Market center price as float
         """
         center_price = None
