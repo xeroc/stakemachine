@@ -1,5 +1,7 @@
 # DEXBot
 
+[![Build Status (master)](https://travis-ci.org/Codaone/DEXBot.svg?branch=master)](https://travis-ci.org/Codaone/DEXBot)
+
 ![GUI](https://i.imgur.com/rW8XKQ4.png)The Dashboard of the GUI version of DEXBot
 
 ![CLI](https://i.imgur.com/H1N96nI.png)The CLI version of DEXBot in configuration dialog
@@ -18,22 +20,16 @@ The _Relative Orders_ strategy is the one most think of when speaking of _Market
 ## Does it make profit?
 If you properly predict future market conditions, you can manage to make profit. All strategies rely on assumptions. The strategies that rely on less assumptions are less risky, and more risky strategies _can_ make more profit. During long declines the effect is decreased losses - not actual profits. So we can only say that it can make profit, without forgetting that it can also make losses. Good luck.
 
-## Getting help
-Join the [Telegram Chat for DEXBot](https://t.me/DEXBOTbts).
-
 ## Installing and running the software
 
 See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki) for [Linux](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Linux), [Windows](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Windows), [OSX](https://github.com/Codaone/DEXBot/wiki/Setup-Guide-for-Mac-OS-X). [Raspberry Pi](https://github.com/Codaone/DEXBot/wiki/Setup-guide-for-Raspberry-Pi). Other users can try downloading the package or following the Linux guide.
 
-## Build status
-
-master:  
-[![Build Status](https://travis-ci.org/Codaone/DEXBot.svg?branch=master)](https://travis-ci.org/Codaone/DEXBot)
-
-
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
 
+## Getting help
+
+Join the [Telegram Chat for DEXBot](https://t.me/DEXBOTbts).
 
 ## Contributing
 
