@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from .base import StrategyBase
 from .config_parts.relative_config import RelativeConfig
+from dexbot.strategies.external_feeds.price_feed import PriceFeed
 
 
 class Strategy(StrategyBase):
@@ -118,8 +119,7 @@ class Strategy(StrategyBase):
         """ Ticks come in on every block. We need to periodically check orders because cancelled orders
             do not triggers a market_update event
         """
-        if (self.is_reset_on_price_change and not
-                self.counter % 8):
+        if (self.is_reset_on_price_change and not self.counter % 8):
             self.log.debug('Checking orders by tick threshold')
             self.check_orders()
         self.counter += 1
@@ -154,6 +154,28 @@ class Strategy(StrategyBase):
                 amount * self.buy_price < 2 * 10 ** -self.market['base']['precision']):
             amount = 0
         return amount
+
+    def get_external_market_center_price(self, external_price_source):
+        """ Get center price from an external market for current market pair
+
+            :param external_price_source: External market name
+            :return: Center price as float
+        """
+        self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
+        market = self.market.get_string('/')
+        self.log.debug('market: {}  '.format(market))
+        price_feed = PriceFeed(external_price_source, market)
+        price_feed.filter_symbols()
+        center_price = price_feed.get_center_price(None)
+        self.log.debug('PriceFeed: {}'.format(center_price))
+
+        if center_price is None:  # Try USDT
+            center_price = price_feed.get_center_price("USDT")
+            self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
+            if center_price is None:  # Try consolidated
+                center_price = price_feed.get_consolidated_price()
+                self.log.debug('Consolidated center price: {}'.format(center_price))
+        return center_price
 
     def calculate_order_prices(self):
         # Set center price as None, in case dynamic has not amount given, center price is calculated from market orders
