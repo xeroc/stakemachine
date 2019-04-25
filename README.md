@@ -1,6 +1,8 @@
 # DEXBot
 
 [![Build Status (master)](https://travis-ci.org/Codaone/DEXBot.svg?branch=master)](https://travis-ci.org/Codaone/DEXBot)
+[![Documentation
+Status](https://readthedocs.org/projects/dexbot/badge/?version=latest)](https://dexbot.readthedocs.io/en/latest/?badge=latest)
 
 ![GUI](https://i.imgur.com/rW8XKQ4.png)The Dashboard of the GUI version of DEXBot
 
