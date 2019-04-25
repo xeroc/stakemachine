@@ -39,6 +39,9 @@ master:
 
 Install the software, use it and report any problems by creating a ticket.
 
+* [New Contributors Guide](https://github.com/Codaone/DEXBot/wiki/New-Contributors-Guide)
+* [Git Workflow](https://github.com/Codaone/DEXBot/wiki/Git-Workflow)
+
 # IMPORTANT NOTE
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
