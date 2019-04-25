@@ -26,6 +26,22 @@ See instructions in the [Wiki](https://github.com/Codaone/DEXBot/wiki) for [Linu
 
 **Warning**: This is highly experimental code! Use at your OWN risk!
 
+## Running in docker
+
+By default, local data is stored inside docker volumes. To avoid loosing configs and data, it's advised to mount custom
+directories inside the container as shown below.
+
+```
+mkdir dexbot-data dexbot-config
+docker run -it --rm -v `pwd`/dexbot-data:/home/dexbot/.local/share dexbot/dexbot:latest uptick addkey
+docker run -it --rm -v `pwd`/dexbot-config:/home/dexbot/.config/dexbot -v `pwd`/dexbot-data:/home/dexbot/.local/share dexbot/dexbot:latest dexbot-cli configure
+```
+
+To run in unattended mode you need to provide wallet passphrase:
+
+```
+docker run -d --name dexbot -e UNLOCK=pass -v `pwd`/dexbot-config:/home/dexbot/.config/dexbot -v `pwd`/dexbot-data:/home/dexbot/.local/share dexbot/dexbot:latest dexbot-cli run
+```
 
 ## Getting help
 
