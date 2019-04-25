@@ -1126,6 +1126,9 @@ class StrategyBase(Storage, Events):
         quote_amount = assets['quote']
         quote_symbol = self.market['quote'].get('symbol')
         center_price = self.get_market_center_price(suppress_errors=True)
+        if not center_price:
+            # Don't write anything until center price will be available
+            return None
         timestamp = time.time()
 
         self.store_balance_entry(account, self.worker_name, base_amount, base_symbol,
