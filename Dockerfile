@@ -15,10 +15,11 @@ ENV CONFIG_DATA $HOME_PATH/.config
 
 RUN set -xe ;\
     apt-get update ;\
-    apt-get install -y software-properties-common ;\
-    add-apt-repository universe ;\
     # Prepare dependencies
-    apt-get install -y --install-recommends gcc make libssl-dev python3-pip python3-dev python3-async whiptail
+    apt-get install -y --no-install-recommends gcc make libssl-dev python3-pip python3-dev python3-setuptools \
+        python3-async whiptail ;\
+    apt-get clean ;\
+    rm -rf /var/lib/apt/lists/*
 
 RUN set -xe ;\
     # Create user and change workdir
