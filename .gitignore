@@ -79,3 +79,6 @@ dexbot/views/ui/**/*_ui.py
 dexbot/resources/*_rc.py
 archive
 *~
+
+# Dockerfile linter
+!.hadolint.yaml
