@@ -47,9 +47,39 @@ class Test_PriceFeed:
         orderbook = self.pf.get_orderbook_orders(depth=1)
         logging.info("Orderbook orders: {} ".format(orderbook))
 
-    def test_get_market_center_price(self):
-        center_price = self.pf.get_market_center_price(base_amount=0, quote_amount=0, suppress_errors=False)
-        logging.info("Center price: {}".format(center_price))
+    def test_filter_buy_orders(self):
+        buy_orders = self.pf.get_market_buy_orders(depth=10)
+        asc_orders  = self.pf.filter_buy_orders(buy_orders, sort='ASC')
+        logging.info("Filter Buy Orders ASC {}".format(asc_orders))
+        desc_orders  = self.pf.filter_buy_orders(buy_orders, sort='DESC')
+        logging.info("Filter Buy Orders ASC {}".format(desc_orders))
+
+    def test_filter_sell_orders(self):
+        sell_orders = self.pf.get_market_sell_orders(depth=10)
+        asc_orders = self.pf.filter_sell_orders(sell_orders, sort='ASC')
+        logging.info("Filter Sell Orders ASC {}".format(asc_orders))
+        desc_orders = self.pf.filter_sell_orders(sell_orders, sort='DESC')
+        logging.info("Filter Sell Orders DESC {}".format(desc_orders))
+
+    def test_get_highest_market_buy_order(self):
+        asc_buy_orders = self.test_sort_orders_by_price()
+        highest = self.pf.get_highest_market_buy_order(asc_buy_orders)
+        logging.info("Highest market buy order: {}".format(highest))
+
+    def test_get_lowest_market_sell_order(self):
+        sell_orders = self.test_get_market_sell_orders()
+        lowest = self.pf.get_lowest_market_sell_order(sell_orders)
+        logging.info("Lowest market sell order: {} ".format(lowest))
+
+    def test_get_market_buy_orders(self):
+        buy_orders = self.pf.get_market_buy_orders(depth=10)
+        logging.info("List of buy orders: {}".format(buy_orders))
+        return buy_orders
+
+    def test_get_market_sell_orders(self):
+        sell_orders = self.pf.get_market_sell_orders(depth=10)
+        logging.info("Market Sell Orders: {}".format(sell_orders))
+        return sell_orders
 
     def test_get_market_buy_price(self):
         mkt_buy_price = self.pf.get_market_buy_price(quote_amount=0, base_amount=0)
@@ -59,14 +89,13 @@ class Test_PriceFeed:
         mkt_sell_price = self.pf.get_market_sell_price(quote_amount=0, base_amount=0)
         logging.info("Get market sell price: {}".format(mkt_sell_price))
 
+    def test_get_market_center_price(self):
+        center_price = self.pf.get_market_center_price(base_amount=0, quote_amount=0, suppress_errors=False)
+        logging.info("Center price: {}".format(center_price))
+
     def test_get_market_spread(self):
         mkt_spread = self.pf.get_market_spread(quote_amount=0, base_amount=0)
         logging.info("Market spread: {}".format(mkt_spread))
-
-    def test_get_market_buy_orders(self):
-        buy_orders = self.pf.get_market_buy_orders(depth=10)
-        logging.info("List of buy orders: {}".format(buy_orders))
-        return buy_orders
 
     def test_sort_orders_by_price(self):
         buy_orders = self.test_get_market_buy_orders()
@@ -74,27 +103,7 @@ class Test_PriceFeed:
         logging.info("List of Buy orders in ASC price: {} ".format(asc_buy_orders))
         return asc_buy_orders
 
-    def test_get_highest_market_buy_order(self):
-        asc_buy_orders = self.test_sort_orders_by_price()
-        highest = self.pf.get_highest_market_buy_order(asc_buy_orders)
-        logging.info("Highest market buy order: {}".format(highest))
-
-    def test_get_market_sell_orders(self):
-        sell_orders = self.pf.get_market_sell_orders(depth=10)
-        logging.info("Market Sell Orders: {}".format(sell_orders))
-        return sell_orders
-
-    def test_get_lowest_market_sell_order(self):
-        sell_orders = self.test_get_market_sell_orders()
-        lowest = self.pf.get_lowest_market_sell_order(sell_orders)
-        logging.info("Lowest market sell order: {} ".format(lowest))
-
-
-
 if __name__ == '__main__':
     cur_dir = os.path.dirname(__file__)
     test_file = os.path.join(cur_dir, 'bitshares_feed_test.py')
     pytest.main(['--capture=no', test_file])
-
-
-
