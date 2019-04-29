@@ -103,6 +103,7 @@ class Test_PriceFeed:
         logging.info("List of Buy orders in ASC price: {} ".format(asc_buy_orders))
         return asc_buy_orders
 
+
 if __name__ == '__main__':
     cur_dir = os.path.dirname(__file__)
     test_file = os.path.join(cur_dir, 'bitshares_feed_test.py')
