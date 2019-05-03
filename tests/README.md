@@ -36,11 +36,10 @@ pytest tests/test_prepared_testnet.py
 ```
 
 How to prepare genesis.json
-===========================
+---------------------------
 
 genesis.json contains initial accounts including witnesses and committee members. Every account has it's public key.
 For the sake of simplicity, pick any keypair and use it's public key for every account.
-
 
 Balances
 --------
