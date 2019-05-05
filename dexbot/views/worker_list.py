@@ -98,7 +98,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
     @gui_error
     def handle_open_settings(self):
         settings_dialog = SettingsView()
-        return_value = settings_dialog.exec_()
+        settings_dialog.exec_()
 
     @staticmethod
     def handle_open_documentation():
@@ -149,13 +149,13 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         node = self.config['node']
         try:
             start = time.time()
-            BitSharesNodeRPC(node, num_retries=1)
+            rpc = BitSharesNodeRPC(node, num_retries=1)
             latency = (time.time() - start) * 1000
         except BaseException:
             latency = -1
 
         if latency != -1:
-            return "ver {} - Node delay: {:.2f}ms".format(__version__, latency)
+            return "ver {} - Node delay: {:.2f}ms - node: {}".format(__version__, latency, rpc.url)
         else:
             return "ver {} - Node disconnected".format(__version__)
 

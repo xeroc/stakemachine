@@ -1,16 +1,14 @@
 import datetime
 import copy
-import collections
 import logging
 import math
 import time
 
 from dexbot.config import Config
 from dexbot.storage import Storage
-from dexbot.statemachine import StateMachine
 from dexbot.helper import truncate
-from dexbot.strategies.external_feeds.price_feed import PriceFeed
 from dexbot.qt_queue.idle_queue import idle_add
+from .config_parts.base_config import BaseConfig
 
 from events import Events
 import bitshares.exceptions
@@ -22,79 +20,23 @@ from bitshares.dex import Dex
 from bitshares.instance import shared_bitshares_instance
 from bitshares.market import Market
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
+from bitshares.utils import formatTime
 
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
 
-""" Strategies need to specify their own configuration values, so each strategy can have a class method 'configure' 
-    which returns a list of ConfigElement named tuples.
-    
-    Tuple fields as follows:
-        - Key: The key in the bot config dictionary that gets saved back to config.yml
-        - Type: "int", "float", "bool", "string" or "choice"
-        - Default: The default value, must be same type as the Type defined
-        - Title: Name shown to the user, preferably not too long
-        - Description: Comments to user, full sentences encouraged
-        - Extra:
-              :int: a (min, max, suffix) tuple
-              :float: a (min, max, precision, suffix) tuple
-              :string: a regular expression, entries must match it, can be None which equivalent to .*
-              :bool, ignored
-              :choice: a list of choices, choices are in turn (tag, label) tuples.
-              NOTE: 'labels' get presented to user, and 'tag' is used as the value saved back to the config dict!
-"""
-ConfigElement = collections.namedtuple('ConfigElement', 'key type default title description extra')
 
-""" Strategies have different needs for the details they want to show for the user. These elements help to build a 
-    custom details window for the strategy. 
-
-    Tuple fields as follows:
-        - Type: 'graph', 'text', 'table'
-        - Name: The name of the tab, shows at the top
-        - Title: The title is shown inside the tab
-        - File: Tabs can also show data from files, pass on the file name including the file extension
-                in strategy's `configure_details`. 
-                
-                Below folders and representative file types that inside the folders.
-                
-                Location        File extensions
-                ---------------------------
-                dexbot/graphs   .png, .jpg
-                dexbot/data     .csv
-                dexbot/logs     .log, .txt (.csv, will print as raw data)
-                
-          NOTE: To avoid conflicts with other custom strategies, when generating names for files, use slug or worker's 
-          name when generating files or create custom folders. Add relative path to 'file' parameter if file is in
-          custom folder inside default folders. Like shown below:
-          
-          `DetailElement('log', 'Worker log', 'Log of worker's actions', 'my_custom_folder/example_worker.log')`
-"""
-DetailElement = collections.namedtuple('DetailTab', 'type name title file')
-
-# External exchanges used to calculate center price
-EXCHANGES = [
-    # ('none', 'None. Use Manual or Bitshares DEX Price (default)'),
-    ('gecko', 'Coingecko'),
-    ('waves', 'Waves DEX'),
-    ('kraken', 'Kraken'),
-    ('bitfinex', 'Bitfinex'),
-    ('gdax', 'Gdax'),
-    ('binance', 'Binance')
-]
-
-
-class StrategyBase(Storage, StateMachine, Events):
+class StrategyBase(Storage, Events):
     """ A strategy based on this class is intended to work in one market. This class contains
         most common methods needed by the strategy.
 
         All prices are passed and returned as BASE/QUOTE.
         (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
-         - Buy orders reserve BASE
-         - Sell orders reserve QUOTE
+        - Buy orders reserve BASE
+        - Sell orders reserve QUOTE
 
         Strategy inherits:
             * :class:`dexbot.storage.Storage` : Stores data to sqlite database
-            * :class:`dexbot.statemachine.StateMachine`
             * ``Events``
 
         Available attributes:
@@ -122,6 +64,14 @@ class StrategyBase(Storage, StateMachine, Events):
         throw an exception. The framework catches all exceptions thrown from event handlers and logs appropriately.
     """
 
+    @classmethod
+    def configure(cls, return_base_config=True):
+        return BaseConfig.configure(return_base_config)
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        return BaseConfig.configure_details(include_default_tabs)
+
     __events__ = [
         'onAccount',
         'onMarketUpdate',
@@ -133,62 +83,6 @@ class StrategyBase(Storage, StateMachine, Events):
         'error_onMarketUpdate',
         'error_ontick',
     ]
-
-    @classmethod
-    def configure(cls, return_base_config=True):
-        """ Return a list of ConfigElement objects defining the configuration values for this class.
-
-            User interfaces should then generate widgets based on these values, gather data and save back to
-            the config dictionary for the worker.
-
-            NOTE: When overriding you almost certainly will want to call the ancestor and then
-            add your config values to the list.
-
-            :param return_base_config: bool:
-            :return: Returns a list of config elements
-        """
-
-        # Common configs
-        base_config = [
-            ConfigElement('account', 'string', '', 'Account',
-                          'BitShares account name for the bot to operate with',
-                          ''),
-            ConfigElement('market', 'string', 'USD:BTS', 'Market',
-                          'BitShares market to operate on, in the format ASSET:OTHERASSET, for example \"USD:BTS\"',
-                          r'[A-Z0-9\.]+[:\/][A-Z0-9\.]+'),
-            ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
-                          'Asset to be used to pay transaction fees',
-                          r'[A-Z\.]+'),
-            ConfigElement('operational_percent_quote', 'float', 0, 'QUOTE balance %',
-                          'Max % of QUOTE asset available to this worker', (0, None, 2, '%')),
-            ConfigElement('operational_percent_base', 'float', 0, 'BASE balance %',
-                          'Max % of BASE asset available to this worker', (0, None, 2, '%')),
-        ]
-
-        if return_base_config:
-            return base_config
-        return []
-
-    @classmethod
-    def configure_details(cls, include_default_tabs=True):
-        """ Return a list of ConfigElement objects defining the configuration values for this class.
-
-            User interfaces should then generate widgets based on these values, gather data and save back to
-            the config dictionary for the worker.
-
-            NOTE: When overriding you almost certainly will want to call the ancestor and then
-            add your config values to the list.
-
-            :param include_default_tabs: bool:
-            :return: Returns a list of Detail elements
-        """
-
-        # Common configs
-        details = []
-
-        if include_default_tabs:
-            return details
-        return []
 
     def __init__(self,
                  name,
@@ -211,9 +105,6 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Storage
         Storage.__init__(self, name)
-
-        # Statemachine
-        StateMachine.__init__(self, name)
 
         # Events
         Events.__init__(self)
@@ -246,6 +137,7 @@ class StrategyBase(Storage, StateMachine, Events):
 
         # Get Bitshares account and market for this worker
         self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
+
         self._market = Market(config["workers"][name]["market"], bitshares_instance=self.bitshares)
 
         # Recheck flag - Tell the strategy to check for updated orders
@@ -463,17 +355,20 @@ class StrategyBase(Storage, StateMachine, Events):
         if not success and len(orders) > 1 and not batch_only:
             # One of the order cancels failed, cancel the orders one by one
             for order in orders:
-                self._cancel_orders(order)
-        return True
+                success = self._cancel_orders(order)
+                if not success:
+                    return False
+        return success
 
     def count_asset(self, order_ids=None, return_asset=False):
         """ Returns the combined amount of the given order ids and the account balance
             The amounts are returned in quote and base assets of the market
 
+            Todo: When would we want the sum of a subset of orders? Why order_ids? Maybe just specify asset?
+
             :param list | order_ids: list of order ids to be added to the balance
             :param bool | return_asset: true if returned values should be Amount instances
             :return: dict with keys quote and base
-            Todo: When would we want the sum of a subset of orders? Why order_ids? Maybe just specify asset?
         """
         quote = 0
         base = 0
@@ -639,28 +534,6 @@ class StrategyBase(Storage, StateMachine, Events):
         except IndexError:
             return None
 
-    def get_external_market_center_price(self, external_price_source):
-        """ Get center price from an external market for current market pair
-
-            :param external_price_source: External market name
-            :return: Center price as float
-        """
-        self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
-        market = self.market.get_string('/')
-        self.log.debug('market: {}  '.format(market))
-        price_feed = PriceFeed(external_price_source, market)
-        price_feed.filter_symbols()
-        center_price = price_feed.get_center_price(None)
-        self.log.debug('PriceFeed: {}'.format(center_price))
-
-        if center_price is None:  # Try USDT
-            center_price = price_feed.get_center_price("USDT")
-            self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
-            if center_price is None:  # Try consolidated
-                center_price = price_feed.get_consolidated_price()
-                self.log.debug('Consolidated center price: {}'.format(center_price))
-        return center_price
-
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
 
@@ -679,7 +552,7 @@ class StrategyBase(Storage, StateMachine, Events):
                 self.log.critical("Cannot estimate center price, there is no highest bid.")
                 self.disabled = True
                 return None
-            
+
         if sell_price is None or sell_price == 0.0:
             if not suppress_errors:
                 self.log.critical("Cannot estimate center price, there is no lowest ask.")
@@ -687,7 +560,7 @@ class StrategyBase(Storage, StateMachine, Events):
                 return None
             # Calculate and return market center price. make sure buy_price has value
         if buy_price:
-            center_price = buy_price * math.sqrt(sell_price / buy_price)        
+            center_price = buy_price * math.sqrt(sell_price / buy_price)
             self.log.debug('Center price in get_market_center_price: {:.8f} '.format(center_price))
         return center_price
 
@@ -1071,7 +944,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """ Check whether an order is buy order
 
             :param dict | order: dict or Order object
-            :return bool
+            :return: bool
         """
         # Check if the order is buy order, by comparing asset symbol of the order and the market
         if order['base']['symbol'] == self.market['base']['symbol']:
@@ -1101,7 +974,7 @@ class StrategyBase(Storage, StateMachine, Events):
         """ Check whether an order is sell order
 
             :param dict | order: dict or Order object
-            :return bool
+            :return: bool
         """
         # Check if the order is sell order, by comparing asset symbol of the order and the market
         if order['base']['symbol'] == self.market['quote']['symbol']:
@@ -1187,12 +1060,13 @@ class StrategyBase(Storage, StateMachine, Events):
         else:
             return True
 
-    def place_market_sell_order(self, amount, price, return_none=False, *args, **kwargs):
+    def place_market_sell_order(self, amount, price, return_none=False, invert=False, *args, **kwargs):
         """ Places a sell order in the market
 
             :param float | amount: Order amount in QUOTE
             :param float | price: Order price in BASE
             :param bool | return_none:
+            :param bool | invert: True = return inverted sell order
             :param args:
             :param kwargs:
             :return:
@@ -1236,8 +1110,9 @@ class StrategyBase(Storage, StateMachine, Events):
             if sell_order and sell_order['deleted']:
                 # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
                 sell_order = self.calculate_order_data(sell_order, amount, price)
-                sell_order.invert()
                 self.recheck_orders = True
+            if sell_order and invert:
+                sell_order.invert()
             return sell_order
         else:
             return True
@@ -1272,6 +1147,18 @@ class StrategyBase(Storage, StateMachine, Events):
                         self.log.warning("retrying on '{}'".format(str(exception)))
                         self.bitshares.txbuffer.clear()
                         time.sleep(6)  # Wait at least a BitShares block
+                elif "trx.expiration <= now + chain_parameters.maximum_time_until_expiration" in str(exception):
+                    if tries > MAX_TRIES:
+                        info = self.bitshares.info()
+                        raise Exception('Too much difference between node block time and trx expiration, please change '
+                                        'the node. Block time: {}, local time: {}'
+                                        .format(info['time'], formatTime(datetime.datetime.utcnow())))
+                    else:
+                        tries += 1
+                        self.log.warning('Too much difference between node block time and trx expiration, switching '
+                                         'node')
+                        self.bitshares.txbuffer.clear()
+                        self.bitshares.rpc.next()
                 elif "Assert Exception: delta.amount > 0: Insufficient Balance" in str(exception):
                     self.log.critical('Insufficient balance of fee asset')
                     raise
@@ -1318,14 +1205,14 @@ class StrategyBase(Storage, StateMachine, Events):
             old_center_price = old_data.center_price
             center_price = self.get_market_center_price()
 
-            if not (old_center_price or center_price):
+            if not old_center_price or not center_price:
                 return profit
 
             # Calculate max theoretical balances based on starting price
             old_max_quantity_base = earlier_base + earlier_quote * old_center_price
             old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
 
-            if not (old_max_quantity_base or old_max_quantity_quote):
+            if not old_max_quantity_base or not old_max_quantity_quote:
                 return profit
 
             # Current balances
@@ -1469,7 +1356,7 @@ class StrategyBase(Storage, StateMachine, Events):
         try:
             order = Order(order_id)
         except Exception:
-            log.error('Got an exception getting order id {}'.format(order_id))
+            logging.getLogger(__name__).error('Got an exception getting order id {}'.format(order_id))
             raise
         if return_none and order['deleted']:
             return None
@@ -1524,13 +1411,7 @@ class StrategyBase(Storage, StateMachine, Events):
         if not latest_price:
             return
 
-        order_ids = None
-        orders = self.fetch_orders()
-
-        if orders:
-            order_ids = orders.keys()
-
-        total_balance = self.count_asset(order_ids)
+        total_balance = self.count_asset()
         total = (total_balance['quote'] * latest_price) + total_balance['base']
 
         if not total:  # Prevent division by zero

@@ -8,7 +8,6 @@ import copy
 import dexbot.errors as errors
 from dexbot.strategies.base import StrategyBase
 
-from bitshares import BitShares
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
