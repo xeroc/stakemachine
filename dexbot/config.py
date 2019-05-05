@@ -210,7 +210,9 @@ class Config(dict):
                 raise ValueError('Operational percent for asset {} is more than 100%'
                                  .format(asset))
 
-        tree = lambda: defaultdict(tree)
+        def tree():
+            return defaultdict(tree)
+
         data = tree()
 
         for worker_name, worker in config['workers'].items():
