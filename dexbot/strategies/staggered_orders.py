@@ -144,7 +144,7 @@ class Strategy(StrategyBase):
                 self.market_center_price = self.center_price
             else:
                 # Still not have market_center_price? Empty market, don't continue
-                self.log.warning('Cannot calculate center price on empty market, please set is manually')
+                self.log.warning('Cannot calculate center price on empty market, please set it manually')
                 return
 
         # Calculate balances, and use orders from previous call of self.refresh_orders() to reduce API calls
