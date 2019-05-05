@@ -215,7 +215,7 @@ class Config(dict):
 
         data = tree()
 
-        for worker_name, worker in config['workers'].items():
+        for _, worker in config['workers'].items():
             account = worker['account']
             quote_asset = worker['market'].split('/')[0]
             base_asset = worker['market'].split('/')[1]
