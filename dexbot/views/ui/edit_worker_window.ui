@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>428</width>
-    <height>351</height>
+    <height>365</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -580,7 +580,7 @@
        </widget>
       </item>
       <item row="7" column="1">
-       <widget class="QDoubleSpinBox" name="operational_quote_input">
+       <widget class="QDoubleSpinBox" name="operational_percent_quote_input">
         <property name="minimumSize">
          <size>
           <width>145</width>
@@ -617,7 +617,7 @@
        </widget>
       </item>
       <item row="8" column="1">
-       <widget class="QDoubleSpinBox" name="operational_base_input">
+       <widget class="QDoubleSpinBox" name="operational_percent_base_input">
         <property name="minimumSize">
          <size>
           <width>145</width>
