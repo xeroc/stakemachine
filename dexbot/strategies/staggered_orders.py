@@ -403,8 +403,11 @@ class Strategy(StrategyBase):
 
         # Calc avail balance; avail balances used in maintain_strategy to pass into allocate_asset
         # avail = total - real_orders - virtual_orders
-        self.quote_balance['amount'] = self.quote_total_balance - own_orders_balance['quote'] \
-                                       - virtual_orders_quote_balance
+        self.quote_balance['amount'] = (
+            self.quote_total_balance
+            - own_orders_balance['quote']
+            - virtual_orders_quote_balance
+        )
         self.base_balance['amount'] = self.base_total_balance - own_orders_balance['base'] - virtual_orders_base_balance
 
         # Reserve fees for N orders
