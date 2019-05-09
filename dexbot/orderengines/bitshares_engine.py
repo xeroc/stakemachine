@@ -716,7 +716,7 @@ class BitsharesOrderEngine(Storage, Events):
 
         return orders
 
-    @property #todo: duplicate property, also in price feed
+    @property #todo: property, also in price feed,need to considerinheritance priority
     def market(self):
         """ Return the market object as :class:`bitshares.market.Market`
         """
