@@ -252,14 +252,14 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
             old_center_price = old_data.center_price
             center_price = self.get_market_center_price()
 
-            if not old_center_price or center_price:
+            if not old_center_price or not center_price:
                 return profit
 
             # Calculate max theoretical balances based on starting price
             old_max_quantity_base = earlier_base + earlier_quote * old_center_price
             old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
 
-            if not old_max_quantity_base or old_max_quantity_quote:
+            if not old_max_quantity_base or not old_max_quantity_quote:
                 return profit
 
             # Current balances

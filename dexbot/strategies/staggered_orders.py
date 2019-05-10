@@ -154,11 +154,11 @@ class Strategy(StrategyBase):
         self.store_profit_estimation_data()
 
         # Calculate minimal orders amounts based on asset precision
-        if not self.order_min_base or self.order_min_quote:
+        if not self.order_min_base or not self.order_min_quote:
             self.calculate_min_amounts()
 
         # Calculate asset thresholds once
-        if not self.quote_asset_threshold or self.base_asset_threshold:
+        if not self.quote_asset_threshold or not self.base_asset_threshold:
             self.calculate_asset_thresholds()
 
         # Remove orders that exceed boundaries
