@@ -221,7 +221,10 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         base_symbol = self.market['base'].get('symbol')
         quote_amount = assets['quote']
         quote_symbol = self.market['quote'].get('symbol')
-        center_price = self.get_market_center_price()
+        center_price = self.get_market_center_price(suppress_errors=True)
+        if not center_price:
+            # Don't write anything until center price will be available
+            return None
         timestamp = time.time()
 
         self.store_balance_entry(account, self.worker_name, base_amount, base_symbol,
@@ -250,7 +253,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
             earlier_base = old_data.base_total
             earlier_quote = old_data.quote_total
             old_center_price = old_data.center_price
-            center_price = self.get_market_center_price()
+            center_price = self.get_market_center_price(suppress_errors=True)
 
             if not old_center_price or not center_price:
                 return profit

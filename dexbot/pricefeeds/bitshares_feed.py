@@ -293,9 +293,9 @@ class BitsharesPriceFeed:
     def get_market_center_price(self, base_amount=0, quote_amount=0, suppress_errors=False):
         """ Returns the center price of market including own orders.
 
-            :param float | base_amount:
-            :param float | quote_amount:
-            :param bool | suppress_errors:
+            :param float base_amount:
+            :param float quote_amount:
+            :param bool suppress_errors: True = return None on errors, False = disable worker
             :return: Market center price as float
         """
         center_price = None
