@@ -139,12 +139,12 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
 
         if fee_asset_symbol:
             try:
-                self.fee_asset = Asset(fee_asset_symbol)
+                self.fee_asset = Asset(fee_asset_symbol, bitshares_instance=self.bitshares)
             except bitshares.exceptions.AssetDoesNotExistsException:
-                self.fee_asset = Asset('1.3.0')
+                self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
         else:
             # If there is no fee asset, use BTS
-            self.fee_asset = Asset('1.3.0')
+            self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
 
         # CER cache
         self.core_exchange_rate = None
@@ -238,14 +238,14 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
             old_center_price = old_data.center_price
             center_price = self.get_market_center_price()
 
-            if not (old_center_price or center_price):
+            if not old_center_price or center_price:
                 return profit
 
             # Calculate max theoretical balances based on starting price
             old_max_quantity_base = earlier_base + earlier_quote * old_center_price
             old_max_quantity_quote = earlier_quote + earlier_base / old_center_price
 
-            if not (old_max_quantity_base or old_max_quantity_quote):
+            if not old_max_quantity_base or old_max_quantity_quote:
                 return profit
 
             # Current balances

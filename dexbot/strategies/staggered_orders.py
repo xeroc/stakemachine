@@ -153,11 +153,11 @@ class Strategy(StrategyBase):
         self.store_profit_estimation_data()
 
         # Calculate minimal orders amounts based on asset precision
-        if not (self.order_min_base or self.order_min_quote):
+        if not self.order_min_base or self.order_min_quote:
             self.calculate_min_amounts()
 
         # Calculate asset thresholds once
-        if not (self.quote_asset_threshold or self.base_asset_threshold):
+        if not self.quote_asset_threshold or self.base_asset_threshold:
             self.calculate_asset_thresholds()
 
         # Remove orders that exceed boundaries
@@ -1772,10 +1772,10 @@ class Strategy(StrategyBase):
         order = VirtualOrder()
         order['price'] = price
 
-        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        base_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
@@ -1801,10 +1801,10 @@ class Strategy(StrategyBase):
         order = VirtualOrder()
         order['price'] = price ** -1
 
-        quote_asset = Amount(amount * price, self.market['base']['symbol'])
+        quote_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount, self.market['quote']['symbol'])
+        base_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
 

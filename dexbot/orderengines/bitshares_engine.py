@@ -195,10 +195,10 @@ class BitsharesOrderEngine(Storage, Events):
         return balance
 
     def calculate_order_data(self, order, amount, price):
-        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
         order['price'] = price
-        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        base_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         return order
 
@@ -301,8 +301,8 @@ class BitsharesOrderEngine(Storage, Events):
             base += orders_balance['base']
 
         if return_asset:
-            quote = Amount(quote, quote_asset)
-            base = Amount(base, base_asset)
+            quote = Amount(quote, quote_asset, bitshares_instance=self.bitshares)
+            base = Amount(base, base_asset, bitshares_instance=self.bitshares)
 
         return {'quote': quote, 'base': base}
 
@@ -335,8 +335,8 @@ class BitsharesOrderEngine(Storage, Events):
 
         # Return as Amount objects instead of only float values
         if return_asset:
-            quote = Amount(quote, quote_asset)
-            base = Amount(base, base_asset)
+            quote = Amount(quote, quote_asset, bitshares_instance=self.bitshares)
+            base = Amount(base, base_asset, bitshares_instance=self.bitshares)
 
         return {'quote': quote, 'base': base}
 
@@ -556,7 +556,7 @@ class BitsharesOrderEngine(Storage, Events):
         buy_transaction = self.retry_action(
             self.market.buy,
             price,
-            Amount(amount=amount, asset=self.market["quote"]),
+            Amount(amount=amount, asset=self.market["quote"], bitshares_instance=self.bitshares),
             account=self.account.name,
             expiration=self.expiration,
             returnOrderId=return_order_id,
@@ -762,7 +762,7 @@ class BitsharesOrderEngine(Storage, Events):
             :return: float | amount of fee_asset to pay fee
         """
         if isinstance(fee_asset, str):
-            fee_asset = Asset(fee_asset)
+            fee_asset = Asset(fee_asset, bitshares_instance=self.bitshares)
 
         if fee_asset['id'] == '1.3.0':
             # Fee asset is BTS, so no further calculations are needed
@@ -775,7 +775,8 @@ class BitsharesOrderEngine(Storage, Events):
             return fee_amount * self.core_exchange_rate['base']['amount']
 
     @staticmethod
-    def get_order(order_id, return_none=True):
+    def get_order(self, order_id, return_none=True):
+#        order_id, return_none=True):
         """ Get Order object with order_id
 
             :param str | dict order_id: blockchain object id of the order can be an order dict with the id key in it
@@ -787,7 +788,7 @@ class BitsharesOrderEngine(Storage, Events):
         if 'id' in order_id:
             order_id = order_id['id']
         try:
-            order = Order(order_id)
+            order = Order(order_id, bitshares_instance=self.bitshares)
         except Exception:
             logging.getLogger(__name__).error('Got an exception getting order id {}'.format(order_id))
             raise
