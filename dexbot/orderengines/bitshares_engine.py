@@ -86,12 +86,12 @@ class BitsharesOrderEngine(Storage, Events):
 
         if fee_asset_symbol:
             try:
-                self.fee_asset = Asset(fee_asset_symbol)
+                self.fee_asset = Asset(fee_asset_symbol, bitshares_instance=self.bitshares)
             except bitshares.exceptions.AssetDoesNotExistsException:
-                self.fee_asset = Asset('1.3.0')
+                self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
         else:
             # If there is no fee asset, use BTS
-            self.fee_asset = Asset('1.3.0')
+            self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
 
         # CER cache
         self.core_exchange_rate = None
@@ -771,7 +771,7 @@ class BitsharesOrderEngine(Storage, Events):
         else:
             if not self.core_exchange_rate:
                 # Determine how many fee_asset is needed for core-exchange
-                temp_market = Market(base=fee_asset, quote=Asset('1.3.0'))
+                temp_market = Market(base=fee_asset, quote=Asset('1.3.0', bitshares_instance=self.bitshares))
                 self.core_exchange_rate = temp_market.ticker()['core_exchange_rate']
             return fee_amount * self.core_exchange_rate['base']['amount']
 
