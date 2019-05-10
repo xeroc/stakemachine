@@ -6,8 +6,8 @@ from functools import reduce
 from bitshares.dex import Dex
 from bitshares.amount import Amount
 
-from .base import StrategyBase
-from .config_parts.staggered_config import StaggeredConfig
+from dexbot.strategies.base import StrategyBase
+from dexbot.strategies.config_parts.staggered_config import StaggeredConfig
 
 
 class Strategy(StrategyBase):
@@ -154,11 +154,11 @@ class Strategy(StrategyBase):
         self.store_profit_estimation_data()
 
         # Calculate minimal orders amounts based on asset precision
-        if not self.order_min_base or not self.order_min_quote:
+        if not self.order_min_base or self.order_min_quote:
             self.calculate_min_amounts()
 
         # Calculate asset thresholds once
-        if not self.quote_asset_threshold or not self.base_asset_threshold:
+        if not self.quote_asset_threshold or self.base_asset_threshold:
             self.calculate_asset_thresholds()
 
         # Remove orders that exceed boundaries
