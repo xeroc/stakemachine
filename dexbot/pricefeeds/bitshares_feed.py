@@ -4,17 +4,16 @@ import math
 from bitshares.instance import shared_bitshares_instance
 from bitshares.price import Order
 
-class BitsharesPriceFeed:
-    """
-            This Price Feed class enables usage of Bitshares DEX for market center and order
-            book pricing, without requiring a registered account. It may be used for both
-            strategy and indicator analysis tools.
 
-           All prices are passed and returned as BASE/QUOTE.
-           (In the BREAD/USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
+class BitsharesPriceFeed:
+    """ This Price Feed class enables usage of Bitshares DEX for market center and order
+        book pricing, without requiring a registered account. It may be used for both
+        strategy and indicator analysis tools.
+
+        All prices are passed and returned as BASE/QUOTE.
+        (In the BREAD/USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
             - Buy orders reserve BASE
             - Sell orders reserve QUOTE
-
     """
     def __init__(self,
                  market,
@@ -339,7 +338,6 @@ class BitsharesPriceFeed:
         """ Return the market object as :class:`bitshares.market.Market`
         """
         return self._market
-
 
     @staticmethod
     def sort_orders_by_price(orders, sort='DESC'):

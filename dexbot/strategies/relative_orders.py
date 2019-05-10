@@ -412,28 +412,6 @@ class Strategy(StrategyBase):
 
         return base_amount / quote_amount
 
-    def get_external_market_center_price(self, external_price_source):
-        """ Get center price from an external market for current market pair
-
-            :param external_price_source: External market name
-            :return: Center price as float
-        """
-        self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
-        market = self.market.get_string('/')
-        self.log.debug('market: {}  '.format(market))
-        price_feed = PriceFeed(external_price_source, market)
-        price_feed.filter_symbols()
-        center_price = price_feed.get_center_price(None)
-        self.log.debug('PriceFeed: {}'.format(center_price))
-
-        if center_price is None:  # Try USDT
-            center_price = price_feed.get_center_price("USDT")
-            self.log.debug('Substitute USD/USDT center price: {}'.format(center_price))
-            if center_price is None:  # Try consolidated
-                center_price = price_feed.get_consolidated_price()
-                self.log.debug('Consolidated center price: {}'.format(center_price))
-        return center_price
-
     def _calculate_center_price(self, suppress_errors=False):
         highest_bid = float(self.ticker().get('highestBid'))
         lowest_ask = float(self.ticker().get('lowestAsk'))

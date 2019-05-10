@@ -716,8 +716,9 @@ class BitsharesOrderEngine(Storage, Events):
 
         return orders
 
-    @property #todo: property, also in price feed,need to considerinheritance priority
+    @property
     def market(self):
+        # TODO: property, also in price feed, need to consider inheritance priority
         """ Return the market object as :class:`bitshares.market.Market`
         """
         return self._market
@@ -793,4 +794,3 @@ class BitsharesOrderEngine(Storage, Events):
         if return_none and order['deleted']:
             return None
         return order
-
