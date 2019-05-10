@@ -278,6 +278,7 @@ class BitsharesOrderEngine(Storage, Events):
             :param list | order_ids: list of order ids to be added to the balance
             :param bool | return_asset: true if returned values should be Amount instances
             :return: dict with keys quote and base
+
             Todo: When would we want the sum of a subset of orders? Why order_ids? Maybe just specify asset?
         """
         quote = 0
@@ -371,7 +372,7 @@ class BitsharesOrderEngine(Storage, Events):
     def get_market_orders(self, depth=1, updated=True):
         """ Returns orders from the current market. Orders are sorted by price.
 
-            get_market_orders() call does not have any depth limit.
+            get_limit_orders() call does not have any depth limit.
 
             :param int | depth: Amount of orders per side will be fetched, default=1
             :param bool | updated: Return updated orders. "Updated" means partially filled orders will represent

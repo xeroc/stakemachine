@@ -36,7 +36,8 @@ class BitsharesPriceFeed:
         """ Returns orders from the current market. Orders are sorted by price. Does not require account info.
 
             get_limit_orders() call does not have any depth limit.
-            :param int | depth: Amount of orders per side will be fetched, default=1
+
+            :param int depth: Amount of orders per side will be fetched, default=1
             :return: Returns a list of orders or None
         """
         orders = self.bitshares.rpc.get_limit_orders(self.market['base']['id'], self.market['quote']['id'], depth)
