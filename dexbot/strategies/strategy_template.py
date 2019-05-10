@@ -4,7 +4,6 @@
 # Project imports
 from .base import StrategyBase
 from .config_parts.strategy_config import StrategyConfig
-from dexbot.qt_queue.idle_queue import idle_add
 
 # Third party imports
 # from bitshares.market import Market
@@ -138,25 +137,3 @@ class Strategy(StrategyBase):
         if not (self.counter or 0) % 3:
             self.maintain_strategy()
         self.counter += 1
-
-    def update_gui_slider(self):
-        """ Updates GUI slider on the workers list """
-        latest_price = self.ticker().get('latest', {}).get('price', None)
-        if not latest_price:
-            return
-
-        order_ids = None
-        orders = self.own_orders
-
-        if orders:
-            order_ids = [order['id'] for order in orders if 'id' in order]
-
-        total_balance = self.count_asset(order_ids)
-        total = (total_balance['quote'] * latest_price) + total_balance['base']
-
-        if not total:  # Prevent division by zero
-            percentage = 50
-        else:
-            percentage = (total_balance['base'] / total) * 100
-        idle_add(self.view.set_worker_slider, self.worker_name, percentage)
-        self['slider'] = percentage

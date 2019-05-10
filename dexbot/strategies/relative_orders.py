@@ -1,8 +1,8 @@
 import math
 from datetime import datetime, timedelta
 
-from .base import StrategyBase
-from .config_parts.relative_config import RelativeConfig
+from dexbot.strategies.base import StrategyBase
+from dexbot.strategies.config_parts.relative_config import RelativeConfig
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
 
 
@@ -256,6 +256,164 @@ class Strategy(StrategyBase):
         # Some orders weren't successfully created, redo them
         if len(order_ids) < expected_num_orders and not self.disabled:
             self.update_orders()
+
+    def get_market_buy_price(self, quote_amount=0, base_amount=0, **kwargs):
+        """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
+            moving average or weighted moving average
+
+            :param float | quote_amount:
+            :param float | base_amount:
+            :param dict | kwargs:
+                bool | exclude_own_orders: Exclude own orders when calculating a price
+            :return: price as float
+        """
+        exclude_own_orders = kwargs.get('exclude_own_orders', True)
+        market_buy_orders = []
+
+        # Exclude own orders from orderbook if needed
+        if exclude_own_orders:
+            market_buy_orders = self.get_market_buy_orders(depth=self.fetch_depth)
+            own_buy_orders_ids = [order['id'] for order in self.get_own_buy_orders()]
+            market_buy_orders = [order for order in market_buy_orders if order['id'] not in own_buy_orders_ids]
+
+        # In case amount is not given, return price of the highest buy order on the market
+        if quote_amount == 0 and base_amount == 0:
+            if exclude_own_orders:
+                if market_buy_orders:
+                    return float(market_buy_orders[0]['price'])
+                else:
+                    return '0.0'
+            else:
+                return float(self.ticker().get('highestBid'))
+
+        # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
+        asset_amount = base_amount
+
+        # Since the purpose is never get both quote and base amounts, favor base amount if both given because
+        # this function is looking for buy price.
+
+        if base_amount > quote_amount:
+            base = True
+        else:
+            asset_amount = quote_amount
+            base = False
+
+        if not market_buy_orders:
+            market_buy_orders = self.get_market_buy_orders(depth=self.fetch_depth)
+        market_fee = self.market['base'].market_fee_percent
+
+        target_amount = asset_amount * (1 + market_fee)
+
+        quote_amount = 0
+        base_amount = 0
+        missing_amount = target_amount
+
+        for order in market_buy_orders:
+            if base:
+                # BASE amount was given
+                if order['base']['amount'] <= missing_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
+                    missing_amount -= order['base']['amount']
+                else:
+                    base_amount += missing_amount
+                    quote_amount += missing_amount / order['price']
+                    break
+            elif not base:
+                # QUOTE amount was given
+                if order['quote']['amount'] <= missing_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
+                    missing_amount -= order['quote']['amount']
+                else:
+                    base_amount += missing_amount * order['price']
+                    quote_amount += missing_amount
+                    break
+
+        # Prevent division by zero
+        if not quote_amount:
+            return 0.0
+
+        return base_amount / quote_amount
+
+    def get_market_sell_price(self, quote_amount=0, base_amount=0, **kwargs):
+        """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
+            enhanced with moving average or weighted moving average.
+
+            [quote/base]_amount = 0 means lowest regardless of size
+
+            :param float | quote_amount:
+            :param float | base_amount:
+            :param dict | kwargs:
+                bool | exclude_own_orders: Exclude own orders when calculating a price
+            :return:
+        """
+        exclude_own_orders = kwargs.get('exclude_own_orders', True)
+        market_sell_orders = []
+
+        # Exclude own orders from orderbook if needed
+        if exclude_own_orders:
+            market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
+            own_sell_orders_ids = [order['id'] for order in self.get_own_sell_orders()]
+            market_sell_orders = [order for order in market_sell_orders if order['id'] not in own_sell_orders_ids]
+
+        # In case amount is not given, return price of the lowest sell order on the market
+        if quote_amount == 0 and base_amount == 0:
+            if exclude_own_orders:
+                if market_sell_orders:
+                    return float(market_sell_orders[0]['price'])
+                else:
+                    return '0.0'
+            else:
+                return float(self.ticker().get('lowestAsk'))
+
+        asset_amount = quote_amount
+
+        # Since the purpose is never get both quote and base amounts, favor quote amount if both given because
+        # this function is looking for sell price.
+        if quote_amount > base_amount:
+            quote = True
+        else:
+            asset_amount = base_amount
+            quote = False
+
+        if not market_sell_orders:
+            market_sell_orders = self.get_market_sell_orders(depth=self.fetch_depth)
+        market_fee = self.market['quote'].market_fee_percent
+
+        target_amount = asset_amount * (1 + market_fee)
+
+        quote_amount = 0
+        base_amount = 0
+        missing_amount = target_amount
+
+        for order in market_sell_orders:
+            if quote:
+                # QUOTE amount was given
+                if order['quote']['amount'] <= missing_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
+                    missing_amount -= order['quote']['amount']
+                else:
+                    base_amount += missing_amount * order['price']
+                    quote_amount += missing_amount
+                    break
+            elif not quote:
+                # BASE amount was given
+                if order['base']['amount'] <= missing_amount:
+                    quote_amount += order['quote']['amount']
+                    base_amount += order['base']['amount']
+                    missing_amount -= order['base']['amount']
+                else:
+                    base_amount += missing_amount
+                    quote_amount += missing_amount / order['price']
+                    break
+
+        # Prevent division by zero
+        if not quote_amount:
+            return 0.0
+
+        return base_amount / quote_amount
 
     def _calculate_center_price(self, suppress_errors=False):
         highest_bid = float(self.ticker().get('highestBid'))
