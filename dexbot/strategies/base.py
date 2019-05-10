@@ -26,6 +26,20 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
     """ A strategy based on this class is intended to work in one market. This class contains
         most common methods needed by the strategy.
 
+        NOTE: StrategyBase currently requires BitsharesOrderEngine inheritance
+        as all configuration from Worker is located here.
+
+        Post Core-refactor, in the future it should not be this way.
+
+        TODO: The StrategyBase should be able to select any {N} OrderEngine(s) and {M} PriceFeed(s)
+        and not be tied to the BitsharesOrderEngine only. (where N and M are integers)
+        This would allow for cross dex or cex strategy flexibility
+
+        In process: make StrategyBase an ABC.
+
+        Unit tests should take above into consideration
+
+
         All prices are passed and returned as BASE/QUOTE.
         (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
          - Buy orders reserve BASE
