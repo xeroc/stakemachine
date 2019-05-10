@@ -718,6 +718,23 @@ class BitsharesOrderEngine(Storage, Events):
         return orders
 
     @property
+    def get_own_orders(self):
+        """ Return the account's open orders in the current market
+
+            :return: List of Order objects
+        """
+        orders = []
+
+        # Refresh account data
+        self.account.refresh()
+
+        for order in self.account.openorders:
+            if self.worker["market"] == order.market and self.account.openorders:
+                orders.append(order)
+
+        return orders
+
+    @property
     def market(self):
         # TODO: property, also in price feed, need to consider inheritance priority
         """ Return the market object as :class:`bitshares.market.Market`
