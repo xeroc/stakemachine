@@ -774,9 +774,7 @@ class BitsharesOrderEngine(Storage, Events):
                 self.core_exchange_rate = temp_market.ticker()['core_exchange_rate']
             return fee_amount * self.core_exchange_rate['base']['amount']
 
-    @staticmethod
     def get_order(self, order_id, return_none=True):
-#        order_id, return_none=True):
         """ Get Order object with order_id
 
             :param str | dict order_id: blockchain object id of the order can be an order dict with the id key in it
