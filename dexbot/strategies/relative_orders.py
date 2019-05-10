@@ -287,9 +287,9 @@ class Strategy(StrategyBase):
         # Like get_market_sell_price(), but defaulting to base_amount if both base and quote are specified.
         asset_amount = base_amount
 
-        """ Since the purpose is never get both quote and base amounts, favor base amount if both given because
-            this function is looking for buy price.
-        """
+        # Since the purpose is never get both quote and base amounts, favor base amount if both given because
+        # this function is looking for buy price.
+
         if base_amount > quote_amount:
             base = True
         else:
@@ -365,9 +365,8 @@ class Strategy(StrategyBase):
 
         asset_amount = quote_amount
 
-        """ Since the purpose is never get both quote and base amounts, favor quote amount if both given because
-            this function is looking for sell price.
-        """
+        # Since the purpose is never get both quote and base amounts, favor quote amount if both given because
+        # this function is looking for sell price.
         if quote_amount > base_amount:
             quote = True
         else:
