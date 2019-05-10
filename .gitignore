@@ -83,5 +83,8 @@ dexbot/resources/*_rc.py
 archive
 *~
 
+# Dockerfile linter
+!.hadolint.yaml
+
 # Keep readthedocs config
 !.readthedocs.yml
