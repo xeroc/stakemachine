@@ -381,7 +381,7 @@ class Strategy(StrategyBase):
         if use_cached_orders and self.cached_orders:
             orders = self.cached_orders
         else:
-            orders = self.get_own_orders
+            orders = self.own_orders
         order_ids = [order['id'] for order in orders]
         orders_balance = self.get_allocated_assets(order_ids)
 
@@ -392,7 +392,7 @@ class Strategy(StrategyBase):
     def refresh_orders(self):
         """ Updates buy and sell orders
         """
-        orders = self.get_own_orders
+        orders = self.own_orders
         self.cached_orders = orders
 
         # Sort virtual orders
