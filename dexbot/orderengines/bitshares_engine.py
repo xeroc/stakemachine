@@ -221,7 +221,7 @@ class BitsharesOrderEngine(Storage, Events):
                 quote_total += balance['amount']
 
         # Calculate value of the orders in unit of measure
-        orders = self.get_own_orders
+        orders = self.own_orders
         for order in orders:
             if order['base']['symbol'] == self.quote_asset:
                 # Pick sell orders order's BASE amount, which is same as worker's QUOTE, to worker's BASE
@@ -295,7 +295,7 @@ class BitsharesOrderEngine(Storage, Events):
 
         if order_ids is None:
             # Get all orders from Blockchain
-            order_ids = [order['id'] for order in self.get_own_orders]
+            order_ids = [order['id'] for order in self.own_orders]
         if order_ids:
             orders_balance = self.get_allocated_assets(order_ids)
             quote += orders_balance['quote']
@@ -414,7 +414,7 @@ class BitsharesOrderEngine(Storage, Events):
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
-            orders = self.get_own_orders
+            orders = self.own_orders
 
         return self.filter_buy_orders(orders)
 
@@ -425,7 +425,7 @@ class BitsharesOrderEngine(Storage, Events):
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
-            orders = self.get_own_orders
+            orders = self.own_orders
 
         return self.filter_sell_orders(orders)
 
@@ -700,11 +700,28 @@ class BitsharesOrderEngine(Storage, Events):
         """
         return self._account.balances
 
-    @property
-    def all_own_orders(self, refresh=True):
+    def get_own_orders(self, refresh=True):
+        """ Return the account's open orders in the current market
+
+            :param bool refresh: Use most recent data
+            :return: List of Order objects
+        """
+        orders = []
+
+        # Refresh account data
+        if refresh:
+            self.account.refresh()
+
+        for order in self.account.openorders:
+            if self.worker["market"] == order.market and self.account.openorders:
+                orders.append(order)
+
+        return orders
+
+    def get_all_own_orders(self, refresh=True):
         """ Return the worker's open orders in all markets
 
-            :param bool | refresh: Use most recent data
+            :param bool refresh: Use most recent data
             :return: List of Order objects
         """
         # Refresh account data
@@ -716,6 +733,18 @@ class BitsharesOrderEngine(Storage, Events):
             orders.append(order)
 
         return orders
+
+    @property
+    def all_own_orders(self):
+        """ Return the worker's open orders in all markets
+        """
+        return self.get_all_own_orders()
+
+    @property
+    def own_orders(self):
+        """ Return the account's open orders in the current market
+        """
+        return self.get_own_orders()
 
     @property
     def market(self):
