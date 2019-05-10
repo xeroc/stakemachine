@@ -257,15 +257,17 @@ class Strategy(StrategyBase):
         if len(order_ids) < expected_num_orders and not self.disabled:
             self.update_orders()
 
-    def get_market_buy_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):
+    def get_market_buy_price(self, quote_amount=0, base_amount=0, **kwargs):
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
             moving average or weighted moving average
 
             :param float | quote_amount:
             :param float | base_amount:
-            :param bool | exclude_own_orders: Exclude own orders when calculating a price
+            :param dict | kwargs:
+                bool | exclude_own_orders: Exclude own orders when calculating a price
             :return: price as float
         """
+        exclude_own_orders = kwargs.get('exclude_own_orders', True)
         market_buy_orders = []
 
         # Exclude own orders from orderbook if needed
@@ -334,7 +336,7 @@ class Strategy(StrategyBase):
 
         return base_amount / quote_amount
 
-    def get_market_sell_price(self, quote_amount=0, base_amount=0, exclude_own_orders=True):
+    def get_market_sell_price(self, quote_amount=0, base_amount=0, **kwargs):
         """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
             enhanced with moving average or weighted moving average.
 
@@ -342,9 +344,11 @@ class Strategy(StrategyBase):
 
             :param float | quote_amount:
             :param float | base_amount:
-            :param bool | exclude_own_orders: Exclude own orders when calculating a price
+            :param dict | kwargs:
+                bool | exclude_own_orders: Exclude own orders when calculating a price
             :return:
         """
+        exclude_own_orders = kwargs.get('exclude_own_orders', True)
         market_sell_orders = []
 
         # Exclude own orders from orderbook if needed

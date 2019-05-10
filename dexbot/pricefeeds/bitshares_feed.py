@@ -156,13 +156,14 @@ class BitsharesPriceFeed:
         sell_orders = self.filter_sell_orders(orders)
         return sell_orders
 
-    def get_market_buy_price(self, quote_amount=0, base_amount=0):
+    def get_market_buy_price(self, quote_amount=0, base_amount=0, **kwargs):
         # TODO: refactor to use orders instead of exclude_own_orders
         """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
             moving average or weighted moving average
 
             :param float | quote_amount:
             :param float | base_amount:
+            :param dict | kwargs:
             :return: price as float
         """
         market_buy_orders = []
@@ -221,7 +222,7 @@ class BitsharesPriceFeed:
 
         return base_amount / quote_amount
 
-    def get_market_sell_price(self, quote_amount=0, base_amount=0):
+    def get_market_sell_price(self, quote_amount=0, base_amount=0, **kwargs):
         # TODO: refactor to use orders instead of exclude_own_orders
         """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
             enhanced with moving average or weighted moving average.
@@ -230,6 +231,7 @@ class BitsharesPriceFeed:
 
             :param float | quote_amount:
             :param float | base_amount:
+            :param dict | kwargs:
             :return:
         """
         market_sell_orders = []
@@ -296,10 +298,9 @@ class BitsharesPriceFeed:
             :return: Market center price as float
         """
         center_price = None
-        buy_price = self.get_market_buy_price(quote_amount=quote_amount,
-                                              base_amount=base_amount)
-        sell_price = self.get_market_sell_price(quote_amount=quote_amount,
-                                                base_amount=base_amount)
+        buy_price = self.get_market_buy_price(quote_amount=quote_amount, base_amount=base_amount)
+        sell_price = self.get_market_sell_price(quote_amount=quote_amount, base_amount=base_amount)
+
         if buy_price is None or buy_price == 0.0:
             if not suppress_errors:
                 self.log.critical("Cannot estimate center price, there is no highest bid.")
