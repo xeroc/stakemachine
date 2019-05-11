@@ -7,7 +7,7 @@ from dexbot.controllers.wallet_controller import WalletController
 from dexbot.views.unlock_wallet import UnlockWalletView
 from dexbot.views.create_wallet import CreateWalletView
 
-from PyQt5.Qt import QApplication
+from PyQt5.QtWidgets import QApplication
 from bitshares import BitShares
 
 
@@ -16,7 +16,7 @@ class App(QApplication):
         super(App, self).__init__(sys_argv)
 
         config = Config()
-        bitshares_instance = BitShares(config['node'], num_retries=-1)
+        bitshares_instance = BitShares(config['node'], num_retries=-1, expiration=60)
 
         # Wallet unlock
         unlock_ctrl = WalletController(bitshares_instance)

@@ -7,10 +7,13 @@ from functools import update_wrapper
 
 import click
 from ruamel import yaml
+from appdirs import user_data_dir
+
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
 from bitshares.exceptions import WrongMasterPasswordException
 
+from dexbot import VERSION, APP_NAME, AUTHOR
 from dexbot.config import Config
 
 log = logging.getLogger(__name__)
@@ -47,8 +50,12 @@ def verbose(f):
         # Logging to a file
         filename = ctx.obj.get('logfile')
         if not filename:
-            # By default, log to a file located where the script is
-            filename = os.path.join(os.path.dirname(sys.argv[0]), 'dexbot.log')
+            # By default, log to a user data dir
+            data_dir = user_data_dir(APP_NAME, AUTHOR)
+            filename = os.path.join(data_dir, 'dexbot.log')
+        # Print logfile using main logger
+        logging.getLogger("dexbot").info('Dexbot version {}, logfile: {}'.format(VERSION, filename))
+
         fh = logging.FileHandler(filename)
         fh.setFormatter(formatter2)
         logger.addHandler(fh)
@@ -87,6 +94,7 @@ def chain(f):
         ctx.bitshares = BitShares(
             ctx.config["node"],
             num_retries=-1,
+            expiration=60,
             **ctx.obj
         )
         set_shared_bitshares_instance(ctx.bitshares)
