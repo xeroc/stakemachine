@@ -6,8 +6,8 @@ from functools import reduce
 from bitshares.dex import Dex
 from bitshares.amount import Amount
 
-from .base import StrategyBase
-from .config_parts.staggered_config import StaggeredConfig
+from dexbot.strategies.base import StrategyBase
+from dexbot.strategies.config_parts.staggered_config import StaggeredConfig
 
 
 class Strategy(StrategyBase):
@@ -154,11 +154,11 @@ class Strategy(StrategyBase):
         self.store_profit_estimation_data()
 
         # Calculate minimal orders amounts based on asset precision
-        if not (self.order_min_base or self.order_min_quote):
+        if not self.order_min_base or not self.order_min_quote:
             self.calculate_min_amounts()
 
         # Calculate asset thresholds once
-        if not (self.quote_asset_threshold or self.base_asset_threshold):
+        if not self.quote_asset_threshold or not self.base_asset_threshold:
             self.calculate_asset_thresholds()
 
         # Remove orders that exceed boundaries
@@ -381,7 +381,7 @@ class Strategy(StrategyBase):
         if use_cached_orders and self.cached_orders:
             orders = self.cached_orders
         else:
-            orders = self.get_own_orders
+            orders = self.own_orders
         order_ids = [order['id'] for order in orders]
         orders_balance = self.get_allocated_assets(order_ids)
 
@@ -392,7 +392,7 @@ class Strategy(StrategyBase):
     def refresh_orders(self):
         """ Updates buy and sell orders
         """
-        orders = self.get_own_orders
+        orders = self.own_orders
         self.cached_orders = orders
 
         # Sort virtual orders
@@ -1773,10 +1773,10 @@ class Strategy(StrategyBase):
         order = VirtualOrder()
         order['price'] = price
 
-        quote_asset = Amount(amount, self.market['quote']['symbol'])
+        quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount * price, self.market['base']['symbol'])
+        base_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
@@ -1802,10 +1802,10 @@ class Strategy(StrategyBase):
         order = VirtualOrder()
         order['price'] = price ** -1
 
-        quote_asset = Amount(amount * price, self.market['base']['symbol'])
+        quote_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount, self.market['quote']['symbol'])
+        base_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
 
