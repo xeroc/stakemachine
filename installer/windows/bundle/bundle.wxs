@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
+	<Bundle Name="DEXBot" 
+          Version="1.0.0.0" 
+          Manufacturer="Bitshares"
+          IconSourceFile="assets/dexbot-icon.ico"
+          UpgradeCode="5397E671-1059-487E-9E26-FD5E1095F77D">
+
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.HyperlinkLicense" >
+      <bal:WixStandardBootstrapperApplication
+        LogoFile="assets/dexbot-icon.jpg"
+        ThemeFile="resources/classic_theme.xml"
+        LocalizationFile="resources/classic_theme.wxl"
+        LicenseUrl="license.rtf"/>
+      <Payload SourceFile='resources/license.rtf' />
+    </BootstrapperApplicationRef>
+
+    <Chain>
+      <ExePackage SourceFile="prerequisites\python-3.7.3.exe"
+                  Cache="yes"
+                  Compressed="yes"
+                  Permanent="yes"
+                  Vital="yes"
+                  DisplayName="Processing Python..."
+                  InstallCommand="/q Include_pip=1 PrependPath=1 Include_launcher=1">
+      </ExePackage>
+      <MsiPackage SourceFile="..\msi\bin\Debug\DEXBotInstaller.msi" DisplayName="Processing DEXBot...">
+          <MsiProperty Name="INSTALLLOCATION" Value="[INSTALLLOCATION]" />
+      </MsiPackage>
+          <ExePackage Id="Uptick" InstallCommand="cmd /c" DisplayName="Processing Uptick..." SourceFile="prerequisites\uptick.bat" />
+    </Chain>
+	</Bundle>
+</Wix>
