@@ -123,6 +123,10 @@ def create_asset(bitshares):
 @pytest.fixture(scope='session')
 def issue_asset(bitshares):
     """ Issue asset shares to specified account
+
+        :param str asset: asset symbol to issue
+        :param float amount: amount to issue
+        :param str to: account name to receive new shares
     """
 
     def _issue_asset(asset, amount, to):
