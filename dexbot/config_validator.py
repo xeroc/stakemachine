@@ -39,8 +39,8 @@ class ConfigValidator:
         if not private_key:
             # Check if the account is already in the database
             account_ids = wallet.getAccounts()
-            accounts = [Account(id, bitshares_instance=self.bitshares) for id in account_ids]
-            if any(account == a['name'] for a in accounts):
+            accounts = [Account(account_id, bitshares_instance=self.bitshares) for account_id in account_ids]
+            if any(account == account['name'] for account in accounts):
                 return True
             return False
 
@@ -51,7 +51,7 @@ class ConfigValidator:
 
         # Load all accounts with corresponding public key from the blockchain
         account_ids = wallet.getAccountsFromPublicKey(pubkey)
-        account_names = [Account(id, bitshares_instance=self.bitshares).name for id in account_ids]
+        account_names = [Account(account_id, bitshares_instance=self.bitshares).name for account_id in account_ids]
 
         if account in account_names:
             return True
