@@ -170,7 +170,7 @@ def storage_db():
     """
     from dexbot.storage import sqlDataBaseFile
 
-    fd, sqlDataBaseFile = tempfile.mkstemp()  # noqa: F811
+    _, sqlDataBaseFile = tempfile.mkstemp()  # noqa: F811
     yield
     os.unlink(sqlDataBaseFile)
 

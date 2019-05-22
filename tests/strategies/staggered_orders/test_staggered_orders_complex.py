@@ -170,7 +170,7 @@ def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_alloca
     spread_before = get_spread(worker)
     assert spread_before > worker.target_spread + worker.increment
 
-    for i in range(0, 6):
+    for _ in range(0, 6):
         worker.maintain_strategy()
 
     worker.refresh_orders()
@@ -616,7 +616,7 @@ def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_
     worker.place_closer_order('base', worker.buy_orders[0], own_asset_limit=base_limit)
     worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=quote_limit)
     worker.refresh_orders()
-    for i in range(1, num_orders_to_cancel):
+    for _ in range(1, num_orders_to_cancel):
         worker.place_closer_order('base', worker.buy_orders[0])
         worker.place_closer_order('quote', worker.sell_orders[0])
         worker.refresh_orders()
