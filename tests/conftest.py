@@ -166,7 +166,7 @@ def unused_account(bitshares):
     def _unused_account():
         _range = 100000
         while True:
-            account = 'worker-{}'.format(random.randint(1, _range))
+            account = 'worker-{}'.format(random.randint(1, _range))  # nosec
             try:
                 Account(account, bitshares_instance=bitshares)
             except AccountDoesNotExistsException:
