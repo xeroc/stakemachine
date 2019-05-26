@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
-	<Bundle Name="DEXBot" 
-          Version="1.0.0.0" 
-          Manufacturer="Bitshares"
+  
+  <?include ..\bundle\resources\variables.wxi ?>
+  
+	<Bundle Name="$(var.ApplicationName)"
+          Version="$(var.ApplicationVersion)"
+          Manufacturer="$(var.Manufacturer)"
           IconSourceFile="assets/dexbot-icon.ico"
           UpgradeCode="5397E671-1059-487E-9E26-FD5E1095F77D">
 
@@ -16,6 +19,14 @@
       <Payload SourceFile='resources/license.rtf' />
     </BootstrapperApplicationRef>
 
+    <?if $(var.Platform)~="x64" ?>
+      <Variable Name="SetupText" Value="[ProgramFiles64Folder]Python[WinVerNoDot]" bal:Overridable="yes" />
+      <Variable Name="TargetPlatform" Value="x64" />
+    <?else ?>
+      <Variable Name="DefaultAllUsersTargetDir" Value="[ProgramFilesFolder]Python[WinVerNoDot]" bal:Overridable="yes" />
+      <Variable Name="TargetPlatform" Value="x86" />
+    <?endif ?>
+    <Variable Name="LaunchTarget" Value="[ProgramFilesFolder]\Bitshares\DEXBot\DEXBot.exe"/>
     <Chain>
       <ExePackage SourceFile="prerequisites\python-3.7.3.exe"
                   Cache="yes"
@@ -25,10 +36,8 @@
                   DisplayName="Processing Python..."
                   InstallCommand="/q Include_pip=1 PrependPath=1 Include_launcher=1">
       </ExePackage>
-      <MsiPackage SourceFile="..\msi\bin\Debug\DEXBotInstaller.msi" DisplayName="Processing DEXBot...">
-          <MsiProperty Name="INSTALLLOCATION" Value="[INSTALLLOCATION]" />
-      </MsiPackage>
-          <ExePackage Id="Uptick" InstallCommand="cmd /c" DisplayName="Processing Uptick..." SourceFile="prerequisites\uptick.bat" />
+      <MsiPackage SourceFile="..\msi\bin\Debug\DEXBotInstaller.msi" DisplayName="Processing DEXBot..." />
+      <ExePackage Id="Uptick" InstallCommand="cmd /c" DisplayName="Processing Uptick..." SourceFile="prerequisites\uptick.bat" />
     </Chain>
 	</Bundle>
 </Wix>

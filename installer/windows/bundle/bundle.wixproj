@@ -6,7 +6,7 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>0a6fa202-7443-4f18-a462-f77c543bf921</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <OutputName>DEXBotInstallerBundle</OutputName>
+    <OutputName>DEXBot-installer</OutputName>
     <OutputType>Bundle</OutputType>
     <Name>bundle</Name>
   </PropertyGroup>
@@ -42,6 +42,7 @@
     <Content Include="Resources\license.rtf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="resources\variables.wxi" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="resources\classic_theme.wxl" />

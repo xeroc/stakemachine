@@ -24,17 +24,22 @@
   <String Id="OptionsBrowseButton">&amp;Browse</String>
   <String Id="OptionsOkButton">&amp;OK</String>
   <String Id="OptionsCancelButton">&amp;Cancel</String>
-  <String Id="ProgressHeader">Setup Progress[WixBundleAction]</String>
-  <String Id="ProgressDescription">Please wait while DEXBot will be installed.</String>
+
+
+  <String Id="ProgressHeader">Setup Progress</String>  
+  <String Id="ProgressDescription">Please wait until the setup is completed...</String>
   <String Id="ProgressLabel">Processing:</String>
   <String Id="OverallProgressPackageText">Initializing...</String>
   <String Id="ProgressCancelButton">&amp;Cancel</String>
   <String Id="ModifyHeader">Repair/Uninstall DEXBot</String>
-  <String Id="ModifyDescription">Please choose wether to repair or uninstall DEXBot.</String>
+  <String Id="ModifyDescription">Please click Repair to restore all files and shortcuts or click Uninstall to remove DEXBot v[WixBundleVersion].</String>
   <String Id="ModifyRepairButton">&amp;Repair</String>
   <String Id="ModifyUninstallButton">&amp;Uninstall</String>
   <String Id="ModifyCloseButton">&amp;Close</String>
   <String Id="SuccessHeader">Setup Successful</String>
+  <String Id="SuccessInstallHeader">DEXBot v[WixBundleVersion] successfully installed. Click Launch to run DEXBot or Close to run it at a later time.</String>
+  <String Id="SuccessUninstallHeader">DEXBot v[WixBundleVersion] successfully removed from your computer.</String>
+  <String Id="SuccessRepairHeader">DEXBot v[WixBundleVersion] successfuly repaired. Click Launch to run DEXBot or Close to run in at a later time.</String>
   <String Id="SuccessDescription">Setup successfully installed. Click Launch to run DEXBot or click Close to run it later.</String>
   <String Id="SuccessLaunchButton">&amp;Launch</String>
   <String Id="SuccessRestartText">You must restart your computer before you can use the software.</String>
@@ -46,6 +51,6 @@
   <String Id="FailureRestartButton">&amp;Restart</String>
   <String Id="FailureCloseButton">&amp;Close</String>
   <String Id="WillInstall">[WixBundleName] Installation</String>
-  <String Id="WillInstallDescription">Click Install to install [WixBundleName] on your computer.</String>
+  <String Id="WillInstallDescription">Click Install to install [WixBundleName] v[WixBundleVersion] on your computer.</String>
   <String Id="InstallLicenseLinkText">By installing you accept these &lt;a href="#"&gt;license terms&lt;/a&gt;</String>
 </WixLocalization>

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <?include ..\bundle\resources\variables.wxi ?>
   <Product Id="*"
-           Name="DEXBot"
+           Name="$(var.ApplicationName)"
            Language="1033"
-           Version="1.0.0"
-           Manufacturer="Bitshares"
+           Version="$(var.ApplicationVersion)"
+           Manufacturer="$(var.Manufacturer)"
            UpgradeCode="497F349B-D2F6-4488-9FE4-797E7E58B158" >
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." AllowDowngrades="no" Schedule="afterInstallExecute"  />
@@ -14,17 +15,6 @@
       <ComponentRef Id="ApplicationShortcut" />
       <ComponentRef Id="ApplicationShortcutDesktop" />
     </Feature>
-    
-    <!-- Start DEXBot
-    <CustomAction Id='StartDEXBot' Directory='INSTALLDIR' Execute='immediate' ExeCommand='[INSTALLDIR]DEXBot.exe' Return='asyncNoWait'/>
-    -->
-    <InstallExecuteSequence>
-      <!-- <Custom Action="StartDEXBot" After="InstallFinalize" />-->
-      <!--<?if "!(wix.StartDEXBotVar)" = "1" ?>
-      <Custom Action="StartDexbot" After="InstallFinalize" />
-      <?endif ?>-->
-    </InstallExecuteSequence>
-
   </Product>
   <Fragment>
     <Icon Id="icon.ico" SourceFile="assets\dexbot-icon.ico"/>
@@ -57,7 +47,7 @@
       <!-- Begin program files entry-->
       <Directory Id="ProgramFilesFolder">
         <Directory Id="APPLICATIONFOLDER" Name="Bitshares">
-          <Directory Id="INSTALLDIR" Name="DEXBot" >
+          <Directory Id="INSTALLDIR" Name="$(var.ApplicationName)" >
           </Directory>
         </Directory>
       </Directory>
