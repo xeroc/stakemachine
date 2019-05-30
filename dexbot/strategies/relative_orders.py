@@ -58,9 +58,13 @@ class Strategy(StrategyBase):
         if self.is_center_price_dynamic:
             self.center_price = None
             self.center_price_depth = self.worker.get('center_price_depth', 0)
+            self.cp_from_last_trade = self.worker.get('cp_from_last_trade')
         else:
             # Use manually set center price
             self.center_price = self.worker["center_price"]
+
+        if self.cp_from_last_trade:
+            self.ontick -= self.tick  # Save a few cycles there
 
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
         self.is_asset_offset = self.worker.get('center_price_offset', False)
@@ -196,6 +200,9 @@ class Strategy(StrategyBase):
             if self.center_price_depth > 0 and not self.external_feed:
                 # Calculate with quote amount if given
                 center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
+
+            if self.cp_from_last_trade:
+                center_price = self.get_own_last_trade()['price']
 
             self.center_price = self.calculate_center_price(
                 center_price,
@@ -583,3 +590,14 @@ class Strategy(StrategyBase):
             self.update_gui_profit()
 
         self.last_check = datetime.now()
+
+    def get_own_last_trade(self):
+        """ Returns dict with amounts and price of last trade """
+        trade = [x for x in self.account.history(limit=1, only_ops=['fill_order'])][0]['op'][1]
+        if trade['pays']['asset_id'] == self.market['base']['id']:  # Buy order
+            base = trade['fill_price']['base']['amount'] / 10 ** self.market['base']['precision']
+            quote = trade['fill_price']['quote']['amount'] / 10 ** self.market['quote']['precision']
+        else:  # Sell order
+            base = trade['fill_price']['quote']['amount'] / 10 ** self.market['base']['precision']
+            quote = trade['fill_price']['base']['amount'] / 10 ** self.market['quote']['precision']
+        return {'base': base, 'quote': quote, 'price': base / quote}
