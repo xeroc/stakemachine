@@ -42,9 +42,9 @@ test_script:
 artifacts:
   - path: DEXBot-gui-win64.zip
     name: DEXBot-gui-win64.zip
-  - path: installer\windows\bundle\bin\Release\DEXBot-installer.exe
+  - path: installer\windows\bundle\bin\Release
     name: DEXBot-installer.exe
-  - path: installer\windows\bundle\bin\Debug\DEXBot-installer.exe
+  - path: installer\windows\bundle\bin\Debug
     name: DEXBot-installer-Debug.exe
 
 
