@@ -2745,7 +2745,7 @@ QSlider::handle:horizontal {
        </item>
       </layout>
      </widget>
-     <widget class="QCheckBox" name="cp_from_last_trade_input">
+     <widget class="QCheckBox" name="center_price_from_last_trade_input">
       <property name="geometry">
        <rect>
         <x>136</x>
