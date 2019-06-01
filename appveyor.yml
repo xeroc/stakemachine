@@ -31,9 +31,6 @@ configuration:
 platform: Any CPU
 build:
   verbosity: normal
-# scripts to run before build
-before_build:
-  - cmd: nuget restore
 
 # wix
 
