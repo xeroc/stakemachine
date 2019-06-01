@@ -38,12 +38,13 @@ build:
 test_script:
   - "echo tests..."
 
+# artifact as relativ path to the build folder C:\projects\dexbot
 artifacts:
   - path: DEXBot-gui-win64.zip
     name: DEXBot-gui-win64.zip
-  - path: C:\projects\dexbot\\windows\bundle\bin\Release\DEXBot-installer.exe
+  - path: installer\windows\bundle\bin\Release\DEXBot-installer.exe
     name: DEXBot-installer.exe
-  - path: C:\projects\dexbot\\windows\bundle\bin\Debug\DEXBot-installer.exe
+  - path: installer\windows\bundle\bin\Debug\DEXBot-installer.exe
     name: DEXBot-installer-Debug.exe
 
 
