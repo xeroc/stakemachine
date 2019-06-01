@@ -11,8 +11,6 @@ environment:
 
 build: off
 
-configuration: Release
-
 install:
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;C:\MinGW\bin
   - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
@@ -38,7 +36,7 @@ build:
 # scripts to run before build
 before_build:
   - cmd: nuget restore
-  
+
 # @TODO: Run tests..
 test_script:
   - "echo tests..."
