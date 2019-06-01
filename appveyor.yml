@@ -1,6 +1,6 @@
 version: 0.1.{build}
 
-image: Visual Studio 2015
+image: Visual Studio 2017
 
 environment:
   matrix:
@@ -17,7 +17,7 @@ install:
   - copy c:\Python36-x64\python.exe c:\Python36-x64\python3.exe
   - python --version
   - make install
-  - copy %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
+  - copy C:\Python36-x64\Scripts\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
 
 after_test:
   - make package
