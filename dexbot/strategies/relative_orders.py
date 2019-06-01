@@ -562,6 +562,8 @@ class Strategy(StrategyBase):
                             # FIXME: Need to write trade operation; possible race condition may occur: while
                             #        we're updating order it may be filled further so trade log entry will not
                             #        be correct
+            if need_update:
+                self.first_round = False
 
         # Check center price change when using market center price with reset option on change
         if self.is_reset_on_price_change and self.is_center_price_dynamic:
