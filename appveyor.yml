@@ -9,8 +9,6 @@ environment:
 #        Build                    #
 #---------------------------------#
 
-build: off
-
 install:
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;C:\MinGW\bin
   - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
@@ -22,8 +20,6 @@ install:
 after_test:
   - make package
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
-
-
 
 image: Visual Studio 2017
 
