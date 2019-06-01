@@ -1,6 +1,6 @@
 version: 0.1.{build}
 
-image: Visual Studio 2017
+image: Visual Studio 2015
 
 environment:
   matrix:
@@ -23,11 +23,19 @@ after_test:
   - make package
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
 
+# wix
+
+configuration:
+- Release
+- Debug
+platform: Any CPU
 build:
   verbosity: normal
 # scripts to run before build
 before_build:
   - cmd: nuget restore
+
+# wix
 
 # @TODO: Run tests..
 test_script:
