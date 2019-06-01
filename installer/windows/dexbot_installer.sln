@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "msi", "msi\msi.wixproj", "{95B3AE56-37CC-4CDF-813C-6566698D5709}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "bundle", "bundle\bundle.wixproj", "{0A6FA202-7443-4F18-A462-F77C543BF921}"
+	ProjectSection(ProjectDependencies) = postProject
+		{95B3AE56-37CC-4CDF-813C-6566698D5709} = {95B3AE56-37CC-4CDF-813C-6566698D5709}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

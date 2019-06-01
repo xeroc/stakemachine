@@ -28,7 +28,7 @@ after_test:
 configuration:
 - Release
 - Debug
-platform: Any CPU
+platform: x86
 build:
   verbosity: normal
 
