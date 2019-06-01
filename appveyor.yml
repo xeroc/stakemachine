@@ -1,5 +1,7 @@
 version: 0.1.{build}
 
+image: Visual Studio 2017
+
 environment:
   matrix:
     # Python 3.6.6 - 64-bit
@@ -21,11 +23,6 @@ after_test:
   - make package
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
 
-image: Visual Studio 2017
-
-configuration:
-- Release
-- Debug
 platform: Any CPU
 build:
   verbosity: normal
