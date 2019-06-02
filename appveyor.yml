@@ -19,7 +19,7 @@ install:
   - copy c:\Python36-x64\python.exe c:\Python36-x64\python3.exe
   - python --version
   - make install
-  - copy /Y c:\Python36-x64\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
+  - copy /Y C:\Python36-x64\Scripts\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
 
 after_test:
   - make package
