@@ -20,6 +20,7 @@ install:
   - python --version
   - make install
   - copy /Y C:\Python36-x64\Scripts\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
+  - SET ApplicationVersion=$(APPVEYOR_BUILD_VERSION)
 
 after_test:
   - make package
@@ -44,7 +45,7 @@ test_script:
 artifacts:
   - path: DEXBot-gui-win64.zip
     name: DEXBot-gui-win64.zip
-  - path: installer\windows\bundle\bin\%CONFIGURATION%
+  - path: installer\windows\bundle\bin\%CONFIGURATION%\DEXBot-installer.exe
     name: DEXBot-installer.exe
 
     # see https://help.appveyor.com/discussions/questions/1494-change-artifact-name
@@ -76,8 +77,8 @@ deploy:
 #         Notifications           #
 #---------------------------------#
 
-notifications:
-  - provider: Slack
-    auth_token:
-      secure: G9OMj9l2s3+lX8cRiNXXhuQJpnnjcBc0cqP8gzkdKVWqGA8vBTOIPGxD/536VKpeBH/5dJFQWT+vmnGS+XciaCg4hh5s6hDpnvePq2+uEYE=
-    channel: '#ci'
+# notifications:
+#  - provider: Slack
+#    auth_token:
+#      secure: G9OMj9l2s3+lX8cRiNXXhuQJpnnjcBc0cqP8gzkdKVWqGA8vBTOIPGxD/536VKpeBH/5dJFQWT+vmnGS+XciaCg4hh5s6hDpnvePq2+uEYE=
+#    channel: '#ci'
