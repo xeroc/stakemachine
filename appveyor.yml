@@ -3,6 +3,8 @@ version: 0.1.{build}
 image: Visual Studio 2015
 
 environment:
+  # change artifact name
+  # artifactName: $(APPVEYOR_BUILD_VERSION)-$(APPVEYOR_REPO_COMMIT).zip
   matrix:
     # Python 3.6.6 - 64-bit
     - PYTHON: "C:\\Python36-x64"
@@ -17,7 +19,7 @@ install:
   - copy c:\Python36-x64\python.exe c:\Python36-x64\python3.exe
   - python --version
   - make install
-  - copy C:\Python36-x64\Scripts\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
+  - copy %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
 
 after_test:
   - make package
@@ -42,10 +44,12 @@ test_script:
 artifacts:
   - path: DEXBot-gui-win64.zip
     name: DEXBot-gui-win64.zip
-  - path: installer\windows\bundle\bin\Release
+  - path: DEXBot-installer.exe
     name: DEXBot-installer.exe
-  - path: installer\windows\bundle\bin\Debug
-    name: DEXBot-installer-Debug.exe
+
+    # see https://help.appveyor.com/discussions/questions/1494-change-artifact-name
+    #https://help.appveyor.com/discussions/questions/4249-renaming-artifact
+    #%artifactName%
 
 
 
