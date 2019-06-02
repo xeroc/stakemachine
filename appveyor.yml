@@ -44,7 +44,7 @@ test_script:
 artifacts:
   - path: DEXBot-gui-win64.zip
     name: DEXBot-gui-win64.zip
-  - path: DEXBot-installer.exe
+  - path: installer\windows\bundle\bin\%CONFIGURATION%
     name: DEXBot-installer.exe
 
     # see https://help.appveyor.com/discussions/questions/1494-change-artifact-name
