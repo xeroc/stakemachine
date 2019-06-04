@@ -23,7 +23,10 @@ install:
   - copy /Y C:\projects\dexbot\dist\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
   # read dexbot version from __init__.py
-  - for /f "delims== tokens=1,2" %G in (C:\projects\dexbot\dexbot\__init__.py) do set %G=%H
+  - dir
+  - echo ############
+  - dir .\dexbot
+  - for /f "delims== tokens=1,2" %G in (__init__.py) do set %G=%H
   - echo -############################################################################-
   - echo %VERSION%
   - SET ApplicationVersion=%VERSION%
