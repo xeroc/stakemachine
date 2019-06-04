@@ -26,7 +26,7 @@ install:
   - dir
   - echo ############
   - dir .\dexbot
-  - for /f "delims== tokens=1,2" %G in (__init__.py) do set %G=%H
+  - for /f "delims== tokens=1,2" %G in (.\dexbot\__init__.py) do set %G=%H
   - echo -############################################################################-
   - echo %VERSION%
   - SET ApplicationVersion=%VERSION%
