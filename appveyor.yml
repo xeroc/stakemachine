@@ -20,21 +20,14 @@ install:
   - python --version
   - make install
   - make package
-  - dir .\dist
-  - echo -############################################################################-
-  - dir C:\Python36-x64\Scripts
-  - echo -############################################################################-
-  - dir %APPVEYOR_BUILD_FOLDER%\dist
-  - echo -############################################################################-
   - copy /Y C:\projects\dexbot\dist\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
+  # read dexbot version from __init__.py
+  - for /f "delims== tokens=1,2" %G in (test.txt) do set %G=%Hfor /f "delims== tokens=1,2" %G in (__init__.py) do set %G=%H
   - echo -############################################################################-
-  - dir %APPVEYOR_BUILD_FOLDER%\dist
-  - echo $(APPVEYOR_BUILD_VERSION)
-  - echo %APPVEYOR_BUILD_VERSION%
   - echo %VERSION%
-  - echo %__version__%
-  - SET ApplicationVersion=$(APPVEYOR_BUILD_VERSION)
+  - SET ApplicationVersion=%VERSION%
+  - echo %ApplicationVersion%
 
 # wix
 
