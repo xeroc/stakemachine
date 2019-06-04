@@ -33,6 +33,8 @@ install:
   - echo %ApplicationVersion%
 
 # wix
+before_build:
+  - for /f "delims== tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
 
 configuration:
 - Release
