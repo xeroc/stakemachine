@@ -20,11 +20,11 @@ install:
   - python --version
   - make install
   - make package
-  - dir
+  - dir .\dist
   - echo -############################################################################-
-  - cd C:\Python36-x64\Scripts | dir
+  - dir C:\Python36-x64\Scripts
   - echo -############################################################################-
-  - cd %APPVEYOR_BUILD_FOLDER%\dist | dir
+  - dir %APPVEYOR_BUILD_FOLDER%\dist
   - echo -############################################################################-
   - copy /Y C:\Python36-x64\Scripts\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
