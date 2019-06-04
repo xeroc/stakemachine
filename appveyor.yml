@@ -26,8 +26,12 @@ install:
   - echo -############################################################################-
   - dir %APPVEYOR_BUILD_FOLDER%\dist
   - echo -############################################################################-
-  - copy /Y C:\Python36-x64\Scripts\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
+  - copy /Y C:\projects\dexbot\dist\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
+  - echo -############################################################################-
+  - dir %APPVEYOR_BUILD_FOLDER%\dist
+  - echo $(APPVEYOR_BUILD_VERSION)
+  - echo %APPVEYOR_BUILD_VERSION%
   - SET ApplicationVersion=$(APPVEYOR_BUILD_VERSION)
 
 # wix
