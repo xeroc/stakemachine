@@ -32,6 +32,8 @@ install:
   - dir %APPVEYOR_BUILD_FOLDER%\dist
   - echo $(APPVEYOR_BUILD_VERSION)
   - echo %APPVEYOR_BUILD_VERSION%
+  - echo %VERSION%
+  - echo %__version__%
   - SET ApplicationVersion=$(APPVEYOR_BUILD_VERSION)
 
 # wix
