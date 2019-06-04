@@ -13,11 +13,12 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug</DefineConstants>
+    <DefineConstants>Debug;ApplicationVersion=$(VERSION);</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <DefineConstants>ApplicationVersion=$(VERSION);</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="product.wxs" />
@@ -25,7 +26,7 @@
   <ItemGroup>
     <Content Include="assets\dexbot-icon.ico" />
     <Content Include="assets\dexbot-icon.jpg" />
-    <Content Include="Dexbot.exe" />
+    <Content Include="DEXBot.exe" />
     <Content Include="README.txt" />
   </ItemGroup>
   <ItemGroup>
