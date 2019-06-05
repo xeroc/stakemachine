@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Include>
-  <?define ApplicationVersion = "0.10.0" ?>
+  <!--<?define ApplicationVersion = "0.10.0" ?>-->
   <?define ApplicationName = "DEXBot" ?>
   <?define Manufacturer = "Bitshares" ?>
 </Include>

@@ -3,9 +3,9 @@ version: 0.1.{build}
 image: Visual Studio 2015
 
 environment:
-  - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
   # change artifact name
   # artifactName: $(APPVEYOR_BUILD_VERSION)-$(APPVEYOR_REPO_COMMIT).zip
+  ApplicationVersion: '3.0'
   matrix:
     # Python 3.6.6 - 64-bit
     - PYTHON: "C:\\Python36-x64"
@@ -32,6 +32,7 @@ install:
   - echo %VERSION%
   - SET ApplicationVersion=%VERSION%
   - echo %ApplicationVersion%
+  - echo $(ApplicationVersion)
 
 # wix
 before_build:
