@@ -5,7 +5,7 @@
   <?include ..\bundle\resources\variables.wxi ?>
   
 	<Bundle Name="$(var.ApplicationName)"
-          Version="$(var.ApplicationVersion)"
+          Version='$(var.ApplicationVersion)'
           Manufacturer="$(var.Manufacturer)"
           IconSourceFile="assets/dexbot-icon.ico"
           UpgradeCode="5397E671-1059-487E-9E26-FD5E1095F77D">

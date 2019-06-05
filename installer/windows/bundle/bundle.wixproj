@@ -6,7 +6,7 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>0a6fa202-7443-4f18-a462-f77c543bf921</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-	<!-- VERSION property to set it von __init__.py -->
+    <!-- VERSION property to set it von __init__.py -->
     <!--<VERSION Condition=" '$(VERSION)' == '' ">0.0.0.0</VERSION>-->
     <OutputName>DEXBot-installer</OutputName>
     <OutputType>Bundle</OutputType>
@@ -15,15 +15,14 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-	<DefineConstants>ApplicationVersion=$(VERSION);Build=$(Configuration)</DefineConstants>
-
+    <DefineConstants>ApplicationVersion=$(VERSION);Build=$(Configuration)</DefineConstants>
     <CompilerAdditionalOptions>
     </CompilerAdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-        <DefineConstants>ApplicationVersion=$(VERSION);Build=$(Configuration)</DefineConstants>
+    <DefineConstants>ApplicationVersion=$(VERSION);Build=$(Configuration)</DefineConstants>
     <CompilerAdditionalOptions>
     </CompilerAdditionalOptions>
   </PropertyGroup>
@@ -61,9 +60,7 @@
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
   <PropertyGroup>
-    <PreBuildEvent>set VERSION=%271.2%27
-echo asd
-echo %25VERSION%25</PreBuildEvent>
+    <PreBuildEvent />
   </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.

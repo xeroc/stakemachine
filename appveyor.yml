@@ -30,14 +30,15 @@ install:
   - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
   - echo -############################################################################-
   - echo %VERSION%
-  - SET ApplicationVersion=%VERSION%
+  # set to version and replace ' with empty character
+  - set ApplicationVersion=%VERSION:'=%
   - echo %ApplicationVersion%
 
 # wix
-before_build:
-  - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
-  - echo -############################################################################-
-  - echo %VERSION%
+#before_build:
+ # - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
+  #- echo -############################################################################-
+  #- echo %VERSION%
 
 configuration:
 - Release
