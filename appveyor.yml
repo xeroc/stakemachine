@@ -3,6 +3,7 @@ version: 0.1.{build}
 image: Visual Studio 2015
 
 environment:
+  - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
   # change artifact name
   # artifactName: $(APPVEYOR_BUILD_VERSION)-$(APPVEYOR_REPO_COMMIT).zip
   matrix:
@@ -26,7 +27,7 @@ install:
   - dir
   - echo ############
   - dir .\dexbot
-  - for /f "delims== tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
+  - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
   - echo -############################################################################-
   - echo %VERSION%
   - SET ApplicationVersion=%VERSION%
@@ -34,11 +35,12 @@ install:
 
 # wix
 before_build:
-  - for /f "delims== tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
+  - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
+  - echo -############################################################################-
+  - echo %VERSION%
 
 configuration:
 - Release
-- Debug
 platform: x86
 build:
   verbosity: normal
