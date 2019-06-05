@@ -6,8 +6,8 @@
     <ProductVersion>3.10</ProductVersion>
     <ProjectGuid>0a6fa202-7443-4f18-a462-f77c543bf921</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
-    <ApplicationVersion Condition=" '$(ApplicationVersion)' == '' ">0.0.0.0</ApplicationVersion>
-    <!--<ApplicationVersions Condition=" '%ApplicationVersions%' != '' ">0.0.0.1</ApplicationVersions>-->
+	<!-- VERSION property to set it von __init__.py -->
+    <VERSION Condition=" '$(VERSION)' == '' ">0.0.0.0</VERSION>
     <OutputName>DEXBot-installer</OutputName>
     <OutputType>Bundle</OutputType>
     <Name>bundle</Name>
@@ -15,16 +15,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;ApplicationVersion=$(ApplicationVersion);Build=$(Configuration)</DefineConstants>
-    <WixVariables>ApplicationVersion=$(ApplicationVersion);Build=$(Configuration)</WixVariables>
+    <DefineConstants>Debug;VERSION=$(VERSION);Build=$(Configuration)</DefineConstants>
+    <WixVariables>VERSION=$(VERSION);Build=$(Configuration)</WixVariables>
     <CompilerAdditionalOptions>
     </CompilerAdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;ApplicationVersions=%ApplicationVersions%;Build=$(Configuration)</DefineConstants>
-    <WixVariables>ApplicationVersions=%ApplicationVersions%;Build=$(Configuration)</WixVariables>
+    <DefineConstants>Debug;VERSION=$(VERSION);Build=$(Configuration)</DefineConstants>
+    <WixVariables>VERSION=$(VERSION);Build=$(Configuration)</WixVariables>
     <CompilerAdditionalOptions>
     </CompilerAdditionalOptions>
   </PropertyGroup>
@@ -63,7 +63,7 @@
   </Target>
   <PropertyGroup>
     <PreBuildEvent>set VERSION=%271.2%27
-set ApplicationVersion=%271.2%27
+echo asd
 echo %25VERSION%25</PreBuildEvent>
   </PropertyGroup>
   <!--
