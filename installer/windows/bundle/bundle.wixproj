@@ -7,7 +7,7 @@
     <ProjectGuid>0a6fa202-7443-4f18-a462-f77c543bf921</ProjectGuid>
     <SchemaVersion>2.0</SchemaVersion>
 	<!-- VERSION property to set it von __init__.py -->
-    <VERSION Condition=" '$(VERSION)' == '' ">0.0.0.0</VERSION>
+    <!--<VERSION Condition=" '$(VERSION)' == '' ">0.0.0.0</VERSION>-->
     <OutputName>DEXBot-installer</OutputName>
     <OutputType>Bundle</OutputType>
     <Name>bundle</Name>
@@ -15,16 +15,15 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;VERSION=$(VERSION);Build=$(Configuration)</DefineConstants>
-    <WixVariables>VERSION=$(VERSION);Build=$(Configuration)</WixVariables>
+	<DefineConstants>ApplicationVersion=$(VERSION);Build=$(Configuration)</DefineConstants>
+
     <CompilerAdditionalOptions>
     </CompilerAdditionalOptions>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>Debug;VERSION=$(VERSION);Build=$(Configuration)</DefineConstants>
-    <WixVariables>VERSION=$(VERSION);Build=$(Configuration)</WixVariables>
+        <DefineConstants>ApplicationVersion=$(VERSION);Build=$(Configuration)</DefineConstants>
     <CompilerAdditionalOptions>
     </CompilerAdditionalOptions>
   </PropertyGroup>
