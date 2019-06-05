@@ -18,7 +18,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
-    <DefineConstants>ApplicationVersion=$(VERSION);Build=$(Configuration)</DefineConstants>
+    <DefineConstants>ApplicationVersion=$(ApplicationVersion);Build=$(Configuration)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="product.wxs" />
