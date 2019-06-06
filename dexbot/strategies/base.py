@@ -191,43 +191,6 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
 
         self.orders_log = logging.LoggerAdapter(logging.getLogger('dexbot.orders_log'), {})
 
-    def is_too_small_amounts(self, amount_quote, amount_base):
-        """ Check whether amounts are within asset precision limits
-            :param float | amount_quote: QUOTE asset amount
-            :param float | amount_base: BASE asset amount
-            :return: bool | True = amounts are too small
-                            False = amounts are within limits
-        """
-        if (amount_quote < 2 * 10 ** -self.market['quote']['precision'] or
-                amount_base < 2 * 10 ** -self.market['base']['precision']):
-            return True
-
-        return False
-
-    def is_partially_filled(self, order, threshold=0.3):
-        """ Checks whether order was partially filled
-
-            :param dict | order: Order instance
-            :param float | fill_threshold: Order fill threshold, relative
-            :return: bool | True = Order is filled more than threshold
-                            False = Order is not partially filled
-        """
-        if self.is_buy_order(order):
-            order_type = 'buy'
-            price = order['price']
-        else:
-            order_type = 'sell'
-            price = order['price'] ** -1
-
-        if order['for_sale']['amount'] != order['base']['amount']:
-            diff_abs = order['base']['amount'] - order['for_sale']['amount']
-            diff_rel = diff_abs / order['base']['amount']
-            if diff_rel > threshold:
-                self.log.debug('Partially filled {} order: {} {} @ {:.8f}, filled: {:.2%}'.format(
-                               order_type, order['base']['amount'], order['base']['symbol'], price, diff_rel))
-                return True
-        return False
-
     def pause(self):
         """ Pause the worker
 
