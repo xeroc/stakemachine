@@ -149,7 +149,7 @@ class Strategy(StrategyBase):
         """
         # Obtain orderbook orders excluding our orders
         market_orders = self.get_market_orders(depth=100)
-        own_orders_ids = [order['id'] for order in self.get_own_orders]
+        own_orders_ids = [order['id'] for order in self.own_orders]
         market_orders = [order for order in market_orders if order['id'] not in own_orders_ids]
         buy_orders = self.filter_buy_orders(market_orders)
         sell_orders = self.filter_sell_orders(market_orders, invert=True)
