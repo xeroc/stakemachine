@@ -112,11 +112,10 @@ class Strategy(StrategyBase):
                 is_partially_filled = self.is_partially_filled(order, threshold=0.8)
                 if is_partially_filled:
                     # If own order filled too much, replace it with new order
-                    # TODO: check cancel_orders() return value after #467 fix
                     self.log.info('Own {} order filled too much, resetting'.format(order_type))
-                    self.cancel_orders(order)
-                    orders_to_delete.append(stored_order['id'])
-                    self.place_order(order_type)
+                    if self.cancel_orders(order):
+                        orders_to_delete.append(stored_order['id'])
+                        self.place_order(order_type)
                 # Check if someone put order above ours or beaten order was canceled
                 elif (
                     order_type == 'buy'
@@ -126,9 +125,9 @@ class Strategy(StrategyBase):
                     and (not self.get_order(self.beaten_sell_order) or stored_order['price'] ** -1 > self.sell_price)
                 ):
                     self.log.debug('Moving {} order'.format(order_type))
-                    self.cancel_orders(order)
-                    orders_to_delete.append(stored_order['id'])
-                    self.place_order(order_type)
+                    if self.cancel_orders(order):
+                        orders_to_delete.append(stored_order['id'])
+                        self.place_order(order_type)
             # Own order is not there
             else:
                 self.log.info('Own {} order filled, placing a new one'.format(order_type))
