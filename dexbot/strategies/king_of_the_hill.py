@@ -122,6 +122,8 @@ class Strategy(StrategyBase):
                     and (not self.get_order(self.beaten_buy_order) or stored_order['price'] < self.buy_price)
                 ) or (
                     order_type == 'sell'
+                    # FIXME: price difference should be compared taking into account asset precisions, or use raw
+                    # amounts
                     and (not self.get_order(self.beaten_sell_order) or stored_order['price'] ** -1 > self.sell_price)
                 ):
                     self.log.debug('Moving {} order'.format(order_type))
