@@ -296,6 +296,7 @@ class StaggeredOrdersController(StrategyController):
             error_texts.append("Lower bound can't be 0")
         return error_texts
 
+
 class KingOfTheHillController(StrategyController):
 
     def __init__(self, view, configure, worker_controller, worker_data):
