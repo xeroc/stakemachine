@@ -16,7 +16,7 @@ def filter_prefix_symbol(symbol):
     # Example open.USD or bridge.USD, remove leading bit up to .
     base = ''
     if re.match(r'^[a-zA-Z](.*)\.(.*)', symbol):
-        base = re.sub('(.*)\.', '', symbol)
+        base = re.sub(r'(.*)\.', '', symbol)
     else:
         base = symbol
     return base

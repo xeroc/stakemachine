@@ -1,4 +1,5 @@
 import os
+import os.path
 import sys
 import logging
 import logging.config
@@ -6,9 +7,13 @@ from functools import update_wrapper
 
 import click
 from ruamel import yaml
+from appdirs import user_data_dir
+
 from bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
+from bitshares.exceptions import WrongMasterPasswordException
 
+from dexbot import VERSION, APP_NAME, AUTHOR
 from dexbot.config import Config
 
 log = logging.getLogger(__name__)
@@ -43,7 +48,15 @@ def verbose(f):
         logger.addHandler(ch)
 
         # Logging to a file
-        fh = logging.FileHandler('dexbot.log')
+        filename = ctx.obj.get('logfile')
+        if not filename:
+            # By default, log to a user data dir
+            data_dir = user_data_dir(APP_NAME, AUTHOR)
+            filename = os.path.join(data_dir, 'dexbot.log')
+        # Print logfile using main logger
+        logging.getLogger("dexbot").info('Dexbot version {}, logfile: {}'.format(VERSION, filename))
+
+        fh = logging.FileHandler(filename)
         fh.setFormatter(formatter2)
         logger.addHandler(fh)
 
@@ -81,6 +94,7 @@ def chain(f):
         ctx.bitshares = BitShares(
             ctx.config["node"],
             num_retries=-1,
+            expiration=60,
             **ctx.obj
         )
         set_shared_bitshares_instance(ctx.bitshares)
@@ -99,19 +113,25 @@ def unlock(f):
                 else:
                     if systemd:
                         # No user available to interact with
-                        log.critical("Passphrase not available, exiting")
+                        log.critical("Uptick Passphrase not available, exiting")
                         sys.exit(78)  # 'configuration error' in sysexits.h
                     pwd = click.prompt(
-                        "Current Wallet Passphrase", hide_input=True)
-                ctx.bitshares.wallet.unlock(pwd)
+                        "Current Uptick Wallet Passphrase", hide_input=True)
+                try:
+                    ctx.bitshares.wallet.unlock(pwd)
+                except WrongMasterPasswordException:
+                    log.critical("Password error, exiting")
+                    sys.exit(78)
             else:
                 if systemd:
                     # No user available to interact with
-                    log.critical("Wallet not installed, cannot run")
+                    log.critical("Uptick Wallet not installed, cannot run")
                     sys.exit(78)
-                click.echo("No wallet installed yet. Creating ...")
+                click.echo("No Uptick wallet installed yet. \n" +
+                           "This is a password for encrypting " +
+                           "the file that contains your private keys.  Creating ...")
                 pwd = click.prompt(
-                    "Wallet Encryption Passphrase",
+                    "Uptick Wallet Encryption Passphrase",
                     hide_input=True,
                     confirmation_prompt=True)
                 ctx.bitshares.wallet.create(pwd)

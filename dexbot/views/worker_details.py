@@ -1,11 +1,13 @@
+import os
+
 from dexbot.controllers.worker_details_controller import WorkerDetailsController
-from dexbot.helper import *
+from dexbot.helper import get_user_data_directory
 from dexbot.views.ui.worker_details_window_ui import Ui_details_dialog
 from dexbot.views.ui.tabs.graph_tab_ui import Ui_Graph_Tab
 from dexbot.views.ui.tabs.table_tab_ui import Ui_Table_Tab
 from dexbot.views.ui.tabs.text_tab_ui import Ui_Text_Tab
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget
 
 import importlib

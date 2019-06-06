@@ -1,4 +1,4 @@
-from PyQt5.Qt import QApplication
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QThread, QEvent
 
 from dexbot.qt_queue.idle_queue import idle_loop
