@@ -2,7 +2,9 @@
 from datetime import datetime, timedelta
 
 # Project imports
-from dexbot.strategies.base import StrategyBase, ConfigElement
+from dexbot.strategies.base import StrategyBase
+from dexbot.strategies.config_parts.koth_config import KothConfig
+
 
 STRATEGY_NAME = 'King of the Hill'
 
@@ -24,39 +26,11 @@ class Strategy(StrategyBase):
 
     @classmethod
     def configure(cls, return_base_config=True):
-        return StrategyBase.configure(return_base_config) + [
-            ConfigElement('mode', 'choice', 'both', 'Mode',
-                          'Operational mode', ([
-                              ('both', 'Buy + sell'),
-                              ('buy', 'Buy only'),
-                              ('sell', 'Sell only')])),
-            ConfigElement('lower_bound', 'float', 0, 'Lower bound',
-                          'Do not place sell orders lower than this bound',
-                          (0, 10000000, 8, '')),
-            ConfigElement('upper_bound', 'float', 0, 'Upper bound',
-                          'Do not place buy orders higher than this bound',
-                          (0, 10000000, 8, '')),
-            ConfigElement('buy_order_amount', 'float', 0, 'Amount (BASE)',
-                          'Fixed order size for buy orders, expressed in BASE asset, unless "relative order size"'
-                          ' selected', (0, None, 8, '')),
-            ConfigElement('sell_order_amount', 'float', 0, 'Amount (QUOTE)',
-                          'Fixed order size for sell orders, expressed in QUOTE asset, unless "relative order size"'
-                          ' selected', (0, None, 8, '')),
-            ConfigElement('relative_order_size', 'bool', False, 'Relative order size',
-                          'Amount is expressed as a percentage of the account balance of quote/base asset', None),
-            ConfigElement('buy_order_size_threshold', 'float', 0, 'Ignore smaller buy orders',
-                          'Ignore buy orders which are smaller than this threshold (BASE). '
-                          'If unset, use own order size as a threshold', (0, None, 8, '')),
-            ConfigElement('sell_order_size_threshold', 'float', 0, 'Ignore smaller sell orders',
-                          'Ignore sell orders which are smaller than this threshold (QUOTE). '
-                          'If unset, use own order size as a threshold', (0, None, 8, '')),
-            ConfigElement('min_order_lifetime', 'int', 6, 'Min order lifetime',
-                          'Minimum order lifetime before order reset, seconds', (1, None, ''))
-        ]
+        return KothConfig.configure(return_base_config)
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        return StrategyBase.configure_details(include_default_tabs) + []
+        return KothConfig.configure_details(include_default_tabs)
 
     def __init__(self, *args, **kwargs):
         # Initializes StrategyBase class
@@ -144,10 +118,13 @@ class Strategy(StrategyBase):
                     orders_to_delete.append(stored_order['id'])
                     self.place_order(order_type)
                 # Check if someone put order above ours or beaten order was canceled
-                elif ((order_type == 'buy' and (not self.get_order(self.beaten_buy_order) or
-                        stored_order['price'] < self.buy_price)) or
-                        (order_type == 'sell' and (not self.get_order(self.beaten_sell_order) or
-                            stored_order['price'] ** -1 > self.sell_price))):
+                elif (
+                    order_type == 'buy'
+                    and (not self.get_order(self.beaten_buy_order) or stored_order['price'] < self.buy_price)
+                ) or (
+                    order_type == 'sell'
+                    and (not self.get_order(self.beaten_sell_order) or stored_order['price'] ** -1 > self.sell_price)
+                ):
                     self.log.debug('Moving {} order'.format(order_type))
                     self.cancel_orders(order)
                     orders_to_delete.append(stored_order['id'])
