@@ -236,11 +236,11 @@ def test_increase_order_sizes_valley_transit_from_mountain(worker, do_initial_al
     do_initial_allocation(worker, 'mountain')
     # Switch to valley
     worker.mode = 'valley'
-    # Add balance to increase several orders
-    to_issue = worker.buy_orders[0]['base']['amount'] * 10
-    issue_asset(worker.market['base']['symbol'], to_issue, worker.account.name)
 
     for _ in range(0, 6):
+        # Add balance to increase ~1 order
+        to_issue = worker.buy_orders[0]['base']['amount']
+        issue_asset(worker.market['base']['symbol'], to_issue, worker.account.name)
         previous_buy_orders = worker.buy_orders
         worker.refresh_balances()
         worker.increase_order_sizes('base', worker.base_balance, previous_buy_orders)
@@ -391,7 +391,7 @@ def test_increase_order_sizes_mountain_basic(worker, do_initial_allocation, issu
         )
 
 
-def test_increase_order_sizes_mountain_direction(worker, do_initial_allocation, issue_asset):
+def test_increase_order_sizes_mountain_direction(worker, do_initial_allocation, issue_asset, increase_until_allocated):
     """ Test increase direction in mountain mode
 
         Buy side, amounts in QUOTE:
@@ -402,12 +402,14 @@ def test_increase_order_sizes_mountain_direction(worker, do_initial_allocation, 
         15 15 15 10 10
     """
     do_initial_allocation(worker, 'mountain')
+    increase_until_allocated(worker)
     worker.mode = 'mountain'
-
-    # Double worker's balance
-    issue_asset(worker.market['base']['symbol'], worker.base_total_balance, worker.account.name)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
     for _ in range(0, 6):
+        # Add balance to increase ~1 order
+        to_issue = worker.buy_orders[0]['base']['amount'] * (increase_factor - 1)
+        issue_asset(worker.market['base']['symbol'], to_issue, worker.account.name)
         previous_buy_orders = worker.buy_orders
         worker.refresh_balances()
         worker.increase_order_sizes('base', worker.base_balance, previous_buy_orders)
@@ -471,29 +473,30 @@ def test_increase_order_sizes_mountain_imbalanced(worker, do_initial_allocation)
     base_limit = initial_base / 2
     # Add own_asset_limit only for first new order
     worker.place_closer_order('base', worker.buy_orders[0], own_asset_limit=base_limit)
+    worker.refresh_orders()
     for _ in range(1, num_orders_to_cancel):
         worker.place_closer_order('base', worker.buy_orders[0])
         worker.refresh_orders()
 
+    previous_buy_orders = worker.buy_orders
+
     for _ in range(0, num_orders_to_cancel):
-        previous_buy_orders = worker.buy_orders
         worker.refresh_balances()
         worker.increase_order_sizes('base', worker.base_balance, previous_buy_orders)
         worker.refresh_orders()
 
-        for order in worker.buy_orders:
-            order_index = worker.buy_orders.index(order)
-
-            if (
-                previous_buy_orders[order_index]['quote']['amount']
-                < previous_buy_orders[order_index + 1]['quote']['amount']
-                and previous_buy_orders[order_index + 1]['base']['amount']
-                - previous_buy_orders[order_index]['base']['amount']
-                > previous_buy_orders[order_index]['base']['amount'] * worker.increment / 2
-            ):
-                # If order before increase was smaller than further order, expect to see it increased
-                assert order['quote']['amount'] > previous_buy_orders[order_index]['quote']['amount']
-                break
+    for order_index in range(0, num_orders_to_cancel):
+        order = worker.buy_orders[order_index]
+        if (
+            previous_buy_orders[order_index]['quote']['amount']
+            < previous_buy_orders[order_index + 1]['quote']['amount']
+            and previous_buy_orders[order_index + 1]['base']['amount']
+            - previous_buy_orders[order_index]['base']['amount']
+            > previous_buy_orders[order_index]['base']['amount'] * worker.increment / 2
+        ):
+            # If order before increase was smaller than further order, expect to see it increased
+            assert order['quote']['amount'] > previous_buy_orders[order_index]['quote']['amount']
+            break
 
 
 def test_increase_order_sizes_neutral_basic(worker, do_initial_allocation, issue_asset, increase_until_allocated):
