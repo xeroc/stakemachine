@@ -797,112 +797,106 @@ class Strategy(StrategyBase):
         if self.returnOrderId:
             self.refresh_orders()
 
-    def increase_order_sizes(self, asset, asset_balance, orders):
-        """ Checks which order should be increased in size and replaces it
-            with a maximum size order, according to global limits. Logic
-            depends on mode in question.
+    def _increase_single_order(self, asset, asset_balance, order, new_order_amount):
+        """ To avoid code doubling, use this unified function to increase single order
 
-            Mountain:
-            Maximize order size as close to center as possible. When all orders are max, the new increase round is
-            started from the furthest order.
-
-            Neutral:
-            Try to flatten everything by increasing order sizes to neutral. When everything is correct, maximize
-            closest orders and then increase other orders to match that.
-
-            Valley:
-            Maximize order sizes as far as possible from center first. When all orders are max, the new increase round
-            is started from the closest-to-center order.
-
-            Buy slope:
-            Maximize order size as low as possible. Buy orders maximized as far as possible (same as valley), and sell
-            orders as close as possible to cp (same as mountain).
-
-            Sell slope:
-            Maximize order size as high as possible. Buy orders as close (same as mountain), and sell orders as far as
-            possible from cp (same as valley).
-
-            :param str | asset: 'base' or 'quote', depending if checking sell or buy
-            :param Amount | asset_balance: Balance of the account
-            :param list | orders: List of buy or sell orders
-            :return bool | True = all available funds was allocated
-                           False = not all funds was allocated, can increase more orders next time
+            :param str asset: 'base' or 'quote', depending if checking sell or buy
+            :param Amount asset_balance: asset balance available for increase
+            :param order order: order needed to be increased
+            :param float new_order_amount: BASE or QUOTE amount of a new order (depending on asset)
+            :return: True = available funds were allocated, cannot allocate remainder
+                     False = not all funds were allocated, can increase more orders next time
+            :rtype: bool
         """
-
-        def increase_single_order(asset, order, new_order_amount):
-            """ To avoid code doubling, use this unified function to increase single order
-
-                :param str | asset: 'base' or 'quote', depending if checking sell or buy
-                :param order | order: order needed to be increased
-                :param float | new_order_amount: BASE or QUOTE amount of a new order (depending on asset)
-                :return bool | True = available funds was allocated, cannot allocate remainder
-                               False = not all funds was allocated, can increase more orders next time
-            """
-            quote_amount = 0
-            price = 0
-            order_type = ''
-            order_amount = order['base']['amount']
-
-            if asset == 'quote':
-                order_type = 'sell'
-                price = (order['price'] ** -1)
-                # New order amount must be at least x2 precision bigger
-                new_order_amount = max(
-                    new_order_amount, order['base']['amount'] + 2 * 10 ** -self.market['quote']['precision']
-                )
-                quote_amount = new_order_amount
-            elif asset == 'base':
-                order_type = 'buy'
-                price = order['price']
-                # New order amount must be at least x2 precision bigger
-                new_order_amount = max(new_order_amount,
-                                       order['base']['amount'] + 2 * 10 ** -self.market['base']['precision'])
-                quote_amount = new_order_amount / price
-
-            if asset_balance < new_order_amount - order['for_sale']['amount']:
-                # Balance should be enough to replace partially filled order
-                self.log.debug('Not enough balance to increase {} order at price {:.8f}'
-                               .format(order_type, price))
-                return True
-
-            self.log.info('Increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'
-                          .format(order_type, price, order_amount, new_order_amount, symbol, prec=precision))
-            self.log.debug('Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'
-                           .format(order_type, self.mode, order_amount, price))
-            self.cancel_orders_wrapper(order)
-            if asset == 'quote':
-                if isinstance(order, VirtualOrder):
-                    self.place_virtual_sell_order(quote_amount, price)
-                else:
-                    self.place_market_sell_order(quote_amount, price)
-            elif asset == 'base':
-                if isinstance(order, VirtualOrder):
-                    self.place_virtual_buy_order(quote_amount, price)
-                else:
-                    self.place_market_buy_order(quote_amount, price)
-
-            # Only one increase at a time. This prevents running more than one increment round simultaneously
-            return False
-
-        total_balance = 0
+        quote_amount = 0
+        base_amount = 0
+        price = 0
+        order_amount = order['base']['amount']
+        order_type = ''
         symbol = ''
         precision = 0
+
+        if asset == 'quote':
+            order_type = 'sell'
+            symbol = self.market['quote']['symbol']
+            precision = self.market['quote']['precision']
+            price = order['price'] ** -1
+            # New order amount must be at least x2 precision bigger
+            new_order_amount = max(
+                new_order_amount, order['base']['amount'] + 2 * 10 ** -self.market['quote']['precision']
+            )
+            quote_amount = new_order_amount
+            base_amount = quote_amount * price
+        elif asset == 'base':
+            order_type = 'buy'
+            symbol = self.market['base']['symbol']
+            precision = self.market['base']['precision']
+            price = order['price']
+            # New order amount must be at least x2 precision bigger
+            new_order_amount = max(
+                new_order_amount, order['base']['amount'] + 2 * 10 ** -self.market['base']['precision']
+            )
+            base_amount = new_order_amount
+            quote_amount = base_amount / price
+
+        needed_balance = new_order_amount - order['for_sale']['amount']
+        if asset_balance < needed_balance:
+            # Balance should be enough to replace partially filled order
+            self.log.debug(
+                'Not enough balance to increase {} order at price {:.8f}: {:.{prec}f}/{:.{prec}f} {}'.format(
+                    order_type, price, asset_balance['amount'], needed_balance, symbol, prec=precision
+                )
+            )
+            # Increase finished
+            return True
+
+        self.log.debug(
+            'Pre-increasing {} order at price {:.8f} from {:.{prec}f} to {:.{prec}f} {}'.format(
+                order_type, price, order_amount, new_order_amount, symbol, prec=precision
+            )
+        )
+
+        if asset == 'quote':
+            order['base']['amount'] = quote_amount
+            order['for_sale']['amount'] += needed_balance
+            order['quote']['amount'] = base_amount
+            asset_balance -= quote_amount - order_amount
+        elif asset == 'base':
+            order['base']['amount'] = base_amount
+            order['for_sale']['amount'] += needed_balance
+            order['quote']['amount'] = quote_amount
+            asset_balance -= base_amount - order_amount
+
+        # Increase not finished
+        return False
+
+    def _calc_increase(self, asset, asset_balance, orders):
+        """ Calculate increased order sizes for specified orders with inplace replacement of order amounts.
+            Only one increase is performed at a time.
+
+            :param str asset: 'base' or 'quote', depending if checking sell or buy
+            :param Amount asset_balance: Balance of the account
+            :param list orders: List of buy or sell orders
+            :return: True = all available funds were allocated
+                     False = not all funds was allocated, can increase more orders next time
+            :rtype: bool
+        """
+
         new_order_amount = 0
         furthest_order_bound = 0
+        total_balance = 0
 
         if asset == 'quote':
             total_balance = self.quote_total_balance
-            symbol = self.market['quote']['symbol']
-            precision = self.market['quote']['precision']
         elif asset == 'base':
             total_balance = self.base_total_balance
-            symbol = self.market['base']['symbol']
-            precision = self.market['base']['precision']
 
         # Mountain mode:
-        if (self.mode == 'mountain' or
-                (self.mode == 'buy_slope' and asset == 'quote') or
-                (self.mode == 'sell_slope' and asset == 'base')):
+        if (
+            self.mode == 'mountain'
+            or (self.mode == 'buy_slope' and asset == 'quote')
+            or (self.mode == 'sell_slope' and asset == 'base')
+        ):
             """ Starting from the furthest order. For each order, see if it is approximately
                 maximum size.
                 If it is, move on to next.
@@ -947,8 +941,10 @@ class Strategy(StrategyBase):
 
                 further_bound = further_order['base']['amount'] * (1 + self.increment)
 
-                if (further_bound > order_amount * (1 + self.increment / 10) < closer_bound and
-                        further_bound - order_amount >= order_amount * self.increment / 2):
+                if (
+                    further_bound > order_amount * (1 + self.increment / 10) < closer_bound
+                    and further_bound - order_amount >= order_amount * self.increment / 2
+                ):
                     # Calculate new order size and place the order to the market
                     """ To prevent moving liquidity away from center, let new order be no more than `order_amount *
                         increase_factor`. This is for situations when we increasing order on side which was previously
@@ -999,11 +995,13 @@ class Strategy(StrategyBase):
                         self.log.debug('Deactivating max increase mode for mountain mode')
                         self.mountain_max_increase_mode = False
 
-                    return increase_single_order(asset, order, new_order_amount)
+                    return self._increase_single_order(asset, asset_balance, order, new_order_amount)
 
-        elif (self.mode == 'valley' or
-              (self.mode == 'buy_slope' and asset == 'base') or
-              (self.mode == 'sell_slope' and asset == 'quote')):
+        elif (
+            self.mode == 'valley'
+            or (self.mode == 'buy_slope' and asset == 'base')
+            or (self.mode == 'sell_slope' and asset == 'quote')
+        ):
             """ Starting from the furthest order, for each order, see if it is approximately
                 maximum size.
                 If it is, move on to next.
@@ -1053,9 +1051,11 @@ class Strategy(StrategyBase):
                 order_amount_normalized = order_amount * (1 + self.increment / 10)
                 need_increase = False
 
-                if (order_amount_normalized < further_order_bound and
-                        further_order_bound - order_amount >= order_amount * self.increment / 2 and
-                        order_amount_normalized < closest_order_bound):
+                if (
+                    order_amount_normalized < further_order_bound
+                    and further_order_bound - order_amount >= order_amount * self.increment / 2
+                    and order_amount_normalized < closest_order_bound
+                ):
                     """ Check whether order amount is less than further order and also less than `closer order +
                         increment`. We need this check to be able to increase closer orders more smoothly. Here is the
                         example:
@@ -1079,8 +1079,10 @@ class Strategy(StrategyBase):
                         # Skip order if new amount is less than current for any reason
                         need_increase = False
 
-                elif (order_amount_normalized < closer_order_bound and
-                        closer_order_bound - order_amount >= order_amount * self.increment / 2):
+                elif (
+                    order_amount_normalized < closer_order_bound
+                    and closer_order_bound - order_amount >= order_amount * self.increment / 2
+                ):
                     """ Check whether order amount is less than closer or order and the diff is more than 50% of one
                         increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with
                         diff 80% an order may have an actual difference like 30% from closer and 70% from further.
@@ -1089,7 +1091,7 @@ class Strategy(StrategyBase):
                     need_increase = True
 
                 if need_increase:
-                    return increase_single_order(asset, order, new_order_amount)
+                    return self._increase_single_order(asset, asset_balance, order, new_order_amount)
 
         elif self.mode == 'neutral':
             """ Starting from the furthest order, for each order, see if it is approximately
@@ -1146,8 +1148,10 @@ class Strategy(StrategyBase):
                 need_increase = False
                 order_amount_normalized = order_amount * (1 + self.increment / 10)
 
-                if (order_amount_normalized < further_order_bound and
-                        further_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
+                if (
+                    order_amount_normalized < further_order_bound
+                    and further_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2
+                ):
                     # Order is less than further order and diff is more than `increment / 2`
 
                     if is_closest_order:
@@ -1167,17 +1171,137 @@ class Strategy(StrategyBase):
                             new_order_amount = min(order['base']['amount'] * (1 + self.increment), further_order_bound)
                             need_increase = True
 
-                elif (order_amount_normalized < closer_order_bound and
-                        closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2):
+                elif (
+                    order_amount_normalized < closer_order_bound
+                    and closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2
+                ):
                     # Order is less than closer order and diff is more than `increment / 2`
 
                     new_order_amount = closer_order_bound
                     need_increase = True
 
                 if need_increase:
-                    return increase_single_order(asset, order, new_order_amount)
+                    return self._increase_single_order(asset, asset_balance, order, new_order_amount)
 
-        return None
+    def increase_order_sizes(self, asset, asset_balance, orders):
+        """ Checks which order should be increased in size and replaces it
+            with a maximum size order, according to global limits. Logic
+            depends on mode in question.
+
+            Mountain:
+            Maximize order size as close to center as possible. When all orders are max, the new increase round is
+            started from the furthest order.
+
+            Neutral:
+            Try to flatten everything by increasing order sizes to neutral. When everything is correct, maximize
+            closest orders and then increase other orders to match that.
+
+            Valley:
+            Maximize order sizes as far as possible from center first. When all orders are max, the new increase round
+            is started from the closest-to-center order.
+
+            Buy slope:
+            Maximize order size as low as possible. Buy orders maximized as far as possible (same as valley), and sell
+            orders as close as possible to cp (same as mountain).
+
+            Sell slope:
+            Maximize order size as high as possible. Buy orders as close (same as mountain), and sell orders as far as
+            possible from cp (same as valley).
+
+            :param str asset: 'base' or 'quote', depending if checking sell or buy
+            :param Amount asset_balance: Balance of the account
+            :param list orders: List of buy or sell orders
+            :return: True = all available funds were allocated
+                     False = not all funds were allocated, can increase more orders next time
+            :rtype: bool
+        """
+
+        # Create temp order list (copy.deepcopy() doesn't work here)
+        temp_orders = []
+        for order in orders:
+            tmp_order = {
+                'base': {'amount': order['base']['amount']},
+                'quote': {'amount': order['quote']['amount']},
+                'for_sale': {'amount': order['for_sale']['amount']},
+                'price': order['price'],
+            }
+            temp_orders.append(tmp_order)
+
+        # Get calculated increased orders
+        increase_finished = False
+        while not increase_finished:
+            increase_finished = self._calc_increase(asset, asset_balance, temp_orders)
+
+        price = 0
+        order_type = ''
+        symbol = ''
+        opposite_symbol = ''
+        precision = 0
+        opposite_precision = 0
+
+        if asset == 'quote':
+            order_type = 'sell'
+            symbol = self.market['quote']['symbol']
+            opposite_symbol = self.market['base']['symbol']
+            precision = self.market['quote']['precision']
+            opposite_precision = self.market['base']['precision']
+        elif asset == 'base':
+            order_type = 'buy'
+            symbol = self.market['base']['symbol']
+            opposite_symbol = self.market['quote']['symbol']
+            precision = self.market['base']['precision']
+            opposite_precision = self.market['quote']['precision']
+
+        # We're iterating in reverse manner to place further orders first
+        orders = list(reversed(orders))
+        temp_orders = list(reversed(temp_orders))
+
+        for index, order in enumerate(temp_orders):
+            if order['base']['amount'] != orders[index]['base']['amount']:
+                price = order['price'] if asset == 'base' else order['price'] ** -1
+                old_amount = orders[index]['base']['amount']
+                new_amount = order['base']['amount']
+                old_opposite_amount = orders[index]['quote']['amount']
+                new_opposite_amount = order['quote']['amount']
+                self.log.info(
+                    'Increasing {} order at price {:.8f}, {:.{prec}f} -> {:.{prec}f} {}, '
+                    '({:.{opposite_prec}f} -> {:.{opposite_prec}f} {})'.format(
+                        order_type,
+                        price,
+                        old_amount,
+                        new_amount,
+                        symbol,
+                        old_opposite_amount,
+                        new_opposite_amount,
+                        opposite_symbol,
+                        prec=precision,
+                        opposite_prec=opposite_precision,
+                    )
+                )
+                self.log.debug(
+                    'Cancelling {} order in increase_order_sizes(); mode: {}, amount: {}, price: {:.8f}'.format(
+                        order_type, self.mode, old_amount, price
+                    )
+                )
+                self.cancel_orders_wrapper(orders[index])
+
+                if asset == 'quote':
+                    if isinstance(orders[index], VirtualOrder):
+                        self.place_virtual_sell_order(order['base']['amount'], price)
+                    else:
+                        self.place_market_sell_order(order['base']['amount'], price)
+                elif asset == 'base':
+                    if isinstance(orders[index], VirtualOrder):
+                        self.place_virtual_buy_order(order['quote']['amount'], price)
+                    else:
+                        self.place_market_buy_order(order['quote']['amount'], price)
+
+                # Limit number of operations to send at once
+                if len(self.bitshares.txbuffer.ops) > 10:
+                    return False
+
+        # All funds were used
+        return True
 
     def check_partial_fill(self, order, fill_threshold=None):
         """ Checks whether order was partially filled it needs to be replaced
