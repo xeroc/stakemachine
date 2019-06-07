@@ -1135,11 +1135,11 @@ class Strategy(StrategyBase):
 
                     new_orders_sum = 0
                     amount = order_amount
-                    for o in orders:
+                    for _ in orders:
                         new_orders_sum += amount
                         amount = amount / math.sqrt(1 + self.increment)
                     virtual_furthest_order_bound = amount * (total_balance / new_orders_sum)
-                    new_amount = order_amount * (total_balance / new_orders_sum)
+                    new_amount = order_amount * (total_balance / new_orders_sum) / self.min_increase_factor
 
                     if new_amount > closer_order_bound and virtual_furthest_order_bound > furthest_order_bound:
                         # Maximize order up to max possible amount if we can
