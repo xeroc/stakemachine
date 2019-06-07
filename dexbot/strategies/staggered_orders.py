@@ -1281,7 +1281,7 @@ class Strategy(StrategyBase):
                 old_opposite_amount = orders[index]['quote']['amount']
                 new_opposite_amount = order['quote']['amount']
                 self.log.info(
-                    'Increasing {} order at price {:.8f}, {:.{prec}f} -> {:.{prec}f} {}, '
+                    'Increasing {} order at price {:.8f}: {:.{prec}f} -> {:.{prec}f} {} '
                     '({:.{opposite_prec}f} -> {:.{opposite_prec}f} {})'.format(
                         order_type,
                         price,
