@@ -976,7 +976,7 @@ class Strategy(StrategyBase):
                             amount = amount * (1 + self.increment)
                             new_orders_sum += amount
                         # To reduce allocation rounds, increase furthest order more
-                        new_order_amount = order_amount * (total_balance / new_orders_sum) * (1 + self.increment)
+                        new_order_amount = order_amount * (total_balance / new_orders_sum)
 
                         if new_order_amount < closer_bound:
                             """ This is for situations when calculated new_order_amount is not big enough to
