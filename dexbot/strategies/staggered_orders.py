@@ -84,7 +84,7 @@ class Strategy(StrategyBase):
         self.base_balance = None
         self.quote_asset_threshold = 0
         self.base_asset_threshold = 0
-        self.min_increase_factor = 1.15
+        self.min_increase_factor = 1.05
         self.mountain_max_increase_mode = False
         # Initial balance history elements should not be equal to avoid immediate bootstrap turn off
         self.quote_balance_history = [1, 2, 3]
