@@ -1052,7 +1052,7 @@ class Strategy(StrategyBase):
                     new_amount = (total_balance / orders_count) / (1 + self.increment / 100)
                     if furthest_order_bound < new_amount > closer_order_bound:
                         # Maximize order up to max possible amount if we can
-                        closer_order_bound = new_amount
+                        closer_order_bound = closest_order_bound = new_amount
 
                 order_amount_normalized = order_amount * (1 + self.increment / 10)
                 need_increase = False
