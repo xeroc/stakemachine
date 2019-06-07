@@ -1178,8 +1178,8 @@ class Strategy(StrategyBase):
                     # Order is less than further order and diff is more than `increment / 2`
                     # Order is also less than previously calculated closest_order_bound
                     if is_closest_order:
-                        # At first, maximize order as we can
-                        new_order_amount = max(closer_order_bound, further_order_bound)
+                        # At first, maximize order up to further_order_bound
+                        new_order_amount = min(closer_order_bound, further_order_bound)
                     else:
                         # Current order is less than virtually calculated next order (closest_order_bound)
                         # Do not allow to increase more than further order amount
