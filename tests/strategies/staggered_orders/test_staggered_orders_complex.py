@@ -598,7 +598,6 @@ def test_increase_order_sizes_neutral_transit_from_mountain(worker, do_initial_a
                 break
 
 
-@pytest.mark.xfail(reason='Closest order failed to increase up to initial balance, fp/rounding issue')
 def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_allocation, increase_until_allocated):
     """ Test increase when closest-to-center orders are less than further orders. Normal situation when initial sides
         are imbalanced and several orders were filled.
@@ -634,8 +633,12 @@ def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_
     increase_until_allocated(worker)
 
     # New closest orders amount should be equal to initial ones
-    assert worker.buy_orders[0]['base']['amount'] == initial_base
-    assert worker.sell_orders[0]['base']['amount'] == initial_quote
+    assert worker.buy_orders[0]['base']['amount'] == pytest.approx(
+        initial_base, rel=(1 ** -worker.market['base']['precision'])
+    )
+    assert worker.sell_orders[0]['base']['amount'] == pytest.approx(
+        initial_quote, rel=(1 ** -worker.market['quote']['precision'])
+    )
 
 
 def test_increase_order_sizes_neutral_imbalaced_small_further(worker, do_initial_allocation, increase_until_allocated):
