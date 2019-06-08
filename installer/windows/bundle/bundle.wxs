@@ -34,10 +34,11 @@
                   Permanent="yes"
                   Vital="yes"
                   DisplayName="Processing Python..."
-                  InstallCommand="/q Include_pip=1 PrependPath=1 Include_launcher=1">
+                  InstallCommand="/q Include_pip=1 PrependPath=1 Include_launcher=1 Include_test=0"
+                  >
       </ExePackage>
+      <ExePackage Id="Uptick" InstallCommand="cmd /c" DisplayName="Processing Uptick..."  SourceFile="prerequisites\uptick.bat" Vital="no" />
       <MsiPackage SourceFile="..\msi\bin\$(var.Build)\DEXBotInstaller.msi" DisplayName="Processing DEXBot..." />
-      <ExePackage Id="Uptick" InstallCommand="cmd /c" DisplayName="Processing Uptick..." SourceFile="prerequisites\uptick.bat" />
     </Chain>
 	</Bundle>
 </Wix>
