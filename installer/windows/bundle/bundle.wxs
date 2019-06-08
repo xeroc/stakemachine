@@ -27,6 +27,7 @@
       <Variable Name="TargetPlatform" Value="x86" />
     <?endif ?>
     <Variable Name="LaunchTarget" Value="[ProgramFilesFolder]\Bitshares\DEXBot\DEXBot.exe"/>
+
     <Chain>
       <ExePackage SourceFile="prerequisites\python-3.7.3.exe"
                   Cache="yes"
@@ -35,8 +36,7 @@
                   Vital="yes"
                   DisplayName="Processing Python..."
                   InstallCommand="/q Include_pip=1 PrependPath=1 Include_launcher=1 Include_test=0"
-                  >
-      </ExePackage>
+                  />
       <ExePackage Id="Uptick" InstallCommand="cmd /c" DisplayName="Processing Uptick..."  SourceFile="prerequisites\uptick.bat" Vital="no" />
       <MsiPackage SourceFile="..\msi\bin\$(var.Build)\DEXBotInstaller.msi" DisplayName="Processing DEXBot..." />
     </Chain>

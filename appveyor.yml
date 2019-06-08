@@ -25,15 +25,12 @@ install:
   # set to version and replace ' with empty character
   - set ApplicationVersion=%VERSION:'=%
 
-# wix
-
+# visual studio configuration
 configuration:
 - Release
 platform: x86
 build:
   verbosity: normal
-
-# wix
 
 # @TODO: Run tests..
 test_script:
@@ -45,10 +42,6 @@ artifacts:
     name: DEXBot-gui-win64.zip
   - path: installer\windows\bundle\bin\%CONFIGURATION%\DEXBot-installer.exe
     name: DEXBot-installer.exe
-
-    # see https://help.appveyor.com/discussions/questions/1494-change-artifact-name
-    #https://help.appveyor.com/discussions/questions/4249-renaming-artifact
-    #%artifactName%
 
 #---------------------------------#
 #        Deployment               #
