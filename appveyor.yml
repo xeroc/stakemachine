@@ -3,9 +3,6 @@ version: 0.1.{build}
 image: Visual Studio 2015
 
 environment:
-  # change artifact name
-  # artifactName: $(APPVEYOR_BUILD_VERSION)-$(APPVEYOR_REPO_COMMIT).zip
-  #ApplicationVersion: '3.0'
   matrix:
     # Python 3.6.6 - 64-bit
     - PYTHON: "C:\\Python36-x64"
@@ -24,21 +21,11 @@ install:
   - copy /Y C:\projects\dexbot\dist\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
   # read dexbot version from __init__.py
-  - dir
-  - echo ############
-  - dir .\dexbot
   - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
-  - echo -############################################################################-
-  - echo %VERSION%
   # set to version and replace ' with empty character
   - set ApplicationVersion=%VERSION:'=%
-  - echo %ApplicationVersion%
 
 # wix
-#before_build:
- # - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
-  #- echo -############################################################################-
-  #- echo %VERSION%
 
 configuration:
 - Release
@@ -63,9 +50,6 @@ artifacts:
     #https://help.appveyor.com/discussions/questions/4249-renaming-artifact
     #%artifactName%
 
-
-
-
 #---------------------------------#
 #        Deployment               #
 #---------------------------------#
@@ -83,13 +67,3 @@ deploy:
       secure: 9qvwlVUHFBV4GwMz1Gu2HSnqU8Ex2nv5dsY4mVNCurrb+6ULIoHPgbvJPWTo3qV6
     on:
       appveyor_repo_tag: true     # deploy on tag push only
-
-#---------------------------------#
-#         Notifications           #
-#---------------------------------#
-
-# notifications:
-#  - provider: Slack
-#    auth_token:
-#      secure: G9OMj9l2s3+lX8cRiNXXhuQJpnnjcBc0cqP8gzkdKVWqGA8vBTOIPGxD/536VKpeBH/5dJFQWT+vmnGS+XciaCg4hh5s6hDpnvePq2+uEYE=
-#    channel: '#ci'
