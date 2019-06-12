@@ -58,7 +58,7 @@ class Strategy(StrategyBase):
         if self.is_center_price_dynamic:
             self.center_price = None
             self.center_price_depth = self.worker.get('center_price_depth', 0)
-            self.cp_from_last_trade = self.worker.get('cp_from_last_trade', False)
+            self.cp_from_last_trade = self.worker.get('center_price_from_last_trade', False)
         else:
             # Use manually set center price
             self.center_price = self.worker["center_price"]
