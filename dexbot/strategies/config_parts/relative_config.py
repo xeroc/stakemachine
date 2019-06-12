@@ -54,7 +54,7 @@ class RelativeConfig(BaseConfig):
             ConfigElement('center_price_depth', 'float', 0, 'Measurement depth',
                           'Cumulative quote amount from which depth center price will be measured',
                           (0.00000001, 1000000000, 8, '')),
-            ConfigElement('center_price_from_last_trade', bool, False, 'Last trade price as new center price',
+            ConfigElement('center_price_from_last_trade', 'bool', False, 'Last trade price as new center price',
                           'This will make orders move by half the spread at every fill', None),
             ConfigElement('center_price_offset', 'bool', False, 'Center price offset based on asset balances',
                           'Automatically adjust orders up or down based on the imbalance of your assets', None),
