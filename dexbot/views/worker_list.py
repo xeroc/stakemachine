@@ -3,20 +3,22 @@ from threading import Thread
 import webbrowser
 
 from dexbot import __version__
-from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
-from dexbot.qt_queue.idle_queue import idle_add
-from .ui.worker_list_window_ui import Ui_MainWindow
-from .create_worker import CreateWorkerView
-from .settings import SettingsView
-from .worker_item import WorkerItemWidget
-from .errors import gui_error
-from .layouts.flow_layout import FlowLayout
 
-from PyQt5 import QtGui, QtWidgets
+from dexbot.views.create_worker import CreateWorkerView
+from dexbot.views.errors import gui_error
+from dexbot.views.layouts.flow_layout import FlowLayout
+from dexbot.views.settings import SettingsView
+from dexbot.views.ui.worker_list_window_ui import Ui_MainWindow
+from dexbot.views.worker_item import WorkerItemWidget
+from dexbot.qt_queue.idle_queue import idle_add
+from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
+
+from PyQt5.QtGui import QFontDatabase
+from PyQt5.QtWidgets import QMainWindow
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 
 
-class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
+class MainView(QMainWindow, Ui_MainWindow):
 
     def __init__(self, main_ctrl):
         super().__init__()
@@ -57,7 +59,7 @@ class MainView(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         self.statusbar_updater.start()
 
-        QtGui.QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
+        QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
     def add_worker_widget(self, worker_name):
         config = self.config.get_worker_config(worker_name)
