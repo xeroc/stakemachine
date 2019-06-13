@@ -9,7 +9,7 @@
   <Font Id="5" Height="-24" Weight="500" Foreground="000000" Background="E0E0E0">Segoe UI</Font>
   <Font Id="6" Height="-9" Weight="500" Foreground="000000" Background="FFFFFF">Segoe UI</Font>
   <Image X="0" Y="0" Width="145" Height="145" ImageFile="logo.png" Visible="yes"/>
-  <Text X="155" Y="-45" Width="500" Height="2" FontId="5" Visible="yes"></Text>
+  <Text X="0" Y="-45" Width="500" Height="2" FontId="5" Visible="yes"></Text>
   <Page Name="Help">
     <Text X="165" Y="15" Width="-11" Height="30" FontId="2" DisablePrefix="yes">#(loc.HelpHeader)</Text>
     <Text X="165" Y="51" Width="-20" Height="-50" FontId="6" DisablePrefix="yes">#(loc.HelpText)</Text>
