@@ -70,4 +70,3 @@ notifications:
     auth_token:
       secure: G9OMj9l2s3+lX8cRiNXXhuQJpnnjcBc0cqP8gzkdKVWqGA8vBTOIPGxD/536VKpeBH/5dJFQWT+vmnGS+XciaCg4hh5s6hDpnvePq2+uEYE=
     channel: '#ci'
-© 2019 GitHub, Inc.
