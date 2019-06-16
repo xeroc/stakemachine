@@ -21,7 +21,7 @@ install:
   - copy /Y C:\projects\dexbot\dist\DEXBot-gui.exe C:\projects\dexbot\installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
   # read dexbot version from __init__.py
-  - for /f "delims== eol=# tokens=1,2" %%G in (.\dexbot\__init__.py) do set %%G=%%H
+  - ps: Get-Content __init__.py | Foreach-Object { $var = $_.Split('=');  Set-Variable -Name $var[0] -Value $var[1];  }
   # set to version and replace ' with empty character
   - set ApplicationVersion=%VERSION:'=%
 
