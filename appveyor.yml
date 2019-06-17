@@ -21,7 +21,7 @@ install:
   - copy /Y dist\DEXBot-gui.exe installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
   # Read dexbot version from __init__.py
-  - ps: Get-Content dexbot\__init__.py | Foreach-Object { $var = $_.Split('='); echo Var0 = $var[0]; echo Var1 =$var[1]; if($var[0] -eq 'VERSION') { $env:VERSION=$var[1]; }}
+  - ps:  Get-Content __init__.py | Foreach-Object { $var = $_.Split('='); echo $var[0].Trim(); echo $var[1].Trim(); if($var[0].Trim() -eq 'VERSION') { $env:VERSION=$var[1].Trim(); }}
   - echo %VERSION%
   # Set to version and replace ' with empty character
   - set ApplicationVersion=%VERSION:'=%
