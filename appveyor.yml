@@ -21,9 +21,11 @@ install:
   - copy /Y dist\DEXBot-gui.exe installer\windows\msi\DEXBot.exe
   - '7z a DEXBot-gui-win64.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
   # Read dexbot version from __init__.py
-  - ps: Get-Content dexbot\__init__.py | Foreach-Object { $var = $_.Split('=');  Set-Variable -Name $var[0] -Value $var[1];  }
+  - ps: Get-Content dexbot\__init__.py | Foreach-Object { $var = $_.Split('=');  set $var[0]=$var[1];  }
+  - echo %VERSION%
   # Set to version and replace ' with empty character
   - set ApplicationVersion=%VERSION:'=%
+  - echo %ApplicationVersion%
 
 # Visual studio configuration
 configuration:
