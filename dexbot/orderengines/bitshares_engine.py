@@ -44,6 +44,7 @@ class BitsharesOrderEngine(Storage, Events):
                  config=None,
                  account=None,
                  market=None,
+                 worker_market=None,
                  fee_asset_symbol=None,
                  bitshares_instance=None,
                  bitshares_bundle=None,
@@ -71,9 +72,11 @@ class BitsharesOrderEngine(Storage, Events):
             self.config = Config.get_worker_config_file(name)
 
         # Get Bitshares account and market for this worker
-        self._account = account
+        self.account = account
 
-        self._market = market
+        self.market = market
+
+        self.worker_market = worker_market
 
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
@@ -183,7 +186,7 @@ class BitsharesOrderEngine(Storage, Events):
             :param float | fee_reservation: How much is saved in reserve for the fees
             :return: Balance of specific asset
         """
-        balance = self._account.balance(asset)
+        balance = self.account.balance(asset)
 
         if fee_reservation > 0:
             balance['amount'] = balance['amount'] - fee_reservation
@@ -686,7 +689,7 @@ class BitsharesOrderEngine(Storage, Events):
 
             :return: object | Account
         """
-        return self._account
+        return self.account
 
     @property
     def balances(self):
@@ -694,7 +697,7 @@ class BitsharesOrderEngine(Storage, Events):
 
             :return: Balances in list where each asset is in their own Amount object
         """
-        return self._account.balances
+        return self.account.balances
 
     def get_own_orders(self, refresh=True):
         """ Return the account's open orders in the current market
@@ -709,7 +712,7 @@ class BitsharesOrderEngine(Storage, Events):
             self.account.refresh()
 
         for order in self.account.openorders:
-            if self.worker["market"] == order.market and self.account.openorders:
+            if self.worker_market == order.market and self.account.openorders:
                 orders.append(order)
 
         return orders
@@ -747,7 +750,7 @@ class BitsharesOrderEngine(Storage, Events):
         # TODO: property, also in price feed, need to consider inheritance priority
         """ Return the market object as :class:`bitshares.market.Market`
         """
-        return self._market
+        return self.market
 
     @staticmethod
     def get_updated_limit_order(limit_order):

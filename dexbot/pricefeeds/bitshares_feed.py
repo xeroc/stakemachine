@@ -19,7 +19,7 @@ class BitsharesPriceFeed:
                  market,
                  bitshares_instance=None):
 
-        self._market = market
+        self.market = market
         self.ticker = self.market.ticker
         self.disabled = False  # flag for suppress errors
 
@@ -339,7 +339,7 @@ class BitsharesPriceFeed:
     def market(self):
         """ Return the market object as :class:`bitshares.market.Market`
         """
-        return self._market
+        return self.market
 
     @staticmethod
     def sort_orders_by_price(orders, sort='DESC'):
