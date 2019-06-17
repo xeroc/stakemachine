@@ -335,12 +335,6 @@ class BitsharesPriceFeed:
 
         return ask / bid - 1
 
-    @property
-    def market(self):
-        """ Return the market object as :class:`bitshares.market.Market`
-        """
-        return self.market
-
     @staticmethod
     def sort_orders_by_price(orders, sort='DESC'):
         """ Return list of orders sorted ascending or descending by price

@@ -683,15 +683,6 @@ class BitsharesOrderEngine(Storage, Events):
                     raise
 
     @property
-    def account(self):
-        """ Return the full account as :class:`bitshares.account.Account` object!
-            Can be refreshed by using ``x.refresh()``
-
-            :return: object | Account
-        """
-        return self.account
-
-    @property
     def balances(self):
         """ Returns all the balances of the account assigned for the worker.
 
@@ -744,13 +735,6 @@ class BitsharesOrderEngine(Storage, Events):
         """ Return the account's open orders in the current market
         """
         return self.get_own_orders()
-
-    @property
-    def market(self):
-        # TODO: property, also in price feed, need to consider inheritance priority
-        """ Return the market object as :class:`bitshares.market.Market`
-        """
-        return self.market
 
     @staticmethod
     def get_updated_limit_order(limit_order):
