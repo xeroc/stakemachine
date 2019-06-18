@@ -13,9 +13,8 @@ from bitshares.instance import set_shared_bitshares_instance
 
 class MainController:
 
-    def __init__(self, bitshares_instance, config):
-        self.bitshares_instance = bitshares_instance
-        set_shared_bitshares_instance(bitshares_instance)
+    def __init__(self, config):
+        self.bitshares_instance = None
         self.config = config
         self.worker_manager = None
 
