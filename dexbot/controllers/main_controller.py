@@ -8,6 +8,7 @@ from dexbot.worker import WorkerInfrastructure
 from dexbot.views.errors import PyQtHandler
 
 from appdirs import user_data_dir
+from bitshares.bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
 
 
@@ -39,6 +40,24 @@ class MainController:
 
         # Initialize folders
         initialize_data_folders()
+
+    def set_bitshares_instance(self, bitshares_instance):
+        """ Set bitshares instance
+
+            :param bitshares_instance: A bitshares instance
+        """
+        self.bitshares_instance = bitshares_instance
+        set_shared_bitshares_instance(bitshares_instance)
+
+    def new_bitshares_instance(self, node, retries=-1, expiration=60):
+        """ Create bitshares instance
+
+            :param retries: Number of retries to connect, -1 default to infinity
+            :param expiration: Delay in seconds until transactions are supposed to expire
+            :param list node: Node or a list of nodes
+        """
+        self.bitshares_instance = BitShares(node, num_retries=retries, expiration=expiration)
+        set_shared_bitshares_instance(self.bitshares_instance)
 
     def set_info_handler(self, handler):
         self.pyqt_handler.set_info_handler(handler)
