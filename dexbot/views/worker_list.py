@@ -20,19 +20,19 @@ from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 
 class MainView(QMainWindow, Ui_MainWindow):
 
-    def __init__(self, main_ctrl):
+    def __init__(self, main_controller):
         super().__init__()
         self.setupUi(self)
-        self.main_ctrl = main_ctrl
+        self.main_controller = main_controller
 
-        self.config = main_ctrl.config
+        self.config = main_controller.config
         self.max_workers = 10
         self.num_of_workers = 0
         self.worker_widgets = {}
         self.closing = False
         self.statusbar_updater = None
         self.statusbar_updater_first_run = True
-        self.main_ctrl.set_info_handler(self.set_worker_status)
+        self.main_controller.set_info_handler(self.set_worker_status)
         self.layout = FlowLayout(self.scrollAreaContent)
 
         self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
@@ -63,7 +63,7 @@ class MainView(QMainWindow, Ui_MainWindow):
 
     def add_worker_widget(self, worker_name):
         config = self.config.get_worker_config(worker_name)
-        widget = WorkerItemWidget(worker_name, config, self.main_ctrl, self)
+        widget = WorkerItemWidget(worker_name, config, self.main_controller, self)
         widget.setFixedSize(widget.frameSize())
         self.layout.addWidget(widget)
         self.worker_widgets[worker_name] = widget
@@ -86,13 +86,13 @@ class MainView(QMainWindow, Ui_MainWindow):
 
     @gui_error
     def handle_add_worker(self):
-        create_worker_dialog = CreateWorkerView(self.main_ctrl.bitshares_instance)
+        create_worker_dialog = CreateWorkerView(self.main_controller.bitshares_instance)
         return_value = create_worker_dialog.exec_()
 
         # User clicked save
         if return_value == 1:
             worker_name = create_worker_dialog.worker_name
-            self.main_ctrl.create_worker(worker_name)
+            self.main_controller.create_worker(worker_name)
 
             self.config.add_worker_config(worker_name, create_worker_dialog.worker_data)
             self.add_worker_widget(worker_name)
