@@ -47,7 +47,7 @@ class MainView(QMainWindow, Ui_MainWindow):
         # Hide certain buttons by default until login success
         self.add_worker_button.hide()
 
-        self.status_bar.showMessage(self.get_statusbar_message())
+        self.status_bar.showMessage("ver {} - Node disconnected".format(__version__))
 
         QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
