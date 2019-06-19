@@ -30,7 +30,7 @@ class MainView(QMainWindow, Ui_MainWindow):
         self.num_of_workers = 0
         self.worker_widgets = {}
         self.closing = False
-        self.statusbar_updater = None
+        self.status_bar_updater = None
         self.statusbar_updater_first_run = True
         self.main_controller.set_info_handler(self.set_worker_status)
         self.layout = FlowLayout(self.scrollAreaContent)
@@ -128,8 +128,8 @@ class MainView(QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):
         self.closing = True
         self.status_bar.showMessage("Closing app...")
-        if self.statusbar_updater and self.statusbar_updater.is_alive():
-            self.statusbar_updater.join()
+        if self.status_bar_updater and self.status_bar_updater.is_alive():
+            self.status_bar_updater.join()
 
     def _update_statusbar_message(self):
         while not self.closing:
