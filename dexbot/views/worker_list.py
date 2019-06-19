@@ -3,12 +3,15 @@ from threading import Thread
 import webbrowser
 
 from dexbot import __version__
-
+from dexbot.config import Config
+from dexbot.controllers.wallet_controller import WalletController
+from dexbot.views.create_wallet import CreateWalletView
 from dexbot.views.create_worker import CreateWorkerView
 from dexbot.views.errors import gui_error
 from dexbot.views.layouts.flow_layout import FlowLayout
 from dexbot.views.settings import SettingsView
 from dexbot.views.ui.worker_list_window_ui import Ui_MainWindow
+from dexbot.views.unlock_wallet import UnlockWalletView
 from dexbot.views.worker_item import WorkerItemWidget
 from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
@@ -34,32 +37,54 @@ class MainView(QMainWindow, Ui_MainWindow):
         self.statusbar_updater_first_run = True
         self.main_controller.set_info_handler(self.set_worker_status)
         self.layout = FlowLayout(self.scrollAreaContent)
+        self.dispatcher = None
 
         self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
         self.settings_button.clicked.connect(lambda: self.handle_open_settings())
         self.help_button.clicked.connect(lambda: self.handle_open_documentation())
+        self.unlock_wallet_button.clicked.connect(lambda: self.handle_login())
 
-        # Load worker widgets from config file
-        workers = self.config.workers_data
-        for worker_name in workers:
-            self.add_worker_widget(worker_name)
+        # Hide certain buttons by default until login success
+        self.add_worker_button.hide()
 
-            # Limit the max amount of workers so that the performance isn't greatly affected
-            if self.num_of_workers >= self.max_workers:
-                self.add_worker_button.setEnabled(False)
-                break
-
-        # Dispatcher polls for events from the workers that are used to change the ui
-        self.dispatcher = ThreadDispatcher(self)
-        self.dispatcher.start()
-
-        self.status_bar.showMessage("ver {} - Node delay: - ms".format(__version__))
-        self.statusbar_updater = Thread(
-            target=self._update_statusbar_message
-        )
-        self.statusbar_updater.start()
+        self.status_bar.showMessage(self.get_statusbar_message())
 
         QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
+
+    def handle_login(self):
+        """ This function handles login to the wallet. To avoid lag when creating
+
+        """
+        self.main_controller.new_bitshares_instance(self.config['node'])
+        wallet_controller = WalletController(self.main_controller.bitshares_instance)
+
+        if wallet_controller.wallet_created():
+            unlock_view = UnlockWalletView(wallet_controller)
+        else:
+            unlock_view = CreateWalletView(wallet_controller)
+
+        if unlock_view.exec_():
+            # Hide button once successful wallet creation / login
+            self.unlock_wallet_button.hide()
+            self.add_worker_button.show()
+
+            # Load worker widgets from config file
+            workers = self.config.workers_data
+            for worker_name in workers:
+                self.add_worker_widget(worker_name)
+
+                # Limit the max amount of workers so that the performance isn't greatly affected
+                if self.num_of_workers >= self.max_workers:
+                    self.add_worker_button.setEnabled(False)
+                    break
+
+            # Dispatcher polls for events from the workers that are used to change the ui
+            self.dispatcher = ThreadDispatcher(self)
+            self.dispatcher.start()
+
+            self.status_bar.showMessage("ver {} - Node delay: - ms".format(__version__))
+            self.status_bar_updater = Thread(target=self._update_statusbar_message)
+            self.status_bar_updater.start()
 
     def add_worker_widget(self, worker_name):
         config = self.config.get_worker_config(worker_name)
