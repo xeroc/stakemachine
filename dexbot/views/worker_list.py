@@ -127,6 +127,10 @@ class MainView(QMainWindow, Ui_MainWindow):
         settings_dialog = SettingsView()
         settings_dialog.exec_()
 
+        # Reinitialize config after closing the settings window
+        self.config = Config()
+        self.main_controller.config = self.config
+
     @staticmethod
     def handle_open_documentation():
         webbrowser.open('https://github.com/Codaone/DEXBot/wiki')
