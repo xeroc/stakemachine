@@ -85,3 +85,4 @@ archive
 
 # Keep readthedocs config
 !.readthedocs.yml
+installer/windows/msi/DEXBot.exe
