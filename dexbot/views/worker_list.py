@@ -51,11 +51,33 @@ class MainView(QMainWindow, Ui_MainWindow):
 
         QFontDatabase.addApplicationFont(":/bot_widget/font/SourceSansPro-Bold.ttf")
 
-    def handle_login(self):
-        """ This function handles login to the wallet. To avoid lag when creating
+    def connect_to_bitshares(self):
+        # Check if there is already a connection
+        if self.config['node']:
+            # Test nodes first
+            self.status_bar.showMessage('Connecting to Bitshares...')
+            latency = self.main_controller.measure_latency(self.config['node'])
 
-        """
-        self.main_controller.new_bitshares_instance(self.config['node'])
+            if not latency:
+                self.status_bar.showMessage('ver {} - Coudn\'t connect to Bitshares. '
+                                            'Please use different node(s) and retry.'.format(__version__))
+                self.main_controller.set_bitshares_instance(None)
+                return False
+
+            self.main_controller.new_bitshares_instance(self.config['node'])
+            self.status_bar.showMessage(self.get_statusbar_message())
+            return True
+        else:
+            # Config has no nodes in it
+            self.status_bar.showMessage('ver {} - Node(s) not found. '
+                                        'Please add node(s) from settings.'.format(__version__))
+            return False
+
+    def handle_login(self):
+        if not self.main_controller.bitshares_instance:
+            if not self.connect_to_bitshares():
+                return
+
         wallet_controller = WalletController(self.main_controller.bitshares_instance)
 
         if wallet_controller.wallet_created():
@@ -130,6 +152,8 @@ class MainView(QMainWindow, Ui_MainWindow):
         # Reinitialize config after closing the settings window
         self.config = Config()
         self.main_controller.config = self.config
+
+        self.connect_to_bitshares()
 
     @staticmethod
     def handle_open_documentation():
