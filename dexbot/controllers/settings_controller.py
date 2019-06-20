@@ -58,7 +58,7 @@ class SettingsController:
             self.view.notification_label.setText('Unsaved changes detected; List order has changed.')
 
     def save_settings(self):
-        """  Save items in the tree widget list into the config file and reload the items
+        """  Save items in the tree widget list into the config file and close window
         """
         nodes = []
 
@@ -68,8 +68,10 @@ class SettingsController:
             nodes.append(self.view.root_item.child(index).text(0))
 
         # Send the nodes to controller to handle the save
-        self.save_nodes_to_config(nodes)
-        self.initialize_node_list()
+        if self.save_nodes_to_config(nodes):
+
+            # Close settings dialog on save
+            self.view.reject()
 
     def remove_node(self):
         """  Remove item from the widget tree list
@@ -106,10 +108,15 @@ class SettingsController:
         # Remove empty nodes before saving, this is just to make sure no empty strings end up in config file
         nodes = self.remove_empty_items(nodes)
 
-        self.config['node'] = nodes
-        self.config.save_config()
-        # Update status
-        self.view.notification_label.setText('Settings successfully saved!')
+        if nodes:
+            self.config['node'] = nodes
+            self.config.save_config()
+            # Update status
+            self.view.notification_label.setText('Settings successfully saved!')
+            return True
+        else:
+            self.view.notification_label.setText('Can\'t save empty list')
+            return False
 
     def restore_defaults(self):
         self.initialize_node_list(nodes=self.config.node_list)
