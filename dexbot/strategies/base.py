@@ -289,7 +289,6 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         """
         return self._account.balances
 
-
     @staticmethod
     def purge_all_local_worker_data(worker_name):
         """ Removes worker's data and orders from local sqlite database
