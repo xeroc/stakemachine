@@ -1,6 +1,7 @@
 import os
 import logging
 import sys
+import time
 
 from dexbot import VERSION, APP_NAME, AUTHOR
 from dexbot.helper import initialize_orders_log, initialize_data_folders
@@ -95,7 +96,8 @@ class MainController:
             config = self.config.get_worker_config(worker_name)
             WorkerInfrastructure.remove_offline_worker(config, worker_name, self.bitshares_instance)
 
-    def measure_latency(self, node):
+    @staticmethod
+    def measure_latency(node):
         """ Measures latency of given node in milliseconds
 
             :param String node: Bitshares node address
@@ -106,7 +108,6 @@ class MainController:
             BitSharesNodeRPC(node, num_retries=1)
             latency = (time.time() - start) * 1000
         except NumRetriesReached:
-            self.log.warning('Coudn\'t connect to {}'.format(node))
             return False
 
         return latency
