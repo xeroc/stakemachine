@@ -667,13 +667,6 @@ class BitsharesOrderEngine(Storage, Events):
                 else:
                     raise
 
-    @property
-    def balances(self):
-        """ Returns all the balances of the account assigned for the worker.
-
-            :return: Balances in list where each asset is in their own Amount object
-        """
-        return self._account.balances
 
     def get_own_orders(self, refresh=True):
         """ Return the account's open orders in the current market
