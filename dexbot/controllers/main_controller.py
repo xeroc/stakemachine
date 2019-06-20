@@ -10,6 +10,8 @@ from dexbot.views.errors import PyQtHandler
 from appdirs import user_data_dir
 from bitshares.bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
+from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
+from grapheneapi.exceptions import NumRetriesReached
 
 
 class MainController:
@@ -92,6 +94,22 @@ class MainController:
             # Worker manager not running
             config = self.config.get_worker_config(worker_name)
             WorkerInfrastructure.remove_offline_worker(config, worker_name, self.bitshares_instance)
+
+    def measure_latency(self, node):
+        """ Measures latency of given node in milliseconds
+
+            :param String node: Bitshares node address
+            :return: int: latency in milliseconds
+        """
+        try:
+            start = time.time()
+            BitSharesNodeRPC(node, num_retries=1)
+            latency = (time.time() - start) * 1000
+        except NumRetriesReached:
+            self.log.warning('Coudn\'t connect to {}'.format(node))
+            return False
+
+        return latency
 
     @staticmethod
     def create_worker(worker_name):
