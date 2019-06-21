@@ -18,7 +18,6 @@ from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
 
 from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QMainWindow
-from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
 from grapheneapi.exceptions import NumRetriesReached
 
 
@@ -202,16 +201,14 @@ class MainView(QMainWindow, Ui_MainWindow):
                 time.sleep(0.5)
 
     def get_statusbar_message(self):
-        node = self.config['node']
+        node = self.main_controller.bitshares_instance.rpc.url
         try:
-            start = time.time()
-            rpc = BitSharesNodeRPC(node, num_retries=1)
-            latency = (time.time() - start) * 1000
+            latency = self.main_controller.measure_latency(node)
         except BaseException:
             latency = -1
 
         if latency != -1:
-            return "ver {} - Node delay: {:.2f}ms - node: {}".format(__version__, latency, rpc.url)
+            return "ver {} - Node delay: {:.2f}ms - node: {}".format(__version__, latency, node)
         else:
             return "ver {} - Node disconnected".format(__version__)
 
