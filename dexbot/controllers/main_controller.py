@@ -97,20 +97,28 @@ class MainController:
             WorkerInfrastructure.remove_offline_worker(config, worker_name, self.bitshares_instance)
 
     @staticmethod
-    def measure_latency(node):
-        """ Measures latency of given node in milliseconds
+    def measure_latency(nodes):
+        """ Measures latency of first alive node from given nodes in milliseconds
 
-            :param String node: Bitshares node address
+            :param str,list nodes: Bitshares node address(-es)
             :return: int: latency in milliseconds
+            :raises grapheneapi.exceptions.NumRetriesReached: if failed to find a working node
         """
-        try:
-            start = time.time()
-            BitSharesNodeRPC(node, num_retries=1)
-            latency = (time.time() - start) * 1000
-        except NumRetriesReached:
-            return False
+        if isinstance(nodes, str):
+            nodes = [nodes]
 
-        return latency
+        # Check nodes one-by-one until first working found
+        for node in nodes:
+            try:
+                start = time.time()
+                BitSharesNodeRPC(node, num_retries=1)
+                latency = (time.time() - start) * 1000
+                return latency
+            except (NumRetriesReached, OSError):
+                # [Errno 111] Connection refused -> OSError
+                continue
+
+        raise NumRetriesReached
 
     @staticmethod
     def create_worker(worker_name):
