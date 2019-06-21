@@ -19,6 +19,7 @@ from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
 from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QMainWindow
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
+from grapheneapi.exceptions import NumRetriesReached
 
 
 class MainView(QMainWindow, Ui_MainWindow):
@@ -54,11 +55,11 @@ class MainView(QMainWindow, Ui_MainWindow):
     def connect_to_bitshares(self):
         # Check if there is already a connection
         if self.config['node']:
-            # Test nodes first
+            # Test nodes first. This only checks if we're able to connect
             self.status_bar.showMessage('Connecting to Bitshares...')
-            latency = self.main_controller.measure_latency(self.config['node'])
-
-            if not latency:
+            try:
+                self.main_controller.measure_latency(self.config['node'])
+            except NumRetriesReached:
                 self.status_bar.showMessage('ver {} - Coudn\'t connect to Bitshares. '
                                             'Please use different node(s) and retry.'.format(__version__))
                 self.main_controller.set_bitshares_instance(None)
