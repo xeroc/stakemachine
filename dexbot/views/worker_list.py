@@ -16,6 +16,7 @@ from dexbot.views.worker_item import WorkerItemWidget
 from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
 
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QMainWindow
 from grapheneapi.exceptions import NumRetriesReached
@@ -39,10 +40,11 @@ class MainView(QMainWindow, Ui_MainWindow):
         self.layout = FlowLayout(self.scrollAreaContent)
         self.dispatcher = None
 
-        self.add_worker_button.clicked.connect(lambda: self.handle_add_worker())
-        self.settings_button.clicked.connect(lambda: self.handle_open_settings())
-        self.help_button.clicked.connect(lambda: self.handle_open_documentation())
-        self.unlock_wallet_button.clicked.connect(lambda: self.handle_login())
+        # GUI buttons
+        self.add_worker_button.clicked.connect(self.handle_add_worker)
+        self.settings_button.clicked.connect(self.handle_open_settings)
+        self.help_button.clicked.connect(self.handle_open_documentation)
+        self.unlock_wallet_button.clicked.connect(self.handle_login)
 
         # Hide certain buttons by default until login success
         self.add_worker_button.hide()
@@ -73,6 +75,7 @@ class MainView(QMainWindow, Ui_MainWindow):
                                         'Please add node(s) from settings.'.format(__version__))
             return False
 
+    @pyqtSlot(name='handle_login')
     def handle_login(self):
         if not self.main_controller.bitshares_instance:
             if not self.connect_to_bitshares():
@@ -131,6 +134,7 @@ class MainView(QMainWindow, Ui_MainWindow):
         worker_data = self.worker_widgets.pop(old_worker_name)
         self.worker_widgets[new_worker_name] = worker_data
 
+    @pyqtSlot(name='handle_add_worker')
     @gui_error
     def handle_add_worker(self):
         create_worker_dialog = CreateWorkerView(self.main_controller.bitshares_instance)
@@ -144,6 +148,7 @@ class MainView(QMainWindow, Ui_MainWindow):
             self.config.add_worker_config(worker_name, create_worker_dialog.worker_data)
             self.add_worker_widget(worker_name)
 
+    @pyqtSlot(name='handle_open_settings')
     @gui_error
     def handle_open_settings(self):
         settings_dialog = SettingsView()
@@ -156,6 +161,7 @@ class MainView(QMainWindow, Ui_MainWindow):
         self.connect_to_bitshares()
 
     @staticmethod
+    @pyqtSlot(name='handle_open_documentation')
     def handle_open_documentation():
         webbrowser.open('https://github.com/Codaone/DEXBot/wiki')
 
