@@ -25,7 +25,6 @@ class SettingsView(QDialog, Ui_settings_dialog):
         self.remove_button.clicked.connect(self.controller.remove_node)
         self.move_up_button.clicked.connect(self.controller.move_up)
         self.move_down_button.clicked.connect(self.controller.move_down)
-        # self.restore_defaults_button.clicked.connect(self.controller.restore_defaults)
 
         # Dialog controls
         self.restore_defaults = self.button_box.button(QDialogButtonBox.RestoreDefaults)
