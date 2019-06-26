@@ -152,13 +152,14 @@ class MainView(QMainWindow, Ui_MainWindow):
     @gui_error
     def handle_open_settings(self):
         settings_dialog = SettingsView()
-        settings_dialog.exec_()
+        reconnect = settings_dialog.exec_()
 
-        # Reinitialize config after closing the settings window
-        self.config = Config()
-        self.main_controller.config = self.config
+        if reconnect:
+            # Reinitialize config after closing the settings window
+            self.config = Config()
+            self.main_controller.config = self.config
 
-        self.connect_to_bitshares()
+            self.connect_to_bitshares()
 
     @staticmethod
     @pyqtSlot(name='handle_open_documentation')

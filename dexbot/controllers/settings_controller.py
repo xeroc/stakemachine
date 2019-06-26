@@ -59,6 +59,8 @@ class SettingsController:
 
     def save_settings(self):
         """  Save items in the tree widget list into the config file and close window
+
+            :returns int: 1 settings saved (accepted)
         """
         nodes = []
 
@@ -71,7 +73,7 @@ class SettingsController:
         if self.save_nodes_to_config(nodes):
 
             # Close settings dialog on save
-            self.view.reject()
+            self.view.accept()
 
     def remove_node(self):
         """  Remove item from the widget tree list
