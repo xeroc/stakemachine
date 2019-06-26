@@ -96,11 +96,13 @@ class SettingsController:
         if nodes is None:
             nodes = self.view.controller.nodes
 
-        # Add nodes to the widget list
-        for node in nodes:
-            item = QTreeWidgetItem(self.view.nodes_tree_widget)
-            item.setText(0, node)
-            item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+        # Check for nodes, since it is possible that the config is empty
+        if nodes:
+            # Add nodes to the widget list
+            for node in nodes:
+                item = QTreeWidgetItem(self.view.nodes_tree_widget)
+                item.setText(0, node)
+                item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
 
     def save_nodes_to_config(self, nodes):
         """ Save nodes to the config file
