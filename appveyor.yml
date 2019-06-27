@@ -35,7 +35,7 @@ build:
   verbosity: normal
 
 after_build:
-  - ps: Rename-Item -Path "C:\projects\dexbot\installer\windows\bundle\bin\%CONFIGURATION%\DEXBot-installer.exe" -NewName "DEXBot-installer-%ApplicationVersion%.exe"
+  - ps: Rename-Item -Path ".\installer\windows\bundle\bin\$env:CONFIGURATION\DEXBot-installer.exe" -NewName "DEXBot-installer-$env:ApplicationVersion.exe"
 
 # @TODO: Run tests..
 test_script:
