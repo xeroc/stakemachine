@@ -25,7 +25,7 @@ install:
   - ps:  Get-Content dexbot\__init__.py | Foreach-Object { $var = $_.Split('='); if($var[0].Trim() -eq 'VERSION') { $env:VERSION = $var[1].Trim(); }}
   # Set to version and replace ' with empty character
   - set ApplicationVersion=%VERSION:'=%
-  - '7z a DEXBot-gui-win64-%ApplicationVersion%.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui-%ApplicationVersion%.exe'
+  - '7z a DEXBot-gui-win64-%ApplicationVersion%.zip %APPVEYOR_BUILD_FOLDER%\dist\DEXBot-gui.exe'
 
 # Visual studio configuration
 configuration:
