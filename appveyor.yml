@@ -12,7 +12,8 @@ environment:
 #---------------------------------#
 
 install:
-  - ps: Start-FileDownload 'https://www.python.org/ftp/python/3.7.3/python-3.7.3.exe' -FileName '.\installer\windows\msi\bundle\prerequisites\python-3.7.3.exe'
+  - ps: Start-FileDownload 'https://www.python.org/ftp/python/3.7.3/python-3.7.3.exe'
+  - copy python-3.7.3.exe installer\windows\bundle\prerequisites\python-3.7.3.exe
   - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%;C:\MinGW\bin
   - copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe
   - copy c:\Python36-x64\python.exe c:\Python36-x64\python3.exe
