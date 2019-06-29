@@ -43,7 +43,7 @@
   <ItemGroup>
     <Content Include="assets\dexbot-icon.ico" />
     <Content Include="assets\dexbot-icon.jpg" />
-    <Content Include="prerequisites\python-3.7.3.exe" />
+    <Content Include="prerequisites\python-3.6.6.exe" />
     <Content Include="prerequisites\uptick.bat" />
     <Content Include="resources\classic_theme.xml" />
     <Content Include="Resources\license.rtf">

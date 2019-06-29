@@ -29,7 +29,9 @@
     <Variable Name="LaunchTarget" Value="[ProgramFilesFolder]\Bitshares\DEXBot\DEXBot.exe"/>
 
     <Chain>
-      <ExePackage SourceFile="prerequisites\python-3.7.3.exe"
+      
+      <ExePackage Id="Python"
+                  SourceFile="prerequisites\python-3.6.6.exe"
                   Cache="yes"
                   Compressed="yes"
                   Permanent="yes"
@@ -37,8 +39,8 @@
                   DisplayName="Processing Python..."
                   InstallCommand="/q Include_pip=1 PrependPath=1 Include_launcher=1 Include_test=0"
                   />
-      <ExePackage Id="Uptick" InstallCommand="cmd /c" DisplayName="Processing Uptick..."  SourceFile="prerequisites\uptick.bat" Vital="no" PerMachine="no" />
-      <MsiPackage SourceFile="..\msi\bin\$(var.Build)\DEXBotInstaller.msi" DisplayName="Processing DEXBot..." />
+      <ExePackage Id="Uptick" DisplayName="Processing Uptick..." InstallCommand="cmd /K" SourceFile="prerequisites\uptick.bat" Vital="no" After="DEXBot"/>
+      <MsiPackage Id="DEXBot" After="Python" SourceFile="..\msi\bin\$(var.Build)\DEXBotInstaller.msi" DisplayName="Processing DEXBot..." />
     </Chain>
 	</Bundle>
 </Wix>

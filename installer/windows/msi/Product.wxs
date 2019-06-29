@@ -4,7 +4,7 @@
   <Product Id="*"
            Name="$(var.ApplicationName)"
            Language="1033"
-           Version="4.0.0.0"
+           Version="$(var.ApplicationVersion)"
            Manufacturer="$(var.Manufacturer)"
            UpgradeCode="497F349B-D2F6-4488-9FE4-797E7E58B158" >
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
