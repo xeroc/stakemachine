@@ -4,6 +4,8 @@
 [![Documentation
 Status](https://readthedocs.org/projects/dexbot/badge/?version=latest)](https://dexbot.readthedocs.io/en/latest/?badge=latest)
 
+**Download the latest release for Windows, OSX and Linux from [here!](https://github.com/Codaone/DEXBot/releases/latest)**
+
 ![GUI](https://i.imgur.com/rW8XKQ4.png)The Dashboard of the GUI version of DEXBot
 
 ![CLI](https://i.imgur.com/H1N96nI.png)The CLI version of DEXBot in configuration dialog
