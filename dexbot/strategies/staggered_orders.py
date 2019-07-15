@@ -783,9 +783,13 @@ class Strategy(StrategyBase):
                 # Require empty txbuffer to avoid rare condition when order may be already canceled from
                 # replace_partially_filled_order() call
                 self.log.info('Cancelling dust order at opposite side, placing closer {} order'.format(order_type))
+                previous_bundle = self.bitshares.bundle
+                self.bitshares.bundle = False
                 self.cancel_orders_wrapper(closest_opposite_order)
                 self.refresh_balances(use_cached_orders=True)
                 self.place_closer_order(asset, closest_own_order, allow_partial=True)
+                self.refresh_orders()
+                self.bitshares.bundle = previous_bundle
         else:
             # Place first buy order as close to the lower bound as possible
             self.bootstrapping = True
