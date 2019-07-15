@@ -237,12 +237,16 @@ class Strategy(StrategyBase):
             trx_executed = True
             try:
                 self.execute()
-            except bitsharesapi.exceptions.RPCError:
+            except bitsharesapi.exceptions.RPCError as exception:
                 """ Handle exception without stopping the worker. The goal is to handle race condition when partially
                     filled order was further filled before we actually replaced them.
                 """
-                self.log.exception('Got exception during broadcasting trx:')
-                return
+                if str(exception).startswith('Assert Exception: maybe_found != nullptr: Unable to find Object'):
+                    self.log.warning(exception)
+                    self.bitshares.txbuffer.clear()
+                    return
+                else:
+                    raise
         self.bitshares.bundle = False
 
         # Maintain the history of free balances after maintenance runs.
