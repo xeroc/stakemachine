@@ -875,17 +875,19 @@ def test_allocate_asset_increase_orders(worker, do_initial_allocation, maintain_
 
 
 @pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/588')
-def test_allocate_asset_dust_order(worker, do_initial_allocation, maintain_until_allocated, base_account):
+def test_allocate_asset_dust_order_simple(worker, do_initial_allocation, maintain_until_allocated, base_account):
     """ Make dust order, check if it canceled and closer opposite order placed
     """
     do_initial_allocation(worker, worker.mode)
     num_sell_orders_before = len(worker.sell_orders)
     num_buy_orders_before = len(worker.buy_orders)
     additional_account = base_account()
+
     # Partially fill order from another account
     sell_price = worker.buy_orders[0]['price'] / 1.01
     sell_amount = worker.buy_orders[0]['quote']['amount'] * (1 - worker.partial_fill_threshold) * 1.1
     worker.market.sell(sell_price, sell_amount, account=additional_account)
+
     worker.refresh_balances()
     worker.refresh_orders()
     worker.allocate_asset('quote', worker.quote_balance)
