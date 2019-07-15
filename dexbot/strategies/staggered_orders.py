@@ -1512,7 +1512,8 @@ class Strategy(StrategyBase):
                 elif asset == 'quote':
                     quote_amount = balance
             elif place_order:
-                self.log.debug('Not enough balance to place minimal allowed order')
+                self.log.debug('Not enough balance to place minimal allowed order: {:.{prec}f}/{:.{prec}f} {}'
+                               .format(balance, limiter, symbol, prec=precision))
                 place_order = False
 
         if place_order and asset == 'base':
@@ -1625,7 +1626,8 @@ class Strategy(StrategyBase):
                 elif asset == 'quote':
                     quote_amount = balance
             elif place_order:
-                self.log.debug('Not enough balance to place minimal allowed order')
+                self.log.debug('Not enough balance to place minimal allowed order: {:.{prec}f}/{:.{prec}f} {}'
+                               .format(balance, limiter, symbol, prec=precision))
                 place_order = False
 
         if place_order and asset == 'base':
