@@ -184,6 +184,8 @@ class Strategy(StrategyBase):
             diff = abs(test_order['amount'] - self.real_buy_orders[-1]['quote']['amount'])
             if diff <= self.order_min_quote:
                 self.replace_real_order_with_virtual(self.real_buy_orders[-1])
+                # Orders needs to be refreshed to avoid races
+                self.refresh_orders()
 
         # Replace excessive real orders with virtual ones, sell side
         if self.real_sell_orders and len(self.real_sell_orders) > self.operational_depth + 5:
@@ -191,6 +193,7 @@ class Strategy(StrategyBase):
             diff = abs(test_order['amount'] - self.real_sell_orders[-1]['base']['amount'])
             if diff <= self.order_min_quote:
                 self.replace_real_order_with_virtual(self.real_sell_orders[-1])
+                self.refresh_orders()
 
         # Check for operational depth, buy side
         if (self.virtual_buy_orders and
