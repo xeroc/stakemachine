@@ -47,6 +47,13 @@ To run in unattended mode you need to provide wallet passphrase:
 docker run -d --name dexbot -e UNLOCK=pass -v `pwd`/dexbot-config:/home/dexbot/.config/dexbot -v `pwd`/dexbot-data:/home/dexbot/.local/share dexbot/dexbot:latest dexbot-cli run
 ```
 
+Assuming you have created a Docker secret named "passphrase" in your swarm, you can also get it from there:
+
+```
+printf <pass> | docker secret create passphrase -
+docker run -d --name dexbot -e UNLOCK=/run/secrets/passphrase -v `pwd`/dexbot-config:/home/dexbot/.config/dexbot -v `pwd`/dexbot-data:/home/dexbot/.local/share dexbot/dexbot:latest dexbot-cli run
+```
+
 ## Getting help
 
 Join the [Telegram Chat for DEXBot](https://t.me/DEXBOTbts).
