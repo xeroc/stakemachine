@@ -110,7 +110,7 @@ def unlock(f):
             if ctx.bitshares.wallet.created():
                 if "UNLOCK" in os.environ:
                     pwd = os.environ["UNLOCK"]
-                    if (pwd[:12] == "/run/secrets"):
+                    if pwd[:12] == "/run/secrets":
                         pwd = open(pwd).read()
                 else:
                     if systemd:
