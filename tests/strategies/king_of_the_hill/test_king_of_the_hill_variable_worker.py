@@ -1,13 +1,6 @@
-from dexbot.strategies.king_of_the_hill import Strategy
 import logging
-import pytest
-from bitshares.account import Account
-from bitshares.asset import Asset
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(funcName)s %(lineno)d  : %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(funcName)s %(lineno)d  : %(message)s')
 
 
 def test_maintain_strategy(worker2):
@@ -50,12 +43,10 @@ def test_calc_order_prices(other_orders, orders2):
     print('sell_price:', sell_price)
 
     for o in buys:
-        new_quote = o['quote']['amount'] - 2 * \
-                    10 ** -worker.market['quote']['precision']
-        a_buy_price = min(
-            o['base']['amount'] / new_quote, worker.upper_bound)
+        new_quote = o['quote']['amount'] - 2 * 10 ** -worker.market['quote']['precision']
+        a_buy_price = min(o['base']['amount'] / new_quote, worker.upper_bound)
     assert a_buy_price == buy_price
-    assert None == sell_price
+    assert sell_price is None
 
 
 def test_place_order(worker2):

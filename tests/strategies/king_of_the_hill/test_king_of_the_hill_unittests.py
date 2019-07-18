@@ -2,9 +2,6 @@
 # TODO:add self.sell_price=None @line 96
 # todo : 183 line: own_orders_ids = [order['id'] for order in self.get_own_orders]==>>self.get_own_orders()
 # todo: line 249 , Event 'is_too_small_amounts' is not declared
-import datetime
-
-
 
 
 def test_maintain_strategy(worker):
@@ -16,12 +13,8 @@ def test_maintain_strategy(worker):
     assert worker.market_center_price == worker.center_price
 
 
-
-
-
 def test_check_orders(worker):
     worker.check_orders()
-
 
 
 def test_get_order_type(orders1):
@@ -51,12 +44,10 @@ def test_calc_order_prices(other_orders, orders1):
     print('sell_price:', sell_price)
 
     for o in buys:
-        new_quote = o['quote']['amount'] - 2 * \
-                    10 ** -worker.market['quote']['precision']
-        a_buy_price = min(
-            o['base']['amount'] / new_quote, worker.upper_bound)
+        new_quote = o['quote']['amount'] - 2 * 10 ** -worker.market['quote']['precision']
+        a_buy_price = min(o['base']['amount'] / new_quote, worker.upper_bound)
     assert a_buy_price == buy_price
-    assert None == sell_price
+    assert sell_price is None
 
 
 def test_place_order(worker):

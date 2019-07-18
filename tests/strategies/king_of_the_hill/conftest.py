@@ -20,8 +20,7 @@ def assets(create_asset):
 
 @pytest.fixture(scope='module')
 def account_other(assets, prepare_account):
-    prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000},
-                    account='other')
+    prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000}, account='other')
 
 
 @pytest.fixture(scope='module')
@@ -30,8 +29,9 @@ def base_account(assets, prepare_account, kh_worker_name):
     """
 
     def func():
-        account = prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000},
-                                  account=kh_worker_name)
+        account = prepare_account(
+            {'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000}, account=kh_worker_name
+        )
         return account
 
     return func
@@ -92,9 +92,9 @@ def config(request, bitshares, account, kh_worker_name):
                 'relative_order_size': False,
                 'sell_order_amount': 2.0,
                 'sell_order_size_threshold': 0.0,
-                'upper_bound': 0.001
+                'upper_bound': 0.001,
             }
-        }
+        },
     }
     return config
 
@@ -107,11 +107,7 @@ def base_worker(bitshares, kh_worker_name):
     workers = []
 
     def _base_worker(config):
-        worker = Strategy(
-            name=worker_name,
-            config=config,
-            bitshares_instance=bitshares
-        )
+        worker = Strategy(name=worker_name, config=config, bitshares_instance=bitshares)
         workers.append(worker)
         return worker
 
