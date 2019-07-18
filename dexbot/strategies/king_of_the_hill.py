@@ -55,6 +55,8 @@ class Strategy(StrategyBase):
         self.worker_name = kwargs.get('name')
 
         self.mode = self.worker.get('mode', 'both')
+        self.buy_price = 0
+        self.sell_price = 0
         self.buy_order_amount = float(self.worker.get('buy_order_amount', 0))
         self.sell_order_amount = float(self.worker.get('sell_order_amount', 0))
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
