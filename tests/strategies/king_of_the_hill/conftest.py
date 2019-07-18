@@ -46,23 +46,25 @@ def account(base_account):
 
 @pytest.fixture(scope='function')
 def other_orders(bitshares, account_other):
+    """ Place some orders from second account
+    """
     market = Market('QUOTEA/BASEA', bitshares_instance=bitshares)
-    ors_ids = []
+    order_ids = []
     o = market.buy(1, 10, returnOrderId=True, account='other')
-    ors_ids.append(o.get('orderid'))
+    order_ids.append(o.get('orderid'))
     o = market.sell(2, 20, returnOrderId=True, account='other')
-    ors_ids.append(o.get('orderid'))
+    order_ids.append(o.get('orderid'))
     o = market.buy(1.5, 20, returnOrderId=True, account='other')
-    ors_ids.append(o.get('orderid'))
+    order_ids.append(o.get('orderid'))
     yield
     # if order filled then market.cancel() error
-    market.cancel(ors_ids, account='other')
+    market.cancel(order_ids, account='other')
     time.sleep(1.1)
 
 
 @pytest.fixture(scope='module')
 def kh_worker_name():
-    """ Fixture to share king_or_the_hill Orders worker name
+    """ Fixture to share king_of_the_hill Orders worker name
     """
     return 'kh-worker'
 
@@ -106,7 +108,7 @@ def base_worker(bitshares, kh_worker_name):
 
     def _base_worker(config):
         worker = Strategy(
-            name=kh_worker_name,
+            name=worker_name,
             config=config,
             bitshares_instance=bitshares
         )
