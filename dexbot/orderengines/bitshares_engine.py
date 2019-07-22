@@ -808,19 +808,6 @@ class BitsharesOrderEngine(Storage, Events):
             return None
         return order
 
-    def is_too_small_amounts(self, amount_quote, amount_base):
-        """ Check whether amounts are within asset precision limits
-            :param float amount_quote: QUOTE asset amount
-            :param float amount_base: BASE asset amount
-            :return: bool True = amounts are too small
-                          False = amounts are within limits
-        """
-        if (amount_quote < 2 * 10 ** -self.market['quote']['precision'] or
-                amount_base < 2 * 10 ** -self.market['base']['precision']):
-            return True
-
-        return False
-
     def is_partially_filled(self, order, threshold=0.3):
         """ Checks whether order was partially filled
 

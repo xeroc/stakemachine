@@ -1,5 +1,8 @@
 # Python imports
+import copy
+
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 # Project imports
 from dexbot.strategies.base import StrategyBase
@@ -55,8 +58,8 @@ class Strategy(StrategyBase):
         self.worker_name = kwargs.get('name')
 
         self.mode = self.worker.get('mode', 'both')
-        self.buy_price = 0
-        self.sell_price = 0
+        self.top_buy_price = 0
+        self.top_sell_price = 0
         self.buy_order_amount = float(self.worker.get('buy_order_amount', 0))
         self.sell_order_amount = float(self.worker.get('sell_order_amount', 0))
         self.is_relative_order_size = self.worker.get('relative_order_size', False)
@@ -66,7 +69,7 @@ class Strategy(StrategyBase):
         self.lower_bound = self.worker.get('lower_bound', 0)
         self.min_order_lifetime = self.worker.get('min_order_lifetime', 1)
 
-        self.orders = []
+        self.orders = {}
         # Current order we must be higher
         self.buy_order_to_beat = None
         self.sell_order_to_beat = None
@@ -76,6 +79,7 @@ class Strategy(StrategyBase):
         # Set last check in the past to get immediate check at startup
         self.last_check = datetime(2000, 1, 1)
         self.min_check_interval = self.min_order_lifetime
+        self.partial_fill_threshold = 0.8
 
         if self.view:
             self.update_gui_slider()
@@ -93,8 +97,6 @@ class Strategy(StrategyBase):
         if delta < timedelta(seconds=self.min_check_interval):
             return
 
-        self.calc_order_prices()
-
         if self.orders:
             self.check_orders()
         else:
@@ -105,51 +107,43 @@ class Strategy(StrategyBase):
     def check_orders(self):
         """ Check whether own orders needs intervention
         """
-        orders_to_delete = []
-        for stored_order in self.orders:
-            order = self.get_order(stored_order['id'])
-            order_type = self.get_order_type(stored_order)
+        self.get_top_prices()
+
+        orders = copy.deepcopy(self.orders)
+        for order_type, order_id in orders.items():
+            order = self.get_order(order_id)
+            need_cancel = False
 
             if order:
-                is_partially_filled = self.is_partially_filled(order, threshold=0.8)
+                is_partially_filled = self.is_partially_filled(order, threshold=self.partial_fill_threshold)
                 if is_partially_filled:
                     # If own order filled too much, replace it with new order
                     self.log.info('Own {} order filled too much, resetting'.format(order_type))
-                    if self.cancel_orders(order):
-                        orders_to_delete.append(stored_order['id'])
-                        self.place_order(order_type)
+                    need_cancel = True
                 # Check if someone put order above ours or beaten order was canceled
-                elif (
-                    order_type == 'buy'
-                    and (not self.get_order(self.beaten_buy_order) or stored_order['price'] < self.buy_price)
-                ) or (
-                    order_type == 'sell'
-                    # FIXME: price difference should be compared taking into account asset precisions, or use raw
-                    # amounts
-                    and (not self.get_order(self.beaten_sell_order) or stored_order['price'] ** -1 > self.sell_price)
-                ):
-                    self.log.debug('Moving {} order'.format(order_type))
-                    if self.cancel_orders(order):
-                        orders_to_delete.append(stored_order['id'])
-                        self.place_order(order_type)
+                elif order_type == 'buy' and not self.get_order(self.beaten_buy_order):
+                    self.log.debug('No beaten buy order on market')
+                    need_cancel = True
+                elif order_type == 'buy' and order['price'] < self.top_buy_price:
+                    self.log.debug('Detected an order above ours')
+                    need_cancel = True
+                elif order_type == 'sell' and not self.get_order(self.beaten_sell_order):
+                    self.log.debug('No beaten sell order on market')
+                    need_cancel = True
+                elif order_type == 'sell' and order['price'] ** -1 > self.top_sell_price:
+                    self.log.debug('Detected an order above ours')
+                    need_cancel = True
+
             # Own order is not there
             else:
                 self.log.info('Own {} order filled, placing a new one'.format(order_type))
-                orders_to_delete.append(stored_order['id'])
                 self.place_order(order_type)
 
-        self.orders = [order for order in self.orders if order['id'] not in orders_to_delete]
+            if need_cancel and self.cancel_orders(order):
+                self.place_order(order_type)
 
-    def get_order_type(self, order):
-        """ Determine order type and return it as a string
-        """
-        if self.is_buy_order(order):
-            return 'buy'
-        else:
-            return 'sell'
-
-    def calc_order_prices(self):
-        """ Calculate prices of our orders
+    def get_top_prices(self):
+        """ Get current top prices (foreign orders)
         """
         # Obtain orderbook orders excluding our orders
         market_orders = self.get_market_orders(depth=100)
@@ -170,22 +164,48 @@ class Strategy(StrategyBase):
         # Note that we're operating on inverted orders here
         for order in sell_orders:
             if order['quote']['amount'] > sell_order_size_threshold:
-                # Calculate price to beat order by slightly decreasing BASE amount
-                new_base = order['base']['amount'] - 2 * 10 ** -self.market['base']['precision']
-                # Don't let to place sell orders lower than lower bound
-                self.sell_price = max(new_base / order['quote']['amount'], self.lower_bound)
+                self.top_sell_price = order['price']
                 self.sell_order_to_beat = order['id']
-                self.log.debug('Sell price to be higher: {:.8f}'.format(self.sell_price))
+                if self.top_sell_price < self.lower_bound:
+                    self.log.debug(
+                        'Top sell price to be higher {:.8f} < lower bound {:.8f}'.format(
+                            self.top_sell_price, self.lower_bound
+                        )
+                    )
+                    self.top_sell_price = self.lower_bound
+                else:
+                    self.log.debug('Top sell price to be higher: {:.8f}'.format(self.top_sell_price))
                 break
 
         for order in buy_orders:
             if order['base']['amount'] > buy_order_size_threshold:
-                new_quote = order['quote']['amount'] - 2 * 10 ** -self.market['quote']['precision']
-                # Don't let to place buy orders above upper bound
-                self.buy_price = min(order['base']['amount'] / new_quote, self.upper_bound)
+                self.top_buy_price = order['price']
                 self.buy_order_to_beat = order['id']
-                self.log.debug('Buy price to be higher: {:.8f}'.format(self.buy_price))
+                if self.top_buy_price > self.upper_bound:
+                    self.log.debug(
+                        'Top buy price to be higher {:.8f} > upper bound {:.8f}'.format(
+                            self.top_buy_price, self.upper_bound
+                        )
+                    )
+                    self.top_buy_price = self.upper_bound
+                else:
+                    self.log.debug('Top buy price to be higher: {:.8f}'.format(self.top_buy_price))
                 break
+
+    def is_too_small_amounts(self, amount_quote, amount_base):
+        """ Check whether amounts are within asset precision limits
+            :param Decimal amount_quote: QUOTE asset amount
+            :param Decimal amount_base: BASE asset amount
+            :return: bool True = amounts are too small
+                          False = amounts are within limits
+        """
+        if (
+            amount_quote < Decimal(10) ** -self.market['quote']['precision']
+            or amount_base < Decimal(10) ** -self.market['base']['precision']
+        ):
+            return True
+
+        return False
 
     def place_order(self, order_type):
         """ Place single order
@@ -193,43 +213,72 @@ class Strategy(StrategyBase):
         new_order = None
 
         if order_type == 'buy':
-            if not self.buy_price:
-                self.log.error('Cannot determine buy price, correct your bounds and/or ignore thresholds')
+            if not self.top_buy_price:
+                self.log.error('Cannot determine top buy price, correct your bounds and/or ignore thresholds')
                 self.disabled = True
                 return
-            amount_base = self.amount_base
+
+            amount_base = Decimal(self.amount_base).quantize(Decimal(0).scaleb(-self.market['base']['precision']))
             if not amount_base:
                 self.log.error('Cannot place {} order with 0 amount. Adjust your settings!'.format(order_type))
                 self.disabled = True
                 return
-            amount_quote = amount_base / self.buy_price
+
+            price = Decimal(self.top_buy_price)
+            amount_quote = (amount_base / price).quantize(Decimal(0).scaleb(-self.market['quote']['precision']))
+            price = amount_base / amount_quote
+            while price <= self.top_buy_price:
+                # Decrease quote amount until price will become higher
+                amount_quote -= Decimal(10) ** -self.market['quote']['precision']
+                price = amount_base / amount_quote
+
+            # Limit price by upper bound
+            if price > self.upper_bound:
+                price = Decimal(self.upper_bound)
+                amount_quote = amount_base / price
+
             # Prevent too small amounts
             if self.is_too_small_amounts(amount_quote, amount_base):
                 self.log.error('Amount for {} order is too small'.format(order_type))
                 return
-            new_order = self.place_market_buy_order(amount_quote, self.buy_price)
+
+            new_order = self.place_market_buy_order(float(amount_quote), float(price))
             self.beaten_buy_order = self.buy_order_to_beat
         elif order_type == 'sell':
-            if not self.sell_price:
-                self.log.error('Cannot determine sell price, correct your bounds and/or ignore thresholds')
+            if not self.top_sell_price:
+                self.log.error('Cannot determine top sell price, correct your bounds and/or ignore thresholds')
                 self.disabled = True
                 return
-            amount_quote = self.amount_quote
+
+            amount_quote = Decimal(self.amount_quote).quantize(Decimal(0).scaleb(-self.market['quote']['precision']))
             if not amount_quote:
                 self.log.error('Cannot place {} order with 0 amount. Adjust your settings!'.format(order_type))
                 self.disabled = True
                 return
-            amount_base = amount_quote * self.sell_price
+
+            price = Decimal(self.top_sell_price)
+            amount_base = (amount_quote * price).quantize(Decimal(0).scaleb(-self.market['base']['precision']))
+            price = amount_base / amount_quote
+            while price >= self.top_sell_price:
+                # Decrease base amount until price will become lower
+                amount_base -= Decimal(10) ** -self.market['base']['precision']
+                price = amount_base / amount_quote
+
+            # Limit price by lower bound
+            if price < self.lower_bound:
+                price = Decimal(self.lower_bound)
+
             # Prevent too small amounts
             if self.is_too_small_amounts(amount_quote, amount_base):
                 self.log.error('Amount for {} order is too small'.format(order_type))
                 return
-            new_order = self.place_market_sell_order(amount_quote, self.sell_price)
+
+            new_order = self.place_market_sell_order(float(amount_quote), float(price))
             self.beaten_sell_order = self.sell_order_to_beat
 
         if new_order:
-            # Store own orders into list to perform checks later
-            self.orders.append(new_order)
+            # Store own order into dict {order_type: id} to perform checks later
+            self.orders[order_type] = new_order['id']
         else:
             self.log.error('Failed to place {} order'.format(order_type))
 
@@ -238,6 +287,8 @@ class Strategy(StrategyBase):
         """
         place_buy = False
         place_sell = False
+
+        self.get_top_prices()
 
         if self.mode == 'both':
             place_buy = True
