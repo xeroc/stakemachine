@@ -2,11 +2,12 @@ import os
 import pathlib
 
 from dexbot import APP_NAME, AUTHOR
+from dexbot.node_manager import get_sorted_nodelist
+
 
 import appdirs
 from ruamel import yaml
 from collections import OrderedDict
-
 
 DEFAULT_CONFIG_DIR = appdirs.user_config_dir(APP_NAME, appauthor=AUTHOR)
 DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')
@@ -36,9 +37,12 @@ class Config(dict):
             self._config = self.load_config(self.config_file)
 
         # In case there is not a list of nodes in the config file,
-        # the node will be replaced by a list of pre-defined nodes.
+        # the node will be replaced by a list of pre-defined nodes,
+        # sorted by least latency
         if isinstance(self._config['node'], str):
-            self._config['node'] = self.node_list
+            sorted_nodes = get_sorted_nodelist(nodelist)
+            self._config['node'] = sorted_nodes
+#            self._config['node'] = self.node_list
             self.save_config()
 
     def __setitem__(self, key, value):
@@ -55,6 +59,7 @@ class Config(dict):
 
     def get(self, key, default=None):
         return self._config.get(key, default)
+
 
     @property
     def default_data(self):
