@@ -15,6 +15,7 @@ from bitshares.exceptions import WrongMasterPasswordException
 
 from dexbot import VERSION, APP_NAME, AUTHOR
 from dexbot.config import Config
+from dexbot.node_manager import get_sorted_nodelist
 
 log = logging.getLogger(__name__)
 
@@ -91,8 +92,11 @@ def verbose(f):
 def chain(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
+        click.echo("Checking for nearest nodes....")
+        nodelist = get_sorted_nodelist(ctx.config["node"])
+        click.echo(" ->  " + nodelist[0])
         ctx.bitshares = BitShares(
-            ctx.config["node"],
+            nodelist,
             num_retries=-1,
             expiration=60,
             **ctx.obj

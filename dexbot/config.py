@@ -38,11 +38,10 @@ class Config(dict):
 
         # In case there is not a list of nodes in the config file,
         # the node will be replaced by a list of pre-defined nodes,
-        # sorted by least latency
+        # sorted by least latency, no-response nodes are dropped.
         if isinstance(self._config['node'], str):
-            sorted_nodes = get_sorted_nodelist(nodelist)
+            sorted_nodes = get_sorted_nodelist(self.node_list)
             self._config['node'] = sorted_nodes
-#            self._config['node'] = self.node_list
             self.save_config()
 
     def __setitem__(self, key, value):

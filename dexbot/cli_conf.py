@@ -307,7 +307,7 @@ def configure_dexbot(config, ctx):
                  ('SHOW', 'Show bitshares accounts'),
                  ('NODES', 'Edit Node Selection'),
                  ('ADD_NODE', 'Add Your Node'),
-                 ('SORT_NODES', 'Sort nodes based on latency'),
+                 ('SORT_NODES', 'By latency (uses default list)'),
                  ('HELP', 'Where to get help'),
                  ('EXIT', 'Quit this application')])
 
