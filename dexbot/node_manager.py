@@ -1,8 +1,15 @@
+#!/usr/bin/env python3
 from websocket import create_connection as wss_create
 from time import time
-
+import logging
 import multiprocessing as mp
-import pandas as pd
+
+log = logging.getLogger(__name__)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s'
+)
 
 max_timeout = 2.0 # max ping time is set to 2
 
@@ -16,7 +23,7 @@ def wss_test(node):
         latency = (time() - start)
         return latency
     except Exception as e:
-        # print(e) # suppress errors
+        # suppress errors
         return None
 
 
@@ -24,7 +31,7 @@ def check_node(node):
     """
     check latency of an individual node
     """
-    print('#', end='', flush=True)
+    log.info(f'# pinging {node}')
     latency = wss_test(node)
     node_info = {'Node': node, 'Latency': latency}
     return node_info
@@ -44,9 +51,8 @@ def get_sorted_nodelist(nodelist):
     pool.close()
     pool.join()
 
-    df_nodes = pd.DataFrame(latency_info)
-    df_active = df_nodes.dropna()
-    df_sorted = df_active.sort_values('Latency', ascending=True)
-
-    sorted_nodes = df_sorted.Node.tolist()
+    filtered_list = [i for i in latency_info if i['Latency'] is not None]             
+    sorted_list = sorted(filtered_list, key=lambda k: k['Latency'])
+    sorted_nodes = [i['Node'] for i in sorted_list]
+    
     return sorted_nodes

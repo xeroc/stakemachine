@@ -94,7 +94,7 @@ def chain(f):
     def new_func(ctx, *args, **kwargs):
         click.echo("Checking for nearest nodes....")
         nodelist = get_sorted_nodelist(ctx.config["node"])
-        click.echo(" ->  " + nodelist[0])
+        click.echo("Nearest node ->  " + nodelist[0])
         ctx.bitshares = BitShares(
             nodelist,
             num_retries=-1,
