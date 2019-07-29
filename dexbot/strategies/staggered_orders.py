@@ -1,5 +1,6 @@
 import time
 import math
+import uuid
 import bitsharesapi.exceptions
 from datetime import datetime, timedelta
 from functools import reduce
@@ -1973,8 +1974,7 @@ class Strategy(StrategyBase):
 
         order = VirtualOrder()
         order['price'] = price
-        # Assign price as id because we just need some unique id
-        order['id'] = order['price']
+        order['id'] = str(uuid.uuid4())
 
         quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
@@ -2005,8 +2005,7 @@ class Strategy(StrategyBase):
         precision = self.market['quote']['precision']
 
         order = VirtualOrder()
-        # Use not inverted price as unique id (inverted will cause intersections with buy orders)
-        order['id'] = price
+        order['id'] = str(uuid.uuid4())
         order['price'] = price ** -1
 
         quote_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
