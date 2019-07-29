@@ -19,7 +19,7 @@ def test_split_symbol():
         group = ['BTC:USD', 'STEEM/USD']
         pair = [split_pair(symbol) for symbol in group]
         print('original:', group, 'result:', pair, sep=' ')
-    except Exception as e:
+    except Exception:
         pass
 
 

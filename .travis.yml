@@ -1,4 +1,6 @@
 sudo: true
+services:
+  - docker
 matrix:
   include:
   - os: linux
@@ -9,10 +11,16 @@ matrix:
     python: '3.6'
     before_install:
     - brew update
+before_install:
+  # Make sure docker image can be built
+  - docker build -t dexbot/dexbot .
 install:
   - pip install pyinstaller
   - pip install --upgrade setuptools
   - make install
+before_script:
+  # PEP8 linting
+  - make pep-test
 script:
   - echo "@TODO - Running tests..."
   - pyinstaller --distpath dist/$TRAVIS_OS_NAME gui.spec

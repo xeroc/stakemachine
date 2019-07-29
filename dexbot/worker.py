@@ -8,7 +8,6 @@ import copy
 import dexbot.errors as errors
 from dexbot.strategies.base import StrategyBase
 
-from bitshares import BitShares
 from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
 
@@ -116,7 +115,11 @@ class WorkerInfrastructure(threading.Thread):
 
         self.config_lock.acquire()
         for worker_name, worker in self.config["workers"].items():
-            if worker_name not in self.workers or self.workers[worker_name].disabled:
+            if worker_name not in self.workers:
+                continue
+            elif self.workers[worker_name].disabled:
+                self.workers[worker_name].log.error('Worker "{}" is disabled'.format(worker_name))
+                self.workers.pop(worker_name)
                 continue
             try:
                 self.workers[worker_name].ontick(data)
@@ -134,8 +137,11 @@ class WorkerInfrastructure(threading.Thread):
 
         self.config_lock.acquire()
         for worker_name, worker in self.config["workers"].items():
-            if self.workers[worker_name].disabled:
-                self.workers[worker_name].log.debug('Worker "{}" is disabled'.format(worker_name))
+            if worker_name not in self.workers:
+                continue
+            elif self.workers[worker_name].disabled:
+                self.workers[worker_name].log.error('Worker "{}" is disabled'.format(worker_name))
+                self.workers.pop(worker_name)
                 continue
             if worker["market"] == data.market:
                 try:
@@ -152,8 +158,11 @@ class WorkerInfrastructure(threading.Thread):
         self.config_lock.acquire()
         account = account_update.account
         for worker_name, worker in self.config["workers"].items():
-            if self.workers[worker_name].disabled:
-                self.workers[worker_name].log.info('Worker "{}" is disabled'.format(worker_name))
+            if worker_name not in self.workers:
+                continue
+            elif self.workers[worker_name].disabled:
+                self.workers[worker_name].log.error('Worker "{}" is disabled'.format(worker_name))
+                self.workers.pop(worker_name)
                 continue
             if worker["account"] == account["name"]:
                 try:
@@ -196,7 +205,7 @@ class WorkerInfrastructure(threading.Thread):
                 self.config['workers'].pop(worker_name)
 
             self.accounts.remove(account)
-            if pause:
+            if pause and worker_name in self.workers:
                 self.workers[worker_name].pause()
             self.workers.pop(worker_name, None)
         else:

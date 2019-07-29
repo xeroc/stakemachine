@@ -32,7 +32,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Please enter your wallet password before continuing.</string>
+      <string>Please enter your Uptick wallet password before continuing.</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -81,7 +81,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="password_label">
            <property name="text">
-            <string>Wallet password</string>
+            <string>Uptick Wallet password</string>
            </property>
            <property name="buddy">
             <cstring>password_input</cstring>

@@ -358,6 +358,7 @@ class DatabaseWorker(threading.Thread):
 
         self._set_result(token, result)
 
+
 # Derive sqlite file directory
 data_dir = user_data_dir(APP_NAME, AUTHOR)
 sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
