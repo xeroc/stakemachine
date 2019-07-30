@@ -1,16 +1,22 @@
 import os
+import os.path
+import inspect
 import json
 import threading
 import queue
 import uuid
+import alembic
+import alembic.config
+
 from appdirs import user_data_dir
 
 from . import helper
 from dexbot import APP_NAME, AUTHOR
 
-from sqlalchemy import create_engine, Column, String, Integer, Float
+from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
 
 Base = declarative_base()
 
@@ -39,11 +45,15 @@ class Orders(Base):
     worker = Column(String)
     order_id = Column(String)
     order = Column(String)
+    virtual = Column(Boolean)
+    custom = Column(String)
 
-    def __init__(self, worker, order_id, order):
+    def __init__(self, worker, order_id, order, virtual, custom):
         self.worker = worker
         self.order_id = order_id
         self.order = order
+        self.virtual = virtual
+        self.custom = custom
 
 
 class Balances(Base):
@@ -152,11 +162,17 @@ class DatabaseWorker(threading.Thread):
         super().__init__()
 
         # Obtain engine and session
-        engine = create_engine('sqlite:///%s' % sqlDataBaseFile, echo=False)
+        dsn = 'sqlite:///{}'.format(sqlDataBaseFile)
+        engine = create_engine(dsn, echo=False)
         Session = sessionmaker(bind=engine)
         self.session = Session()
         Base.metadata.create_all(engine)
         self.session.commit()
+
+        # Run migrations
+        import dexbot
+        migrations_dir = '{}/migrations'.format(os.path.dirname(inspect.getfile(dexbot)))
+        self.run_migrations(migrations_dir, dsn)
 
         self.task_queue = queue.Queue()
         self.results = {}
@@ -165,6 +181,18 @@ class DatabaseWorker(threading.Thread):
         self.event = threading.Event()
         self.daemon = True
         self.start()
+
+    @staticmethod
+    def run_migrations(script_location, dsn):
+        """ Apply database migrations using alembic
+
+            :param str script_location: path to migration scripts
+            :param str dsn: database URL
+        """
+        alembic_cfg = alembic.config.Config()
+        alembic_cfg.set_main_option('script_location', script_location)
+        alembic_cfg.set_main_option('sqlalchemy.url', dsn)
+        alembic.command.upgrade(alembic_cfg, 'head')
 
     def run(self):
         for func, args, token in iter(self.task_queue.get, None):
@@ -279,7 +307,7 @@ class DatabaseWorker(threading.Thread):
         if e:
             e.value = value
         else:
-            e = Orders(worker, order_id, value)
+            e = Orders(worker, order_id, value, None, None)
             self.session.add(e)
         self.session.commit()
 
