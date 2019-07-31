@@ -15,7 +15,7 @@ from dexbot import APP_NAME, AUTHOR
 
 from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, load_only
 
 
 Base = declarative_base()
@@ -114,6 +114,16 @@ class Storage(dict):
         order_id = order['id']
         db_worker.save_order(self.category, order_id, order)
 
+    def save_order_extended(self, order, virtual=None, custom=None):
+        """ Save the order to the database providing additional data
+
+            :param dict order:
+            :param bool virtual: True = order is virtual order
+            :param str custom: any additional data
+        """
+        order_id = order['id']
+        db_worker.save_order_extended(self.category, order_id, order, virtual, custom)
+
     def remove_order(self, order):
         """ Removes an order from the database
         """
@@ -127,10 +137,31 @@ class Storage(dict):
 
     def fetch_orders(self, worker=None):
         """ Get all the orders (or just specific worker's orders) from the database
+
+            :param str worker: worker name (None means current worker name will be used)
         """
         if not worker:
             worker = self.category
         return db_worker.fetch_orders(worker)
+
+    def fetch_orders_extended(self, worker=None, only_virtual=False, only_real=False, custom=None,
+                              return_ids_only=False):
+        """ Get orders from the database in extended format (returning all columns)
+
+            :param str worker: worker name (None means current worker name will be used)
+            :param bool only_virtual: True = fetch only virtual orders
+            :param bool only_real: True = fetch only real orders
+            :param str custom: filter orders by custom field
+            :param bool return_ids_only: instead of returning full row data, return only order ids
+            :rtype: list
+            :return: list of dicts in format [{order_id: '', order: '', virtual: '', custom: ''}], or [order_id] if
+                return_ids_only used
+        """
+        if only_virtual and only_real:
+            raise ValueError('only_virtual and only_real are mutually exclusive')
+        if not worker:
+            worker = self.category
+        return db_worker.fetch_orders_extended(worker, only_virtual, only_real, custom, return_ids_only)
 
     @staticmethod
     def clear_worker_data(worker):
@@ -311,6 +342,24 @@ class DatabaseWorker(threading.Thread):
             self.session.add(e)
         self.session.commit()
 
+    def save_order_extended(self, worker, order_id, order, virtual, custom):
+        self.execute_noreturn(self._save_order_extended, worker, order_id, order, virtual, custom)
+
+    def _save_order_extended(self, worker, order_id, order, virtual, custom):
+        order_json = json.dumps(order)
+        custom_json = json.dumps(custom)
+        e = self.session.query(Orders).filter_by(
+            order_id=order_id
+        ).first()
+        if e:
+            e.order = order_json
+            e.virtual = virtual
+            e.custom = custom_json
+        else:
+            e = Orders(worker, order_id, order_json, virtual, custom_json)
+            self.session.add(e)
+        self.session.commit()
+
     def remove_order(self, worker, order_id):
         self.execute_noreturn(self._remove_order, worker, order_id)
 
@@ -346,6 +395,32 @@ class DatabaseWorker(threading.Thread):
             result = {}
             for row in results:
                 result[row.order_id] = json.loads(row.order)
+        self._set_result(token, result)
+
+    def fetch_orders_extended(self, category, only_virtual, only_real, custom, return_ids_only):
+        return self.execute(self._fetch_orders_extended, category, only_virtual, only_real, custom, return_ids_only)
+
+    def _fetch_orders_extended(self, worker, only_virtual, only_real, custom, return_ids_only, token):
+        filter_by = {'worker': worker}
+        if only_virtual:
+            filter_by['virtual'] = True
+        elif only_real:
+            filter_by['virtual'] = False
+        if custom:
+            filter_by['custom'] = json.dumps(custom)
+
+        if return_ids_only:
+            query = self.session.query(Orders).options(load_only('order_id'))
+            results = query.filter_by(**filter_by).all()
+            result = [row.order_id for row in results]
+        else:
+            results = self.session.query(Orders).filter_by(**filter_by).all()
+            result = []
+            for row in results:
+                entry = {'order_id': row.order_id, 'order': json.loads(row.order), 'virtual': row.virtual,
+                         'custom': json.loads(row.custom)}
+                result.append(entry)
+
         self._set_result(token, result)
 
     def save_balance(self, balance):
