@@ -72,11 +72,20 @@ def test_remove_outside_orders(orders1):
 
 
 def test_restore_virtual_orders(orders2):
-    """ Very basic test, checks if number of virtual orders at least 2
+    """ Basic test to make sure virtual orders are placed on further ends
     """
     worker = orders2
+    # Restore virtual orders from scratch (db is empty at this moment)
     worker.restore_virtual_orders()
-    assert len(worker.virtual_orders) >= 2
+    num_orders = len(worker.virtual_orders)
+    assert num_orders >= 2
+    # Test that virtual orders were saved into db
+    assert num_orders == len(worker.fetch_orders_extended(only_virtual=True, custom='current'))
+
+    # Test restore from the db
+    worker.virtual_orders = []
+    worker.restore_virtual_orders()
+    assert len(worker.virtual_orders) == num_orders
 
 
 def test_replace_real_order_with_virtual(orders2):

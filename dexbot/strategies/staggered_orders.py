@@ -477,9 +477,9 @@ class Strategy(StrategyBase):
                     # Failed to place order
                     break
 
-        # Load orders from the database. fetch_orders() return dict, we're transforming it into list
-        orders = self.fetch_orders()
-        stored_orders = orders.values() if orders else []
+        # Load orders from the database
+        result = self.fetch_orders_extended(only_virtual=True, custom='current')
+        stored_orders = [entry['order'] for entry in result] if result else []
         stored_buy_orders = self.filter_buy_orders(stored_orders)
         stored_sell_orders = self.filter_sell_orders(stored_orders, invert=False)
 
@@ -493,6 +493,7 @@ class Strategy(StrategyBase):
                 for order in stored_orders:
                     self.virtual_orders.append(VirtualOrder(order))
             else:
+                self.log.info('Recreating virtual orders')
                 place_further_buy_orders()
                 place_further_sell_orders()
         elif self.buy_orders and not self.sell_orders:
@@ -1990,7 +1991,7 @@ class Strategy(StrategyBase):
         # Immediately lower avail balance
         self.base_balance['amount'] -= order['base']['amount']
 
-        self.save_order(order)
+        self.save_order_extended(order, virtual=True, custom='current')
 
         return order
 
@@ -2022,7 +2023,7 @@ class Strategy(StrategyBase):
         # Immediately lower avail balance
         self.quote_balance['amount'] -= order['base']['amount']
 
-        self.save_order(order)
+        self.save_order_extended(order, virtual=True, custom='current')
 
         return order
 
