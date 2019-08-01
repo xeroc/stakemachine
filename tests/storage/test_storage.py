@@ -32,3 +32,17 @@ def test_fetch_orders_extended(storage):
     assert result['custom'] == 'foo bar'
     assert result['virtual'] is True
     assert result['order'] == order
+
+
+def test_remove_order(storage):
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    storage.save_order(order)
+    storage.remove_order(order)
+    assert storage.fetch_orders() is None
+
+
+def test_remove_order_by_id(storage):
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    storage.save_order(order)
+    storage.remove_order(order['id'])
+    assert storage.fetch_orders() is None

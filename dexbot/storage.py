@@ -126,8 +126,13 @@ class Storage(dict):
 
     def remove_order(self, order):
         """ Removes an order from the database
+
+            :param dict,str order: order to remove, could be an Order instance or just order id
         """
-        order_id = order['id']
+        if isinstance(order, dict):
+            order_id = order['id']
+        else:
+            order_id = order
         db_worker.remove_order(self.category, order_id)
 
     def clear_orders(self):
