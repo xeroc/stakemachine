@@ -414,11 +414,11 @@ def test_increase_order_sizes_mountain_basic(worker, do_initial_allocation, issu
     # All orders must be equal-sized in their quote, accept slight error
     for order in worker.buy_orders:
         assert order['quote']['amount'] == pytest.approx(
-            worker.buy_orders[0]['quote']['amount'], rel=(1 ** -worker.market['quote']['precision'])
+            worker.buy_orders[0]['quote']['amount'], rel=(10 ** -worker.market['quote']['precision'])
         )
     for order in worker.sell_orders:
         assert order['quote']['amount'] == pytest.approx(
-            worker.sell_orders[0]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+            worker.sell_orders[0]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
 
 
@@ -479,7 +479,7 @@ def test_increase_order_sizes_mountain_furthest_order(
 
     assert worker.buy_orders[-1]['base']['amount'] - previous_buy_orders[-1]['base']['amount'] == pytest.approx(
         previous_buy_orders[-1]['base']['amount'] * (increase_factor - 1),
-        rel=(1 ** -worker.market['base']['precision']),
+        rel=(10 ** -worker.market['base']['precision']),
     )
 
 
@@ -551,14 +551,14 @@ def test_increase_order_sizes_neutral_basic(worker, do_initial_allocation, issue
         # Assume amounts are equal within some tolerance
         assert order['base']['amount'] == pytest.approx(
             worker.buy_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['base']['precision']),
+            rel=(10 ** -worker.market['base']['precision']),
         )
     for index, order in enumerate(worker.sell_orders):
         if index == 0:
             continue
         assert order['base']['amount'] == pytest.approx(
             worker.sell_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['quote']['precision']),
+            rel=(10 ** -worker.market['quote']['precision']),
         )
 
 
@@ -661,10 +661,10 @@ def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_
 
     # New closest orders amount should be equal to initial ones
     assert worker.buy_orders[0]['base']['amount'] == pytest.approx(
-        initial_base, rel=(1 ** -worker.market['base']['precision'])
+        initial_base, rel=(10 ** -worker.market['base']['precision'])
     )
     assert worker.sell_orders[0]['base']['amount'] == pytest.approx(
-        initial_quote, rel=(1 ** -worker.market['quote']['precision'])
+        initial_quote, rel=(10 ** -worker.market['quote']['precision'])
     )
 
 
@@ -743,7 +743,8 @@ def test_increase_order_sizes_neutral_closest_order(
     worker.refresh_orders()
 
     assert worker.buy_orders[0]['base']['amount'] - previous_buy_orders[0]['base']['amount'] == pytest.approx(
-        previous_buy_orders[0]['base']['amount'] * (increase_factor - 1), rel=(1 ** -worker.market['base']['precision'])
+        previous_buy_orders[0]['base']['amount'] * (increase_factor - 1),
+        rel=(10 ** -worker.market['base']['precision']),
     )
 
 
@@ -764,7 +765,7 @@ def test_increase_order_sizes_buy_slope(worker, do_initial_allocation, issue_ass
     for order in worker.sell_orders:
         # Sell orders are equal-sized in BASE asset
         assert order['quote']['amount'] == pytest.approx(
-            worker.sell_orders[0]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+            worker.sell_orders[0]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
 
 
@@ -782,7 +783,7 @@ def test_increase_order_sizes_sell_slope(worker, do_initial_allocation, issue_as
     for order in worker.buy_orders:
         # All buy orders must be equal-sized in market QUOTE
         assert order['quote']['amount'] == pytest.approx(
-            worker.buy_orders[0]['quote']['amount'], rel=(1 ** -worker.market['quote']['precision'])
+            worker.buy_orders[0]['quote']['amount'], rel=(10 ** -worker.market['quote']['precision'])
         )
 
     for order in worker.sell_orders:
@@ -1022,12 +1023,12 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
         assert worker.sell_orders[0]['base']['amount'] == worker.sell_orders[1]['base']['amount']
     elif worker.mode == 'mountain' or worker.mode == 'buy_slope':
         assert worker.sell_orders[0]['quote']['amount'] == pytest.approx(
-            worker.sell_orders[1]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+            worker.sell_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
     elif worker.mode == 'neutral':
         assert worker.sell_orders[0]['base']['amount'] == pytest.approx(
             worker.sell_orders[1]['base']['amount'] * math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['quote']['precision']),
+            rel=(10 ** -worker.market['quote']['precision']),
         )
 
 
@@ -1077,12 +1078,12 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
         assert worker.buy_orders[0]['base']['amount'] == worker.buy_orders[1]['base']['amount']
     elif worker.mode == 'mountain' or worker.mode == 'sell_slope':
         assert worker.buy_orders[0]['quote']['amount'] == pytest.approx(
-            worker.buy_orders[1]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+            worker.buy_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
     elif worker.mode == 'neutral':
         assert worker.buy_orders[0]['base']['amount'] == pytest.approx(
             worker.buy_orders[1]['base']['amount'] * math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['quote']['precision']),
+            rel=(10 ** -worker.market['quote']['precision']),
         )
 
 
