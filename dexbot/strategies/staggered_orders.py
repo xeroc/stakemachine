@@ -408,15 +408,13 @@ class Strategy(StrategyBase):
         self.virtual_sell_orders = self.filter_sell_orders(self.virtual_orders, sort='DESC', invert=False)
 
         # Sort real orders
+        # (order with index 0 is closest to the center price and -1 is furthers)
         self.real_buy_orders = self.filter_buy_orders(orders, sort='DESC')
         self.real_sell_orders = self.filter_sell_orders(orders, sort='DESC', invert=False)
 
-        # Concatenate orders and virtual_orders
-        orders = orders + self.virtual_orders
-
-        # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
-        self.buy_orders = self.filter_buy_orders(orders, sort='DESC')
-        self.sell_orders = self.filter_sell_orders(orders, sort='DESC', invert=False)
+        # Concatenate real orders and virtual_orders
+        self.buy_orders = self.real_buy_orders + self.virtual_buy_orders
+        self.sell_orders = self.real_sell_orders + self.virtual_sell_orders
 
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
