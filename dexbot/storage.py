@@ -144,8 +144,9 @@ class Storage(dict):
             worker = self.category
         return db_worker.fetch_orders(worker)
 
-    def fetch_orders_extended(self, worker=None, only_virtual=False, only_real=False, custom=None,
-                              return_ids_only=False):
+    def fetch_orders_extended(
+        self, worker=None, only_virtual=False, only_real=False, custom=None, return_ids_only=False
+    ):
         """ Get orders from the database in extended format (returning all columns)
 
             :param str worker: worker name (None means current worker name will be used)
@@ -169,10 +170,10 @@ class Storage(dict):
         db_worker.clear(worker)
 
     @staticmethod
-    def store_balance_entry(account, worker, base_total, base_symbol, quote_total, quote_symbol,
-                            center_price, timestamp):
-        balance = Balances(account, worker, base_total, base_symbol,
-                           quote_total, quote_symbol, center_price, timestamp)
+    def store_balance_entry(
+        account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp
+    ):
+        balance = Balances(account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp)
         # Save balance to db
         db_worker.save_balance(balance)
 
@@ -202,6 +203,7 @@ class DatabaseWorker(threading.Thread):
 
         # Run migrations
         import dexbot
+
         migrations_dir = '{}/migrations'.format(os.path.dirname(inspect.getfile(dexbot)))
         self.run_migrations(migrations_dir, dsn)
 
@@ -228,7 +230,7 @@ class DatabaseWorker(threading.Thread):
     def run(self):
         for func, args, token in iter(self.task_queue.get, None):
             if token is not None:
-                args = args+(token,)
+                args = args + (token,)
             func(*args)
 
     def _get_result(self, token):
@@ -260,10 +262,7 @@ class DatabaseWorker(threading.Thread):
 
     def _set_item(self, category, key, value):
         value = json.dumps(value)
-        e = self.session.query(Config).filter_by(
-            category=category,
-            key=key
-        ).first()
+        e = self.session.query(Config).filter_by(category=category, key=key).first()
         if e:
             e.value = value
         else:
@@ -275,10 +274,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._get_item, category, key)
 
     def _get_item(self, category, key, token):
-        e = self.session.query(Config).filter_by(
-            category=category,
-            key=key
-        ).first()
+        e = self.session.query(Config).filter_by(category=category, key=key).first()
         if not e:
             result = None
         else:
@@ -289,10 +285,7 @@ class DatabaseWorker(threading.Thread):
         self.execute_noreturn(self._del_item, category, key)
 
     def _del_item(self, category, key):
-        e = self.session.query(Config).filter_by(
-            category=category,
-            key=key
-        ).first()
+        e = self.session.query(Config).filter_by(category=category, key=key).first()
         self.session.delete(e)
         self.session.commit()
 
@@ -300,19 +293,14 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._contains, category, key)
 
     def _contains(self, category, key, token):
-        e = self.session.query(Config).filter_by(
-            category=category,
-            key=key
-        ).first()
+        e = self.session.query(Config).filter_by(category=category, key=key).first()
         self._set_result(token, bool(e))
 
     def get_items(self, category):
         return self.execute(self._get_items, category)
 
     def _get_items(self, category, token):
-        es = self.session.query(Config).filter_by(
-            category=category
-        ).all()
+        es = self.session.query(Config).filter_by(category=category).all()
         result = [(e.key, e.value) for e in es]
         self._set_result(token, result)
 
@@ -320,9 +308,7 @@ class DatabaseWorker(threading.Thread):
         self.execute_noreturn(self._clear, category)
 
     def _clear(self, category):
-        rows = self.session.query(Config).filter_by(
-            category=category
-        )
+        rows = self.session.query(Config).filter_by(category=category)
         for row in rows:
             self.session.delete(row)
             self.session.commit()
@@ -332,9 +318,7 @@ class DatabaseWorker(threading.Thread):
 
     def _save_order(self, worker, order_id, order):
         value = json.dumps(order)
-        e = self.session.query(Orders).filter_by(
-            order_id=order_id
-        ).first()
+        e = self.session.query(Orders).filter_by(order_id=order_id).first()
         if e:
             e.value = value
         else:
@@ -348,9 +332,7 @@ class DatabaseWorker(threading.Thread):
     def _save_order_extended(self, worker, order_id, order, virtual, custom):
         order_json = json.dumps(order)
         custom_json = json.dumps(custom)
-        e = self.session.query(Orders).filter_by(
-            order_id=order_id
-        ).first()
+        e = self.session.query(Orders).filter_by(order_id=order_id).first()
         if e:
             e.order = order_json
             e.virtual = virtual
@@ -364,10 +346,7 @@ class DatabaseWorker(threading.Thread):
         self.execute_noreturn(self._remove_order, worker, order_id)
 
     def _remove_order(self, worker, order_id):
-        e = self.session.query(Orders).filter_by(
-            worker=worker,
-            order_id=order_id
-        ).first()
+        e = self.session.query(Orders).filter_by(worker=worker, order_id=order_id).first()
         self.session.delete(e)
         self.session.commit()
 
@@ -375,9 +354,7 @@ class DatabaseWorker(threading.Thread):
         self.execute_noreturn(self._clear_orders, worker)
 
     def _clear_orders(self, worker):
-        rows = self.session.query(Orders).filter_by(
-            worker=worker
-        )
+        rows = self.session.query(Orders).filter_by(worker=worker)
         for row in rows:
             self.session.delete(row)
             self.session.commit()
@@ -386,9 +363,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._fetch_orders, category)
 
     def _fetch_orders(self, worker, token):
-        results = self.session.query(Orders).filter_by(
-            worker=worker,
-        ).all()
+        results = self.session.query(Orders).filter_by(worker=worker).all()
         if not results:
             result = None
         else:
@@ -417,8 +392,12 @@ class DatabaseWorker(threading.Thread):
             results = self.session.query(Orders).filter_by(**filter_by).all()
             result = []
             for row in results:
-                entry = {'order_id': row.order_id, 'order': json.loads(row.order), 'virtual': row.virtual,
-                         'custom': json.loads(row.custom)}
+                entry = {
+                    'order_id': row.order_id,
+                    'order': json.loads(row.order),
+                    'virtual': row.virtual,
+                    'custom': json.loads(row.custom),
+                }
                 result.append(entry)
 
         self._set_result(token, result)
@@ -436,13 +415,17 @@ class DatabaseWorker(threading.Thread):
     def _get_balance(self, account, worker, timestamp, base_asset, quote_asset, token):
         """ Get first item that has bigger time as given timestamp and matches account and worker name
         """
-        result = self.session.query(Balances).filter(
-            Balances.account == account,
-            Balances.worker == worker,
-            Balances.base_symbol == base_asset,
-            Balances.quote_symbol == quote_asset,
-            Balances.timestamp > timestamp
-        ).first()
+        result = (
+            self.session.query(Balances)
+            .filter(
+                Balances.account == account,
+                Balances.worker == worker,
+                Balances.base_symbol == base_asset,
+                Balances.quote_symbol == quote_asset,
+                Balances.timestamp > timestamp,
+            )
+            .first()
+        )
 
         self._set_result(token, result)
 
@@ -452,12 +435,17 @@ class DatabaseWorker(threading.Thread):
     def _get_recent_balance_entry(self, account, worker, base_asset, quote_asset, token):
         """ Get most recent balance history item that matches account and worker name
         """
-        result = self.session.query(Balances).filter(
-            Balances.account == account,
-            Balances.worker == worker,
-            Balances.base_symbol == base_asset,
-            Balances.quote_symbol == quote_asset,
-        ).order_by(Balances.id.desc()).first()
+        result = (
+            self.session.query(Balances)
+            .filter(
+                Balances.account == account,
+                Balances.worker == worker,
+                Balances.base_symbol == base_asset,
+                Balances.quote_symbol == quote_asset,
+            )
+            .order_by(Balances.id.desc())
+            .first()
+        )
 
         self._set_result(token, result)
 
