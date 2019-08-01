@@ -248,6 +248,9 @@ class Strategy(StrategyBase):
                     return
                 else:
                     raise
+            self.refresh_orders()
+            self.sync_current_orders()
+
         self.bitshares.bundle = False
 
         # Maintain the history of free balances after maintenance runs.
@@ -415,6 +418,26 @@ class Strategy(StrategyBase):
         # Concatenate real orders and virtual_orders
         self.buy_orders = self.real_buy_orders + self.virtual_buy_orders
         self.sell_orders = self.real_sell_orders + self.virtual_sell_orders
+
+    def sync_current_orders(self):
+        """ Sync current orders to the db
+        """
+        current_real_orders = self.real_buy_orders + self.real_sell_orders
+        current_all_orders = self.buy_orders + self.sell_orders
+        current_real_ids = set([order['id'] for order in current_real_orders])
+        current_all_ids = set([order['id'] for order in current_all_orders])
+        stored_ids = set(self.fetch_orders_extended(custom='current', return_ids_only=True))
+        # We need to remove both virtual and real orders
+        to_remove_ids = stored_ids.difference(current_all_ids)
+        # We need to add only real orders ids because virtual are added in place_virtual_xxx_order()
+        to_add_ids = current_real_ids.difference(stored_ids)
+        to_add_orders = [order for order in current_real_orders if order['id'] in to_add_ids]
+
+        for id in to_remove_ids:
+            self.remove_order(id)
+
+        for order in to_add_orders:
+            self.save_order_extended(order, custom='current')
 
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
