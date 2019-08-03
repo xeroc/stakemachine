@@ -21,6 +21,8 @@ import sys
 import re
 import subprocess
 
+from bitshares.account import Account
+
 from dexbot.whiptail import get_whiptail
 from dexbot.strategies.base import StrategyBase
 from dexbot.config_validator import ConfigValidator
@@ -35,9 +37,14 @@ STRATEGIES = [
      'name': 'Relative Orders'},
     {'tag': 'stagger',
      'class': 'dexbot.strategies.staggered_orders',
-     'name': 'Staggered Orders'}]
+     'name': 'Staggered Orders'},
+    {'tag': 'koth',
+     'class': 'dexbot.strategies.king_of_the_hill',
+     'name': 'King of the Hill'},
+]
 
-tags_so_far = {'stagger', 'relative'}
+# Todo: tags must be unique. Are they really a tags?
+tags_so_far = [strategy['tag'] for strategy in STRATEGIES]
 for desc, module in dexbot.helper.find_external_strategies():
     tag = desc.split()[0].lower()
     # make sure tag is unique
@@ -439,7 +446,16 @@ def list_accounts(bitshares_instance):
 
         :return: list of tuples (int, 'account_name - key_type')
     """
-    accounts = bitshares_instance.wallet.getAccounts()
+    accounts = []
+    pubkeys = bitshares_instance.wallet.getPublicKeys(current=True)
+
+    for pubkey in pubkeys:
+        account_ids = bitshares_instance.wallet.getAccountsFromPublicKey(pubkey)
+        for account_id in account_ids:
+            account = Account(account_id, bitshares_instance=bitshares_instance)
+            key_type = bitshares_instance.wallet.getKeyType(account, pubkey)
+            accounts.append({'name': account.name, 'type': key_type})
+
     account_list = [
         (str(num), '{} - {}'.format(account['name'], account['type'])) for num, account in enumerate(accounts)
     ]

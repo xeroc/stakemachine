@@ -44,6 +44,7 @@ class BitsharesOrderEngine(Storage, Events):
                  config=None,
                  account=None,
                  market=None,
+                 worker_market=None,
                  fee_asset_symbol=None,
                  bitshares_instance=None,
                  bitshares_bundle=None,
@@ -71,9 +72,11 @@ class BitsharesOrderEngine(Storage, Events):
             self.config = Config.get_worker_config_file(name)
 
         # Get Bitshares account and market for this worker
-        self._account = account
+        self.account = account
 
-        self._market = market
+        self.market = market
+
+        self.worker_market = worker_market
 
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
@@ -110,10 +113,6 @@ class BitsharesOrderEngine(Storage, Events):
 
         # buy/sell actions will return order id by default
         self.returnOrderId = 'head'
-
-        self.orders_log = logging.LoggerAdapter(
-            logging.getLogger('dexbot.orders_log'), {}
-        )
 
     def _callbackPlaceFillOrders(self, d):
         """ This method distinguishes notifications caused by Matched orders from those caused by placed orders
@@ -187,7 +186,7 @@ class BitsharesOrderEngine(Storage, Events):
             :param float | fee_reservation: How much is saved in reserve for the fees
             :return: Balance of specific asset
         """
-        balance = self._account.balance(asset)
+        balance = self.account.balance(asset)
 
         if fee_reservation > 0:
             balance['amount'] = balance['amount'] - fee_reservation
@@ -684,21 +683,12 @@ class BitsharesOrderEngine(Storage, Events):
                     raise
 
     @property
-    def account(self):
-        """ Return the full account as :class:`bitshares.account.Account` object!
-            Can be refreshed by using ``x.refresh()``
-
-            :return: object | Account
-        """
-        return self._account
-
-    @property
     def balances(self):
         """ Returns all the balances of the account assigned for the worker.
 
             :return: Balances in list where each asset is in their own Amount object
         """
-        return self._account.balances
+        return self.account.balances
 
     def get_own_orders(self, refresh=True):
         """ Return the account's open orders in the current market
@@ -713,7 +703,7 @@ class BitsharesOrderEngine(Storage, Events):
             self.account.refresh()
 
         for order in self.account.openorders:
-            if self.worker["market"] == order.market and self.account.openorders:
+            if self.worker_market == order.market and self.account.openorders:
                 orders.append(order)
 
         return orders
@@ -745,13 +735,6 @@ class BitsharesOrderEngine(Storage, Events):
         """ Return the account's open orders in the current market
         """
         return self.get_own_orders()
-
-    @property
-    def market(self):
-        # TODO: property, also in price feed, need to consider inheritance priority
-        """ Return the market object as :class:`bitshares.market.Market`
-        """
-        return self._market
 
     @staticmethod
     def get_updated_limit_order(limit_order):
@@ -824,3 +807,27 @@ class BitsharesOrderEngine(Storage, Events):
         if return_none and order['deleted']:
             return None
         return order
+
+    def is_partially_filled(self, order, threshold=0.3):
+        """ Checks whether order was partially filled
+
+            :param dict order: Order instance
+            :param float fill_threshold: Order fill threshold, relative
+            :return: bool True = Order is filled more than threshold
+                          False = Order is not partially filled
+        """
+        if self.is_buy_order(order):
+            order_type = 'buy'
+            price = order['price']
+        else:
+            order_type = 'sell'
+            price = order['price'] ** -1
+
+        if order['for_sale']['amount'] != order['base']['amount']:
+            diff_abs = order['base']['amount'] - order['for_sale']['amount']
+            diff_rel = diff_abs / order['base']['amount']
+            if diff_rel > threshold:
+                self.log.debug('Partially filled {} order: {} {} @ {:.8f}, filled: {:.2%}'.format(
+                               order_type, order['base']['amount'], order['base']['symbol'], price, diff_rel))
+                return True
+        return False
