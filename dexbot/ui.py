@@ -15,7 +15,7 @@ from bitshares.exceptions import WrongMasterPasswordException
 
 from dexbot import VERSION, APP_NAME, AUTHOR
 from dexbot.config import Config
-from dexbot.node_manager import get_sorted_nodelist
+from dexbot.node_manager import get_sorted_nodelist, ping
 
 log = logging.getLogger(__name__)
 
@@ -92,9 +92,20 @@ def verbose(f):
 def chain(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        click.echo("Checking for nearest nodes....")
-        nodelist = get_sorted_nodelist(ctx.config["node"])
-        click.echo("Nearest node ->  " + nodelist[0])
+        nodelist = ctx.config["node"]
+        timeout = int(ctx.obj.get("sortnodes"))
+
+        host_ip = '8.8.8.8'
+        if ping(host_ip, 3) is False:
+            click.echo("internet NOT available! Please check your connection!")
+            log.critical("Internet not available, exiting")
+            sys.exit(78)
+
+        if timeout > 0:
+            click.echo(f"Checking for nearest nodes with timeout < {timeout} sec....")
+            nodelist = get_sorted_nodelist(ctx.config["node"], timeout)
+            click.echo("Nearest nodes ->  " + str(nodelist))
+
         ctx.bitshares = BitShares(
             nodelist,
             num_retries=-1,
@@ -157,7 +168,7 @@ def priceChange(new, old):
     if float(old) == 0.0:
         return -1
     else:
-        percent = ((float(new) - float(old))) / float(old) * 100
+        percent = (float(new) - float(old)) / float(old) * 100
         if percent >= 0:
             return click.style("%.2f" % percent, fg="green")
         else:

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 from websocket import create_connection as wss_create
 from time import time
+from itertools import repeat
 import logging
 import multiprocessing as mp
+import subprocess
+import platform
+
 
 log = logging.getLogger(__name__)
 
@@ -11,42 +15,75 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s %(message)s'
 )
 
-max_timeout = 2.0 # max ping time is set to 2
+max_timeout = 2.0  # default ping time is set to 2s. use for internal testing.
+host_ip = '8.8.8.8'  # default host to ping to check internet
 
-def wss_test(node):
+
+def ping(host, network_timeout=3):
+    """
+        Send a ping packet to the specified host, using the system "ping" command.
+        Covers the Windows, Unix and OSX
+    """
+    args = ['ping']
+    platform_os = platform.system().lower()
+    if platform_os == 'windows':
+        args.extend(['-n', '1'])
+        args.extend(['-w', str(network_timeout * 1000)])
+    elif platform_os in ('linux', 'darwin'):
+        args.extend(['-c', '1'])
+        args.extend(['-W', str(network_timeout)])
+    else:
+        raise NotImplemented('Unsupported OS: {}'.format(platform_os))
+    args.append(host)
+
+    try:
+        if platform_os == 'windows':
+            output = subprocess.run(args, check=True, universal_newlines=True).stdout
+            if output and 'TTL' not in output:
+                return False
+        else:
+            subprocess.run(args, check=True)
+        return True
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return False
+
+
+def wss_test(node, timeout):
     """
     Test websocket connection to a node
     """
     try:
         start = time()
-        rpc = wss_create(node, timeout=max_timeout)
+        wss_create(node, timeout=timeout)
         latency = (time() - start)
         return latency
     except Exception as e:
-        # suppress errors
+        log.info(f'websocket test: {e}')
         return None
 
 
-def check_node(node):
+def check_node(node, timeout):
     """
     check latency of an individual node
     """
     log.info(f'# pinging {node}')
-    latency = wss_test(node)
+    latency = wss_test(node, timeout)
     node_info = {'Node': node, 'Latency': latency}
     return node_info
 
 
-def get_sorted_nodelist(nodelist):
+def get_sorted_nodelist(nodelist, timeout):
     """
     check all nodes and poll for latency, 
     eliminate nodes with no response, then sort  
     nodes by increasing latency and return as a list
     """
+
+    print(f'get_sorted_nodelist max timeout: {timeout}')
     pool_size = mp.cpu_count()*2
 
     with mp.Pool(processes=pool_size) as pool:
-        latency_info = pool.map(check_node, nodelist)
+        latency_info = pool.starmap(check_node, zip(nodelist, repeat(timeout)))
 
     pool.close()
     pool.join()
