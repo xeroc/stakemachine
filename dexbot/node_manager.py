@@ -33,7 +33,7 @@ def ping(host, network_timeout=3):
         args.extend(['-c', '1'])
         args.extend(['-W', str(network_timeout)])
     else:
-        raise NotImplemented('Unsupported OS: {}'.format(platform_os))
+        raise NotImplementedError('Unsupported OS: {}'.format(platform_os))
     args.append(host)
 
     try:
@@ -74,8 +74,8 @@ def check_node(node, timeout):
 
 def get_sorted_nodelist(nodelist, timeout):
     """
-    check all nodes and poll for latency, 
-    eliminate nodes with no response, then sort  
+    check all nodes and poll for latency,
+    eliminate nodes with no response, then sort
     nodes by increasing latency and return as a list
     """
 
@@ -88,8 +88,7 @@ def get_sorted_nodelist(nodelist, timeout):
     pool.close()
     pool.join()
 
-    filtered_list = [i for i in latency_info if i['Latency'] is not None]             
+    filtered_list = [i for i in latency_info if i['Latency'] is not None]
     sorted_list = sorted(filtered_list, key=lambda k: k['Latency'])
     sorted_nodes = [i['Node'] for i in sorted_list]
-    
     return sorted_nodes
