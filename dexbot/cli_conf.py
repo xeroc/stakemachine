@@ -387,10 +387,9 @@ def configure_dexbot(config, ctx):
                 setup_systemd(whiptail, config)
             elif action == 'SORT_NODES':
                 nodelist = config['node']
-                sorted_nodes = get_sorted_nodelist(nodelist)
+                sorted_nodes = get_sorted_nodelist(nodelist, 2.0)
                 config['node'] = sorted_nodes
                 setup_systemd(whiptail, config)
-
             elif action == 'HELP':
                 whiptail.alert("Please see https://github.com/Codaone/DEXBot/wiki")
 
