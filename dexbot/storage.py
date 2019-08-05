@@ -140,6 +140,20 @@ class Storage(dict):
         """
         db_worker.clear_orders(self.category)
 
+    def clear_orders_extended(self, worker=None, only_virtual=False, only_real=False, custom=None):
+        """ Removes worker's orders matching a criteria from the database
+
+            :param str worker: worker name (None means current worker name will be used)
+            :param bool only_virtual: True = only virtual orders
+            :param bool only_real: True = only real orders
+            :param str custom: filter orders by custom field
+        """
+        if only_virtual and only_real:
+            raise ValueError('only_virtual and only_real are mutually exclusive')
+        if not worker:
+            worker = self.category
+        return db_worker.clear_orders_extended(worker, only_virtual, only_real, custom)
+
     def fetch_orders(self, worker=None):
         """ Get all the orders (or just specific worker's orders) from the database
 
@@ -231,6 +245,19 @@ class DatabaseWorker(threading.Thread):
         alembic_cfg.set_main_option('script_location', script_location)
         alembic_cfg.set_main_option('sqlalchemy.url', dsn)
         alembic.command.upgrade(alembic_cfg, 'head')
+
+    @staticmethod
+    def get_filter_by(worker, only_virtual, only_real, custom):
+        """ Make filter_by for sqlalchemy query based on args
+        """
+        filter_by = {'worker': worker}
+        if only_virtual:
+            filter_by['virtual'] = True
+        elif only_real:
+            filter_by['virtual'] = False
+        if custom:
+            filter_by['custom'] = json.dumps(custom)
+        return filter_by
 
     def run(self):
         for func, args, token in iter(self.task_queue.get, None):
@@ -364,6 +391,14 @@ class DatabaseWorker(threading.Thread):
             self.session.delete(row)
             self.session.commit()
 
+    def clear_orders_extended(self, worker, only_virtual, only_real, custom):
+        self.execute_noreturn(self._clear_orders_extended, worker, only_virtual, only_real, custom)
+
+    def _clear_orders_extended(self, worker, only_virtual, only_real, custom):
+        filter_by = self.get_filter_by(worker, only_virtual, only_real, custom)
+        self.session.query(Orders).filter_by(**filter_by).delete()
+        self.session.commit()
+
     def fetch_orders(self, category):
         return self.execute(self._fetch_orders, category)
 
@@ -381,13 +416,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._fetch_orders_extended, category, only_virtual, only_real, custom, return_ids_only)
 
     def _fetch_orders_extended(self, worker, only_virtual, only_real, custom, return_ids_only, token):
-        filter_by = {'worker': worker}
-        if only_virtual:
-            filter_by['virtual'] = True
-        elif only_real:
-            filter_by['virtual'] = False
-        if custom:
-            filter_by['custom'] = json.dumps(custom)
+        filter_by = self.get_filter_by(worker, only_virtual, only_real, custom)
 
         if return_ids_only:
             query = self.session.query(Orders).options(load_only('order_id'))
