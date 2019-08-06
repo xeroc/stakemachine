@@ -1542,20 +1542,25 @@ class Strategy(StrategyBase):
 
         # Check whether new order will exceed available balance
         if balance < limiter:
-            if place_order and not allow_partial:
-                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
-                               .format(order_type, limiter, balance, prec=precision))
-                place_order = False
             # Closer order should not be less than threshold
-            elif (allow_partial and
-                    balance > hard_limit and
-                    balance > order['base']['amount'] * self.partial_fill_threshold):
+            if (
+                allow_partial and
+                balance > hard_limit and
+                balance > order['base']['amount'] * self.partial_fill_threshold) or (
+                # Accept small inaccuracy for full-sized closer order
+                place_order and not allow_partial and limiter - balance < 20 * 10 ** -precision
+            ):
                 self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
                                .format(order_type, balance, symbol, prec=precision))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
                     quote_amount = balance
+
+            elif place_order and not allow_partial:
+                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
+                               .format(order_type, limiter, balance, prec=precision))
+                place_order = False
             elif place_order:
                 self.log.debug('Not enough balance to place minimal allowed order: {:.{prec}f}/{:.{prec}f} {}'
                                .format(balance, limiter, symbol, prec=precision))
