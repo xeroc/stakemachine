@@ -84,7 +84,6 @@ class Strategy(StrategyBase):
         self.quote_asset_threshold = 0
         self.base_asset_threshold = 0
         self.min_increase_factor = 1.05
-        self.mountain_max_increase_mode = False
         # Initial balance history elements should not be equal to avoid immediate bootstrap turn off
         self.quote_balance_history = [1, 2, 3]
         self.base_balance_history = [1, 2, 3]
@@ -988,17 +987,11 @@ class Strategy(StrategyBase):
         new_order_amount = 0
         furthest_order_bound = 0
         total_balance = 0
-        symbol = ''
-        precision = 0
 
         if asset == 'quote':
             total_balance = self.quote_total_balance
-            symbol = self.market['quote']['symbol']
-            precision = self.market['quote']['precision']
         elif asset == 'base':
             total_balance = self.base_total_balance
-            symbol = self.market['base']['symbol']
-            precision = self.market['base']['precision']
 
         # Mountain mode:
         if (
@@ -1025,7 +1018,7 @@ class Strategy(StrategyBase):
             for order in orders:
                 order_index = orders.index(order)
                 order_amount = order['base']['amount']
-                is_closest_order = False
+                increase_factor = max(1 + self.increment, self.min_increase_factor)
 
                 # This check prevents choosing order with index lower than the list length
                 if order_index == 0:
@@ -1033,7 +1026,6 @@ class Strategy(StrategyBase):
                     # This allows our closest order amount exceed highest opposite-side order amount
                     closer_order = order
                     closer_bound = closer_order['base']['amount'] * (1 + self.increment)
-                    is_closest_order = True
                 else:
                     closer_order = orders[order_index - 1]
                     closer_bound = closer_order['base']['amount']
@@ -1042,13 +1034,11 @@ class Strategy(StrategyBase):
                 if order_index + 1 < len(orders):
                     # Current order is a not furthest order
                     further_order = orders[order_index + 1]
-                    is_least_order = False
+                    further_bound = further_order['base']['amount'] * (1 + self.increment)
                 else:
                     # Current order is furthest order
                     further_order = orders[order_index]
-                    is_least_order = True
-
-                further_bound = further_order['base']['amount'] * (1 + self.increment)
+                    further_bound = further_order['base']['amount'] * increase_factor
 
                 if (
                     further_bound > order_amount * (1 + self.increment / 10) < closer_bound
@@ -1067,39 +1057,11 @@ class Strategy(StrategyBase):
                         [1000 1000 1000 200 100 100 <center>]
                         [1000 1000 1000 200 200 100 <center>]
                         [1000 1000 1000 200 200 200 <center>]
-
-                        At the same time, we want MAX orders size increase for ALL orders in case of external transfer
-                        of new funds. To achieve this we are setting self.mountain_max_increase_mode flag when
-                        examining furthest order.
                     """
                     new_order_amount = further_bound
                     increase_factor = max(1 + self.increment, self.min_increase_factor)
-
-                    if not self.mountain_max_increase_mode:
-                        # Smooth increase for orders between furthest and closest (see docstring example)
-                        new_order_amount = min(further_bound, order_amount * increase_factor)
-
-                    if is_least_order:
-                        new_order_amount = order_amount * increase_factor
-                        new_orders_sum = 0
-                        amount = order_amount
-                        for o in orders:
-                            amount = amount * (1 + self.increment)
-                            new_orders_sum += amount
-                        # To reduce allocation rounds, increase furthest order more if we can
-                        increased_amount = order_amount * (total_balance / new_orders_sum)
-
-                        if increased_amount > new_order_amount:
-                            self.log.debug('Correcting furthest order amount from {:.{prec}f} to: {:.{prec}f} {}'
-                                           .format(new_order_amount, increased_amount, symbol, prec=precision))
-                            new_order_amount = increased_amount
-                            # Set bypass flag to not limit next orders
-                            self.mountain_max_increase_mode = True
-                            self.log.debug('Activating max increase mode for mountain mode')
-                    elif is_closest_order and self.mountain_max_increase_mode:
-                        # Turn off bypass flag when reaching closest order
-                        self.log.debug('Deactivating max increase mode for mountain mode')
-                        self.mountain_max_increase_mode = False
+                    # Smooth increase for orders between furthest and closest (see docstring example)
+                    new_order_amount = min(further_bound, order_amount * increase_factor)
 
                     return self._increase_single_order(asset, asset_balance, order, new_order_amount)
 
@@ -1189,7 +1151,7 @@ class Strategy(StrategyBase):
                 elif (
                     order_amount_normalized < closer_order_bound
                     and order_amount_normalized < closest_order_bound
-                    and closer_order_bound - order_amount >= order_amount * (math.sqrt(1 + self.increment) - 1) / 2
+                    and closer_order_bound - order_amount >= order_amount * self.increment / 2
                 ):
                     """ Check whether order amount is less than closer or order and the diff is more than 50% of one
                         increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with
@@ -1256,19 +1218,6 @@ class Strategy(StrategyBase):
                 else:
                     is_closest_order = True
                     closer_order_bound = initial_closest_order_bound
-
-                    new_orders_sum = 0
-                    amount = order_amount
-                    for _ in orders:
-                        new_orders_sum += amount
-                        amount = amount / math.sqrt(1 + self.increment)
-                    virtual_furthest_order_bound = amount * (total_balance / new_orders_sum)
-                    new_amount = order_amount * (total_balance / new_orders_sum) / self.min_increase_factor
-
-                    if new_amount > closer_order_bound and virtual_furthest_order_bound > furthest_order_bound:
-                        # Maximize order up to max possible amount if we can
-                        # New order may be feeling bigger than expected after mountain -> neutral transition, it's ok
-                        closer_order_bound = new_amount
 
                 need_increase = False
                 order_amount_normalized = order_amount * (1 + self.increment / 10)
