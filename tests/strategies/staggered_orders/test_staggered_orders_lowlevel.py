@@ -54,3 +54,25 @@ def test_sync_current_orders(orders1):
     current_all_orders = worker.buy_orders + worker.sell_orders
     current_ids = set([order['id'] for order in current_all_orders])
     assert fetched == current_ids
+
+
+def test_dump_initial_orders(orders1):
+    worker = orders1
+    worker.dump_initial_orders()
+    fetched = worker.fetch_orders_extended(custom='initial')
+    current = worker.buy_orders + worker.sell_orders
+    assert len(fetched) == len(current)
+
+    # Compare orders bases to be identical (cannot compare order ids because they are different for initial orders)
+    bases_fetched = [entry['order']['base'] for entry in fetched]
+    bases_actual = [dict(order['base']) for order in current]
+    for element in bases_actual:
+        assert element in bases_fetched
+
+
+def test_drop_initial_orders(orders1):
+    worker = orders1
+    worker.dump_initial_orders()
+    worker.drop_initial_orders()
+    fetched = worker.fetch_orders_extended(custom='initial')
+    assert len(fetched) == 0

@@ -66,8 +66,6 @@ class Strategy(StrategyBase):
             self.disabled = True
 
         # Strategy variables
-        # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
-        self.bootstrapping = True
         self.market_center_price = None
         self.old_center_price = None
         self.buy_orders = []
@@ -111,6 +109,9 @@ class Strategy(StrategyBase):
         self.min_check_interval = 1
         self.max_check_interval = 120
         self.current_check_interval = self.min_check_interval
+
+        # If no bootstrap state is recorded, assume we're in bootstrap
+        self.get('bootstrapping', True)
 
         if self.view:
             self.update_gui_profit()
@@ -199,7 +200,7 @@ class Strategy(StrategyBase):
         # Check for operational depth, buy side
         if (self.virtual_buy_orders and
                 len(self.real_buy_orders) < self.operational_depth and
-                not self.bootstrapping):
+                not self['bootstrapping']):
             """
                 Note: if boostrap is on and there is nothing to allocate, this check would not work until some orders
                 will be filled. This means that changing `operational_depth` config param will not work immediately.
@@ -214,10 +215,13 @@ class Strategy(StrategyBase):
         # Check for operational depth, sell side
         if (self.virtual_sell_orders and
                 len(self.real_sell_orders) < self.operational_depth and
-                not self.bootstrapping):
+                not self['bootstrapping']):
             self.replace_virtual_order_with_real(self.virtual_sell_orders[0])
             self.log_maintenance_time()
             return
+
+        # Remember current boostrapping state before sending transactions
+        previous_bootstrap_state = self['bootstrapping']
 
         # Prepare to bundle operations into single transaction
         self.bitshares.bundle = True
@@ -279,8 +283,12 @@ class Strategy(StrategyBase):
                            'balances'.format(self.min_check_interval))
             self.current_check_interval = self.min_check_interval
 
+        if previous_bootstrap_state is True and self['bootstrapping'] is False:
+            # Bootstrap was turned off, dump initial orders
+            self.dump_initial_orders()
+
         # Do not continue whether balances are changing or bootstrap is on
-        if (self.bootstrapping or
+        if (self['bootstrapping'] or
                 self.base_balance_history[0] != self.base_balance_history[2] or
                 self.quote_balance_history[0] != self.quote_balance_history[2] or
                 trx_executed):
@@ -438,6 +446,26 @@ class Strategy(StrategyBase):
 
         for order in to_add_orders:
             self.save_order_extended(order, custom='current')
+
+    def dump_initial_orders(self):
+        """ Save orders after initial placement for later use (visualization and so on)
+        """
+        self.refresh_orders()
+        orders = self.buy_orders + self.sell_orders
+        self.log.info('Dumping initial orders into db')
+        # Ids should be changed to avoid ids intersection with "current" orders
+        for order in orders:
+            order['id'] = str(uuid.uuid4())
+            if isinstance(order, VirtualOrder):
+                self.save_order_extended(order, virtual=True, custom='initial')
+            else:
+                self.save_order_extended(order, virtual=False, custom='initial')
+
+    def drop_initial_orders(self):
+        """ Drop old "initial" orders from the db
+        """
+        self.log.debug('Removing initial orders from the db')
+        self.clear_orders_extended(custom='initial')
 
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
@@ -715,14 +743,14 @@ class Strategy(StrategyBase):
                     self.replace_partially_filled_order(closest_own_order)
                     return
 
-                if (self.bootstrapping and
+                if (self['bootstrapping'] and
                         self.base_balance_history[2] == self.base_balance_history[0] and
                         self.quote_balance_history[2] == self.quote_balance_history[0] and
                         opposite_orders):
                     # Turn off bootstrap mode whether we're didn't allocated assets during previous 3 maintenance
                     self.log.debug('Turning bootstrapping off: actual_spread > target_spread, we have free '
                                    'balances and cannot allocate them normally 3 times in a row')
-                    self.bootstrapping = False
+                    self['bootstrapping'] = False
 
                 """ Note: because we're using operations batching, there is possible a situation when we will have
                     both free balances and `self.actual_spread >= self.target_spread + self.increment`. In such case
@@ -736,7 +764,7 @@ class Strategy(StrategyBase):
                 # Place order closer to the center price
                 self.log.debug('Placing closer {} order; actual spread: {:.4%}, target + increment: {:.4%}'
                                .format(order_type, self.actual_spread, self.target_spread + self.increment))
-                if self.bootstrapping:
+                if self['bootstrapping']:
                     self.place_closer_order(asset, closest_own_order)
                 elif opposite_orders and self.actual_spread - self.increment < self.target_spread + self.increment:
                     """ Place max-sized closer order if only one order needed to reach target spread (avoid unneeded
@@ -819,12 +847,12 @@ class Strategy(StrategyBase):
                             (asset == 'quote' and furthest_own_order_price *
                              (1 + self.increment) > self.upper_bound)):
                         # Lower/upper bound has been reached and now will start allocating rest of the balance.
-                        self.bootstrapping = False
+                        self['bootstrapping'] = False
                         self.log.debug('Increasing sizes of {} orders'.format(order_type))
                         increase_finished = self.increase_order_sizes(asset, asset_balance, own_orders)
                     else:
                         # Range bound is not reached, we need to add additional orders at the extremes
-                        self.bootstrapping = False
+                        self['bootstrapping'] = False
                         self.log.debug('Placing further order than current furthest {} order'.format(order_type))
                         self.place_further_order(asset, furthest_own_order, allow_partial=True)
                 else:
@@ -861,8 +889,10 @@ class Strategy(StrategyBase):
                 self.refresh_orders()
                 self.bitshares.bundle = previous_bundle
         else:
-            # Place first buy order as close to the lower bound as possible
-            self.bootstrapping = True
+            # Place furthest order as close to the bound as possible
+            if not opposite_orders:
+                self['bootstrapping'] = True
+                self.drop_initial_orders()
             order = None
             self.log.debug('Placing first {} order'.format(order_type))
             if asset == 'base':

@@ -155,7 +155,7 @@ def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_alloca
     """
     do_initial_allocation(worker, worker.mode)
     # TODO: strategy must turn off bootstrapping once target spread is reached
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
 
     if asset == 'base':
         worker.cancel_orders_wrapper(worker.buy_orders[0])
@@ -831,7 +831,7 @@ def test_allocate_asset_replace_partially_filled_orders(
     """
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
 
     # Partially fill closest orders
@@ -936,7 +936,7 @@ def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_accoun
     """
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
     num_sell_orders_before = len(worker.sell_orders)
 
@@ -959,7 +959,7 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
     """
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
 
     # Fill several orders
@@ -1014,7 +1014,7 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     worker.upper_bound = 1.4
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
 
     # Fill several orders
