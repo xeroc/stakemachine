@@ -411,14 +411,14 @@ def test_increase_order_sizes_mountain_basic(worker, do_initial_allocation, issu
 
     increase_until_allocated(worker)
 
-    # All orders must be equal-sized in their quote, accept slight error
+    # All orders must be equal-sized in their quote, accept difference no more than increase_factor.
+    # This means all orders was increased and probably unfinished increase round may remain.
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
     for order in worker.buy_orders:
-        assert order['quote']['amount'] == pytest.approx(
-            worker.buy_orders[0]['quote']['amount'], rel=(10 ** -worker.market['quote']['precision'])
-        )
+        assert order['quote']['amount'] == pytest.approx(worker.buy_orders[0]['quote']['amount'], rel=(increase_factor))
     for order in worker.sell_orders:
         assert order['quote']['amount'] == pytest.approx(
-            worker.sell_orders[0]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
+            worker.sell_orders[0]['quote']['amount'], rel=(increase_factor)
         )
 
 
@@ -464,17 +464,15 @@ def test_increase_order_sizes_mountain_furthest_order(
     """ Should test proper calculation of furthest order: try to maximize, don't allow too small increase
     """
     do_initial_allocation(worker, 'mountain')
-    worker.mode = 'mountain'
-    increase_until_allocated(worker)
+    previous_buy_orders = worker.buy_orders
 
-    # Add balance to increase ~2 orders
+    # Add balance to increase ~1 order
     increase_factor = max(1 + worker.increment, worker.min_increase_factor)
-    to_issue = worker.buy_orders[-1]['base']['amount'] * (increase_factor - 1) * 2.01
+    to_issue = worker.buy_orders[-1]['base']['amount'] * (increase_factor - 1) * 1.1
     issue_asset(worker.market['base']['symbol'], to_issue, worker.account.name)
 
-    previous_buy_orders = worker.buy_orders
     worker.refresh_balances()
-    worker.increase_order_sizes('base', worker.base_balance, previous_buy_orders)
+    increase_until_allocated(worker)
     worker.refresh_orders()
 
     assert worker.buy_orders[-1]['base']['amount'] - previous_buy_orders[-1]['base']['amount'] == pytest.approx(
@@ -544,21 +542,41 @@ def test_increase_order_sizes_neutral_basic(worker, do_initial_allocation, issue
     issue_asset(worker.market['quote']['symbol'], worker.quote_total_balance, worker.account.name)
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
     for index, order in enumerate(worker.buy_orders):
         if index == 0:
             continue
-        # Assume amounts are equal within some tolerance
-        assert order['base']['amount'] == pytest.approx(
-            worker.buy_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
-            rel=(10 ** -worker.market['base']['precision']),
+        # Assume amounts are equal within some tolerance, or accept difference at increase_factor size to detect new
+        # unfinished increase round
+        assert (
+            order['base']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
+                rel=(10 ** -worker.market['base']['precision']),
+            )
+        ) or (
+            order['base']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment) / increase_factor,
+                rel=(10 ** -worker.market['base']['precision']),
+            )
         )
     for index, order in enumerate(worker.sell_orders):
         if index == 0:
             continue
-        assert order['base']['amount'] == pytest.approx(
-            worker.sell_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
-            rel=(10 ** -worker.market['quote']['precision']),
+        assert (
+            order['base']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
+                rel=(10 ** -worker.market['quote']['precision']),
+            )
+        ) or (
+            order['base']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment) / increase_factor,
+                rel=(10 ** -worker.market['quote']['precision']),
+            )
         )
 
 
@@ -658,13 +676,14 @@ def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_
         worker.refresh_orders()
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
     # New closest orders amount should be equal to initial ones
     assert worker.buy_orders[0]['base']['amount'] == pytest.approx(
-        initial_base, rel=(10 ** -worker.market['base']['precision'])
+        initial_base, rel=(0.1 * increase_factor * initial_base)
     )
     assert worker.sell_orders[0]['base']['amount'] == pytest.approx(
-        initial_quote, rel=(10 ** -worker.market['quote']['precision'])
+        initial_quote, rel=(0.1 * increase_factor * initial_quote)
     )
 
 
@@ -758,14 +777,26 @@ def test_increase_order_sizes_buy_slope(worker, do_initial_allocation, issue_ass
     issue_asset(worker.market['quote']['symbol'], worker.quote_total_balance, worker.account.name)
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
     for order in worker.buy_orders:
         # All buy orders must be equal-sized in BASE
         assert order['base']['amount'] == worker.buy_orders[0]['base']['amount']
-    for order in worker.sell_orders:
-        # Sell orders are equal-sized in BASE asset
-        assert order['quote']['amount'] == pytest.approx(
-            worker.sell_orders[0]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
+    for index, order in enumerate(worker.sell_orders):
+        # Sell orders are equal-sized in BASE asset or diff is equal to increase_factor
+        if index == 0:
+            continue
+        assert (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
+            )
+        ) or (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['quote']['amount'] * increase_factor,
+                rel=(0.1 * increase_factor * order['quote']['amount']),
+            )
         )
 
 
@@ -779,11 +810,23 @@ def test_increase_order_sizes_sell_slope(worker, do_initial_allocation, issue_as
     issue_asset(worker.market['quote']['symbol'], worker.quote_total_balance, worker.account.name)
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
-    for order in worker.buy_orders:
-        # All buy orders must be equal-sized in market QUOTE
-        assert order['quote']['amount'] == pytest.approx(
-            worker.buy_orders[0]['quote']['amount'], rel=(10 ** -worker.market['quote']['precision'])
+    for index, order in enumerate(worker.buy_orders):
+        # All buy orders must be equal-sized in market QUOTE or diff is equal to increase_factor
+        if index == 0:
+            continue
+        assert (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['quote']['amount'], rel=(10 ** -worker.market['quote']['precision'])
+            )
+        ) or (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['quote']['amount'] * increase_factor,
+                rel=(0.1 * increase_factor * order['quote']['amount']),
+            )
         )
 
     for order in worker.sell_orders:
@@ -1083,7 +1126,7 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     elif worker.mode == 'neutral':
         assert worker.buy_orders[0]['base']['amount'] == pytest.approx(
             worker.buy_orders[1]['base']['amount'] * math.sqrt(1 + worker.increment),
-            rel=(10 ** -worker.market['quote']['precision']),
+            rel=(10 ** -worker.market['base']['precision']),
         )
 
 
