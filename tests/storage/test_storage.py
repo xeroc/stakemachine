@@ -34,6 +34,14 @@ def test_fetch_orders_extended(storage):
     assert result['order'] == order
 
 
+def test_clear_orders(storage):
+    order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
+    storage.save_order(order)
+    storage.clear_orders()
+    fetched = storage.fetch_orders()
+    assert fetched == {}
+
+
 def test_clear_orders_extended(storage):
     order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
     storage.save_order_extended(order, virtual=True)

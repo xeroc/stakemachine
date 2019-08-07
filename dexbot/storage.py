@@ -386,10 +386,8 @@ class DatabaseWorker(threading.Thread):
         self.execute_noreturn(self._clear_orders, worker)
 
     def _clear_orders(self, worker):
-        rows = self.session.query(Orders).filter_by(worker=worker)
-        for row in rows:
-            self.session.delete(row)
-            self.session.commit()
+        self.session.query(Orders).filter_by(worker=worker).delete()
+        self.session.commit()
 
     def clear_orders_extended(self, worker, only_virtual, only_real, custom):
         self.execute_noreturn(self._clear_orders_extended, worker, only_virtual, only_real, custom)
