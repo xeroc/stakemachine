@@ -153,7 +153,7 @@ def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_alloca
     """ Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to
         close spread
     """
-    do_initial_allocation(worker, worker.mode)
+    do_initial_allocation(worker, mode)
     # TODO: strategy must turn off bootstrapping once target spread is reached
     worker['bootstrapping'] = False
 
@@ -957,7 +957,7 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
     """ Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
         orders on side which is smaller)
     """
-    do_initial_allocation(worker, worker.mode)
+    do_initial_allocation(worker, mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
     additional_account = base_account()
@@ -1012,7 +1012,7 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     worker.center_price = 1
     worker.lower_bound = 0.4
     worker.upper_bound = 1.4
-    do_initial_allocation(worker, worker.mode)
+    do_initial_allocation(worker, mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
     additional_account = base_account()
