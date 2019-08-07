@@ -178,6 +178,33 @@ def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_alloca
     assert spread_after <= worker.target_spread + worker.increment
 
 
+def test_check_operational_depth(worker, do_initial_allocation):
+    """ Test for correct operational depth following
+    """
+    worker.operational_depth = 10
+    do_initial_allocation(worker, worker.mode)
+    worker['bootstrapping'] = False
+
+    # abs=1 means we're accepting slight error
+
+    assert len(worker.buy_orders) == pytest.approx(worker.operational_depth, abs=1)
+    assert len(worker.sell_orders) == pytest.approx(worker.operational_depth, abs=1)
+
+    worker.operational_depth = 2
+    worker.refresh_orders()
+    worker.check_operational_depth(worker.real_buy_orders, worker.virtual_buy_orders)
+    worker.check_operational_depth(worker.real_sell_orders, worker.virtual_sell_orders)
+    assert len(worker.real_buy_orders) == pytest.approx(worker.operational_depth, abs=1)
+    assert len(worker.real_sell_orders) == pytest.approx(worker.operational_depth, abs=1)
+
+    worker.operational_depth = 8
+    worker.refresh_orders()
+    worker.check_operational_depth(worker.real_buy_orders, worker.virtual_buy_orders)
+    worker.check_operational_depth(worker.real_sell_orders, worker.virtual_sell_orders)
+    assert len(worker.real_buy_orders) == pytest.approx(worker.operational_depth, abs=1)
+    assert len(worker.real_sell_orders) == pytest.approx(worker.operational_depth, abs=1)
+
+
 def test_increase_order_sizes_valley_basic(worker, do_initial_allocation, issue_asset, increase_until_allocated):
     """ Test increases in valley mode when all orders are equal (new allocation round).
     """

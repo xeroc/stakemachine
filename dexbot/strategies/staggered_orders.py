@@ -179,46 +179,9 @@ class Strategy(StrategyBase):
                 self.log_maintenance_time()
                 return
 
-        # Replace excessive real orders with virtual ones, buy side
-        if self.real_buy_orders and len(self.real_buy_orders) > self.operational_depth + 5:
-            # Note: replace should happen only if next order is same-sized. Otherwise it will break proper allocation
-            test_order = self.place_further_order('base', self.real_buy_orders[-2], place_order=False)
-            diff = abs(test_order['amount'] - self.real_buy_orders[-1]['quote']['amount'])
-            if diff <= self.order_min_quote:
-                self.replace_real_order_with_virtual(self.real_buy_orders[-1])
-                # Orders needs to be refreshed to avoid races
-                self.refresh_orders()
-
-        # Replace excessive real orders with virtual ones, sell side
-        if self.real_sell_orders and len(self.real_sell_orders) > self.operational_depth + 5:
-            test_order = self.place_further_order('quote', self.real_sell_orders[-2], place_order=False)
-            diff = abs(test_order['amount'] - self.real_sell_orders[-1]['base']['amount'])
-            if diff <= self.order_min_quote:
-                self.replace_real_order_with_virtual(self.real_sell_orders[-1])
-                self.refresh_orders()
-
-        # Check for operational depth, buy side
-        if (self.virtual_buy_orders and
-                len(self.real_buy_orders) < self.operational_depth and
-                not self['bootstrapping']):
-            """
-                Note: if boostrap is on and there is nothing to allocate, this check would not work until some orders
-                will be filled. This means that changing `operational_depth` config param will not work immediately.
-
-                We need to wait until bootstrap is off because during initial orders placement this would start to place
-                real orders without waiting until all range will be covered.
-            """
-            self.replace_virtual_order_with_real(self.virtual_buy_orders[0])
-            self.log_maintenance_time()
-            return
-
-        # Check for operational depth, sell side
-        if (self.virtual_sell_orders and
-                len(self.real_sell_orders) < self.operational_depth and
-                not self['bootstrapping']):
-            self.replace_virtual_order_with_real(self.virtual_sell_orders[0])
-            self.log_maintenance_time()
-            return
+        # Ensure proper operational depth
+        self.check_operational_depth(self.real_buy_orders, self.virtual_buy_orders)
+        self.check_operational_depth(self.real_sell_orders, self.virtual_sell_orders)
 
         # Remember current boostrapping state before sending transactions
         previous_bootstrap_state = self['bootstrapping']
@@ -573,6 +536,35 @@ class Strategy(StrategyBase):
 
         # Set "restored" flag anyway to not break initial bootstrap
         self.virtual_orders_restored = True
+
+    def check_operational_depth(self, real_orders, virtual_orders):
+        """ Ensure proper operational depth. Replace excessive real orders or put real orders if needed.
+
+            :param list real_orders: list of real orders
+            :param list virtual_orders: list of virtual orders
+        """
+        num_real_orders = len(real_orders)
+        num_virtual_orders = len(virtual_orders)
+
+        if num_real_orders > self.operational_depth:
+            for i in range(1, num_real_orders - self.operational_depth + 1):
+                self.replace_real_order_with_virtual(real_orders[-i])
+        elif num_real_orders < self.operational_depth and not self['bootstrapping']:
+            # We need to wait until bootstrap is off because during initial orders placement this would start to place
+            # real orders without waiting until all range will be covered.
+
+            # Note: if boostrap is on and there is nothing to allocate, this check would not work until some orders
+            # will be filled. This means that changing `operational_depth` config param will not work immediately.
+
+            to_replace = min(num_virtual_orders, self.operational_depth - num_real_orders)
+            for i in range(0, to_replace):
+                self.replace_virtual_order_with_real(virtual_orders[i])
+        else:
+            return
+
+        # Orders and balances needs to be refreshed to avoid races
+        self.refresh_orders()
+        self.refresh_balances(use_cached_orders=True)
 
     def replace_real_order_with_virtual(self, order):
         """ Replace real limit order with virtual order
