@@ -498,7 +498,7 @@ class Strategy(StrategyBase):
         if not self.buy_orders and not self.sell_orders:
             # No real orders, assume we need to bootstrap, purge old orders
             self.log.info('No real orders, purging old virtual orders')
-            self.clear_orders()
+            self.clear_orders_extended(custom='current')
         elif self.buy_orders and self.sell_orders:
             if stored_orders:
                 self.log.info('Loading virtual orders from database')
