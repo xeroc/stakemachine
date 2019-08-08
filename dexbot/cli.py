@@ -122,7 +122,7 @@ def run(ctx):
 @configfile
 @chain
 @unlock
-def runservice(ctx):
+def runservice():
     """ Continuously run the worker as a service
     """
     if dexbot_service_running():
