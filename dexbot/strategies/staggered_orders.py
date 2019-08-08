@@ -404,8 +404,8 @@ class Strategy(StrategyBase):
         to_add_ids = current_real_ids.difference(stored_ids)
         to_add_orders = [order for order in current_real_orders if order['id'] in to_add_ids]
 
-        for id in to_remove_ids:
-            self.remove_order(id)
+        for _id in to_remove_ids:
+            self.remove_order(_id)
 
         for order in to_add_orders:
             self.save_order_extended(order, custom='current')
