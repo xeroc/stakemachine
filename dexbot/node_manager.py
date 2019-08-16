@@ -20,8 +20,7 @@ host_ip = '8.8.8.8'  # default host to ping to check internet
 
 
 def ping(host, network_timeout=3):
-    """
-        Send a ping packet to the specified host, using the system "ping" command.
+    """ Send a ping packet to the specified host, using the system "ping" command.
         Covers the Windows, Unix and OSX
     """
     args = ['ping']
@@ -49,8 +48,7 @@ def ping(host, network_timeout=3):
 
 
 def wss_test(node, timeout):
-    """
-    Test websocket connection to a node
+    """ Test websocket connection to a node
     """
     try:
         start = time()
@@ -63,8 +61,7 @@ def wss_test(node, timeout):
 
 
 def check_node(node, timeout):
-    """
-    check latency of an individual node
+    """ Check latency of an individual node
     """
     log.info(f'# pinging {node}')
     latency = wss_test(node, timeout)
@@ -73,10 +70,8 @@ def check_node(node, timeout):
 
 
 def get_sorted_nodelist(nodelist, timeout):
-    """
-    check all nodes and poll for latency,
-    eliminate nodes with no response, then sort
-    nodes by increasing latency and return as a list
+    """ Check all nodes and poll for latency, eliminate nodes with no response, then sort
+        nodes by increasing latency and return as a list
     """
 
     print(f'get_sorted_nodelist max timeout: {timeout}')
