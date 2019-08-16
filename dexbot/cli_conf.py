@@ -26,6 +26,7 @@ from bitshares.account import Account
 from dexbot.whiptail import get_whiptail
 from dexbot.strategies.base import StrategyBase
 from dexbot.config_validator import ConfigValidator
+from dexbot.node_manager import get_sorted_nodelist
 
 import dexbot.helper
 
@@ -313,6 +314,7 @@ def configure_dexbot(config, ctx):
                  ('SHOW', 'Show bitshares accounts'),
                  ('NODES', 'Edit Node Selection'),
                  ('ADD_NODE', 'Add Your Node'),
+                 ('SORT_NODES', 'By latency (uses default list)'),
                  ('DEL_NODE', 'Delete A Node'),
                  ('HELP', 'Where to get help'),
                  ('EXIT', 'Quit this application')])
@@ -384,6 +386,10 @@ def configure_dexbot(config, ctx):
                 config['node'].remove(choice)
                 config['node'].insert(0, choice)
                 setup_systemd(whiptail, config)
+            elif action == 'SORT_NODES':
+                nodelist = config['node']
+                sorted_nodes = get_sorted_nodelist(nodelist, 2.0)
+                config['node'] = sorted_nodes
             elif action == 'DEL_NODE':
                 choice = whiptail.node_radiolist(
                     msg="Choose node to delete",

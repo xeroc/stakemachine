@@ -18,6 +18,8 @@ from .worker import WorkerInfrastructure
 from .cli_conf import configure_dexbot, dexbot_service_running
 from . import errors
 from . import helper
+from multiprocessing import freeze_support
+
 
 # We need to do this before importing click
 if "LANG" not in os.environ:
@@ -68,6 +70,13 @@ initialize_data_folders()
     type=click.Path(dir_okay=False, writable=True),
     default='',
     help='File to write PID')
+@click.option(
+    '--sortnodes',
+    '-s',
+    type=int,
+    default=-1,
+    help='Sort nodes, w/max timeout in sec. [sec > 0]'
+)
 @click.pass_context
 def main(ctx, **kwargs):
     ctx.obj = {}
@@ -164,4 +173,10 @@ def worker_job(worker, job):
 
 
 if __name__ == '__main__':
+    """
+    Add freeze_support for when a program which uses multiprocessing (node_manager) has been
+    frozen to produce a Windows executable. If the freeze_support() line is omitted
+    then trying to run the frozen executable will raise RuntimeError. Calling
+    freeze_support() has no effect when invoked on any operating system other than Windows."""
+    freeze_support()
     main()
