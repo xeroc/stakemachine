@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from websocket import create_connection as wss_create
 from time import time
 from itertools import repeat
