@@ -173,10 +173,10 @@ def worker_job(worker, job):
 
 
 if __name__ == '__main__':
+    """ Add freeze_support for when a program which uses multiprocessing (node_manager) has been 
+        frozen to produce a Windows executable. If the freeze_support() line is omitted 
+        then trying to run the frozen executable will raise RuntimeError. Calling 
+        freeze_support() has no effect when invoked on any operating system other than Windows.
     """
-    Add freeze_support for when a program which uses multiprocessing (node_manager) has been
-    frozen to produce a Windows executable. If the freeze_support() line is omitted
-    then trying to run the frozen executable will raise RuntimeError. Calling
-    freeze_support() has no effect when invoked on any operating system other than Windows."""
     freeze_support()
     main()
