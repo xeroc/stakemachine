@@ -56,14 +56,14 @@ def wss_test(node, timeout):
         latency = (time() - start)
         return latency
     except Exception as e:
-        log.info(f'websocket test: {e}')
+        log.info('websocket test: {}'.format(e))
         return None
 
 
 def check_node(node, timeout):
     """ Check latency of an individual node
     """
-    log.info(f'# pinging {node}')
+    log.info('# pinging {}'.format(node))
     latency = wss_test(node, timeout)
     node_info = {'Node': node, 'Latency': latency}
     return node_info
@@ -74,7 +74,7 @@ def get_sorted_nodelist(nodelist, timeout):
         nodes by increasing latency and return as a list
     """
 
-    print(f'get_sorted_nodelist max timeout: {timeout}')
+    print('get_sorted_nodelist max timeout: {}'.format(timeout))
     pool_size = mp.cpu_count()*2
 
     with mp.Pool(processes=pool_size) as pool:
