@@ -10,6 +10,7 @@ hiddenimports_strategies = [
     'dexbot.strategies.echo',
     'dexbot.strategies.relative_orders',
     'dexbot.strategies.staggered_orders',
+    'dexbot.strategies.king_of_the_hill',
     'dexbot.strategies.storagedemo',
     'dexbot.strategies.walls',
     'dexbot.views.ui.tabs',
