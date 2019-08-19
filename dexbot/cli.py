@@ -14,12 +14,12 @@ from dexbot.ui import (
     unlock,
     configfile
 )
+
 from .worker import WorkerInfrastructure
 from .cli_conf import configure_dexbot, dexbot_service_running
 from . import errors
 from . import helper
 from multiprocessing import freeze_support
-
 
 # We need to do this before importing click
 if "LANG" not in os.environ:
