@@ -384,8 +384,9 @@ class DatabaseWorker(threading.Thread):
 
     def _remove_order(self, worker, order_id):
         e = self.session.query(Orders).filter_by(worker=worker, order_id=order_id).first()
-        self.session.delete(e)
-        self.session.commit()
+        if e:
+            self.session.delete(e)
+            self.session.commit()
 
     def clear_orders(self, worker):
         self.execute_noreturn(self._clear_orders, worker)
