@@ -34,6 +34,7 @@ def upgrade():
     op.create_table(
         'balances',
         sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('account', sa.String),
         sa.Column('worker', sa.String),
         sa.Column('base_total', sa.Float),
         sa.Column('base_symbol', sa.String),
