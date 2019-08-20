@@ -217,7 +217,6 @@ class DatabaseWorker(threading.Thread):
         engine = create_engine(dsn, echo=False)
         Session = sessionmaker(bind=engine)
         self.session = Session()
-        Base.metadata.create_all(engine)
         self.session.commit()
 
         # Run migrations
