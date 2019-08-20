@@ -39,7 +39,7 @@ def test_clear_orders(storage):
     storage.save_order(order)
     storage.clear_orders()
     fetched = storage.fetch_orders()
-    assert fetched == {}
+    assert fetched is None
 
 
 def test_clear_orders_extended(storage):
