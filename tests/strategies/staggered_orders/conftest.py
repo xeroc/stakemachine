@@ -160,6 +160,8 @@ def base_worker(bitshares, so_worker_name, storage_db):
     # We need to make sure no orders left after test finished
     for worker in workers:
         worker.cancel_all_orders()
+        # Workaround to purge all worker data after test
+        worker.purge_all_local_worker_data(worker_name)
         worker.bitshares.txbuffer.clear()
         worker.bitshares.bundle = False
 
@@ -167,6 +169,8 @@ def base_worker(bitshares, so_worker_name, storage_db):
 @pytest.fixture(scope='session')
 def storage_db():
     """ Prepare custom sqlite database to not mess with main one
+
+        TODO: this is doesn't work!!!
     """
     from dexbot.storage import sqlDataBaseFile
 

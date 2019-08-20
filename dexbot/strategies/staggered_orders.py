@@ -1,5 +1,6 @@
 import time
 import math
+import uuid
 import bitsharesapi.exceptions
 from datetime import datetime, timedelta
 from functools import reduce
@@ -65,8 +66,6 @@ class Strategy(StrategyBase):
             self.disabled = True
 
         # Strategy variables
-        # Assume we are in bootstrap mode by default. This prevents weird things when bootstrap was interrupted
-        self.bootstrapping = True
         self.market_center_price = None
         self.old_center_price = None
         self.buy_orders = []
@@ -110,6 +109,9 @@ class Strategy(StrategyBase):
         self.min_check_interval = 1
         self.max_check_interval = 120
         self.current_check_interval = self.min_check_interval
+
+        # If no bootstrap state is recorded, assume we're in bootstrap
+        self.get('bootstrapping', True)
 
         if self.view:
             self.update_gui_profit()
@@ -177,46 +179,12 @@ class Strategy(StrategyBase):
                 self.log_maintenance_time()
                 return
 
-        # Replace excessive real orders with virtual ones, buy side
-        if self.real_buy_orders and len(self.real_buy_orders) > self.operational_depth + 5:
-            # Note: replace should happen only if next order is same-sized. Otherwise it will break proper allocation
-            test_order = self.place_further_order('base', self.real_buy_orders[-2], place_order=False)
-            diff = abs(test_order['amount'] - self.real_buy_orders[-1]['quote']['amount'])
-            if diff <= self.order_min_quote:
-                self.replace_real_order_with_virtual(self.real_buy_orders[-1])
-                # Orders needs to be refreshed to avoid races
-                self.refresh_orders()
+        # Ensure proper operational depth
+        self.check_operational_depth(self.real_buy_orders, self.virtual_buy_orders)
+        self.check_operational_depth(self.real_sell_orders, self.virtual_sell_orders)
 
-        # Replace excessive real orders with virtual ones, sell side
-        if self.real_sell_orders and len(self.real_sell_orders) > self.operational_depth + 5:
-            test_order = self.place_further_order('quote', self.real_sell_orders[-2], place_order=False)
-            diff = abs(test_order['amount'] - self.real_sell_orders[-1]['base']['amount'])
-            if diff <= self.order_min_quote:
-                self.replace_real_order_with_virtual(self.real_sell_orders[-1])
-                self.refresh_orders()
-
-        # Check for operational depth, buy side
-        if (self.virtual_buy_orders and
-                len(self.real_buy_orders) < self.operational_depth and
-                not self.bootstrapping):
-            """
-                Note: if boostrap is on and there is nothing to allocate, this check would not work until some orders
-                will be filled. This means that changing `operational_depth` config param will not work immediately.
-
-                We need to wait until bootstrap is off because during initial orders placement this would start to place
-                real orders without waiting until all range will be covered.
-            """
-            self.replace_virtual_order_with_real(self.virtual_buy_orders[0])
-            self.log_maintenance_time()
-            return
-
-        # Check for operational depth, sell side
-        if (self.virtual_sell_orders and
-                len(self.real_sell_orders) < self.operational_depth and
-                not self.bootstrapping):
-            self.replace_virtual_order_with_real(self.virtual_sell_orders[0])
-            self.log_maintenance_time()
-            return
+        # Remember current boostrapping state before sending transactions
+        previous_bootstrap_state = self['bootstrapping']
 
         # Prepare to bundle operations into single transaction
         self.bitshares.bundle = True
@@ -247,6 +215,9 @@ class Strategy(StrategyBase):
                     return
                 else:
                     raise
+            self.refresh_orders()
+            self.sync_current_orders()
+
         self.bitshares.bundle = False
 
         # Maintain the history of free balances after maintenance runs.
@@ -275,8 +246,12 @@ class Strategy(StrategyBase):
                            'balances'.format(self.min_check_interval))
             self.current_check_interval = self.min_check_interval
 
+        if previous_bootstrap_state is True and self['bootstrapping'] is False:
+            # Bootstrap was turned off, dump initial orders
+            self.dump_initial_orders()
+
         # Do not continue whether balances are changing or bootstrap is on
-        if (self.bootstrapping or
+        if (self['bootstrapping'] or
                 self.base_balance_history[0] != self.base_balance_history[2] or
                 self.quote_balance_history[0] != self.quote_balance_history[2] or
                 trx_executed):
@@ -407,15 +382,53 @@ class Strategy(StrategyBase):
         self.virtual_sell_orders = self.filter_sell_orders(self.virtual_orders, sort='DESC', invert=False)
 
         # Sort real orders
+        # (order with index 0 is closest to the center price and -1 is furthers)
         self.real_buy_orders = self.filter_buy_orders(orders, sort='DESC')
         self.real_sell_orders = self.filter_sell_orders(orders, sort='DESC', invert=False)
 
-        # Concatenate orders and virtual_orders
-        orders = orders + self.virtual_orders
+        # Concatenate real orders and virtual_orders
+        self.buy_orders = self.real_buy_orders + self.virtual_buy_orders
+        self.sell_orders = self.real_sell_orders + self.virtual_sell_orders
 
-        # Sort orders so that order with index 0 is closest to the center price and -1 is furthers
-        self.buy_orders = self.filter_buy_orders(orders, sort='DESC')
-        self.sell_orders = self.filter_sell_orders(orders, sort='DESC', invert=False)
+    def sync_current_orders(self):
+        """ Sync current orders to the db
+        """
+        current_real_orders = self.real_buy_orders + self.real_sell_orders
+        current_all_orders = self.buy_orders + self.sell_orders
+        current_real_ids = set([order['id'] for order in current_real_orders])
+        current_all_ids = set([order['id'] for order in current_all_orders])
+        stored_ids = set(self.fetch_orders_extended(custom='current', return_ids_only=True))
+        # We need to remove both virtual and real orders
+        to_remove_ids = stored_ids.difference(current_all_ids)
+        # We need to add only real orders ids because virtual are added in place_virtual_xxx_order()
+        to_add_ids = current_real_ids.difference(stored_ids)
+        to_add_orders = [order for order in current_real_orders if order['id'] in to_add_ids]
+
+        for _id in to_remove_ids:
+            self.remove_order(_id)
+
+        for order in to_add_orders:
+            self.save_order_extended(order, custom='current')
+
+    def dump_initial_orders(self):
+        """ Save orders after initial placement for later use (visualization and so on)
+        """
+        self.refresh_orders()
+        orders = self.buy_orders + self.sell_orders
+        self.log.info('Dumping initial orders into db')
+        # Ids should be changed to avoid ids intersection with "current" orders
+        for order in orders:
+            order['id'] = str(uuid.uuid4())
+            if isinstance(order, VirtualOrder):
+                self.save_order_extended(order, virtual=True, custom='initial')
+            else:
+                self.save_order_extended(order, virtual=False, custom='initial')
+
+    def drop_initial_orders(self):
+        """ Drop old "initial" orders from the db
+        """
+        self.log.debug('Removing initial orders from the db')
+        self.clear_orders_extended(custom='initial')
 
     def remove_outside_orders(self, sell_orders, buy_orders):
         """ Remove orders that exceed boundaries
@@ -456,8 +469,11 @@ class Strategy(StrategyBase):
 
     def restore_virtual_orders(self):
         """ Create virtual further orders in batch manner. This helps to place further orders quickly on startup.
+
+            If we have both buy and sell real orders, restore both. If we have only one type of orders, restore
+            corresponding virtual orders and purge opposite orders.
         """
-        if self.buy_orders:
+        def place_further_buy_orders():
             furthest_order = self.real_buy_orders[-1]
             while furthest_order['price'] > self.lower_bound * (1 + self.increment):
                 furthest_order = self.place_further_order('base', furthest_order, virtual=True)
@@ -465,7 +481,7 @@ class Strategy(StrategyBase):
                     # Failed to place order
                     break
 
-        if self.sell_orders:
+        def place_further_sell_orders():
             furthest_order = self.real_sell_orders[-1]
             while furthest_order['price'] ** -1 < self.upper_bound / (1 + self.increment):
                 furthest_order = self.place_further_order('quote', furthest_order, virtual=True)
@@ -473,8 +489,82 @@ class Strategy(StrategyBase):
                     # Failed to place order
                     break
 
+        # Load orders from the database
+        result = self.fetch_orders_extended(only_virtual=True, custom='current')
+        stored_orders = [entry['order'] for entry in result] if result else []
+        stored_buy_orders = self.filter_buy_orders(stored_orders)
+        stored_sell_orders = self.filter_sell_orders(stored_orders, invert=False)
+
+        if not self.buy_orders and not self.sell_orders:
+            # No real orders, assume we need to bootstrap, purge old orders
+            self.log.info('No real orders, purging old virtual orders')
+            self.clear_orders_extended(custom='current')
+        elif self.buy_orders and self.sell_orders:
+            if stored_orders:
+                self.log.info('Loading virtual orders from database')
+                for order in stored_orders:
+                    self.virtual_orders.append(VirtualOrder(order))
+            else:
+                self.log.info('Recreating virtual orders')
+                place_further_buy_orders()
+                place_further_sell_orders()
+        elif self.buy_orders and not self.sell_orders:
+            # Only buy orders, purge stored sell orders
+            if stored_sell_orders:
+                self.log.info('Purging virtual sell orders because of no real sell orders')
+                for order in stored_sell_orders:
+                    self.remove_order(order)
+
+            if stored_buy_orders:
+                self.log.info('Loading virtual buy orders from database')
+                for order in stored_buy_orders:
+                    self.virtual_orders.append(VirtualOrder(order))
+            else:
+                place_further_buy_orders()
+        elif not self.buy_orders and self.sell_orders:
+            if stored_buy_orders:
+                self.log.info('Purging virtual buy orders because of no real buy orders')
+                for order in stored_buy_orders:
+                    self.remove_order(order)
+
+            if stored_sell_orders:
+                self.log.info('Loading virtual sell orders from database')
+                for order in stored_sell_orders:
+                    self.virtual_orders.append(VirtualOrder(order))
+            else:
+                place_further_sell_orders()
+
         # Set "restored" flag anyway to not break initial bootstrap
         self.virtual_orders_restored = True
+
+    def check_operational_depth(self, real_orders, virtual_orders):
+        """ Ensure proper operational depth. Replace excessive real orders or put real orders if needed.
+
+            :param list real_orders: list of real orders
+            :param list virtual_orders: list of virtual orders
+        """
+        num_real_orders = len(real_orders)
+        num_virtual_orders = len(virtual_orders)
+
+        if num_real_orders > self.operational_depth:
+            for i in range(1, num_real_orders - self.operational_depth + 1):
+                self.replace_real_order_with_virtual(real_orders[-i])
+        elif num_real_orders < self.operational_depth and not self['bootstrapping']:
+            # We need to wait until bootstrap is off because during initial orders placement this would start to place
+            # real orders without waiting until all range will be covered.
+
+            # Note: if boostrap is on and there is nothing to allocate, this check would not work until some orders
+            # will be filled. This means that changing `operational_depth` config param will not work immediately.
+
+            to_replace = min(num_virtual_orders, self.operational_depth - num_real_orders)
+            for i in range(0, to_replace):
+                self.replace_virtual_order_with_real(virtual_orders[i])
+        else:
+            return
+
+        # Orders and balances needs to be refreshed to avoid races
+        self.refresh_orders()
+        self.refresh_balances(use_cached_orders=True)
 
     def replace_real_order_with_virtual(self, order):
         """ Replace real limit order with virtual order
@@ -645,14 +735,14 @@ class Strategy(StrategyBase):
                     self.replace_partially_filled_order(closest_own_order)
                     return
 
-                if (self.bootstrapping and
+                if (self['bootstrapping'] and
                         self.base_balance_history[2] == self.base_balance_history[0] and
                         self.quote_balance_history[2] == self.quote_balance_history[0] and
                         opposite_orders):
                     # Turn off bootstrap mode whether we're didn't allocated assets during previous 3 maintenance
                     self.log.debug('Turning bootstrapping off: actual_spread > target_spread, we have free '
                                    'balances and cannot allocate them normally 3 times in a row')
-                    self.bootstrapping = False
+                    self['bootstrapping'] = False
 
                 """ Note: because we're using operations batching, there is possible a situation when we will have
                     both free balances and `self.actual_spread >= self.target_spread + self.increment`. In such case
@@ -666,7 +756,7 @@ class Strategy(StrategyBase):
                 # Place order closer to the center price
                 self.log.debug('Placing closer {} order; actual spread: {:.4%}, target + increment: {:.4%}'
                                .format(order_type, self.actual_spread, self.target_spread + self.increment))
-                if self.bootstrapping:
+                if self['bootstrapping']:
                     self.place_closer_order(asset, closest_own_order)
                 elif opposite_orders and self.actual_spread - self.increment < self.target_spread + self.increment:
                     """ Place max-sized closer order if only one order needed to reach target spread (avoid unneeded
@@ -749,12 +839,12 @@ class Strategy(StrategyBase):
                             (asset == 'quote' and furthest_own_order_price *
                              (1 + self.increment) > self.upper_bound)):
                         # Lower/upper bound has been reached and now will start allocating rest of the balance.
-                        self.bootstrapping = False
+                        self['bootstrapping'] = False
                         self.log.debug('Increasing sizes of {} orders'.format(order_type))
                         increase_finished = self.increase_order_sizes(asset, asset_balance, own_orders)
                     else:
                         # Range bound is not reached, we need to add additional orders at the extremes
-                        self.bootstrapping = False
+                        self['bootstrapping'] = False
                         self.log.debug('Placing further order than current furthest {} order'.format(order_type))
                         self.place_further_order(asset, furthest_own_order, allow_partial=True)
                 else:
@@ -791,8 +881,10 @@ class Strategy(StrategyBase):
                 self.refresh_orders()
                 self.bitshares.bundle = previous_bundle
         else:
-            # Place first buy order as close to the lower bound as possible
-            self.bootstrapping = True
+            # Place furthest order as close to the bound as possible
+            if not opposite_orders:
+                self['bootstrapping'] = True
+                self.drop_initial_orders()
             order = None
             self.log.debug('Placing first {} order'.format(order_type))
             if asset == 'base':
@@ -1926,6 +2018,7 @@ class Strategy(StrategyBase):
 
         order = VirtualOrder()
         order['price'] = price
+        order['id'] = str(uuid.uuid4())
 
         quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
@@ -1941,6 +2034,8 @@ class Strategy(StrategyBase):
         # Immediately lower avail balance
         self.base_balance['amount'] -= order['base']['amount']
 
+        self.save_order_extended(order, virtual=True, custom='current')
+
         return order
 
     def place_virtual_sell_order(self, amount, price):
@@ -1954,6 +2049,7 @@ class Strategy(StrategyBase):
         precision = self.market['quote']['precision']
 
         order = VirtualOrder()
+        order['id'] = str(uuid.uuid4())
         order['price'] = price ** -1
 
         quote_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
@@ -1970,6 +2066,8 @@ class Strategy(StrategyBase):
         # Immediately lower avail balance
         self.quote_balance['amount'] -= order['base']['amount']
 
+        self.save_order_extended(order, virtual=True, custom='current')
+
         return order
 
     def cancel_orders_wrapper(self, orders, **kwargs):
@@ -1979,11 +2077,15 @@ class Strategy(StrategyBase):
         if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
 
-        virtual_orders = [order['price'] for order in orders if isinstance(order, VirtualOrder)]
-        real_orders = [order for order in orders if 'id' in order]
+        virtual_orders = [order for order in orders if isinstance(order, VirtualOrder)]
+        real_orders = [order for order in orders if not isinstance(order, VirtualOrder)]
 
-        # Just rebuild virtual orders list to avoid calling Asset's __eq__ method
-        self.virtual_orders = [order for order in self.virtual_orders if order['price'] not in virtual_orders]
+        if virtual_orders:
+            # Just rebuild virtual orders list to avoid calling Asset's __eq__ method
+            self.virtual_orders = [order for order in self.virtual_orders if order not in virtual_orders]
+            # Also remove virtual order from database
+            for order in virtual_orders:
+                self.remove_order(order)
 
         if real_orders:
             return self.cancel_orders(real_orders, **kwargs)

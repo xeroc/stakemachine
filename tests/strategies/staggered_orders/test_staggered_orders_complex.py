@@ -153,9 +153,9 @@ def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_alloca
     """ Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to
         close spread
     """
-    do_initial_allocation(worker, worker.mode)
+    do_initial_allocation(worker, mode)
     # TODO: strategy must turn off bootstrapping once target spread is reached
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
 
     if asset == 'base':
         worker.cancel_orders_wrapper(worker.buy_orders[0])
@@ -176,6 +176,33 @@ def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_alloca
     worker.refresh_orders()
     spread_after = get_spread(worker)
     assert spread_after <= worker.target_spread + worker.increment
+
+
+def test_check_operational_depth(worker, do_initial_allocation):
+    """ Test for correct operational depth following
+    """
+    worker.operational_depth = 10
+    do_initial_allocation(worker, worker.mode)
+    worker['bootstrapping'] = False
+
+    # abs=1 means we're accepting slight error
+
+    assert len(worker.buy_orders) == pytest.approx(worker.operational_depth, abs=1)
+    assert len(worker.sell_orders) == pytest.approx(worker.operational_depth, abs=1)
+
+    worker.operational_depth = 2
+    worker.refresh_orders()
+    worker.check_operational_depth(worker.real_buy_orders, worker.virtual_buy_orders)
+    worker.check_operational_depth(worker.real_sell_orders, worker.virtual_sell_orders)
+    assert len(worker.real_buy_orders) == pytest.approx(worker.operational_depth, abs=1)
+    assert len(worker.real_sell_orders) == pytest.approx(worker.operational_depth, abs=1)
+
+    worker.operational_depth = 8
+    worker.refresh_orders()
+    worker.check_operational_depth(worker.real_buy_orders, worker.virtual_buy_orders)
+    worker.check_operational_depth(worker.real_sell_orders, worker.virtual_sell_orders)
+    assert len(worker.real_buy_orders) == pytest.approx(worker.operational_depth, abs=1)
+    assert len(worker.real_sell_orders) == pytest.approx(worker.operational_depth, abs=1)
 
 
 def test_increase_order_sizes_valley_basic(worker, do_initial_allocation, issue_asset, increase_until_allocated):
@@ -831,7 +858,7 @@ def test_allocate_asset_replace_partially_filled_orders(
     """
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
 
     # Partially fill closest orders
@@ -936,7 +963,7 @@ def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_accoun
     """
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
     num_sell_orders_before = len(worker.sell_orders)
 
@@ -957,9 +984,9 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
     """ Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
         orders on side which is smaller)
     """
-    do_initial_allocation(worker, worker.mode)
+    do_initial_allocation(worker, mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
 
     # Fill several orders
@@ -1012,9 +1039,9 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     worker.center_price = 1
     worker.lower_bound = 0.4
     worker.upper_bound = 1.4
-    do_initial_allocation(worker, worker.mode)
+    do_initial_allocation(worker, mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
-    worker.bootstrapping = False
+    worker['bootstrapping'] = False
     additional_account = base_account()
 
     # Fill several orders
