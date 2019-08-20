@@ -105,7 +105,7 @@ def chain(f):
             sys.exit(78)
 
         if timeout > 0:
-            click.echo(f"Checking for nearest nodes with timeout < {timeout} sec....")
+            click.echo("Checking for nearest nodes with timeout < {} sec....".format(timeout))
             nodelist = get_sorted_nodelist(ctx.config["node"], timeout)
             click.echo("Nearest nodes ->  " + str(nodelist))
 
