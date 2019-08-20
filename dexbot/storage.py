@@ -222,7 +222,8 @@ class DatabaseWorker(threading.Thread):
         # Run migrations
         import dexbot
 
-        migrations_dir = '{}/migrations'.format(os.path.dirname(inspect.getfile(dexbot)))
+        # Path to migrations, platform-independent
+        migrations_dir = os.path.join(os.path.dirname(inspect.getfile(dexbot)), 'migrations')
         self.run_migrations(migrations_dir, dsn)
 
         self.task_queue = queue.Queue()
