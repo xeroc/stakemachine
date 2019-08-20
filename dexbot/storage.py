@@ -1,5 +1,6 @@
 import os
 import os.path
+import sys
 import inspect
 import json
 import threading
@@ -222,8 +223,12 @@ class DatabaseWorker(threading.Thread):
         # Run migrations
         import dexbot
 
-        # Path to migrations, platform-independent
-        migrations_dir = os.path.join(os.path.dirname(inspect.getfile(dexbot)), 'migrations')
+        if hasattr(sys, 'frozen') and hasattr(sys, '_MEIPASS'):
+            bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+            migrations_dir = os.path.join(bundle_dir, 'migrations')
+        else:
+            # Path to migrations, platform-independent
+            migrations_dir = os.path.join(os.path.dirname(inspect.getfile(dexbot)), 'migrations')
         self.run_migrations(migrations_dir, dsn)
 
         self.task_queue = queue.Queue()

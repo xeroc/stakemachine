@@ -16,12 +16,20 @@ hiddenimports_strategies = [
 ]
 
 hiddenimports_packaging = [
-    'packaging', 'packaging.version', 'packaging.specifiers', 'packaging.requirements'
+    'packaging',
+    'packaging.version',
+    'packaging.specifiers',
+    'packaging.requirements',
+]
+
+# We're not importing migrations anywhere, so we need to package them as data files
+data_files = [
+    ('dexbot/migrations', 'migrations')
 ]
 
 a = Analysis(['dexbot/cli.py'],
              binaries=[],
-             datas=[],
+             datas=data_files,
              hiddenimports=hiddenimports_packaging + hiddenimports_strategies,
              hookspath=['hooks'],
              runtime_hooks=['hooks/rthook-Crypto.py'],
