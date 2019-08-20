@@ -870,7 +870,8 @@ class Strategy(StrategyBase):
                     1 - self.partial_fill_threshold)) and self.bitshares.txbuffer.is_empty()):
                 # Dust order on opposite side, cancel dust order and place closer order
                 # Require empty txbuffer to avoid rare condition when order may be already canceled from
-                # replace_partially_filled_order() call
+                # replace_partially_filled_order() call.
+                # Note: we cannot use such check for own side because we will not have the balance to allocate
                 self.log.info('Cancelling dust order at opposite side, placing closer {} order'.format(order_type))
                 previous_bundle = self.bitshares.bundle
                 self.bitshares.bundle = False
@@ -1545,8 +1546,7 @@ class Strategy(StrategyBase):
             # Closer order should not be less than threshold
             if (
                 allow_partial and
-                balance > hard_limit and
-                balance > order['base']['amount'] * self.partial_fill_threshold) or (
+                balance > hard_limit) or (
                 # Accept small inaccuracy for full-sized closer order
                 place_order and not allow_partial and limiter - balance < 20 * 10 ** -precision
             ):
