@@ -1,7 +1,6 @@
 import os
 import os.path
 import sys
-import inspect
 import json
 import threading
 import queue
@@ -227,9 +226,8 @@ class DatabaseWorker(threading.Thread):
             bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
             migrations_dir = os.path.join(bundle_dir, 'migrations')
         else:
-            # Path to migrations, platform-independent
-            import dexbot
-            migrations_dir = os.path.join(os.path.dirname(inspect.getfile(dexbot)), 'migrations')
+            from pkg_resources import resource_filename
+            migrations_dir = resource_filename('dexbot', 'migrations')
 
         if os.path.exists(sqlite_file) and os.path.getsize(sqlite_file) > 0:
             # Run migrations on existing database
