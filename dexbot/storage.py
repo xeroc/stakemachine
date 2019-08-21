@@ -210,26 +210,35 @@ class DatabaseWorker(threading.Thread):
     """ Thread safe database worker
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
+        sqlite_file = kwargs.get('sqlite_file', sqlDataBaseFile)
+
         # Obtain engine and session
-        dsn = 'sqlite:///{}'.format(sqlDataBaseFile)
+        dsn = 'sqlite:///{}'.format(sqlite_file)
         engine = create_engine(dsn, echo=False)
         Session = sessionmaker(bind=engine)
         self.session = Session()
-        self.session.commit()
 
-        # Run migrations
-        import dexbot
-
+        # Find out where migrations are
         if hasattr(sys, 'frozen') and hasattr(sys, '_MEIPASS'):
+            # We're bundled into pyinstaller executable
             bundle_dir = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
             migrations_dir = os.path.join(bundle_dir, 'migrations')
         else:
             # Path to migrations, platform-independent
+            import dexbot
             migrations_dir = os.path.join(os.path.dirname(inspect.getfile(dexbot)), 'migrations')
-        self.run_migrations(migrations_dir, dsn)
+
+        if os.path.exists(sqlite_file) and os.path.getsize(sqlite_file) > 0:
+            # Run migrations on existing database
+            self.run_migrations(migrations_dir, dsn)
+        else:
+            Base.metadata.create_all(engine)
+            self.session.commit()
+            # We're created database from scratch, stamp it with "head" revision
+            self.run_migrations(migrations_dir, dsn, stamp_only=True)
 
         self.task_queue = queue.Queue()
         self.results = {}
@@ -240,16 +249,22 @@ class DatabaseWorker(threading.Thread):
         self.start()
 
     @staticmethod
-    def run_migrations(script_location, dsn):
+    def run_migrations(script_location, dsn, stamp_only=False):
         """ Apply database migrations using alembic
 
             :param str script_location: path to migration scripts
             :param str dsn: database URL
+            :param bool stamp_only: True = only mark the db as "head" without applying migrations
         """
         alembic_cfg = alembic.config.Config()
         alembic_cfg.set_main_option('script_location', script_location)
         alembic_cfg.set_main_option('sqlalchemy.url', dsn)
-        alembic.command.upgrade(alembic_cfg, 'head')
+
+        if stamp_only:
+            # Mark db as "head" without applying migrations
+            alembic.command.stamp(alembic_cfg, "head")
+        else:
+            alembic.command.upgrade(alembic_cfg, 'head')
 
     @staticmethod
     def get_filter_by(worker, only_virtual, only_real, custom):

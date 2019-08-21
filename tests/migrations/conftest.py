@@ -7,6 +7,8 @@ from sqlalchemy import create_engine, Column, String, Integer, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from dexbot.storage import DatabaseWorker
+
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)
 
@@ -48,7 +50,16 @@ class Balances(Base):
 
 
 @pytest.fixture
-def initial_db():
+def fresh_db():
+
+    _, db_file = tempfile.mkstemp()  # noqa: F811
+    _ = DatabaseWorker(sqlite_file=db_file)
+    yield db_file
+    os.unlink(db_file)
+
+
+@pytest.fixture
+def historic_db():
 
     _, db_file = tempfile.mkstemp()  # noqa: F811
     engine = create_engine('sqlite:///{}'.format(db_file), echo=False)
