@@ -25,7 +25,7 @@ before_script:
   - make pep-test
   - echo "Running mandatory tests..."
   # Travis on mac doesn't support docker
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then pytest -m mandatory tests/ && \
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then pytest -m mandatory tests/ &&
       python3 -m pip uninstall -r requirements-dev.txt; fi
 script:
   - pyinstaller --distpath dist/$TRAVIS_OS_NAME gui.spec
