@@ -194,20 +194,17 @@ class Strategy(StrategyBase):
 
         if self.is_center_price_dynamic:
             # Calculate center price from the market orders
-
             if self.external_feed:
                 # Try getting center price from external source
                 center_price = self.get_external_market_center_price(self.external_price_source)
-
-            if self.center_price_depth > 0 and not self.external_feed:
-                # Calculate with quote amount if given
-                center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
-
-            if self.cp_from_last_trade and not self.first_round:  # Using own last trade is bad idea at startup
+            elif self.cp_from_last_trade and not self.first_round:  # Using own last trade is bad idea at startup
                 try:
                     center_price = self.get_own_last_trade()['price']
                 except TypeError:
                     center_price = self.get_market_center_price()
+            elif self.center_price_depth > 0:
+                # Calculate with quote amount if given
+                center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
             else:
                 center_price = self.get_market_center_price()
 
