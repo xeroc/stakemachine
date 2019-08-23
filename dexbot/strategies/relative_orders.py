@@ -80,12 +80,15 @@ class Strategy(StrategyBase):
         self.price_change_threshold = self.worker.get('price_change_threshold', 2) / 100
         self.is_custom_expiration = self.worker.get('custom_expiration', False)
 
+        self.default_expiration = self.expiration
         if self.is_custom_expiration:
             self.expiration = self.worker.get('expiration_time', self.expiration)
 
         if self.cp_from_last_trade:
+            # Order expiration before first trade might result in terrible price, so if default expiration will be too
+            # small, override it here
+            self.expiration = self.default_expiration
             self.ontick -= self.tick  # Save a few cycles there
-            self.expiration = 7 * 24 * 60 * 60  # Order expiration before first trade might result in terrible price
 
         self.last_check = datetime.now()
         self.min_check_interval = 8
