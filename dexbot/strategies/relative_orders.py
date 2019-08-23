@@ -545,6 +545,9 @@ class Strategy(StrategyBase):
         else:
             # Loop trough the orders and look for changes
             for order_id, order in orders.items():
+                if not order_id.startswith('1.7.'):
+                    need_update = True
+                    break
                 current_order = self.get_order(order_id)
 
                 if not current_order:
