@@ -604,14 +604,20 @@ class Strategy(StrategyBase):
 
     def get_own_last_trade(self):
         """ Returns dict with amounts and price of last trade """
-        try:
-            trade = [x for x in self.account.history(limit=1, only_ops=['fill_order'])][0]['op'][1]
+        history = self.account.history(only_ops=['fill_order'])
+        for entry in history:
+            trade = entry['op'][1]
+            # Look for first trade in worker's market
             if trade['pays']['asset_id'] == self.market['base']['id']:  # Buy order
                 base = trade['fill_price']['base']['amount'] / 10 ** self.market['base']['precision']
                 quote = trade['fill_price']['quote']['amount'] / 10 ** self.market['quote']['precision']
-            else:  # Sell order
+                break
+            elif trade['pays']['asset_id'] == self.market['quote']['id']:  # Sell order
                 base = trade['fill_price']['quote']['amount'] / 10 ** self.market['base']['precision']
                 quote = trade['fill_price']['base']['amount'] / 10 ** self.market['quote']['precision']
+                break
+        try:
             return {'base': base, 'quote': quote, 'price': base / quote}
-        except Exception:
-            return False
+        except UnboundLocalError:
+            # base or quote wasn't obtained
+            return None
