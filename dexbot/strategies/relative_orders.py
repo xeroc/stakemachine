@@ -92,7 +92,6 @@ class Strategy(StrategyBase):
 
         self.last_check = datetime.now()
         self.min_check_interval = 8
-        self.first_round = True
 
         self.buy_price = None
         self.sell_price = None
@@ -200,7 +199,7 @@ class Strategy(StrategyBase):
             if self.external_feed:
                 # Try getting center price from external source
                 center_price = self.get_external_market_center_price(self.external_price_source)
-            elif self.cp_from_last_trade and not self.first_round:  # Using own last trade is bad idea at startup
+            elif self.cp_from_last_trade and self['bootstrapped']:  # Using own last trade is bad idea at startup
                 try:
                     center_price = self.get_own_last_trade()['price']
                 except TypeError:
@@ -566,7 +565,7 @@ class Strategy(StrategyBase):
                             #        we're updating order it may be filled further so trade log entry will not
                             #        be correct
             if need_update:
-                self.first_round = False
+                self['bootstrapped'] = True
 
         # Check center price change when using market center price with reset option on change
         if self.is_reset_on_price_change and self.is_center_price_dynamic:
