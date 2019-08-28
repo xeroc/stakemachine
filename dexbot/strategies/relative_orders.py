@@ -199,16 +199,38 @@ class Strategy(StrategyBase):
             if self.external_feed:
                 # Try getting center price from external source
                 center_price = self.get_external_market_center_price(self.external_price_source)
+                try:
+                    self.log.info('Using center price from external source: {:.8f}'.format(center_price))
+                except TypeError:
+                    self.log.warning('Failed to obtain center price from external source')
             elif self.cp_from_last_trade and self['bootstrapped']:  # Using own last trade is bad idea at startup
                 try:
                     center_price = self.get_own_last_trade()['price']
+                    self.log.info('Using center price from last trade: {:.8f}'.format(center_price))
                 except TypeError:
                     center_price = self.get_market_center_price()
+                    try:
+                        self.log.info('Using market center price (failed to obtain last trade): {:.8f}'
+                                      .format(center_price))
+                    except TypeError:
+                        self.log.warning('Failed to obtain center price from market')
             elif self.center_price_depth > 0:
                 # Calculate with quote amount if given
                 center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
+                try:
+                    self.log.info('Using market center price: {:.8f} with depth: {:.{prec}f}'.format(
+                        center_price,
+                        self.center_price_depth,
+                        prec=self.market['quote']['precision']
+                    ))
+                except TypeError:
+                    self.log.warning('Failed to obtain depthted center price')
             else:
                 center_price = self.get_market_center_price()
+                try:
+                    self.log.info('Using market center price: {:.8f}'.format(center_price))
+                except TypeError:
+                    self.log.warning('Failed to obtain center price from market')
 
             self.center_price = self.calculate_center_price(
                 center_price,
@@ -227,8 +249,12 @@ class Strategy(StrategyBase):
                 self.manual_offset
             )
 
-        self.buy_price = self.center_price / math.sqrt(1 + spread)
-        self.sell_price = self.center_price * math.sqrt(1 + spread)
+        try:
+            self.log.info('Center price after offsets calculation: {:.8f}'.format(self.center_price))
+            self.buy_price = self.center_price / math.sqrt(1 + spread)
+            self.sell_price = self.center_price * math.sqrt(1 + spread)
+        except TypeError:
+            self.log.warning('No center price calculated')
 
     def update_orders(self):
         self.log.debug('Starting to update orders')
