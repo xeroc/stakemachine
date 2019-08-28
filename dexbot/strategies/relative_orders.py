@@ -295,7 +295,7 @@ class Strategy(StrategyBase):
                 if market_buy_orders:
                     return float(market_buy_orders[0]['price'])
                 else:
-                    return '0.0'
+                    return 0.0
             else:
                 return float(self.ticker().get('highestBid'))
 
@@ -376,7 +376,7 @@ class Strategy(StrategyBase):
                 if market_sell_orders:
                     return float(market_sell_orders[0]['price'])
                 else:
-                    return '0.0'
+                    return 0.0
             else:
                 return float(self.ticker().get('lowestAsk'))
 
