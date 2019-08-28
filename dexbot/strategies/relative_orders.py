@@ -577,7 +577,7 @@ class Strategy(StrategyBase):
 
                 if not current_order:
                     need_update = True
-                    self.log.debug('Could not found order on the market, it was filled, expired or cancelled')
+                    self.log.debug('Could not find order on the market, it was filled, expired or cancelled')
                 elif self.is_reset_on_partial_fill:
                     # Detect partially filled orders;
                     # on fresh order 'for_sale' is always equal to ['base']['amount']
