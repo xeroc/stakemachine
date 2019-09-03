@@ -80,6 +80,9 @@ class Strategy(StrategyBase):
         self.last_check = datetime(2000, 1, 1)
         self.min_check_interval = self.min_order_lifetime
         self.partial_fill_threshold = 0.8
+        # Stubs
+        self.highest_bid = 0
+        self.lowest_ask = 0
 
         if self.view:
             self.update_gui_slider()
@@ -192,6 +195,15 @@ class Strategy(StrategyBase):
                     self.log.debug('Top buy price to be higher: {:.8f}'.format(self.top_buy_price))
                 break
 
+        # Fill top prices from orderbook because we need to keep in mind own orders too
+        # FYI: getting price from self.ticker() doesn't work in local testnet
+        orderbook = self.get_orderbook_orders(depth=1)
+        try:
+            self.highest_bid = orderbook['bids'][0]['price']
+            self.lowest_ask = orderbook['asks'][0]['price']
+        except IndexError:
+            self.log.info('Market has empty orderbook')
+
     def is_too_small_amounts(self, amount_quote, amount_base):
         """ Check whether amounts are within asset precision limits
             :param Decimal amount_quote: QUOTE asset amount
@@ -242,6 +254,15 @@ class Strategy(StrategyBase):
                 self.log.error('Amount for {} order is too small'.format(order_type))
                 return
 
+            # Check crossing with opposite orders
+            if price >= self.lowest_ask:
+                self.log.warning(
+                    'Cannot place top {} order because it will cross the opposite side; '
+                    'increase your order size to lower price step; my top price: {:.8f}, lowest ast: '
+                    '{:.8f}'.format(order_type, price, self.lowest_ask)
+                )
+                return
+
             new_order = self.place_market_buy_order(float(amount_quote), float(price))
             self.beaten_buy_order = self.buy_order_to_beat
         elif order_type == 'sell':
@@ -271,6 +292,15 @@ class Strategy(StrategyBase):
             # Prevent too small amounts
             if self.is_too_small_amounts(amount_quote, amount_base):
                 self.log.error('Amount for {} order is too small'.format(order_type))
+                return
+
+            # Check crossing with opposite orders
+            if price <= self.highest_bid:
+                self.log.warning(
+                    'Cannot place top {} order because it will cross the opposite side; '
+                    'increase your order size to lower price step; my top price: {:.8f}, highest bid: '
+                    '{:.8f}'.format(order_type, price, self.highest_bid)
+                )
                 return
 
             new_order = self.place_market_sell_order(float(amount_quote), float(price))

@@ -47,7 +47,7 @@ def account(base_account):
     return base_account()
 
 
-@pytest.fixture(scope='module', params=[('QUOTEA', 'BASEA'), ('QUOTEB', 'BASEB')])
+@pytest.fixture(params=[('QUOTEA', 'BASEA'), ('QUOTEB', 'BASEB')])
 def config(request, bitshares, account, kh_worker_name):
     """ Define worker's config with variable assets
 
@@ -68,7 +68,7 @@ def config(request, bitshares, account, kh_worker_name):
                 'mode': 'both',
                 'module': 'dexbot.strategies.king_of_the_hill',
                 'relative_order_size': False,
-                'sell_order_amount': 2.0,
+                'sell_order_amount': 1.0,
                 'sell_order_size_threshold': 0.0,
                 'upper_bound': 1.2,
             }
@@ -87,7 +87,7 @@ def config_variable_modes(request, config, kh_worker_name):
     return config
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def config_other_account(config, base_account, kh_worker_name):
     """ Config for other account which simulates foreign trader
     """
@@ -145,18 +145,24 @@ def orders1(worker):
 
 
 @pytest.fixture
-def other_orders(bitshares, kh_worker_name, config_other_account):
+def other_worker(bitshares, kh_worker_name, config_other_account):
+    worker = StrategyBase(name=kh_worker_name, config=config_other_account, bitshares_instance=bitshares)
+    yield worker
+    worker.cancel_all_orders()
+    time.sleep(1.1)
+
+
+@pytest.fixture
+def other_orders(other_worker):
     """ Place some orders from second account to simulate foreign trader
     """
-    worker = StrategyBase(name=kh_worker_name, config=config_other_account, bitshares_instance=bitshares)
+    worker = other_worker
     worker.place_market_buy_order(10, 0.9)
     worker.place_market_buy_order(10, 1)
     worker.place_market_sell_order(10, 2.1)
     worker.place_market_sell_order(10, 2)
 
-    yield worker
-    worker.cancel_all_orders()
-    time.sleep(1.1)
+    return worker
 
 
 @pytest.fixture
@@ -166,3 +172,26 @@ def other_orders_out_of_bounds(other_orders):
     worker = other_orders
     worker.place_market_buy_order(10, worker.worker['upper_bound'] * 1.2)
     worker.place_market_sell_order(10, worker.worker['lower_bound'] / 1.2)
+
+
+@pytest.fixture
+def other_orders_zero_spread(other_worker):
+    """ Place orders from another account simulating smallest possible spread
+        Note: main worker should use same order amount, otherwise this spread will not be "smallest possible"!!!
+    """
+    worker = other_worker
+    orderid = worker.place_market_buy_order(2, 1, returnOrderId=True)
+    # When order amount is 1, we can use 1 precision step to adjust the price
+    # To understand, assume precision=2 and calc 1.01/1 and 10.01/10
+    precision = worker.market['base']['precision']
+    sell_price = 1 + 2 * 10 ** -precision
+    worker.place_market_sell_order(1, sell_price)
+    log.debug('Other orders before match: {}'.format(worker.own_orders))
+    buy_order = worker.get_order(orderid)
+    while buy_order['base']['amount'] == buy_order['for_sale']['amount']:
+        log.debug('Placing lower sell order')
+        sell_price -= 10 ** -precision
+        worker.place_market_sell_order(1, sell_price)
+        buy_order = worker.get_order(orderid)
+    log.debug('Other orders after match: {}'.format(worker.own_orders))
+    return worker
