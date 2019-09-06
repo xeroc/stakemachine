@@ -232,9 +232,10 @@ class Strategy(StrategyBase):
 
             amount_base = Decimal(self.amount_base).quantize(Decimal(0).scaleb(-self.market['base']['precision']))
             if not amount_base:
-                self.log.error('Cannot place {} order with 0 amount. Adjust your settings!'.format(order_type))
-                self.disabled = True
-                return
+                self.log.error(
+                    'Cannot place {} order with 0 amount. Adjust your settings or add balance'.format(order_type)
+                )
+                return False
 
             price = Decimal(self.top_buy_price)
             amount_quote = (amount_base / price).quantize(Decimal(0).scaleb(-self.market['quote']['precision']))
@@ -273,9 +274,10 @@ class Strategy(StrategyBase):
 
             amount_quote = Decimal(self.amount_quote).quantize(Decimal(0).scaleb(-self.market['quote']['precision']))
             if not amount_quote:
-                self.log.error('Cannot place {} order with 0 amount. Adjust your settings!'.format(order_type))
-                self.disabled = True
-                return
+                self.log.error(
+                    'Cannot place {} order with 0 amount. Adjust your settings or add balance'.format(order_type)
+                )
+                return False
 
             price = Decimal(self.top_sell_price)
             amount_base = (amount_quote * price).quantize(Decimal(0).scaleb(-self.market['base']['precision']))

@@ -81,19 +81,16 @@ def test_place_order_zero_price(worker):
     assert worker.disabled
 
 
-def test_place_order_zero_amount(worker, monkeypatch):
-    """ Check that worker goes into error if amounts are 0
+def test_place_order_zero_amount(worker, other_orders, monkeypatch):
+    """ Check that worker doesn't try to place an order if amounts are 0
     """
     worker.get_top_prices()
 
     monkeypatch.setattr(worker.__class__, 'amount_quote', 0)
-    worker.place_order('sell')
-    assert worker.disabled
+    assert worker.place_order('sell') is False
 
-    worker.disabled = False
     monkeypatch.setattr(worker.__class__, 'amount_base', 0)
-    worker.place_order('buy')
-    assert worker.disabled
+    assert worker.place_order('buy') is False
 
 
 def test_place_orders(worker2, other_orders):
