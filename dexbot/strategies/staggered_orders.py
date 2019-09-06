@@ -154,10 +154,6 @@ class Strategy(StrategyBase):
         # Store balance entry for profit estimation if needed
         self.store_profit_estimation_data()
 
-        # Calculate minimal orders amounts based on asset precision
-        if not self.order_min_base or not self.order_min_quote:
-            self.calculate_min_amounts()
-
         # Calculate asset thresholds once
         if not self.quote_asset_threshold or not self.base_asset_threshold:
             self.calculate_asset_thresholds()
@@ -1519,13 +1515,29 @@ class Strategy(StrategyBase):
         limiter = 0
         if asset == 'base':
             # Define amounts in terms of BASE and QUOTE
-            base_amount = own_asset_amount
+            base_amount = limiter = own_asset_amount
             quote_amount = opposite_asset_amount
-            limiter = base_amount
         elif asset == 'quote':
-            quote_amount = own_asset_amount
-            limiter = quote_amount
+            quote_amount = limiter = own_asset_amount
             price = price ** -1
+
+        # Check whether new order will excess the limiter. Limiter is set based on own_aseet_limit or
+        # opposite_asset_limit kwargs
+        if balance < limiter:
+            if allow_partial or (
+                # Accept small inaccuracy for full-sized closer order
+                place_order and not allow_partial and limiter - balance < 20 * 10 ** -precision
+            ):
+                self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
+                               .format(order_type, balance, symbol, prec=precision))
+                if asset == 'base':
+                    quote_amount = balance / price
+                elif asset == 'quote':
+                    quote_amount = balance
+            elif place_order and not allow_partial:
+                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
+                               .format(order_type, limiter, balance, prec=precision))
+                place_order = False
 
         # Make sure new order is bigger than allowed minimum
         hard_limit = 0
@@ -1539,31 +1551,9 @@ class Strategy(StrategyBase):
                     hard_limit = base_amount
                 elif asset == 'quote':
                     hard_limit = quote_amount
-                limiter = hard_limit
-
-        # Check whether new order will exceed available balance
-        if balance < limiter:
-            # Closer order should not be less than threshold
-            if (
-                allow_partial and
-                balance > hard_limit) or (
-                # Accept small inaccuracy for full-sized closer order
-                place_order and not allow_partial and limiter - balance < 20 * 10 ** -precision
-            ):
-                self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
-                               .format(order_type, balance, symbol, prec=precision))
-                if asset == 'base':
-                    quote_amount = balance / price
-                elif asset == 'quote':
-                    quote_amount = balance
-
-            elif place_order and not allow_partial:
-                self.log.debug('Not enough balance to place closer {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
-                               .format(order_type, limiter, balance, prec=precision))
-                place_order = False
-            elif place_order:
+            if balance < hard_limit:
                 self.log.debug('Not enough balance to place minimal allowed order: {:.{prec}f}/{:.{prec}f} {}'
-                               .format(balance, limiter, symbol, prec=precision))
+                               .format(balance, hard_limit, symbol, prec=precision))
                 place_order = False
 
         if place_order and asset == 'base':
@@ -1647,37 +1637,35 @@ class Strategy(StrategyBase):
             limiter = quote_amount
             price = price ** -1
 
-        # Make sure new order is bigger than allowed minimum
-        hard_limit = 0
-        if place_order:
-            corrected_quote_amount = self.check_min_order_size(quote_amount, price)
-            if corrected_quote_amount > quote_amount:
-                self.log.debug('Correcting further order amount to minimal allowed: {} -> {}'
-                               .format(quote_amount, corrected_quote_amount))
-                quote_amount = corrected_quote_amount
-                base_amount = quote_amount * price
-                if asset == 'base':
-                    hard_limit = base_amount
-                elif asset == 'quote':
-                    hard_limit = quote_amount
-                limiter = hard_limit
-
         # Check whether new order will exceed available balance
         if balance < limiter:
             if place_order and not allow_partial:
                 self.log.debug('Not enough balance to place further {} order; need/avail: {:.{prec}f}/{:.{prec}f}'
                                .format(order_type, limiter, balance, prec=precision))
                 place_order = False
-            elif allow_partial and balance > hard_limit:
+            elif allow_partial:
                 self.log.debug('Limiting {} order amount to available asset balance: {:.{prec}f} {}'
                                .format(order_type, balance, symbol, prec=precision))
                 if asset == 'base':
                     quote_amount = balance / price
                 elif asset == 'quote':
                     quote_amount = balance
-            elif place_order:
+
+        # Make sure new order is bigger than allowed minimum
+        hard_limit = 0
+        if place_order:
+            corrected_quote_amount = self.check_min_order_size(quote_amount, price)
+            if corrected_quote_amount > quote_amount:
+                self.log.debug('Correcting further order amount to minimal allowed')
+                quote_amount = corrected_quote_amount
+                base_amount = quote_amount * price
+                if asset == 'base':
+                    hard_limit = base_amount
+                elif asset == 'quote':
+                    hard_limit = quote_amount
+            if balance < hard_limit:
                 self.log.debug('Not enough balance to place minimal allowed order: {:.{prec}f}/{:.{prec}f} {}'
-                               .format(balance, limiter, symbol, prec=precision))
+                               .format(balance, hard_limit, symbol, prec=precision))
                 place_order = False
 
         if place_order and asset == 'base':
@@ -1953,6 +1941,10 @@ class Strategy(StrategyBase):
             :param float | price: Order price in BASE
             :return float | new_amount: passed amount or minimal allowed amount
         """
+        # Calculate minimal orders amounts based on asset precision
+        if not self.order_min_base or not self.order_min_quote:
+            self.calculate_min_amounts()
+
         if (amount < self.order_min_quote or
                 amount * price < self.order_min_base):
             self.log.debug('Too small order, base: {:.8f}/{:.8f}, quote: {}/{}'

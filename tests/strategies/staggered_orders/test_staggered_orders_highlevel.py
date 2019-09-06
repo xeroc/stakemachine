@@ -293,28 +293,6 @@ def test_place_closer_order_allow_partial_hard_limit(orders2, asset):
 
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
-def test_place_closer_order_allow_partial_soft_limit(orders2, asset):
-    """ Test place_closer_order with allow_partial=True when avail balance is less than self.partial_fill_threshold
-        restriction
-    """
-    worker = orders2
-
-    if asset == 'base':
-        order = worker.buy_orders[0]
-        # Pretend we have balance smaller than soft limit
-        worker.base_balance['amount'] = order['base']['amount'] * worker.partial_fill_threshold / 1.1
-    elif asset == 'quote':
-        order = worker.sell_orders[0]
-        worker.quote_balance['amount'] = order['base']['amount'] * worker.partial_fill_threshold / 1.1
-
-    num_orders_before = len(worker.own_orders)
-    worker.place_closer_order(asset, order, place_order=True, allow_partial=True)
-    num_orders_after = len(worker.own_orders)
-    # Expect that order was not placed
-    assert num_orders_before == num_orders_after
-
-
-@pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_allow_partial(orders2, asset):
     """ Test place_closer_order with allow_partial=True when avail balance is more than self.partial_fill_threshold
         restriction (enough for partial order)
