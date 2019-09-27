@@ -42,9 +42,8 @@ class BitsharesOrderEngine(Storage, Events):
     def __init__(self,
                  name,
                  config=None,
-                 account=None,
-                 market=None,
-                 worker_market=None,
+                 _account=None,
+                 _market=None,
                  fee_asset_symbol=None,
                  bitshares_instance=None,
                  bitshares_bundle=None,
@@ -52,7 +51,7 @@ class BitsharesOrderEngine(Storage, Events):
                  **kwargs):
 
         # BitShares instance
-        self.bitshares = bitshares_instance or shared_bitshares_instance()
+        self.bitshares = bitshares_instance # or shared_bitshares_instance()
 
         # Dex instance used to get different fees for the market
         self.dex = Dex(self.bitshares)
@@ -71,12 +70,8 @@ class BitsharesOrderEngine(Storage, Events):
         else:
             self.config = Config.get_worker_config_file(name)
 
-        # Get Bitshares account and market for this worker
-        self.account = account
-
-        self.market = market
-
-        self.worker_market = worker_market
+        self._market = _market
+        self._account = _account
 
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
@@ -84,23 +79,13 @@ class BitsharesOrderEngine(Storage, Events):
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
 
-        # Set fee asset
-        fee_asset_symbol = fee_asset_symbol
-
-        if fee_asset_symbol:
-            try:
-                self.fee_asset = Asset(fee_asset_symbol, bitshares_instance=self.bitshares)
-            except bitshares.exceptions.AssetDoesNotExistsException:
-                self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
-        else:
-            # If there is no fee asset, use BTS
-            self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
+        self.fee_asset = fee_asset_symbol
 
         # CER cache
         self.core_exchange_rate = None
 
         # Ticker
-        self.ticker = self.market.ticker
+        self.ticker = self._market.ticker
 
         # Settings for bitshares instance
         self.bitshares.bundle = bitshares_bundle
@@ -130,7 +115,7 @@ class BitsharesOrderEngine(Storage, Events):
         try:
             self.retry_action(
                 self.bitshares.cancel,
-                orders, account=self.account, fee_asset=self.fee_asset['id']
+                orders, account=self._account, fee_asset=self.fee_asset['id']
             )
         except bitsharesapi.exceptions.UnhandledRPCError as exception:
             if str(exception).startswith('Assert Exception: maybe_found != nullptr: Unable to find Object'):
@@ -186,7 +171,7 @@ class BitsharesOrderEngine(Storage, Events):
             :param float | fee_reservation: How much is saved in reserve for the fees
             :return: Balance of specific asset
         """
-        balance = self.account.balance(asset)
+        balance = self._account.balance(asset)
 
         if fee_reservation > 0:
             balance['amount'] = balance['amount'] - fee_reservation
@@ -194,10 +179,10 @@ class BitsharesOrderEngine(Storage, Events):
         return balance
 
     def calculate_order_data(self, order, amount, price):
-        quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
+        quote_asset = Amount(amount, self._market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
         order['price'] = price
-        base_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
+        base_asset = Amount(amount * price, self._market['base']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         return order
 
@@ -282,8 +267,8 @@ class BitsharesOrderEngine(Storage, Events):
         """
         quote = 0
         base = 0
-        quote_asset = self.market['quote']['id']
-        base_asset = self.market['base']['id']
+        quote_asset = self._market['quote']['id']
+        base_asset = self._market['base']['id']
 
         # Total balance calculation
         for balance in self.balances:
@@ -320,8 +305,8 @@ class BitsharesOrderEngine(Storage, Events):
 
         quote = 0
         base = 0
-        quote_asset = self.market['quote']['id']
-        base_asset = self.market['base']['id']
+        quote_asset = self._market['quote']['id']
+        base_asset = self._market['base']['id']
 
         for order_id in order_ids:
             order = self.get_updated_order(order_id)
@@ -378,7 +363,7 @@ class BitsharesOrderEngine(Storage, Events):
                                    remainders and not just initial amounts
             :return: Returns a list of orders or None
         """
-        orders = self.bitshares.rpc.get_limit_orders(self.market['base']['id'], self.market['quote']['id'], depth)
+        orders = self.bitshares.rpc.get_limit_orders(self._market['base']['id'], self._market['quote']['id'], depth)
         if updated:
             orders = [self.get_updated_limit_order(o) for o in orders]
         orders = [Order(o, bitshares_instance=self.bitshares) for o in orders]
@@ -454,7 +439,7 @@ class BitsharesOrderEngine(Storage, Events):
 
         # At first, try to look up own orders. This prevents RPC calls whether requested order is own order
         order = None
-        for limit_order in self.account['limit_orders']:
+        for limit_order in self._account['limit_orders']:
             if order_id == limit_order['id']:
                 order = limit_order
                 break
@@ -487,7 +472,7 @@ class BitsharesOrderEngine(Storage, Events):
             :return bool
         """
         # Check if the order is buy order, by comparing asset symbol of the order and the market
-        if order['base']['symbol'] == self.market['base']['symbol']:
+        if order['base']['symbol'] == self._market['base']['symbol']:
             return True
         else:
             return False
@@ -497,14 +482,14 @@ class BitsharesOrderEngine(Storage, Events):
 
             :return: bool: True = Current market, False = Not current market
         """
-        if quote_asset_id == self.market['quote']['id']:
-            if base_asset_id == self.market['base']['id']:
+        if quote_asset_id == self._market['quote']['id']:
+            if base_asset_id == self._market['base']['id']:
                 return True
             return False
 
         # Todo: Should we return true if market is opposite?
-        if quote_asset_id == self.market['base']['id']:
-            if base_asset_id == self.market['quote']['id']:
+        if quote_asset_id == self._market['base']['id']:
+            if base_asset_id == self._market['quote']['id']:
                 return True
             return False
 
@@ -517,7 +502,7 @@ class BitsharesOrderEngine(Storage, Events):
             :return bool
         """
         # Check if the order is sell order, by comparing asset symbol of the order and the market
-        if order['base']['symbol'] == self.market['quote']['symbol']:
+        if order['base']['symbol'] == self._market['quote']['symbol']:
             return True
         else:
             return False
@@ -532,8 +517,8 @@ class BitsharesOrderEngine(Storage, Events):
             :param kwargs:
             :return:
         """
-        symbol = self.market['base']['symbol']
-        precision = self.market['base']['precision']
+        symbol = self._market['base']['symbol']
+        precision = self._market['base']['precision']
         base_amount = truncate(price * amount, precision)
         return_order_id = kwargs.pop('returnOrderId', self.returnOrderId)
 
@@ -544,7 +529,7 @@ class BitsharesOrderEngine(Storage, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if return_order_id and self.balance(self.market['base']) < base_amount:
+        if return_order_id and self.balance(self._market['base']) < base_amount:
             self.log.critical("Insufficient buy balance, needed {} {}".format(base_amount, symbol))
             self.disabled = True
             return None
@@ -554,10 +539,10 @@ class BitsharesOrderEngine(Storage, Events):
 
         # Place the order
         buy_transaction = self.retry_action(
-            self.market.buy,
+            self._market.buy,
             price,
-            Amount(amount=amount, asset=self.market["quote"], bitshares_instance=self.bitshares),
-            account=self.account.name,
+            Amount(amount=amount, asset=self._market["quote"], bitshares_instance=self.bitshares),
+            account=self._account.name,
             expiration=self.expiration,
             returnOrderId=return_order_id,
             fee_asset=self.fee_asset['id'],
@@ -588,8 +573,8 @@ class BitsharesOrderEngine(Storage, Events):
             :param kwargs:
             :return:
         """
-        symbol = self.market['quote']['symbol']
-        precision = self.market['quote']['precision']
+        symbol = self._market['quote']['symbol']
+        precision = self._market['quote']['precision']
         quote_amount = truncate(amount, precision)
         return_order_id = kwargs.pop('returnOrderId', self.returnOrderId)
 
@@ -600,7 +585,7 @@ class BitsharesOrderEngine(Storage, Events):
             return None
 
         # Make sure we have enough balance for the order
-        if return_order_id and self.balance(self.market['quote']) < quote_amount:
+        if return_order_id and self.balance(self._market['quote']) < quote_amount:
             self.log.critical("Insufficient sell balance, needed {} {}".format(amount, symbol))
             self.disabled = True
             return None
@@ -610,10 +595,10 @@ class BitsharesOrderEngine(Storage, Events):
 
         # Place the order
         sell_transaction = self.retry_action(
-            self.market.sell,
+            self._market.sell,
             price,
-            Amount(amount=amount, asset=self.market["quote"]),
-            account=self.account.name,
+            Amount(amount=amount, asset=self._market["quote"]),
+            account=self._account.name,
             expiration=self.expiration,
             returnOrderId=return_order_id,
             fee_asset=self.fee_asset['id'],
@@ -654,7 +639,7 @@ class BitsharesOrderEngine(Storage, Events):
                         tries += 1
                         self.log.warning("Ignoring: '{}'".format(str(exception)))
                         self.bitshares.txbuffer.clear()
-                        self.account.refresh()
+                        self._account.refresh()
                         time.sleep(2)
                 elif "now <= trx.expiration" in str(exception):  # Usually loss of sync to blockchain
                     if tries > MAX_TRIES:
@@ -685,10 +670,9 @@ class BitsharesOrderEngine(Storage, Events):
     @property
     def balances(self):
         """ Returns all the balances of the account assigned for the worker.
-
             :return: Balances in list where each asset is in their own Amount object
         """
-        return self.account.balances
+        return self._account.balances
 
     def get_own_orders(self, refresh=True):
         """ Return the account's open orders in the current market
@@ -700,10 +684,11 @@ class BitsharesOrderEngine(Storage, Events):
 
         # Refresh account data
         if refresh:
-            self.account.refresh()
+            self._account.refresh()
 
-        for order in self.account.openorders:
-            if self.worker_market == order.market and self.account.openorders:
+        for order in self._account.openorders:
+            worker_market = self._market.get_string('/')
+            if worker_market == order.market and self._account.openorders:
                 orders.append(order)
 
         return orders
@@ -716,13 +701,36 @@ class BitsharesOrderEngine(Storage, Events):
         """
         # Refresh account data
         if refresh:
-            self.account.refresh()
+            self._account.refresh()
 
         orders = []
-        for order in self.account.openorders:
+        for order in self._account.openorders:
             orders.append(order)
 
         return orders
+
+    @property
+    def account(self):
+        """ Return the full account as :class:`bitshares.account.Account` object!
+            Can be refreshed by using ``x.refresh()``
+
+            :return: object | Account
+        """
+        return self._account
+
+    @property
+    def market(self):
+        """ Return the market object as :class:`bitshares.market.Market`
+        """
+        return self._market
+
+    @property
+    def base_asset(self):
+        return self._market.get_string('/').split('/')[1]
+
+    @property
+    def quote_asset(self):
+        return self._market.get_string('/').split('/')[0]
 
     @property
     def all_own_orders(self):

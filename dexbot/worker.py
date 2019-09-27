@@ -30,7 +30,7 @@ class WorkerInfrastructure(threading.Thread):
         super().__init__()
 
         # BitShares instance
-        self.bitshares = bitshares_instance or shared_bitshares_instance()
+        self.bitshares = bitshares_instance # or shared_bitshares_instance()
         self.config = copy.deepcopy(config)
         self.view = view
         self.jobs = set()
