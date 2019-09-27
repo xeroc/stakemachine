@@ -411,14 +411,14 @@ def test_increase_order_sizes_mountain_basic(worker, do_initial_allocation, issu
 
     increase_until_allocated(worker)
 
-    # All orders must be equal-sized in their quote, accept slight error
+    # All orders must be equal-sized in their quote, accept difference no more than increase_factor.
+    # This means all orders was increased and probably unfinished increase round may remain.
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
     for order in worker.buy_orders:
-        assert order['quote']['amount'] == pytest.approx(
-            worker.buy_orders[0]['quote']['amount'], rel=(1 ** -worker.market['quote']['precision'])
-        )
+        assert order['quote']['amount'] == pytest.approx(worker.buy_orders[0]['quote']['amount'], rel=(increase_factor))
     for order in worker.sell_orders:
         assert order['quote']['amount'] == pytest.approx(
-            worker.sell_orders[0]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+            worker.sell_orders[0]['quote']['amount'], rel=(increase_factor)
         )
 
 
@@ -464,22 +464,20 @@ def test_increase_order_sizes_mountain_furthest_order(
     """ Should test proper calculation of furthest order: try to maximize, don't allow too small increase
     """
     do_initial_allocation(worker, 'mountain')
-    worker.mode = 'mountain'
-    increase_until_allocated(worker)
+    previous_buy_orders = worker.buy_orders
 
-    # Add balance to increase ~2 orders
+    # Add balance to increase ~1 order
     increase_factor = max(1 + worker.increment, worker.min_increase_factor)
-    to_issue = worker.buy_orders[-1]['base']['amount'] * (increase_factor - 1) * 2.01
+    to_issue = worker.buy_orders[-1]['base']['amount'] * (increase_factor - 1) * 1.1
     issue_asset(worker.market['base']['symbol'], to_issue, worker.account.name)
 
-    previous_buy_orders = worker.buy_orders
     worker.refresh_balances()
-    worker.increase_order_sizes('base', worker.base_balance, previous_buy_orders)
+    increase_until_allocated(worker)
     worker.refresh_orders()
 
     assert worker.buy_orders[-1]['base']['amount'] - previous_buy_orders[-1]['base']['amount'] == pytest.approx(
         previous_buy_orders[-1]['base']['amount'] * (increase_factor - 1),
-        rel=(1 ** -worker.market['base']['precision']),
+        rel=(10 ** -worker.market['base']['precision']),
     )
 
 
@@ -544,21 +542,41 @@ def test_increase_order_sizes_neutral_basic(worker, do_initial_allocation, issue
     issue_asset(worker.market['quote']['symbol'], worker.quote_total_balance, worker.account.name)
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
     for index, order in enumerate(worker.buy_orders):
         if index == 0:
             continue
-        # Assume amounts are equal within some tolerance
-        assert order['base']['amount'] == pytest.approx(
-            worker.buy_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['base']['precision']),
+        # Assume amounts are equal within some tolerance, or accept difference at increase_factor size to detect new
+        # unfinished increase round
+        assert (
+            order['base']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
+                rel=(10 ** -worker.market['base']['precision']),
+            )
+        ) or (
+            order['base']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment) / increase_factor,
+                rel=(10 ** -worker.market['base']['precision']),
+            )
         )
     for index, order in enumerate(worker.sell_orders):
         if index == 0:
             continue
-        assert order['base']['amount'] == pytest.approx(
-            worker.sell_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['quote']['precision']),
+        assert (
+            order['base']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment),
+                rel=(10 ** -worker.market['quote']['precision']),
+            )
+        ) or (
+            order['base']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['base']['amount'] / math.sqrt(1 + worker.increment) / increase_factor,
+                rel=(10 ** -worker.market['quote']['precision']),
+            )
         )
 
 
@@ -658,13 +676,14 @@ def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_
         worker.refresh_orders()
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
     # New closest orders amount should be equal to initial ones
     assert worker.buy_orders[0]['base']['amount'] == pytest.approx(
-        initial_base, rel=(1 ** -worker.market['base']['precision'])
+        initial_base, rel=(0.1 * increase_factor * initial_base)
     )
     assert worker.sell_orders[0]['base']['amount'] == pytest.approx(
-        initial_quote, rel=(1 ** -worker.market['quote']['precision'])
+        initial_quote, rel=(0.1 * increase_factor * initial_quote)
     )
 
 
@@ -743,7 +762,8 @@ def test_increase_order_sizes_neutral_closest_order(
     worker.refresh_orders()
 
     assert worker.buy_orders[0]['base']['amount'] - previous_buy_orders[0]['base']['amount'] == pytest.approx(
-        previous_buy_orders[0]['base']['amount'] * (increase_factor - 1), rel=(1 ** -worker.market['base']['precision'])
+        previous_buy_orders[0]['base']['amount'] * (increase_factor - 1),
+        rel=(10 ** -worker.market['base']['precision']),
     )
 
 
@@ -757,14 +777,26 @@ def test_increase_order_sizes_buy_slope(worker, do_initial_allocation, issue_ass
     issue_asset(worker.market['quote']['symbol'], worker.quote_total_balance, worker.account.name)
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
     for order in worker.buy_orders:
         # All buy orders must be equal-sized in BASE
         assert order['base']['amount'] == worker.buy_orders[0]['base']['amount']
-    for order in worker.sell_orders:
-        # Sell orders are equal-sized in BASE asset
-        assert order['quote']['amount'] == pytest.approx(
-            worker.sell_orders[0]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+    for index, order in enumerate(worker.sell_orders):
+        # Sell orders are equal-sized in BASE asset or diff is equal to increase_factor
+        if index == 0:
+            continue
+        assert (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
+            )
+        ) or (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.sell_orders[index - 1]['quote']['amount'] * increase_factor,
+                rel=(0.1 * increase_factor * order['quote']['amount']),
+            )
         )
 
 
@@ -778,11 +810,23 @@ def test_increase_order_sizes_sell_slope(worker, do_initial_allocation, issue_as
     issue_asset(worker.market['quote']['symbol'], worker.quote_total_balance, worker.account.name)
 
     increase_until_allocated(worker)
+    increase_factor = max(1 + worker.increment, worker.min_increase_factor)
 
-    for order in worker.buy_orders:
-        # All buy orders must be equal-sized in market QUOTE
-        assert order['quote']['amount'] == pytest.approx(
-            worker.buy_orders[0]['quote']['amount'], rel=(1 ** -worker.market['quote']['precision'])
+    for index, order in enumerate(worker.buy_orders):
+        # All buy orders must be equal-sized in market QUOTE or diff is equal to increase_factor
+        if index == 0:
+            continue
+        assert (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['quote']['amount'], rel=(10 ** -worker.market['quote']['precision'])
+            )
+        ) or (
+            order['quote']['amount']
+            == pytest.approx(
+                worker.buy_orders[index - 1]['quote']['amount'] * increase_factor,
+                rel=(0.1 * increase_factor * order['quote']['amount']),
+            )
         )
 
     for order in worker.sell_orders:
@@ -901,7 +945,6 @@ def test_allocate_asset_increase_orders(worker, do_initial_allocation, maintain_
     assert balance_in_orders_after['quote'] > balance_in_orders_before['quote']
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/588')
 def test_allocate_asset_dust_order_simple(worker, do_initial_allocation, maintain_until_allocated, base_account):
     """ Make dust order, check if it canceled and closer opposite order placed
     """
@@ -957,7 +1000,6 @@ def test_allocate_asset_dust_order_increase(worker, do_initial_allocation, base_
     assert num_buy_orders_after - num_buy_orders_before == 1
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/588')
 def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_account):
     """ Fill an order and check if opposite order placed
     """
@@ -977,6 +1019,135 @@ def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_accoun
     worker.refresh_orders()
     num_sell_orders_after = len(worker.sell_orders)
     assert num_sell_orders_after - num_sell_orders_before == 1
+
+
+def test_allocate_asset_filled_order_on_massively_imbalanced_sides(
+    worker, do_initial_allocation, base_account
+):
+    """ When sides are massively imbalanced, make sure that spread will be closed after filling one order on
+        smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
+        smaller orders. Correct behavior: when order on smaller side filled, big side should place closer order.
+
+        Test for https://github.com/Codaone/DEXBot/issues/588
+    """
+    do_initial_allocation(worker, worker.mode)
+    spread_before = get_spread(worker)
+    log.info('Worker spread after bootstrap: {}'.format(spread_before))
+    # TODO: automatically turn off bootstrapping after target spread is closed?
+    worker['bootstrapping'] = False
+
+    # Cancel several closest orders
+    num_orders_to_cancel = 3
+    worker.cancel_orders_wrapper(worker.sell_orders[:num_orders_to_cancel])
+    worker.refresh_orders()
+    worker.refresh_balances()
+
+    # Place limited orders; the goal is to limit order amount to be much smaller than opposite
+    quote_limit = worker.buy_orders[0]['quote']['amount'] * worker.partial_fill_threshold / 2
+    spread_after = get_spread(worker)
+    while spread_after >= worker.target_spread + worker.increment:
+        # We're using spread check because we cannot just place same number of orders as num_orders_to_cancel because
+        # it may result in too close spread because of price shifts
+        worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=quote_limit)
+        worker.refresh_orders()
+        spread_after = get_spread(worker)
+
+    log.info('Worker spread: {}'.format(get_spread(worker)))
+
+    # Fill only one newly placed order from another account
+    additional_account = base_account()
+    num_orders_to_fill = 1
+    for i in range(0, num_orders_to_fill):
+        price = worker.sell_orders[i]['price'] ** -1 * 1.01
+        amount = worker.sell_orders[i]['base']['amount'] * 1.01
+        log.debug('Filling {} @ {}'.format(amount, price))
+        worker.market.buy(price, amount, account=additional_account)
+
+    # Cancel unmatched dust
+    account = Account(additional_account, bitshares_instance=worker.bitshares)
+    ids = [order['id'] for order in account.openorders if 'id' in order]
+    worker.bitshares.cancel(ids, account=additional_account)
+    worker.refresh_orders()
+    worker.refresh_balances(use_cached_orders=True)
+
+    # Filling of one order should result in spread > target spread, othewise allocate_asset will not place closer prder
+    spread_after = get_spread(worker)
+    assert spread_after >= worker.target_spread + worker.increment
+
+    # Allocate obtained BASE
+    counter = 0
+    while spread_after >= worker.target_spread + worker.increment:
+        worker.allocate_asset('base', worker.base_balance)
+        worker.refresh_orders()
+        worker.refresh_balances(use_cached_orders=True)
+        spread_after = get_spread(worker)
+        counter += 1
+        # Counter is for preventing infinity loop
+        assert counter < 20
+
+
+def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
+    worker, do_initial_allocation, base_account
+):
+    """ When sides are massively imbalanced, make sure that spread will be closed after filling one order on
+        smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
+        smaller orders. Correct behavior: when order on smaller side filled, big side should place closer order.
+
+        This test is similar to test_allocate_asset_filled_order_on_massively_imbalanced_sides, but tests partially
+        filled order where "calncel dust order" logic is in action.
+
+        Test for https://github.com/Codaone/DEXBot/issues/588
+    """
+    do_initial_allocation(worker, worker.mode)
+    spread_before = get_spread(worker)
+    log.info('Worker spread after bootstrap: {}'.format(spread_before))
+    # TODO: automatically turn off bootstrapping after target spread is closed?
+    worker['bootstrapping'] = False
+
+    # Cancel several closest orders
+    num_orders_to_cancel = 3
+    worker.cancel_orders_wrapper(worker.sell_orders[:num_orders_to_cancel])
+    worker.refresh_orders()
+    worker.refresh_balances()
+
+    # Place limited orders; the goal is to limit order amount to be much smaller than opposite
+    quote_limit = worker.buy_orders[0]['quote']['amount'] * worker.partial_fill_threshold / 2
+    spread_after = get_spread(worker)
+    while spread_after >= worker.target_spread + worker.increment:
+        # We're using spread check because we cannot just place same number of orders as num_orders_to_cancel because
+        # it may result in too close spread because of price shifts
+        worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=quote_limit)
+        worker.refresh_orders()
+        spread_after = get_spread(worker)
+
+    log.info('Worker spread: {}'.format(get_spread(worker)))
+
+    # Fill only one newly placed order from another account
+    additional_account = base_account()
+    num_orders_to_fill = 1
+    for i in range(0, num_orders_to_fill):
+        price = worker.sell_orders[i]['price'] ** -1 * 1.01
+        # Make partially filled order (dust order)
+        amount = worker.sell_orders[i]['base']['amount'] * (1 - worker.partial_fill_threshold) * 1.01
+        log.debug('Filling {} @ {}'.format(amount, price))
+        worker.market.buy(price, amount, account=additional_account)
+
+    # Cancel unmatched dust
+    account = Account(additional_account, bitshares_instance=worker.bitshares)
+    ids = [order['id'] for order in account.openorders if 'id' in order]
+    worker.bitshares.cancel(ids, account=additional_account)
+    worker.refresh_orders()
+    worker.refresh_balances(use_cached_orders=True)
+
+    # Check that we filled enough
+    assert not worker.check_partial_fill(worker.sell_orders[0], fill_threshold=(1 - worker.partial_fill_threshold))
+
+    # Expect dust order cancel + closer order
+    log.info('spread before allocate_asset(): {}'.format(get_spread(worker)))
+    worker.allocate_asset('base', worker.base_balance)
+    worker.refresh_orders()
+    spread_after = get_spread(worker)
+    assert spread_after < worker.target_spread + worker.increment
 
 
 @pytest.mark.parametrize('mode', MODES)
@@ -1022,12 +1193,12 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
         assert worker.sell_orders[0]['base']['amount'] == worker.sell_orders[1]['base']['amount']
     elif worker.mode == 'mountain' or worker.mode == 'buy_slope':
         assert worker.sell_orders[0]['quote']['amount'] == pytest.approx(
-            worker.sell_orders[1]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+            worker.sell_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
     elif worker.mode == 'neutral':
         assert worker.sell_orders[0]['base']['amount'] == pytest.approx(
             worker.sell_orders[1]['base']['amount'] * math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['quote']['precision']),
+            rel=(10 ** -worker.market['quote']['precision']),
         )
 
 
@@ -1077,12 +1248,12 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
         assert worker.buy_orders[0]['base']['amount'] == worker.buy_orders[1]['base']['amount']
     elif worker.mode == 'mountain' or worker.mode == 'sell_slope':
         assert worker.buy_orders[0]['quote']['amount'] == pytest.approx(
-            worker.buy_orders[1]['quote']['amount'], rel=(1 ** -worker.market['base']['precision'])
+            worker.buy_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
     elif worker.mode == 'neutral':
         assert worker.buy_orders[0]['base']['amount'] == pytest.approx(
             worker.buy_orders[1]['base']['amount'] * math.sqrt(1 + worker.increment),
-            rel=(1 ** -worker.market['quote']['precision']),
+            rel=(10 ** -worker.market['base']['precision']),
         )
 
 
