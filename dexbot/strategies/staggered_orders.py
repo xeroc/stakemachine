@@ -320,9 +320,10 @@ class Strategy(StrategyBase):
     def refresh_balances(self, use_cached_orders=False):
         """ This function is used to refresh account balances
 
-            :param bool | use_cached_orders: when calculating orders balance, use cached orders from self.cached_orders
+            :param bool use_cached_orders (optional): when calculating orders
+                balance, use cached orders from self.cached_orders
 
-            This version supports using same bitshares account across multiple workers with assets intersections.
+            This version supports usage of same bitshares account across multiple workers with assets intersections.
         """
         # Balances in orders on all related markets
         orders = self.get_all_own_orders(refresh=not use_cached_orders)
