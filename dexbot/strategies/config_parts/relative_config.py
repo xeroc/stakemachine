@@ -30,7 +30,7 @@ class RelativeConfig(BaseConfig):
         relative_orders_config = [
             ConfigElement('external_feed', 'bool', False, 'External price feed',
                           'Use external reference price instead of center price acquired from the market', None),
-            ConfigElement('external_price_source', 'choice', EXCHANGES[0], 'External price source',
+            ConfigElement('external_price_source', 'choice', EXCHANGES[0][0], 'External price source',
                           'The bot will try to get price information from this source', EXCHANGES),
             ConfigElement('amount', 'float', 1, 'Amount',
                           'Fixed order size, expressed in quote asset, unless "relative order size" selected',
@@ -54,6 +54,8 @@ class RelativeConfig(BaseConfig):
             ConfigElement('center_price_depth', 'float', 0, 'Measurement depth',
                           'Cumulative quote amount from which depth center price will be measured',
                           (0.00000001, 1000000000, 8, '')),
+            ConfigElement('center_price_from_last_trade', 'bool', False, 'Last trade price as new center price',
+                          'This will make orders move by half the spread at every fill', None),
             ConfigElement('center_price_offset', 'bool', False, 'Center price offset based on asset balances',
                           'Automatically adjust orders up or down based on the imbalance of your assets', None),
             ConfigElement('manual_offset', 'float', 0, 'Manual center price offset',

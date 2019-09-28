@@ -11,9 +11,9 @@ from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
 from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 
 import bitshares.exceptions
-from bitshares.account import Account
-from bitshares.amount import Asset
 from bitshares.instance import shared_bitshares_instance
+from bitshares.amount import Asset
+from bitshares.account import Account
 from bitshares.market import Market
 
 from events import Events
@@ -139,11 +139,6 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         # Get worker's parameters from the config
         self.worker = config["workers"][name]
 
-        # Get Bitshares account and market for this worker
-        self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
-
-        self._market = Market(config["workers"][name]["market"], bitshares_instance=self.bitshares)
-
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
 
@@ -153,6 +148,10 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         # What percent of balance the worker should use
         self.operational_percent_quote = self.worker.get('operational_percent_quote', 0) / 100
         self.operational_percent_base = self.worker.get('operational_percent_base', 0) / 100
+
+        # Get Bitshares account and market for this worker
+        self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
+        self._market = Market(config["workers"][name]["market"], bitshares_instance=self.bitshares)
 
         # Set fee asset
         fee_asset_symbol = self.worker.get('fee_asset')
@@ -170,7 +169,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         self.core_exchange_rate = None
 
         # Ticker
-        self.ticker = self.market.ticker
+        self.ticker = self._market.ticker
 
         # Settings for bitshares instance
         self.bitshares.bundle = bool(self.worker.get("bundle", False))
@@ -194,6 +193,8 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
                 'is_disabled': lambda: self.disabled
             }
         )
+
+        self.orders_log = logging.LoggerAdapter(logging.getLogger('dexbot.orders_log'), {})
 
     def pause(self):
         """ Pause the worker
@@ -309,35 +310,12 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         return profit
 
     @property
-    def account(self):
-        """ Return the full account as :class:`bitshares.account.Account` object!
-            Can be refreshed by using ``x.refresh()``
-
-            :return: object | Account
-        """
-        return self._account
-
-    @property
     def balances(self):
         """ Returns all the balances of the account assigned for the worker.
 
             :return: Balances in list where each asset is in their own Amount object
         """
         return self._account.balances
-
-    @property
-    def base_asset(self):
-        return self.worker['market'].split('/')[1]
-
-    @property
-    def quote_asset(self):
-        return self.worker['market'].split('/')[0]
-
-    @property
-    def market(self):
-        """ Return the market object as :class:`bitshares.market.Market`
-        """
-        return self._market
 
     @staticmethod
     def purge_all_local_worker_data(worker_name):
