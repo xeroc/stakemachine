@@ -143,11 +143,65 @@ def config_1_sat(so_worker_name, bitshares, account_1_sat):
 
 
 @pytest.fixture
+def config_multiple_workers_1(bitshares, account):
+    """ Prepares config with multiple SO workers on same account
+
+        This fixture should be function-scoped to use new fresh bitshares account for each test
+    """
+    config = {
+        'node': '{}'.format(bitshares.rpc.url),
+        'workers': {
+            'so-worker-1': {
+                'account': '{}'.format(account),
+                'market': 'QUOTEA/BASEA',
+                'module': 'dexbot.strategies.staggered_orders',
+                'mode': 'valley',
+                'center_price': 100.0,
+                'center_price_dynamic': False,
+                'fee_asset': 'TEST',
+                'lower_bound': 90.0,
+                'spread': 2.0,
+                'increment': 1.0,
+                'upper_bound': 110.0,
+                'operational_depth': 10,
+            },
+            'so-worker-2': {
+                'account': '{}'.format(account),
+                'market': 'QUOTEB/BASEA',
+                'module': 'dexbot.strategies.staggered_orders',
+                'mode': 'valley',
+                'center_price': 100.0,
+                'center_price_dynamic': False,
+                'fee_asset': 'TEST',
+                'lower_bound': 90.0,
+                'spread': 2.0,
+                'increment': 1.0,
+                'upper_bound': 110.0,
+                'operational_depth': 10,
+            },
+        },
+    }
+    return config
+
+
+@pytest.fixture
+def config_multiple_workers_2(config_multiple_workers_1):
+    """ Prepares config with multiple SO workers on same account
+
+        This fixture should be function-scoped to use new fresh bitshares account for each test
+    """
+    config = copy.deepcopy(config_multiple_workers_1)
+    config['workers']['so-worker-1']['market'] = 'QUOTEA/BASEA'
+    config['workers']['so-worker-2']['market'] = 'QUOTEA/BASEB'
+
+    return config
+
+
+@pytest.fixture
 def base_worker(bitshares, so_worker_name, storage_db):
-    worker_name = so_worker_name
     workers = []
 
-    def _base_worker(config):
+    def _base_worker(config, worker_name=so_worker_name):
         worker = Strategy(config=config, name=worker_name, bitshares_instance=bitshares)
         # Set market center price to avoid calling of maintain_strategy()
         worker.market_center_price = worker.worker['center_price']
@@ -161,7 +215,7 @@ def base_worker(bitshares, so_worker_name, storage_db):
     for worker in workers:
         worker.cancel_all_orders()
         # Workaround to purge all worker data after test
-        worker.purge_all_local_worker_data(worker_name)
+        worker.purge_all_local_worker_data(worker.worker_name)
         worker.bitshares.txbuffer.clear()
         worker.bitshares.bundle = False
 
