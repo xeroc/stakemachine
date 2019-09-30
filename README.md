@@ -6,9 +6,9 @@ Status](https://readthedocs.org/projects/dexbot/badge/?version=latest)](https://
 
 **Download the latest release for Windows, OSX and Linux from [here!](https://github.com/Codaone/DEXBot/releases/latest)**
 
-![GUI](https://i.imgur.com/rW8XKQ4.png)The Dashboard of the GUI version of DEXBot
+The Dashboard of the GUI version of DEXBot: ![GUI](https://i.imgur.com/rW8XKQ4.png)
 
-![CLI](https://i.imgur.com/H1N96nI.png)The CLI version of DEXBot in configuration dialog
+The CLI version of DEXBot in configuration dialog: ![CLI](https://i.imgur.com/H1N96nI.png)
 
 A Trading Bot provided with two very flexible Market Making strategies. Works on "vanilla" BitShares and all exchanges built upon it. Can be customized with additional strategies written in Python3.
 

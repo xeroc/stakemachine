@@ -9,8 +9,8 @@ log.setLevel(logging.DEBUG)
 def test_amount_quote(worker):
     """ Test quote amount calculation
     """
-    # config: 'sell_order_amount': 2.0,
-    assert worker.amount_quote == 2
+    # config: 'sell_order_amount': 1.0,
+    assert worker.amount_quote == 1
 
     worker.is_relative_order_size = True
     quote_balance = float(worker.balance(worker.market['quote']))
@@ -81,19 +81,16 @@ def test_place_order_zero_price(worker):
     assert worker.disabled
 
 
-def test_place_order_zero_amount(worker, monkeypatch):
-    """ Check that worker goes into error if amounts are 0
+def test_place_order_zero_amount(worker, other_orders, monkeypatch):
+    """ Check that worker doesn't try to place an order if amounts are 0
     """
     worker.get_top_prices()
 
     monkeypatch.setattr(worker.__class__, 'amount_quote', 0)
-    worker.place_order('sell')
-    assert worker.disabled
+    assert worker.place_order('sell') is False
 
-    worker.disabled = False
     monkeypatch.setattr(worker.__class__, 'amount_base', 0)
-    worker.place_order('buy')
-    assert worker.disabled
+    assert worker.place_order('buy') is False
 
 
 def test_place_orders(worker2, other_orders):
@@ -267,3 +264,32 @@ def test_maintain_strategy(worker, other_orders):
     """
     worker.maintain_strategy()
     assert len(worker.own_orders) == 2
+
+
+def test_zero_spread(worker, other_orders_zero_spread):
+    """ Make sure the strategy doesn't crossing opposite side orders when market spread is too close
+    """
+    other_worker = other_orders_zero_spread
+    other_orders_before = other_worker.own_orders
+
+    worker.upper_bound = 2
+    worker.lower_bound = 0.5
+    # Bounds should allow us to cross the spread
+    worker.buy_order_size_threshold = 0.00001
+    worker.sell_order_size_threshold = 0.00001
+
+    worker.get_top_prices()
+    worker.place_order('buy')
+    num_orders_1 = len(worker.own_orders)
+    worker.place_order('sell')
+    num_orders_2 = len(worker.own_orders)
+    # If the strategy placed both orders, they should not cross each other
+    assert num_orders_2 >= num_orders_1
+
+    other_orders_after = other_worker.own_orders
+    # Foreign orders left untouched
+    assert other_orders_after == other_orders_before
+
+    # Own orders not partially filled
+    for order in worker.own_orders:
+        assert order['base']['amount'] == order['for_sale']['amount']

@@ -88,7 +88,7 @@ def bitshares_instance(bitshares_testnet):
     """ Initialize BitShares instance connected to a local testnet
     """
     bitshares = BitShares(
-        node='ws://127.0.0.1:{}'.format(bitshares_testnet.service_port), keys=PRIVATE_KEYS, num_retries=-1
+        node='ws://127.0.0.1:{}'.format(bitshares_testnet.service_port), keys=PRIVATE_KEYS, num_retries=10
     )
     # Shared instance allows to avoid any bugs when bitshares_instance is not passed explicitly when instantiating
     # objects
