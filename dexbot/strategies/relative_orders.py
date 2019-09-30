@@ -80,16 +80,18 @@ class Strategy(StrategyBase):
         self.price_change_threshold = self.worker.get('price_change_threshold', 2) / 100
         self.is_custom_expiration = self.worker.get('custom_expiration', False)
 
+        self.default_expiration = self.expiration
         if self.is_custom_expiration:
             self.expiration = self.worker.get('expiration_time', self.expiration)
 
         if self.cp_from_last_trade:
+            # Order expiration before first trade might result in terrible price, so if default expiration will be too
+            # small, override it here
+            self.expiration = self.default_expiration
             self.ontick -= self.tick  # Save a few cycles there
-            self.expiration = 7 * 24 * 60 * 60  # Order expiration before first trade might result in terrible price
 
         self.last_check = datetime.now()
         self.min_check_interval = 8
-        self.first_round = True
 
         self.buy_price = None
         self.sell_price = None
@@ -194,22 +196,41 @@ class Strategy(StrategyBase):
 
         if self.is_center_price_dynamic:
             # Calculate center price from the market orders
-
             if self.external_feed:
                 # Try getting center price from external source
                 center_price = self.get_external_market_center_price(self.external_price_source)
-
-            if self.center_price_depth > 0 and not self.external_feed:
-                # Calculate with quote amount if given
-                center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
-
-            if self.cp_from_last_trade and not self.first_round:  # Using own last trade is bad idea at startup
+                try:
+                    self.log.info('Using center price from external source: {:.8f}'.format(center_price))
+                except TypeError:
+                    self.log.warning('Failed to obtain center price from external source')
+            elif self.cp_from_last_trade and self['bootstrapped']:  # Using own last trade is bad idea at startup
                 try:
                     center_price = self.get_own_last_trade()['price']
+                    self.log.info('Using center price from last trade: {:.8f}'.format(center_price))
                 except TypeError:
                     center_price = self.get_market_center_price()
+                    try:
+                        self.log.info('Using market center price (failed to obtain last trade): {:.8f}'
+                                      .format(center_price))
+                    except TypeError:
+                        self.log.warning('Failed to obtain center price from market')
+            elif self.center_price_depth > 0:
+                # Calculate with quote amount if given
+                center_price = self.get_market_center_price(quote_amount=self.center_price_depth)
+                try:
+                    self.log.info('Using market center price: {:.8f} with depth: {:.{prec}f}'.format(
+                        center_price,
+                        self.center_price_depth,
+                        prec=self.market['quote']['precision']
+                    ))
+                except TypeError:
+                    self.log.warning('Failed to obtain depthted center price')
             else:
                 center_price = self.get_market_center_price()
+                try:
+                    self.log.info('Using market center price: {:.8f}'.format(center_price))
+                except TypeError:
+                    self.log.warning('Failed to obtain center price from market')
 
             self.center_price = self.calculate_center_price(
                 center_price,
@@ -228,8 +249,12 @@ class Strategy(StrategyBase):
                 self.manual_offset
             )
 
-        self.buy_price = self.center_price / math.sqrt(1 + spread)
-        self.sell_price = self.center_price * math.sqrt(1 + spread)
+        try:
+            self.log.info('Center price after offsets calculation: {:.8f}'.format(self.center_price))
+            self.buy_price = self.center_price / math.sqrt(1 + spread)
+            self.sell_price = self.center_price * math.sqrt(1 + spread)
+        except TypeError:
+            self.log.warning('No center price calculated')
 
     def update_orders(self):
         self.log.debug('Starting to update orders')
@@ -296,7 +321,7 @@ class Strategy(StrategyBase):
                 if market_buy_orders:
                     return float(market_buy_orders[0]['price'])
                 else:
-                    return '0.0'
+                    return 0.0
             else:
                 return float(self.ticker().get('highestBid'))
 
@@ -377,7 +402,7 @@ class Strategy(StrategyBase):
                 if market_sell_orders:
                     return float(market_sell_orders[0]['price'])
                 else:
-                    return '0.0'
+                    return 0.0
             else:
                 return float(self.ticker().get('lowestAsk'))
 
@@ -545,11 +570,14 @@ class Strategy(StrategyBase):
         else:
             # Loop trough the orders and look for changes
             for order_id, order in orders.items():
+                if not order_id.startswith('1.7.'):
+                    need_update = True
+                    break
                 current_order = self.get_order(order_id)
 
                 if not current_order:
                     need_update = True
-                    self.log.debug('Could not found order on the market, it was filled, expired or cancelled')
+                    self.log.debug('Could not find order on the market, it was filled, expired or cancelled')
                 elif self.is_reset_on_partial_fill:
                     # Detect partially filled orders;
                     # on fresh order 'for_sale' is always equal to ['base']['amount']
@@ -563,7 +591,7 @@ class Strategy(StrategyBase):
                             #        we're updating order it may be filled further so trade log entry will not
                             #        be correct
             if need_update:
-                self.first_round = False
+                self['bootstrapped'] = True
 
         # Check center price change when using market center price with reset option on change
         if self.is_reset_on_price_change and self.is_center_price_dynamic:
@@ -602,14 +630,20 @@ class Strategy(StrategyBase):
 
     def get_own_last_trade(self):
         """ Returns dict with amounts and price of last trade """
-        try:
-            trade = [x for x in self.account.history(limit=1, only_ops=['fill_order'])][0]['op'][1]
+        history = self.account.history(only_ops=['fill_order'])
+        for entry in history:
+            trade = entry['op'][1]
+            # Look for first trade in worker's market
             if trade['pays']['asset_id'] == self.market['base']['id']:  # Buy order
                 base = trade['fill_price']['base']['amount'] / 10 ** self.market['base']['precision']
                 quote = trade['fill_price']['quote']['amount'] / 10 ** self.market['quote']['precision']
-            else:  # Sell order
+                break
+            elif trade['pays']['asset_id'] == self.market['quote']['id']:  # Sell order
                 base = trade['fill_price']['quote']['amount'] / 10 ** self.market['base']['precision']
                 quote = trade['fill_price']['base']['amount'] / 10 ** self.market['quote']['precision']
+                break
+        try:
             return {'base': base, 'quote': quote, 'price': base / quote}
-        except Exception:
-            return False
+        except UnboundLocalError:
+            # base or quote wasn't obtained
+            return None
