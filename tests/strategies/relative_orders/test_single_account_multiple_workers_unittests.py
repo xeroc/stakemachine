@@ -39,14 +39,7 @@ def test_correct_asset_names(ro_orders1):
     worker.cancel_all_orders()
 
 
-def test_correct_asset_names(ro_worker):
-    """ Test for https://github.com/bitshares/python-bitshares/issues/239
-    """
-    worker = ro_worker
-    worker.account.refresh()
-    orders = worker.account.openorders
-    symbols = ['BASEA', 'BASEB', 'QUOTEA', 'QUOTEB']
-    assert orders[0]['base']['asset']['symbol'] in symbols
+
 
 
 #####################################
