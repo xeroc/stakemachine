@@ -1,8 +1,12 @@
 import pytest
 import time
 import copy
+import logging
+import random
+from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.relative_orders import Strategy
-from bitshares.market import Market
+
+log = logging.getLogger("dexbot")
 
 
 @pytest.fixture(scope='session')
@@ -16,19 +20,12 @@ def assets(create_asset):
 
 
 @pytest.fixture(scope='module')
-def account_other(assets, prepare_account):
-    prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000},
-                    account='other')
-
-
-@pytest.fixture(scope='module')
 def base_account(assets, prepare_account, ro_worker_name):
     """ Factory to generate random account with pre-defined balances
     """
 
     def func():
-        account = prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000},
-                                  account=ro_worker_name)
+        account = prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000})
         return account
 
     return func
@@ -41,20 +38,6 @@ def account(base_account):
     return base_account()
 
 
-@pytest.fixture(scope='function')
-def other_orders(bitshares, account_other):
-    market = Market('QUOTEA/BASEA', bitshares_instance=bitshares)
-    ors_ids = []
-    o = market.buy(1, 10, returnOrderId=True, account='other')
-    ors_ids.append(o.get('orderid'))
-    o = market.sell(2, 20, returnOrderId=True, account='other')
-    ors_ids.append(o.get('orderid'))
-    o = market.buy(1.5, 20, returnOrderId=True, account='other')
-    ors_ids.append(o.get('orderid'))
-    yield
-    time.sleep(1.1)
-
-
 @pytest.fixture(scope='session')
 def ro_worker_name():
     """ Fixture to share ro Orders worker name
@@ -62,8 +45,8 @@ def ro_worker_name():
     return 'ro-worker'
 
 
-@pytest.fixture(scope='module', params=[('QUOTEA', 'BASEA')])
-def config(request, bitshares, account, ro_worker_name):
+@pytest.fixture
+def config(bitshares, account, ro_worker_name):
     """ Define worker's config with variable assets
 
         This fixture should be function-scoped to use new fresh bitshares account for each test
@@ -75,52 +58,52 @@ def config(request, bitshares, account, ro_worker_name):
             worker_name: {
                 'account': '{}'.format(account),
                 'amount': 1.0,
-                'center_price': 0.3,
+                'center_price': 1,
                 'center_price_depth': 0.0,
                 'center_price_dynamic': False,
                 'center_price_offset': False,
                 'custom_expiration': False,
                 'dynamic_spread': False,
-                'dynamic_spread_factor': 1.0,
+                'dynamic_spread_factor': 10,
                 'expiration_time': 157680000.0,
                 'external_feed': False,
                 'external_price_source': 'null',
                 'fee_asset': 'TEST',
                 'manual_offset': 0.0,
-                'market': '{}/{}'.format(request.param[0], request.param[1]),
-                'market_depth_amount': 0.0,
+                'market': 'QUOTEA/BASEA',
+                'market_depth_amount': 4,
                 'module': 'dexbot.strategies.relative_orders',
                 'partial_fill_threshold': 30.0,
                 'price_change_threshold': 2.0,
                 'relative_order_size': False,
                 'reset_on_partial_fill': True,
                 'reset_on_price_change': False,
-                'spread': 5.0
+                'spread': 5.0,
             }
-        }
+        },
     }
     return config
 
 
-@pytest.fixture(scope='module')
-def ro_base_worker(bitshares, ro_worker_name):
-    """ Fixture to share relative_orders object
+@pytest.fixture
+def config_other_account(config, base_account, ro_worker_name):
+    """ Config for other account which simulates foreign trader
     """
+    config = copy.deepcopy(config)
     worker_name = ro_worker_name
+    config['workers'][worker_name]['account'] = base_account()
+    return config
+
+
+@pytest.fixture
+def base_worker(bitshares, ro_worker_name):
+    """ Fixture to create a worker
+    """
     workers = []
 
-    def _base_worker(config):
-        def _make_orders():
-            market = Market('QUOTEA/BASEA', bitshares_instance=bitshares)
-            market.buy(1, 10, returnOrderId=True, account=ro_worker_name)
-            market.sell(2, 20, returnOrderId=True, account=ro_worker_name)
-
-        _make_orders()
-        worker = Strategy(
-            name=worker_name,
-            config=config,
-            bitshares_instance=bitshares
-        )
+    def _base_worker(config, worker_name=ro_worker_name):
+        worker = Strategy(name=worker_name, config=config, bitshares_instance=bitshares)
+        worker.min_check_interval = 0
         workers.append(worker)
         return worker
 
@@ -132,127 +115,117 @@ def ro_base_worker(bitshares, ro_worker_name):
 
 
 @pytest.fixture
-def ro_worker(ro_base_worker, config):
-    """ Worker to test in single mode (for methods which not required to be tested against all modes)
+def ro_worker(base_worker, config):
+    """ Basic RO worker
     """
-    worker = ro_base_worker(config)
+    worker = base_worker(config)
     return worker
 
 
-@pytest.fixture(scope='function')
-def ro_orders1(ro_worker):
-    worker = ro_worker
-    worker.place_market_buy_order(1, 100, returnOrderId=True)
-    worker.place_market_sell_order(1, 200, returnOrderId=True)
-
+@pytest.fixture
+def other_worker(ro_worker_name, config_other_account):
+    worker = StrategyBase(name=ro_worker_name, config=config_other_account)
     yield worker
     worker.cancel_all_orders()
     time.sleep(1.1)
 
 
-@pytest.fixture(scope='session')
-def ro_worker_name1():
-    """ Fixture to share ro Orders worker name
-    """
-    return 'ro-worker1'
-
-
-@pytest.fixture(scope='module')
-def ro_base_worker1(bitshares, config1, ro_worker_name1):
-    """ Fixture to share relative_orders object
-    """
-    worker_name = ro_worker_name1
-    workers = []
-
-    def _base_worker(config1):
-        worker = Strategy(
-            name=worker_name,
-            config=config1,
-            bitshares_instance=bitshares
-        )
-        workers.append(worker)
-        return worker
-
-    yield _base_worker
-    for worker in workers:
-        worker.cancel_all_orders()
-        worker.bitshares.txbuffer.clear()
-        worker.bitshares.bundle = False
+def empty_ticker_workaround(worker):
+    bid = worker.get_highest_market_buy_order()
+    sell_price = bid['price'] / 1.01
+    to_sell = bid['quote']['amount'] / 10
+    log.debug('Executing empty ticker workaround')
+    worker.place_market_sell_order(to_sell, sell_price)
 
 
 @pytest.fixture
-def ro_worker1(ro_base_worker1, config1):
-    """ Worker to test in single mode (for methods which not required to be tested against all modes)
+def other_orders(other_worker):
+    """ Place some orders from second account to simulate foreign trader
     """
-    worker = ro_base_worker1(config1)
+    worker = other_worker
+    worker.place_market_buy_order(10, 0.5)
+    worker.place_market_sell_order(10, 1.5)
+    if float(worker.market.ticker().get('highestBid')) == 0:
+        empty_ticker_workaround(worker)
     return worker
-
-
-@pytest.fixture(scope='module', params=[('QUOTEA', 'BASEA')])
-def config1(bitshares, config, account_other, ro_worker_name1, ro_worker_name):
-    """ Define multiple worker's config with variable assets
-
-    """
-    worker_name = ro_worker_name1
-    config = copy.deepcopy(config)
-    a = config['workers'][ro_worker_name]
-    a['account'] = 'other'
-    b = {worker_name: a}
-    config['workers'] = b
-    return config
-
-
-#######################################
-# test single account multiple workers#
-#######################################
-
-
-@pytest.fixture(scope='session')
-def multiple_worker_name():
-    """ Fixture to share ro Orders worker name
-    """
-    return 'ro-worker-multiple'
-
-
-@pytest.fixture(scope='module')
-def multiple_base_worker(bitshares, single_account_config, multiple_worker_name):
-    """ Fixture to share relative_orders object
-    """
-    worker_name = multiple_worker_name
-    workers = []
-
-    def _base_worker(single_account_config):
-        worker = Strategy(
-            name=worker_name,
-            config=single_account_config,
-            bitshares_instance=bitshares
-        )
-        workers.append(worker)
-        return worker
-
-    yield _base_worker
-    for worker in workers:
-        worker.cancel_all_orders()
-        worker.bitshares.txbuffer.clear()
-        worker.bitshares.bundle = False
 
 
 @pytest.fixture
-def multiple_worker(multiple_base_worker, single_account_config):
-    """ Worker to test in single mode (for methods which not required to be tested against all modes)
+def other_orders_random(other_worker):
+    """ Place some number of random orders within some range
     """
-    worker = multiple_base_worker(single_account_config)
-    return worker
+    worker = other_worker
+    lower_bound = 0.3
+    upper_bound = 2
+    center = 1
+    num_orders = 10
+    for _ in range(num_orders):
+        price = random.uniform(lower_bound, center)
+        amount = random.uniform(0.5, 10)
+        worker.place_market_buy_order(amount, price)
+    for _ in range(num_orders):
+        price = random.uniform(center, upper_bound)
+        amount = random.uniform(0.5, 10)
+        worker.place_market_sell_order(amount, price)
 
 
-@pytest.fixture(scope='module')
-def single_account_config(bitshares, config, multiple_worker_name, ro_worker_name):
-    """ Define multiple worker's config with single account
-
+@pytest.fixture
+def config_multiple_workers_1(bitshares, account):
+    """ Prepares config with multiple workers on same account
     """
-    worker_name = multiple_worker_name
-    config = copy.deepcopy(config)
-    a = config['workers'][ro_worker_name]
-    b = {worker_name: a}
-    config['workers'] = b
+    config = {
+        'node': '{}'.format(bitshares.rpc.url),
+        'workers': {
+            'ro-worker-1': {
+                'account': '{}'.format(account),
+                'amount': 1.0,
+                'center_price': 1,
+                'center_price_depth': 0.0,
+                'center_price_dynamic': False,
+                'center_price_offset': False,
+                'custom_expiration': False,
+                'dynamic_spread': False,
+                'dynamic_spread_factor': 10,
+                'expiration_time': 157680000.0,
+                'external_feed': False,
+                'external_price_source': 'null',
+                'fee_asset': 'TEST',
+                'manual_offset': 0.0,
+                'market': 'QUOTEA/BASEA',
+                'market_depth_amount': 4,
+                'module': 'dexbot.strategies.relative_orders',
+                'partial_fill_threshold': 30.0,
+                'price_change_threshold': 2.0,
+                'relative_order_size': False,
+                'reset_on_partial_fill': True,
+                'reset_on_price_change': False,
+                'spread': 5.0,
+            },
+            'ro-worker-2': {
+                'account': '{}'.format(account),
+                'amount': 1.0,
+                'center_price': 1,
+                'center_price_depth': 0.0,
+                'center_price_dynamic': False,
+                'center_price_offset': False,
+                'custom_expiration': False,
+                'dynamic_spread': False,
+                'dynamic_spread_factor': 10,
+                'expiration_time': 157680000.0,
+                'external_feed': False,
+                'external_price_source': 'null',
+                'fee_asset': 'TEST',
+                'manual_offset': 0.0,
+                'market': 'QUOTEB/BASEA',
+                'market_depth_amount': 4,
+                'module': 'dexbot.strategies.relative_orders',
+                'partial_fill_threshold': 30.0,
+                'price_change_threshold': 2.0,
+                'relative_order_size': False,
+                'reset_on_partial_fill': True,
+                'reset_on_price_change': False,
+                'spread': 5.0,
+            },
+        },
+    }
     return config
