@@ -160,12 +160,12 @@ def other_orders_random(other_worker):
     center = 1
     num_orders = 10
     for _ in range(num_orders):
-        price = random.uniform(lower_bound, center)
-        amount = random.uniform(0.5, 10)
+        price = random.uniform(lower_bound, center)  # nosec
+        amount = random.uniform(0.5, 10)  # nosec
         worker.place_market_buy_order(amount, price)
     for _ in range(num_orders):
-        price = random.uniform(center, upper_bound)
-        amount = random.uniform(0.5, 10)
+        price = random.uniform(center, upper_bound)  # nosec
+        amount = random.uniform(0.5, 10)  # nosec
         worker.place_market_sell_order(amount, price)
 
 
