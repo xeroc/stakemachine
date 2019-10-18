@@ -31,6 +31,8 @@ class EditWorkerView(QtWidgets.QDialog, Ui_Dialog):
         self.quote_asset_input.setText(self.controller.get_quote_asset(worker_data))
         self.fee_asset_input.setText(worker_data.get('fee_asset', 'BTS'))
         self.account_name.setText(self.controller.get_account(worker_data))
+        self.operational_percent_quote_input.setValue(worker_data.get('operational_percent_quote', 0))
+        self.operational_percent_base_input.setValue(worker_data.get('operational_percent_base', 0))
 
         # Force uppercase to the assets fields
         validator = UppercaseValidator(self)

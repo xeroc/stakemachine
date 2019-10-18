@@ -129,8 +129,10 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         # Redirect this event to also call order placed and order matched
         self.onMarketUpdate += self._callbackPlaceFillOrders
 
+        self.assets_intersections_data = None
         if config:
             self.config = config
+            self.assets_intersections_data = Config.assets_intersections(config)
         else:
             self.config = config = Config.get_worker_config_file(name)
 
@@ -142,6 +144,10 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
 
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
+
+        # What percent of balance the worker should use
+        self.operational_percent_quote = self.worker.get('operational_percent_quote', 0) / 100
+        self.operational_percent_base = self.worker.get('operational_percent_base', 0) / 100
 
         # Get Bitshares account and market for this worker
         self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
@@ -212,6 +218,28 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
 
         # Finally clear all worker data from the database
         self.clear()
+
+    def get_worker_share_for_asset(self, asset):
+        """ Returns operational percent of asset available to the worker
+
+            :param str asset: Which asset should be checked
+            :return: a value between 0-1 representing a percent
+            :rtype: float
+        """
+        intersections_data = self.assets_intersections_data[self.account.name][asset]
+
+        if asset == self.market['base']['symbol']:
+            if self.operational_percent_base:
+                return self.operational_percent_base
+            else:
+                return (1 - intersections_data['sum_pct']) / intersections_data['num_zero_workers']
+        elif asset == self.market['quote']['symbol']:
+            if self.operational_percent_quote:
+                return self.operational_percent_quote
+            else:
+                return (1 - intersections_data['sum_pct']) / intersections_data['num_zero_workers']
+        else:
+            self.log.error('Got asset which is not used by this worker')
 
     def store_profit_estimation_data(self):
         """ Save total quote, total base, center_price, and datetime in to the database

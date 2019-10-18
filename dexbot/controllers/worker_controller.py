@@ -140,8 +140,6 @@ class WorkerController:
             private_key = self.view.private_key_input.text()
             if not self.validator.validate_account_name(account):
                 error_texts.append("Account doesn't exist.")
-            if not self.validator.validate_account_not_in_use(account):
-                error_texts.append('Use a different account. "{}" is already in use.'.format(account))
             if not self.validator.validate_private_key(account, private_key):
                 error_texts.append('Private key is invalid.')
             elif private_key and not self.validator.validate_private_key_type(account, private_key):
@@ -176,6 +174,8 @@ class WorkerController:
         base_asset = self.view.base_asset_input.text()
         quote_asset = self.view.quote_asset_input.text()
         fee_asset = self.view.fee_asset_input.text()
+        operational_percent_quote = self.view.operational_percent_quote_input.value()
+        operational_percent_base = self.view.operational_percent_base_input.value()
         strategy_module = self.view.strategy_input.currentData()
 
         self.view.worker_data = {
@@ -183,6 +183,8 @@ class WorkerController:
             'market': '{}/{}'.format(quote_asset, base_asset),
             'module': strategy_module,
             'fee_asset': fee_asset,
+            'operational_percent_quote': operational_percent_quote,
+            'operational_percent_base': operational_percent_base,
             **self.view.strategy_widget.values
         }
         self.view.worker_name = self.view.worker_name_input.text()

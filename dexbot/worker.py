@@ -204,7 +204,14 @@ class WorkerInfrastructure(threading.Thread):
                 account = self.config['workers'][worker_name]['account']
                 self.config['workers'].pop(worker_name)
 
-            self.accounts.remove(account)
+            # We should remove account subscription only if account is not used by another worker
+            account_is_in_use = False
+            for _, worker in self.workers.items():
+                if worker.account.name == account:
+                    account_is_in_use = True
+
+            if not account_is_in_use:
+                self.accounts.remove(account)
             if pause and worker_name in self.workers:
                 self.workers[worker_name].pause()
             self.workers.pop(worker_name, None)

@@ -72,7 +72,11 @@ class BaseConfig:
                           r'[A-Z0-9\.]+[:\/][A-Z0-9\.]+'),
             ConfigElement('fee_asset', 'string', 'BTS', 'Fee asset',
                           'Asset to be used to pay transaction fees',
-                          r'[A-Z\.]+')
+                          r'[A-Z\.]+'),
+            ConfigElement('operational_percent_quote', 'float', 0, 'QUOTE balance %',
+                          'Max % of QUOTE asset available to this worker', (0, None, 2, '%')),
+            ConfigElement('operational_percent_base', 'float', 0, 'BASE balance %',
+                          'Max % of BASE asset available to this worker', (0, None, 2, '%')),
         ]
 
         if return_base_config:

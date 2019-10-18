@@ -7,7 +7,7 @@ from dexbot.node_manager import get_sorted_nodelist
 
 import appdirs
 from ruamel import yaml
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 DEFAULT_CONFIG_DIR = appdirs.user_config_dir(APP_NAME, appauthor=AUTHOR)
 DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')
@@ -43,6 +43,8 @@ class Config(dict):
             sorted_nodes = get_sorted_nodelist(self.node_list)
             self._config['node'] = sorted_nodes
             self.save_config()
+
+        self.intersections_data = None
 
     def __setitem__(self, key, value):
         self._config[key] = value
@@ -167,6 +169,65 @@ class Config(dict):
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
             construct_mapping)
         return yaml.load(stream, OrderedLoader)
+
+    @staticmethod
+    def assets_intersections(config):
+        """ Collect intersections of assets on the same account across multiple workers
+
+            :return: defaultdict instance representing dict with intersections
+
+            The goal of calculating assets intersections is to be able to use single account on multiple workers and
+            trade some common assets. For example, trade BTS/USD, BTC/BTS, ETH/BTC markets on same account.
+
+            Configuration variable `operational_percent_xxx` defines what percent of total account balance should be
+            available for the worker. It may be set or omitted.
+
+            The logic of splitting balance is following: workers who define `operational_percent_xxx` will take this
+            defined percent, and remaining workers will just split the remaining balance between each other. For
+            example, 3 workers with 30% 30% 30%, and 2 workers with 0. These 2 workers will take the remaining `(100 -
+            3*30) / 2 = 5`.
+
+            Example return as a dict:
+            {'foo': {'RUBLE': {'sum_pct': 0, 'zero_workers': 0},
+                     'USD': {'sum_pct': 0, 'zero_workers': 0},
+                     'CNY': {'sum_pct': 0, 'zero_workers': 0}
+                     }
+                }
+        """
+        def update_data(asset, operational_percent):
+            if isinstance(data[account][asset]['sum_pct'], float):
+                # Existing dict key
+                data[account][asset]['sum_pct'] += operational_percent
+                if not operational_percent:
+                    # Increase count of workers with 0 op percent
+                    data[account][asset]['num_zero_workers'] += 1
+            else:
+                # Create new dict key
+                data[account][asset]['sum_pct'] = operational_percent
+                if operational_percent:
+                    data[account][asset]['num_zero_workers'] = 0
+                else:
+                    data[account][asset]['num_zero_workers'] = 1
+
+            if data[account][asset]['sum_pct'] > 1:
+                raise ValueError('Operational percent for asset {} is more than 100%'
+                                 .format(asset))
+
+        def tree():
+            return defaultdict(tree)
+
+        data = tree()
+
+        for _, worker in config['workers'].items():
+            account = worker['account']
+            quote_asset = worker['market'].split('/')[0]
+            base_asset = worker['market'].split('/')[1]
+            operational_percent_quote = worker.get('operational_percent_quote', 0) / 100
+            operational_percent_base = worker.get('operational_percent_base', 0) / 100
+            update_data(quote_asset, operational_percent_quote)
+            update_data(base_asset, operational_percent_base)
+
+        return data
 
     @property
     def node_list(self):
