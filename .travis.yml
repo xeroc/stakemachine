@@ -6,6 +6,8 @@ matrix:
   - os: linux
     language: python
     python: '3.6'
+    before_install:
+      - python3 --version
   - os: osx
     language: generic
     python: '3.6'
