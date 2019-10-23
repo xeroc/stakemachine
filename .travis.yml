@@ -10,9 +10,11 @@ matrix:
       - python3 --version
   - os: osx
     language: generic
-    python: '3.6'
+    python: '3.7'
     before_install:
-    - brew update
+      - brew update
+      - brew upgrade python3
+      - python3 --version
 before_install:
   # Make sure docker image can be built
   - docker build -t dexbot/dexbot .
