@@ -710,7 +710,7 @@ class Strategy(StrategyBase):
         own_precision = 0
         opposite_precision = 0
         opposite_symbol = ''
-        increase_finished = False
+        increase_status = None
 
         if asset == 'base':
             order_type = 'buy'
@@ -869,16 +869,16 @@ class Strategy(StrategyBase):
                         # Lower/upper bound has been reached and now will start allocating rest of the balance.
                         self['bootstrapping'] = False
                         self.log.debug('Increasing sizes of {} orders'.format(order_type))
-                        increase_finished = self.increase_order_sizes(asset, asset_balance, own_orders)
+                        increase_status = self.increase_order_sizes(asset, asset_balance, own_orders)
                     else:
                         # Range bound is not reached, we need to add additional orders at the extremes
                         self['bootstrapping'] = False
                         self.log.debug('Placing further order than current furthest {} order'.format(order_type))
                         self.place_further_order(asset, furthest_own_order, allow_partial=True)
                 else:
-                    increase_finished = True
+                    increase_status = 'done'
 
-            if (increase_finished and not self.check_partial_fill(closest_own_order)
+            if (increase_status == 'done' and not self.check_partial_fill(closest_own_order)
                     and not self.check_partial_fill(closest_opposite_order, fill_threshold=0)):
                 """ Replace partially filled closest orders only when allocation of excess funds was finished. This
                     would prevent an abuse case when we are operating inactive market. An attacker can massively dump
@@ -895,8 +895,8 @@ class Strategy(StrategyBase):
                 # Refresh balances to make "reserved" funds available
                 self.refresh_balances(use_cached_orders=True)
                 self.replace_partially_filled_order(closest_own_order)
-            elif (increase_finished and not self.check_partial_fill(closest_opposite_order, fill_threshold=(
-                    1 - self.partial_fill_threshold)) and self.bitshares.txbuffer.is_empty()):
+            elif (increase_status == 'done' and not self.check_partial_fill(closest_opposite_order, fill_threshold=(
+                    1 - self.partial_fill_threshold))):
                 # Dust order on opposite side, cancel dust order and place closer order
                 # Require empty txbuffer to avoid rare condition when order may be already canceled from
                 # replace_partially_filled_order() call.
@@ -1310,9 +1310,11 @@ class Strategy(StrategyBase):
             :param str asset: 'base' or 'quote', depending if checking sell or buy
             :param Amount asset_balance: Balance of the account
             :param list orders: List of buy or sell orders
-            :return: True = all available funds were allocated
-                     False = not all funds were allocated, can increase more orders next time
-            :rtype: bool
+            :return: status of funds allocation
+                    done = all funds were allocated
+                    done_with_ops = all funds were allocated, operations are pending in txbuffer
+                    in_progress = not all funds were allocated, can increase more orders next time
+            :rtype: str
         """
 
         # Create temp order list (copy.deepcopy() doesn't work here)
@@ -1337,6 +1339,7 @@ class Strategy(StrategyBase):
         opposite_symbol = ''
         precision = 0
         opposite_precision = 0
+        ops_num = 0
 
         if asset == 'quote':
             order_type = 'sell'
@@ -1396,11 +1399,15 @@ class Strategy(StrategyBase):
                         self.place_market_buy_order(order['quote']['amount'], price)
 
                 # Limit number of operations to send at once
-                if len(self.bitshares.txbuffer.ops) > 10:
-                    return False
+                ops_num = len(self.bitshares.txbuffer.ops)
+                if ops_num > 10:
+                    return 'in_progress'
 
-        # All funds were used
-        return True
+        if ops_num < 10:
+            return 'done_with_ops'
+        else:
+            # All funds were used
+            return 'done'
 
     def check_partial_fill(self, order, fill_threshold=None):
         """ Checks whether order was partially filled it needs to be replaced
