@@ -634,11 +634,17 @@ class Strategy(StrategyBase):
         for entry in history:
             trade = entry['op'][1]
             # Look for first trade in worker's market
-            if trade['pays']['asset_id'] == self.market['base']['id']:  # Buy order
+            if (
+                trade['pays']['asset_id'] == self.market['base']['id']
+                and trade['receives']['asset_id'] == self.market['quote']['id']
+            ):  # Buy order
                 base = trade['fill_price']['base']['amount'] / 10 ** self.market['base']['precision']
                 quote = trade['fill_price']['quote']['amount'] / 10 ** self.market['quote']['precision']
                 break
-            elif trade['pays']['asset_id'] == self.market['quote']['id']:  # Sell order
+            elif (
+                trade['pays']['asset_id'] == self.market['quote']['id']
+                and trade['receives']['asset_id'] == self.market['base']['id']
+            ):  # Sell order
                 base = trade['fill_price']['quote']['amount'] / 10 ** self.market['base']['precision']
                 quote = trade['fill_price']['base']['amount'] / 10 ** self.market['quote']['precision']
                 break

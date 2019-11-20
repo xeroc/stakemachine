@@ -20,7 +20,7 @@ def assets(create_asset):
 
 
 @pytest.fixture(scope='module')
-def base_account(assets, prepare_account, ro_worker_name):
+def base_account(assets, prepare_account):
     """ Factory to generate random account with pre-defined balances
     """
 
@@ -204,7 +204,7 @@ def config_multiple_workers_1(bitshares, account):
             'ro-worker-2': {
                 'account': '{}'.format(account),
                 'amount': 1.0,
-                'center_price': 1,
+                'center_price': 10,  # note price difference
                 'center_price_depth': 0.0,
                 'center_price_dynamic': False,
                 'center_price_offset': False,
