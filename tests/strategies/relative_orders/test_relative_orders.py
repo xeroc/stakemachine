@@ -1,6 +1,9 @@
 import math
 import pytest
 import logging
+import time
+
+from bitshares.market import Market
 
 # Turn on debug for dexbot logger
 log = logging.getLogger("dexbot")
@@ -271,24 +274,42 @@ def test_check_orders_reset_on_price_change(ro_worker, other_orders):
     assert worker.own_orders != orders_before
 
 
-def test_get_own_last_trade(ro_worker, other_worker):
-    worker2 = other_worker
-    worker = ro_worker
-    log.debug('worker1 orders: {}'.format(worker.own_orders))
+def test_get_own_last_trade(base_account, base_worker, config_multiple_workers_1, other_worker):
+    worker1 = base_worker(config_multiple_workers_1, worker_name='ro-worker-1')
+    worker2 = base_worker(config_multiple_workers_1, worker_name='ro-worker-2')
+    worker3 = base_account()
+    market1 = Market(worker1.worker["market"])
+    market2 = Market(worker2.worker["market"])
+
+    log.debug('worker1 orders: {}'.format(worker1.own_orders))
     log.debug('worker2 orders: {}'.format(worker2.own_orders))
 
     # Fill worker's order from different account
-    own_buy_orders = worker.get_own_buy_orders()
-    to_sell = own_buy_orders[0]['quote']['amount']
-    sell_price = own_buy_orders[0]['price'] / 1.01
-    log.debug('Sell {} @ {}'.format(to_sell, sell_price))
-    worker2.place_market_sell_order(to_sell, sell_price)
+    buy_orders1 = worker1.get_own_buy_orders()
+    to_sell = buy_orders1[0]['quote']['amount']
+    sell_price = buy_orders1[0]['price'] / 1.01
+    log.debug('Selling {} @ {} from worker3 to worker1'.format(to_sell, sell_price))
+    tx = market1.sell(sell_price, to_sell, account=worker3)
+    log.debug(tx)
+
+    # Make a trade on another worker which uses same account
+    # The goal is to make a trade on different market BUT using same asset to
+    # check if get_own_last_trade() will properly pick up a trade
+    buy_orders2 = worker2.get_own_buy_orders()
+    to_sell = buy_orders2[0]['quote']['amount']
+    sell_price = buy_orders2[0]['price'] / 1.01
+    log.debug('Selling {} @ {} from worker3 to worker2'.format(to_sell, sell_price))
+    tx = market2.sell(sell_price, to_sell, account=worker3)
+    log.debug(tx)
+
+    # Wait some time to populate account history
+    time.sleep(1.1)
 
     # Expect last trade data
-    result = worker.get_own_last_trade()
-    assert result['base'] > 0
-    assert result['quote'] > 0
-    assert result['price'] > 0
+    result = worker1.get_own_last_trade()
+    assert result['base'] == pytest.approx(buy_orders1[0]['base']['amount'])
+    assert result['quote'] == pytest.approx(buy_orders1[0]['quote']['amount'])
+    assert result['price'] == pytest.approx(buy_orders1[0]['price'])
 
 
 def test_get_external_market_center_price(monkeypatch, ro_worker):
