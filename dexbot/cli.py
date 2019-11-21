@@ -197,14 +197,14 @@ def cancel(ctx, market, account):
         response = ctx.bitshares.txbuffer.broadcast()
         log.info(response)
         if response is not None:
-            click.echo(f'Cancelled all orders on Market: {market} for account: {account}')
+            log.info(f'Cancelled all orders on Market: {market} for account: {account}')
         else:
-            click.echo(f'No orders to cancel! {market} for account: {account}')
+            log.info(f'No orders to cancel! {market} for account: {account}')
 
     except bitshares.exceptions.AssetDoesNotExistsException:
-        click.echo(f"Asset does not exist: {market}")
+        log.info(f"Asset does not exist: {market}")
     except graphenecommon.exceptions.AccountDoesNotExistsException:
-        click.echo(f"Account does not exist: {account}")
+        log.info(f"Account does not exist: {account}")
 
 
 def worker_job(worker, job):
