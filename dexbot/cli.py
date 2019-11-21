@@ -5,6 +5,12 @@ import os.path
 import signal
 import sys
 
+#from uptick.decorators import unlock, online
+from uptick.decorators import online
+import bitshares.exceptions
+import graphenecommon.exceptions
+from bitshares.market import Market
+
 from dexbot.config import Config, DEFAULT_CONFIG_FILE
 from dexbot.cli_conf import SYSTEMD_SERVICE_NAME, get_whiptail, setup_systemd
 from dexbot.helper import initialize_orders_log, initialize_data_folders
@@ -166,6 +172,40 @@ def configure(ctx):
     if config.get('systemd_status', 'disabled') == 'enabled':
         click.echo("Starting dexbot daemon")
         os.system("systemctl --user start dexbot")
+
+
+@main.command()
+@click.option("--account", default=None)
+@click.argument("market")
+@click.pass_context
+@online
+@unlock
+def cancel(ctx, market, account):
+    """
+    Cancel Orders in Mkt, (Eg: cancel USD/BTS --account name)
+
+    :param ctx: context
+    :param market: market e.g. USD/BTS
+    :param account: name of your bitshares acct
+    :return: Success or Fail message
+    """
+    try:
+        my_market = Market(market)
+        ctx.bitshares.bundle = True
+        my_market.cancel([
+            x["id"] for x in my_market.accountopenorders(account)
+        ], account=account)
+        response = ctx.bitshares.txbuffer.broadcast()
+        log.info(response)
+        if response is not None:
+            click.echo(f'Cancelled all orders on Market: {market} for account: {account}')
+        else:
+            click.echo(f'No orders to cancel! {market} for account: {account}')
+
+    except (bitshares.exceptions.AssetDoesNotExistsException):
+        click.echo(f"Asset does not exist: {market}")
+    except (graphenecommon.exceptions.AccountDoesNotExistsException):
+        click.echo(f"Account does not exist: {account}")
 
 
 def worker_job(worker, job):

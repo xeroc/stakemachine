@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 
 max_timeout = 2.0  # default ping time is set to 2s. use for internal testing.
-host_ip = '8.8.8.8'  # default host to ping to check internet
+host_ip = '1.1.1.1'  # default host to ping to check internet
 
 
 def ping(host, network_timeout=3):

@@ -98,7 +98,7 @@ def chain(f):
         nodelist = ctx.config["node"]
         timeout = int(ctx.obj.get("sortnodes"))
 
-        host_ip = '8.8.8.8'
+        host_ip = '1.1.1.1'
         if ping(host_ip, 3) is False:
             click.echo("internet NOT available! Please check your connection!")
             log.critical("Internet not available, exiting")
