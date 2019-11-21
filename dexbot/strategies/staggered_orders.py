@@ -2000,21 +2000,21 @@ class Strategy(StrategyBase):
             :return dict | order: Returns virtual order instance
         """
         symbol = self.market['base']['symbol']
-        precision = self.market['base']['precision']
-
         order = VirtualOrder()
-        order['price'] = price
         order['id'] = str(uuid.uuid4())
 
-        quote_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
+        precise_quote_amount = round(amount, self.market['quote']['precision'])
+        quote_asset = Amount(precise_quote_amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
+        precise_base_amount = round(amount * price, self.market['base']['precision'])
+        base_asset = Amount(precise_base_amount, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
+        order['price'] = precise_base_amount / precise_quote_amount
 
         self.log.info('Placing a virtual buy order with {:.{prec}f} {} @ {:.8f}'
-                      .format(order['base']['amount'], symbol, price, prec=precision))
+                      .format(order['base']['amount'], symbol, order['price'], prec=self.market['base']['precision']))
         self.virtual_orders.append(order)
 
         # Immediately lower avail balance
@@ -2032,21 +2032,21 @@ class Strategy(StrategyBase):
             :return dict | order: Returns virtual order instance
         """
         symbol = self.market['quote']['symbol']
-        precision = self.market['quote']['precision']
-
         order = VirtualOrder()
         order['id'] = str(uuid.uuid4())
-        order['price'] = price ** -1
 
-        quote_asset = Amount(amount * price, self.market['base']['symbol'], bitshares_instance=self.bitshares)
+        precise_quote_amount = round(amount * price, self.market['base']['precision'])
+        quote_asset = Amount(precise_quote_amount, self.market['base']['symbol'], bitshares_instance=self.bitshares)
         order['quote'] = quote_asset
 
-        base_asset = Amount(amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
+        precise_base_amount = round(amount, self.market['quote']['precision'])
+        base_asset = Amount(precise_base_amount, self.market['quote']['symbol'], bitshares_instance=self.bitshares)
         order['base'] = base_asset
         order['for_sale'] = base_asset
+        order['price'] = precise_base_amount / precise_quote_amount
 
         self.log.info('Placing a virtual sell order with {:.{prec}f} {} @ {:.8f}'
-                      .format(amount, symbol, price, prec=precision))
+                      .format(amount, symbol, order['price'], prec=self.market['quote']['precision']))
         self.virtual_orders.append(order)
 
         # Immediately lower avail balance
