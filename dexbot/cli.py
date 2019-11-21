@@ -5,7 +5,6 @@ import os.path
 import signal
 import sys
 
-#from uptick.decorators import unlock, online
 from uptick.decorators import online
 import bitshares.exceptions
 import graphenecommon.exceptions
@@ -202,9 +201,9 @@ def cancel(ctx, market, account):
         else:
             click.echo(f'No orders to cancel! {market} for account: {account}')
 
-    except (bitshares.exceptions.AssetDoesNotExistsException):
+    except bitshares.exceptions.AssetDoesNotExistsException:
         click.echo(f"Asset does not exist: {market}")
-    except (graphenecommon.exceptions.AccountDoesNotExistsException):
+    except graphenecommon.exceptions.AccountDoesNotExistsException:
         click.echo(f"Account does not exist: {account}")
 
 
