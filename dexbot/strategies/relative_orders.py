@@ -208,8 +208,9 @@ class Strategy(StrategyBase):
                     center_price = self.get_own_last_trade()['price']
                     self.log.info('Using center price from last trade: {:.8f}'.format(center_price))
                 except TypeError:
-                    center_price = self.get_market_center_price()
+                    self.log.warning('Failed to obtain last trade price')
                     try:
+                        center_price = self.get_market_center_price()
                         self.log.info('Using market center price (failed to obtain last trade): {:.8f}'
                                       .format(center_price))
                     except TypeError:
