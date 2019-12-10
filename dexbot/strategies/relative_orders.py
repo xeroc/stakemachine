@@ -639,15 +639,15 @@ class Strategy(StrategyBase):
                 trade['pays']['asset_id'] == self.market['base']['id']
                 and trade['receives']['asset_id'] == self.market['quote']['id']
             ):  # Buy order
-                base = trade['fill_price']['base']['amount'] / 10 ** self.market['base']['precision']
-                quote = trade['fill_price']['quote']['amount'] / 10 ** self.market['quote']['precision']
+                base = trade['pays']['amount'] / 10 ** self.market['base']['precision']
+                quote = trade['receives']['amount'] / 10 ** self.market['quote']['precision']
                 break
             elif (
                 trade['pays']['asset_id'] == self.market['quote']['id']
                 and trade['receives']['asset_id'] == self.market['base']['id']
             ):  # Sell order
-                base = trade['fill_price']['quote']['amount'] / 10 ** self.market['base']['precision']
-                quote = trade['fill_price']['base']['amount'] / 10 ** self.market['quote']['precision']
+                base = trade['receives']['amount'] / 10 ** self.market['base']['precision']
+                quote = trade['pays']['amount'] / 10 ** self.market['quote']['precision']
                 break
         try:
             return {'base': base, 'quote': quote, 'price': base / quote}

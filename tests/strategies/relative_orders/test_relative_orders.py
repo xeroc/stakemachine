@@ -312,6 +312,62 @@ def test_get_own_last_trade(base_account, base_worker, config_multiple_workers_1
     assert result['price'] == pytest.approx(buy_orders1[0]['price'])
 
 
+def test_get_own_last_trade_taker_buy(base_account, ro_worker, other_worker):
+    """ Test for https://github.com/Codaone/DEXBot/issues/708
+    """
+    worker1 = ro_worker
+    worker3 = base_account()
+    market1 = Market(worker1.worker["market"])
+
+    # Fill worker's order from different account
+    # Note this order is significantly bigger by amount and lower by price than worker's order
+    buy_orders1 = worker1.get_own_buy_orders()
+    to_sell = buy_orders1[0]['quote']['amount'] * 1.5
+    sell_price = buy_orders1[0]['price'] / 1.2
+    log.debug('Selling {} @ {} from worker3 to worker1'.format(to_sell, sell_price))
+    tx = market1.sell(sell_price, to_sell, account=worker3)
+    log.debug(tx)
+
+    # Bot uses last own trade price and acts as a taker
+    worker1.is_center_price_dynamic = True
+    worker1.cp_from_last_trade = True
+    worker1['bootstrapped'] = True
+    time.sleep(1.1)
+    worker1.check_orders()
+
+    # Expect correct last trade
+    result = worker1.get_own_last_trade()
+    assert result['price'] == pytest.approx(sell_price)
+
+
+def test_get_own_last_trade_taker_sell(base_account, ro_worker, other_worker):
+    """ Test for https://github.com/Codaone/DEXBot/issues/708
+    """
+    worker1 = ro_worker
+    worker3 = base_account()
+    market1 = Market(worker1.worker["market"])
+
+    # Fill worker's order from different account
+    # Note this order is significantly bigger by amount and lower by price than worker's order
+    sell_orders1 = worker1.get_own_sell_orders()
+    to_buy = sell_orders1[0]['base']['amount'] * 1.5
+    buy_price = sell_orders1[0]['price'] * 1.2
+    log.debug('Buying {} @ {} by worker3 from worker1'.format(to_buy, buy_price))
+    tx = market1.buy(buy_price, to_buy, account=worker3)
+    log.debug(tx)
+
+    # Bot uses last own trade price and acts as a taker
+    worker1.is_center_price_dynamic = True
+    worker1.cp_from_last_trade = True
+    worker1['bootstrapped'] = True
+    time.sleep(1.1)
+    worker1.check_orders()
+
+    # Expect correct last trade
+    result = worker1.get_own_last_trade()
+    assert result['price'] == pytest.approx(buy_price, rel=(10 ** -worker1.market['base']['precision']))
+
+
 def test_get_external_market_center_price(monkeypatch, ro_worker):
     """ Simply test if get_external_market_center_price does correct proxying to PriceFeed class
     """
