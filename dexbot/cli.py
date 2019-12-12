@@ -12,7 +12,8 @@ from dexbot.ui import (
     verbose,
     chain,
     unlock,
-    configfile
+    configfile,
+    resetnodes
 )
 
 from .worker import WorkerInfrastructure
@@ -82,6 +83,16 @@ def main(ctx, **kwargs):
     ctx.obj = {}
     for k, v in kwargs.items():
         ctx.obj[k] = v
+
+
+@main.command()
+@click.pass_context
+@resetnodes
+def resetnodes(ctx):
+    """
+    Reset nodes to the default list, use -s to sort
+    """
+    log.info("Resetting node list in config.yml to default list")
 
 
 @main.command()
