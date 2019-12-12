@@ -88,11 +88,12 @@ def main(ctx, **kwargs):
 @main.command()
 @click.pass_context
 @resetnodes
-def resetnodes(ctx):
+def resetnodes():
     """
-    Reset nodes to the default list, use -s to sort
+    Reset nodes to the default list, use -s option to sort
     """
     log.info("Resetting node list in config.yml to default list")
+    log.info("To sort nodes by timeout, use: `dexbot-cli -s 2 resetnodes`")
 
 
 @main.command()
