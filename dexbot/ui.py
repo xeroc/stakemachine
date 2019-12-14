@@ -169,9 +169,11 @@ def resetnodes(f):
         if not os.path.isfile(ctx.obj["configfile"]):
             Config(path=ctx.obj['configfile'])
         ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
-        ctx.config["node"] = Config().node_list # reset to default
+        # reset to default
+        ctx.config["node"] = Config().node_list
         if ctx.obj.get("sortnodes"):
-            nodelist = sort_nodes(ctx) # sort nodes if option is given
+            nodelist = sort_nodes(ctx)
+            # sort nodes if option is given
             ctx.config["node"] = nodelist
         with open(ctx.obj["configfile"], 'w') as file:
             yaml.dump(ctx.config, file, default_flow_style=False)
