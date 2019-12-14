@@ -13,7 +13,7 @@ from dexbot.ui import (
     chain,
     unlock,
     configfile,
-    resetnodes
+    reset_nodes
 )
 
 from .worker import WorkerInfrastructure
@@ -87,8 +87,8 @@ def main(ctx, **kwargs):
 
 @main.command()
 @click.pass_context
-@resetnodes
-def resetnodes():
+@reset_nodes
+def resetnodes(ctx):
     """
     Reset nodes to the default list, use -s option to sort
     """

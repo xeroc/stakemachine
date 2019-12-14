@@ -163,7 +163,7 @@ def unlock(f):
     return update_wrapper(new_func, f)
 
 
-def resetnodes(f):
+def reset_nodes(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
         if not os.path.isfile(ctx.obj["configfile"]):
