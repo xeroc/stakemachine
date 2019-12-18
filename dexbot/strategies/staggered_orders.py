@@ -1403,11 +1403,11 @@ class Strategy(StrategyBase):
                 if ops_num > 10:
                     return 'in_progress'
 
-        if ops_num < 10:
+        if 0 < ops_num < 10:
             return 'done_with_ops'
-        else:
-            # All funds were used
-            return 'done'
+
+        # All funds were used
+        return 'done'
 
     def check_partial_fill(self, order, fill_threshold=None):
         """ Checks whether order was partially filled it needs to be replaced

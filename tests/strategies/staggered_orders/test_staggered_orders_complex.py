@@ -969,7 +969,37 @@ def test_allocate_asset_dust_order_simple(worker, do_initial_allocation, maintai
     assert num_sell_orders_after - num_sell_orders_before == 1
 
 
-def test_allocate_asset_dust_order_increase(worker, do_initial_allocation, base_account, issue_asset):
+def test_allocate_asset_dust_order_excess_funds(
+    worker, do_initial_allocation, maintain_until_allocated, base_account, issue_asset
+):
+    """ Make dust order, add additional funds, these funds should be allocated
+        and then dust order should be canceled and closer opposite order placed
+    """
+    do_initial_allocation(worker, worker.mode)
+    num_sell_orders_before = len(worker.sell_orders)
+    num_buy_orders_before = len(worker.buy_orders)
+    additional_account = base_account()
+
+    # Partially fill order from another account
+    sell_price = worker.buy_orders[0]['price'] / 1.01
+    sell_amount = worker.buy_orders[0]['quote']['amount'] * (1 - worker.partial_fill_threshold) * 1.1
+    worker.market.sell(sell_price, sell_amount, account=additional_account)
+
+    # Add some balance to the worker
+    issue_asset(worker.market['quote']['symbol'], worker.sell_orders[0]['base']['amount'], worker.account.name)
+
+    worker.refresh_balances()
+    worker.refresh_orders()
+    worker.allocate_asset('quote', worker.quote_balance)
+    worker.refresh_orders()
+    num_sell_orders_after = len(worker.sell_orders)
+    num_buy_orders_after = len(worker.buy_orders)
+
+    assert num_buy_orders_before - num_buy_orders_after == 1
+    assert num_sell_orders_after - num_sell_orders_before == 1
+
+
+def test_allocate_asset_dust_order_increase_race(worker, do_initial_allocation, base_account, issue_asset):
     """ Test for https://github.com/Codaone/DEXBot/issues/587
 
         Check if cancelling dust orders on opposite side will not cause a race for allocate_asset() on opposite side
@@ -1021,9 +1051,7 @@ def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_accoun
     assert num_sell_orders_after - num_sell_orders_before == 1
 
 
-def test_allocate_asset_filled_order_on_massively_imbalanced_sides(
-    worker, do_initial_allocation, base_account
-):
+def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_initial_allocation, base_account):
     """ When sides are massively imbalanced, make sure that spread will be closed after filling one order on
         smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
         smaller orders. Correct behavior: when order on smaller side filled, big side should place closer order.
