@@ -208,8 +208,9 @@ class Strategy(StrategyBase):
                     center_price = self.get_own_last_trade()['price']
                     self.log.info('Using center price from last trade: {:.8f}'.format(center_price))
                 except TypeError:
-                    center_price = self.get_market_center_price()
+                    self.log.warning('Failed to obtain last trade price')
                     try:
+                        center_price = self.get_market_center_price()
                         self.log.info('Using market center price (failed to obtain last trade): {:.8f}'
                                       .format(center_price))
                     except TypeError:
@@ -638,15 +639,15 @@ class Strategy(StrategyBase):
                 trade['pays']['asset_id'] == self.market['base']['id']
                 and trade['receives']['asset_id'] == self.market['quote']['id']
             ):  # Buy order
-                base = trade['fill_price']['base']['amount'] / 10 ** self.market['base']['precision']
-                quote = trade['fill_price']['quote']['amount'] / 10 ** self.market['quote']['precision']
+                base = trade['pays']['amount'] / 10 ** self.market['base']['precision']
+                quote = trade['receives']['amount'] / 10 ** self.market['quote']['precision']
                 break
             elif (
                 trade['pays']['asset_id'] == self.market['quote']['id']
                 and trade['receives']['asset_id'] == self.market['base']['id']
             ):  # Sell order
-                base = trade['fill_price']['quote']['amount'] / 10 ** self.market['base']['precision']
-                quote = trade['fill_price']['base']['amount'] / 10 ** self.market['quote']['precision']
+                base = trade['receives']['amount'] / 10 ** self.market['base']['precision']
+                quote = trade['pays']['amount'] / 10 ** self.market['quote']['precision']
                 break
         try:
             return {'base': base, 'quote': quote, 'price': base / quote}
