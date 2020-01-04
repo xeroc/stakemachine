@@ -1,3 +1,5 @@
 # Packages needed for running testsuite
 docker==3.7.2
 pytest==4.4.0
+# Needed for development
+pre-commit==1.20.0

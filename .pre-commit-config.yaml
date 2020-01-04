@@ -1,0 +1,27 @@
+# Read up on pre-commit
+# https://ljvmiranda921.github.io/notebook/2018/06/21/precommits-using-black-and-flake8/
+
+repos:
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.4.0
+  hooks:
+  - id: trailing-whitespace
+  - id: check-docstring-first
+  - id: check-executables-have-shebangs
+  - id: check-json
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: no-commit-to-branch
+  - id: flake8
+
+- repo: https://github.com/timothycrosley/isort
+  rev: 4.3.21
+  hooks:
+  - id: isort
+
+- repo: https://github.com/ambv/black
+  rev: 19.10b0
+  hooks:
+  - id: black
+    language_version: python3

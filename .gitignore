@@ -91,3 +91,6 @@ archive
 
 # Bandit config
 !bandit.yml
+
+# pre-commit hooks
+!.pre-commit-config.yaml
