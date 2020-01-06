@@ -182,11 +182,14 @@ class Config(dict):
             example, 3 workers with 30% 30% 30%, and 2 workers with 0. These 2 workers will take the remaining `(100 -
             3*30) / 2 = 5`.
 
-            Example return as a dict:
-            {'foo': {'RUBLE': {'sum_pct': 0, 'zero_workers': 0},
-                     'USD': {'sum_pct': 0, 'zero_workers': 0},
-                     'CNY': {'sum_pct': 0, 'zero_workers': 0}
-                     }
+            Example return as a dict
+
+            .. code-block:: python
+
+                {'foo': {'RUBLE': {'sum_pct': 0, 'zero_workers': 0},
+                         'USD': {'sum_pct': 0, 'zero_workers': 0},
+                         'CNY': {'sum_pct': 0, 'zero_workers': 0}
+                         }
                 }
         """
 
