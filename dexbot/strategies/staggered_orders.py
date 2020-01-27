@@ -2152,7 +2152,7 @@ class Strategy(StrategyBase):
 
         self.log.info(
             'Placing a virtual sell order with {:.{prec}f} {} @ {:.8f}'.format(
-                amount, symbol, order['price'], prec=self.market['quote']['precision']
+                amount, symbol, order['price'] ** -1, prec=self.market['quote']['precision']
             )
         )
         self.virtual_orders.append(order)
