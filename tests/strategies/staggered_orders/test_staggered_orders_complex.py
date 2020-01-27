@@ -93,7 +93,6 @@ def test_maintain_strategy_basic(mode, worker, do_initial_allocation):
     assert worker.sell_orders[-1]['price'] ** -1 > worker.upper_bound / (1 + worker.increment * 2)
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/575')
 @pytest.mark.parametrize('mode', MODES)
 def test_maintain_strategy_one_sided(mode, base_worker, config_only_base, do_initial_allocation):
     """ Test for one-sided start (buy only)
@@ -102,7 +101,7 @@ def test_maintain_strategy_one_sided(mode, base_worker, config_only_base, do_ini
     do_initial_allocation(worker, mode)
 
     # Check target spread is reached
-    assert worker.actual_spread < worker.target_spread + worker.increment
+    assert worker.actual_spread == pytest.approx(worker.target_spread + worker.increment, abs=(worker.increment / 2))
 
     # Check number of orders
     price = worker.center_price / math.sqrt(1 + worker.target_spread)
