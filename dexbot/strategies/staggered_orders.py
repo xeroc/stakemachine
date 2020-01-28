@@ -49,6 +49,7 @@ class Strategy(StrategyBase):
         self.is_instant_fill_enabled = self.worker.get('instant_fill', True)
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
         self.operational_depth = self.worker.get('operational_depth', 6)
+        self.enable_fallback_logic = self.worker.get('enable_fallback_logic', True)
 
         if self.is_center_price_dynamic:
             self.center_price = None
@@ -258,6 +259,7 @@ class Strategy(StrategyBase):
             or self.base_balance_history[0] != self.base_balance_history[2]
             or self.quote_balance_history[0] != self.quote_balance_history[2]
             or trx_executed
+            or not self.enable_fallback_logic
         ):
             self.last_check = datetime.now()
             self.log_maintenance_time()

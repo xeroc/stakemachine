@@ -148,12 +148,11 @@ def test_maintain_strategy_1sat(base_worker, config_1_sat, do_initial_allocation
 
 # Combine each mode with base and quote
 @pytest.mark.parametrize('asset', ['base', 'quote'])
-@pytest.mark.parametrize('mode', MODES)
-def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_allocation):
+def test_maintain_strategy_fallback_logic(asset, worker, do_initial_allocation):
     """ Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to
         close spread
     """
-    do_initial_allocation(worker, mode)
+    do_initial_allocation(worker, worker.mode)
     # TODO: strategy must turn off bootstrapping once target spread is reached
     worker['bootstrapping'] = False
 
@@ -176,6 +175,37 @@ def test_maintain_strategy_fallback_logic(asset, mode, worker, do_initial_alloca
     worker.refresh_orders()
     spread_after = get_spread(worker)
     assert spread_after <= worker.target_spread + worker.increment
+
+
+@pytest.mark.parametrize('asset', ['base', 'quote'])
+def test_maintain_strategy_fallback_logic_disabled(asset, worker, do_initial_allocation):
+    """ Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to
+        close spread
+    """
+    worker.enable_fallback_logic = False
+    do_initial_allocation(worker, worker.mode)
+    # TODO: strategy must turn off bootstrapping once target spread is reached
+    worker['bootstrapping'] = False
+
+    if asset == 'base':
+        worker.cancel_orders_wrapper(worker.buy_orders[0])
+        amount = worker.balance(worker.market['base']['symbol'])
+        worker.bitshares.reserve(amount, account=worker.account)
+    elif asset == 'quote':
+        worker.cancel_orders_wrapper(worker.sell_orders[0])
+        amount = worker.balance(worker.market['quote']['symbol'])
+        worker.bitshares.reserve(amount, account=worker.account)
+
+    worker.refresh_orders()
+    spread_before = get_spread(worker)
+    assert spread_before > worker.target_spread + worker.increment
+
+    for _ in range(0, 6):
+        worker.maintain_strategy()
+
+    worker.refresh_orders()
+    spread_after = get_spread(worker)
+    assert spread_after == spread_before
 
 
 def test_check_operational_depth(worker, do_initial_allocation):

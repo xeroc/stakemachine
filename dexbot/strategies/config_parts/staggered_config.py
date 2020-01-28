@@ -95,6 +95,14 @@ class StaggeredConfig(BaseConfig):
                 'Order depth to maintain on books',
                 (2, 9999999, None),
             ),
+            ConfigElement(
+                'enable_fallback_logic',
+                'bool',
+                True,
+                'Enable fallback logic',
+                'When unable to close the spread, cancel lowest buy order and place closer buy order',
+                None,
+            ),
         ]
 
     @classmethod
