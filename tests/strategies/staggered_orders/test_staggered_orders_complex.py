@@ -43,7 +43,6 @@ def test_maintain_strategy_no_manual_cp_empty_market(worker):
     assert worker.market_center_price is None
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/575')
 @pytest.mark.parametrize('mode', MODES)
 def test_maintain_strategy_basic(mode, worker, do_initial_allocation):
     """ Check if intial orders placement is correct
@@ -51,7 +50,7 @@ def test_maintain_strategy_basic(mode, worker, do_initial_allocation):
     worker = do_initial_allocation(worker, mode)
 
     # Check target spread is reached
-    assert worker.get_actual_spread() < worker.target_spread + worker.increment
+    assert worker.get_actual_spread() == pytest.approx(worker.target_spread, abs=(worker.increment / 2))
 
     # Check number of orders
     price = worker.center_price * math.sqrt(1 + worker.target_spread)
@@ -95,13 +94,12 @@ def test_maintain_strategy_one_sided(mode, base_worker, config_only_base, do_ini
     assert worker.buy_orders[-1]['price'] < worker.lower_bound * (1 + worker.increment * 2)
 
 
-@pytest.mark.xfail(reason='https://github.com/Codaone/DEXBot/issues/575')
 def test_maintain_strategy_1sat(base_worker, config_1_sat, do_initial_allocation):
     worker = base_worker(config_1_sat)
     do_initial_allocation(worker, worker.mode)
 
     # Check target spread is reached
-    assert worker.get_actual_spread() < worker.target_spread + worker.increment
+    assert worker.get_actual_spread() == pytest.approx(worker.target_spread, abs=(worker.increment / 2))
 
     # Check number of orders
     price = worker.center_price * math.sqrt(1 + worker.target_spread)
