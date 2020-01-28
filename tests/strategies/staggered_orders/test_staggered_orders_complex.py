@@ -13,26 +13,6 @@ log.setLevel(logging.DEBUG)
 MODES = ['mountain', 'valley', 'neutral', 'buy_slope', 'sell_slope']
 
 
-def get_spread(worker):
-    """ Get actual spread on SO worker
-
-        :param Strategy worker: an active worker instance
-    """
-    if worker.buy_orders:
-        highest_buy_price = worker.buy_orders[0].get('price')
-    else:
-        return float('Inf')
-
-    if worker.sell_orders:
-        lowest_sell_price = worker.sell_orders[0].get('price')
-        # Invert the sell price to BASE so it can be used in comparison
-        lowest_sell_price = lowest_sell_price ** -1
-    else:
-        return float('Inf')
-
-    return (lowest_sell_price / highest_buy_price) - 1
-
-
 ###################
 # Most complex methods which depends on high-level methods
 ###################
@@ -71,7 +51,7 @@ def test_maintain_strategy_basic(mode, worker, do_initial_allocation):
     worker = do_initial_allocation(worker, mode)
 
     # Check target spread is reached
-    assert worker.actual_spread < worker.target_spread + worker.increment
+    assert worker.get_actual_spread() < worker.target_spread + worker.increment
 
     # Check number of orders
     price = worker.center_price * math.sqrt(1 + worker.target_spread)
@@ -101,9 +81,6 @@ def test_maintain_strategy_one_sided(mode, base_worker, config_only_base, do_ini
     worker = base_worker(config_only_base)
     do_initial_allocation(worker, mode)
 
-    # Check target spread is reached
-    assert worker.actual_spread < worker.target_spread + worker.increment
-
     # Check number of orders
     price = worker.center_price / math.sqrt(1 + worker.target_spread)
     buy_orders_count = worker.calc_buy_orders_count(price, worker.lower_bound)
@@ -124,7 +101,7 @@ def test_maintain_strategy_1sat(base_worker, config_1_sat, do_initial_allocation
     do_initial_allocation(worker, worker.mode)
 
     # Check target spread is reached
-    assert worker.actual_spread < worker.target_spread + worker.increment
+    assert worker.get_actual_spread() < worker.target_spread + worker.increment
 
     # Check number of orders
     price = worker.center_price * math.sqrt(1 + worker.target_spread)
@@ -166,14 +143,14 @@ def test_maintain_strategy_fallback_logic(asset, worker, do_initial_allocation):
         worker.bitshares.reserve(amount, account=worker.account)
 
     worker.refresh_orders()
-    spread_before = get_spread(worker)
+    spread_before = worker.get_actual_spread()
     assert spread_before > worker.target_spread + worker.increment
 
     for _ in range(0, 6):
         worker.maintain_strategy()
 
     worker.refresh_orders()
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
     assert spread_after <= worker.target_spread + worker.increment
 
 
@@ -198,7 +175,7 @@ def test_maintain_strategy_fallback_logic_disabled(asset, worker, do_initial_all
         worker.bitshares.reserve(amount, account=worker.account)
 
     worker.refresh_orders()
-    spread_before = get_spread(worker)
+    spread_before = worker.get_actual_spread()
     assert spread_before > worker.target_spread + worker.increment
 
     for _ in range(0, 6):
@@ -206,7 +183,6 @@ def test_maintain_strategy_fallback_logic_disabled(asset, worker, do_initial_all
 
     worker.refresh_orders()
     spread_after = worker.get_actual_spread()
-    # Spread didn't changed
     assert spread_after == spread_before
 
     # Also check that operational depth is proper
@@ -879,19 +855,19 @@ def test_allocate_asset_basic(worker):
 
     worker.calculate_asset_thresholds()
     worker.refresh_balances()
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
 
     # Allocate asset until target spread will be reached
     while spread_after >= worker.target_spread + worker.increment:
         free_base = worker.base_balance
         free_quote = worker.quote_balance
-        spread_before = get_spread(worker)
+        spread_before = worker.get_actual_spread()
 
         worker.allocate_asset('base', free_base)
         worker.allocate_asset('quote', free_quote)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
-        spread_after = get_spread(worker)
+        spread_after = worker.get_actual_spread()
 
         # Update whistory of balance changes
         worker.base_balance_history.append(worker.base_balance['amount'])
@@ -1095,7 +1071,7 @@ def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_in
         Test for https://github.com/Codaone/DEXBot/issues/588
     """
     do_initial_allocation(worker, worker.mode)
-    spread_before = get_spread(worker)
+    spread_before = worker.get_actual_spread()
     log.info('Worker spread after bootstrap: {}'.format(spread_before))
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
@@ -1108,15 +1084,15 @@ def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_in
 
     # Place limited orders; the goal is to limit order amount to be much smaller than opposite
     quote_limit = worker.buy_orders[0]['quote']['amount'] * worker.partial_fill_threshold / 2
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
     while spread_after >= worker.target_spread + worker.increment:
         # We're using spread check because we cannot just place same number of orders as num_orders_to_cancel because
         # it may result in too close spread because of price shifts
         worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=quote_limit)
         worker.refresh_orders()
-        spread_after = get_spread(worker)
+        spread_after = worker.get_actual_spread()
 
-    log.info('Worker spread: {}'.format(get_spread(worker)))
+    log.info('Worker spread: {}'.format(worker.get_actual_spread()))
 
     # Fill only one newly placed order from another account
     additional_account = base_account()
@@ -1135,7 +1111,7 @@ def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_in
     worker.refresh_balances(use_cached_orders=True)
 
     # Filling of one order should result in spread > target spread, othewise allocate_asset will not place closer prder
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
     assert spread_after >= worker.target_spread + worker.increment
 
     # Allocate obtained BASE
@@ -1144,7 +1120,7 @@ def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_in
         worker.allocate_asset('base', worker.base_balance)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
-        spread_after = get_spread(worker)
+        spread_after = worker.get_actual_spread()
         counter += 1
         # Counter is for preventing infinity loop
         assert counter < 20
@@ -1163,7 +1139,7 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
         Test for https://github.com/Codaone/DEXBot/issues/588
     """
     do_initial_allocation(worker, worker.mode)
-    spread_before = get_spread(worker)
+    spread_before = worker.get_actual_spread()
     log.info('Worker spread after bootstrap: {}'.format(spread_before))
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
@@ -1176,15 +1152,15 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
 
     # Place limited orders; the goal is to limit order amount to be much smaller than opposite
     quote_limit = worker.buy_orders[0]['quote']['amount'] * worker.partial_fill_threshold / 2
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
     while spread_after >= worker.target_spread + worker.increment:
         # We're using spread check because we cannot just place same number of orders as num_orders_to_cancel because
         # it may result in too close spread because of price shifts
         worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=quote_limit)
         worker.refresh_orders()
-        spread_after = get_spread(worker)
+        spread_after = worker.get_actual_spread()
 
-    log.info('Worker spread: {}'.format(get_spread(worker)))
+    log.info('Worker spread: {}'.format(worker.get_actual_spread()))
 
     # Fill only one newly placed order from another account
     additional_account = base_account()
@@ -1207,10 +1183,10 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
     assert not worker.check_partial_fill(worker.sell_orders[0], fill_threshold=(1 - worker.partial_fill_threshold))
 
     # Expect dust order cancel + closer order
-    log.info('spread before allocate_asset(): {}'.format(get_spread(worker)))
+    log.info('spread before allocate_asset(): {}'.format(worker.get_actual_spread()))
     worker.allocate_asset('base', worker.base_balance)
     worker.refresh_orders()
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
     assert spread_after < worker.target_spread + worker.increment
 
 
@@ -1240,14 +1216,14 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
     # Allocate asset until target spread will be reached
     worker.refresh_orders()
     worker.refresh_balances(use_cached_orders=True)
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
     counter = 0
     while spread_after >= worker.target_spread + worker.increment:
         worker.allocate_asset('base', worker.base_balance)
         worker.allocate_asset('quote', worker.quote_balance)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
-        spread_after = get_spread(worker)
+        spread_after = worker.get_actual_spread()
         counter += 1
         # Counter is for preventing infinity loop
         assert counter < 20
@@ -1295,14 +1271,14 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     # Allocate asset until target spread will be reached
     worker.refresh_orders()
     worker.refresh_balances(use_cached_orders=True)
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
     counter = 0
     while spread_after >= worker.target_spread + worker.increment:
         worker.allocate_asset('base', worker.base_balance)
         worker.allocate_asset('quote', worker.quote_balance)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
-        spread_after = get_spread(worker)
+        spread_after = worker.get_actual_spread()
         counter += 1
         # Counter is for preventing infinity loop
         assert counter < 20
@@ -1319,6 +1295,15 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
             worker.buy_orders[1]['base']['amount'] * math.sqrt(1 + worker.increment),
             rel=(10 ** -worker.market['base']['precision']),
         )
+
+
+def test_get_actual_spread(worker):
+    worker.maintain_strategy()
+    # Twice run needed
+    worker.maintain_strategy()
+    worker.refresh_orders()
+    spread = worker.get_actual_spread()
+    assert float('Inf') > spread > 0
 
 
 def test_tick(worker):
