@@ -50,6 +50,9 @@ class Strategy(StrategyBase):
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
         self.operational_depth = self.worker.get('operational_depth', 6)
         self.enable_fallback_logic = self.worker.get('enable_fallback_logic', True)
+        self.enable_stop_loss = self.worker.get('enable_stop_loss', False)
+        self.stop_loss_discount = self.worker.get('stop_loss_discount', 5) / 100
+        self.stop_loss_amount = self.worker.get('stop_loss_amount', 50) / 100
 
         if self.is_center_price_dynamic:
             self.center_price = None
@@ -253,6 +256,9 @@ class Strategy(StrategyBase):
             # Bootstrap was turned off, dump initial orders
             self.dump_initial_orders()
 
+        if self.enable_stop_loss:
+            self.stop_loss_check()
+
         # Do not continue whether balances are changing or bootstrap is on
         if (
             self['bootstrapping']
@@ -317,6 +323,31 @@ class Strategy(StrategyBase):
         """
         self.order_min_base = 2 * 10 ** -self.market['base']['precision'] / self.increment
         self.order_min_quote = 2 * 10 ** -self.market['quote']['precision'] / self.increment
+
+    def stop_loss_check(self):
+        """ Check for Stop Loss condition and execute SL if needed
+        """
+        if self.buy_orders:
+            return
+
+        highest_bid = float(self.ticker().get('highestBid'))
+        if not highest_bid < self.lower_bound:
+            return
+
+        if not highest_bid:
+            # highest_bid is 0
+            highest_bid = self.lower_bound
+
+        stop_loss_price = highest_bid / (1 + self.stop_loss_discount)
+        amount = self.quote_total_balance * self.stop_loss_amount
+        self.cancel_all_orders()
+        self.log.warning(
+            'Executing Stop Loss, selling {:.{prec}f} {} @ {:.8f}'.format(
+                amount, self.market['quote']['symbol'], stop_loss_price, prec=self.market['quote']['precision']
+            )
+        )
+        self.place_market_sell_order(amount, stop_loss_price, returnOrderId=True)
+        self.error()
 
     def refresh_balances(self, use_cached_orders=False):
         """ This function is used to refresh account balances
