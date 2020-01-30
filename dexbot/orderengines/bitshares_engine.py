@@ -564,6 +564,7 @@ class BitsharesOrderEngine(Storage, Events):
                 # The API doesn't return data on orders that don't exist
                 # We need to calculate the data on our own
                 buy_order = self.calculate_order_data(buy_order, amount, price)
+                buy_order['id'] = buy_transaction['orderid']
                 self.recheck_orders = True
             return buy_order
         else:
@@ -620,6 +621,7 @@ class BitsharesOrderEngine(Storage, Events):
             if sell_order and sell_order['deleted']:
                 # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
                 sell_order = self.calculate_order_data(sell_order, amount, price)
+                sell_order['id'] = sell_transaction['orderid']
                 self.recheck_orders = True
             if sell_order and invert:
                 sell_order.invert()
