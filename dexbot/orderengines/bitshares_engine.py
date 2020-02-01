@@ -171,12 +171,22 @@ class BitsharesOrderEngine(Storage, Events):
 
         return balance
 
-    def calculate_order_data(self, order, amount, price):
+    def calculate_order_data(self, order_type, order, amount, price):
+        """ Reconstructs order data using price and amount
+        """
         quote_asset = Amount(amount, self._market['quote']['symbol'], bitshares_instance=self.bitshares)
-        order['quote'] = quote_asset
-        order['price'] = price
         base_asset = Amount(amount * price, self._market['base']['symbol'], bitshares_instance=self.bitshares)
-        order['base'] = base_asset
+        if order_type == 'buy':
+            order['quote'] = quote_asset
+            order['price'] = price
+            order['base'] = base_asset
+        elif order_type == 'sell':
+            order['quote'] = base_asset
+            order['price'] = price ** -1
+            order['base'] = quote_asset
+        else:
+            raise ValueError('Invalid order_type')
+
         return order
 
     def calculate_worker_value(self, unit_of_measure):
@@ -563,7 +573,7 @@ class BitsharesOrderEngine(Storage, Events):
             if buy_order and buy_order['deleted']:
                 # The API doesn't return data on orders that don't exist
                 # We need to calculate the data on our own
-                buy_order = self.calculate_order_data(buy_order, amount, price)
+                buy_order = self.calculate_order_data('buy', buy_order, amount, price)
                 buy_order['id'] = buy_transaction['orderid']
                 self.recheck_orders = True
             return buy_order
@@ -620,7 +630,7 @@ class BitsharesOrderEngine(Storage, Events):
             sell_order = self.get_order(sell_transaction['orderid'], return_none=return_none)
             if sell_order and sell_order['deleted']:
                 # The API doesn't return data on orders that don't exist, we need to calculate the data on our own
-                sell_order = self.calculate_order_data(sell_order, amount, price)
+                sell_order = self.calculate_order_data('sell', sell_order, amount, price)
                 sell_order['id'] = sell_transaction['orderid']
                 self.recheck_orders = True
             if sell_order and invert:
