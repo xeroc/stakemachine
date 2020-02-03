@@ -183,17 +183,18 @@ def test_maintain_strategy_fallback_logic_disabled(asset, worker, do_initial_all
         close spread
     """
     worker.enable_fallback_logic = False
-    do_initial_allocation(worker, worker.mode)
+    worker.operational_depth = 2
+    do_initial_allocation(worker, 'valley')
     # TODO: strategy must turn off bootstrapping once target spread is reached
     worker['bootstrapping'] = False
 
     if asset == 'base':
-        worker.cancel_orders_wrapper(worker.buy_orders[0])
-        amount = worker.balance(worker.market['base']['symbol'])
+        worker.cancel_orders_wrapper(worker.buy_orders[:3])
+        amount = worker.buy_orders[0]['base'] * 3
         worker.bitshares.reserve(amount, account=worker.account)
     elif asset == 'quote':
-        worker.cancel_orders_wrapper(worker.sell_orders[0])
-        amount = worker.balance(worker.market['quote']['symbol'])
+        worker.cancel_orders_wrapper(worker.sell_orders[:3])
+        amount = worker.sell_orders[0]['base'] * 3
         worker.bitshares.reserve(amount, account=worker.account)
 
     worker.refresh_orders()
@@ -204,8 +205,13 @@ def test_maintain_strategy_fallback_logic_disabled(asset, worker, do_initial_all
         worker.maintain_strategy()
 
     worker.refresh_orders()
-    spread_after = get_spread(worker)
+    spread_after = worker.get_actual_spread()
+    # Spread didn't changed
     assert spread_after == spread_before
+
+    # Also check that operational depth is proper
+    assert len(worker.real_buy_orders) == pytest.approx(worker.operational_depth, abs=1)
+    assert len(worker.real_sell_orders) == pytest.approx(worker.operational_depth, abs=1)
 
 
 def test_check_operational_depth(worker, do_initial_allocation):

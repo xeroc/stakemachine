@@ -177,10 +177,6 @@ class Strategy(StrategyBase):
                 self.log_maintenance_time()
                 return
 
-        # Ensure proper operational depth
-        self.check_operational_depth(self.real_buy_orders, self.virtual_buy_orders)
-        self.check_operational_depth(self.real_sell_orders, self.virtual_sell_orders)
-
         # Remember current boostrapping state before sending transactions
         previous_bootstrap_state = self['bootstrapping']
 
@@ -226,6 +222,10 @@ class Strategy(StrategyBase):
         if len(self.base_balance_history) > 3:
             del self.base_balance_history[0]
             del self.quote_balance_history[0]
+
+        # Ensure proper operational depth
+        self.check_operational_depth(self.real_buy_orders, self.virtual_buy_orders)
+        self.check_operational_depth(self.real_sell_orders, self.virtual_sell_orders)
 
         # Greatly increase check interval to lower CPU load whether there is no funds to allocate or we cannot
         # allocate funds for some reason
