@@ -4,6 +4,7 @@ import os
 import os.path
 import signal
 import sys
+import time
 from multiprocessing import freeze_support
 
 import bitshares.exceptions
@@ -193,6 +194,7 @@ def drop_state(worker_name):
     """
     click.echo('Dropping state for {}'.format(worker_name))
     Storage.clear_worker_data(worker_name)
+    time.sleep(1)
 
 
 def worker_job(worker, job):
