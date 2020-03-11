@@ -92,23 +92,27 @@ def verbose(f):
     return update_wrapper(new_func, f)
 
 
+def sort_nodes(ctx):
+    nodelist = ctx.config["node"]
+    timeout = int(ctx.obj.get("sortnodes"))
+
+    host_ip = '8.8.8.8'
+    if ping(host_ip, 3) is False:
+        click.echo("Internet NOT available! Please check your connection!")
+        log.critical("Internet not available, exiting")
+        sys.exit(78)
+
+    if timeout > 0:
+        click.echo("Checking for nearest nodes with timeout < {} sec....".format(timeout))
+        nodelist = get_sorted_nodelist(ctx.config["node"], timeout)
+        click.echo("Nearest nodes ->  " + str(nodelist))
+    return nodelist
+
+
 def chain(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        nodelist = ctx.config["node"]
-        timeout = int(ctx.obj.get("sortnodes"))
-
-        host_ip = '8.8.8.8'
-        if ping(host_ip, 3) is False:
-            click.echo("internet NOT available! Please check your connection!")
-            log.critical("Internet not available, exiting")
-            sys.exit(78)
-
-        if timeout > 0:
-            click.echo("Checking for nearest nodes with timeout < {} sec....".format(timeout))
-            nodelist = get_sorted_nodelist(ctx.config["node"], timeout)
-            click.echo("Nearest nodes ->  " + str(nodelist))
-
+        nodelist = sort_nodes(ctx)
         ctx.bitshares = BitShares(
             nodelist,
             num_retries=-1,
@@ -155,6 +159,24 @@ def unlock(f):
                     hide_input=True,
                     confirmation_prompt=True)
                 ctx.bitshares.wallet.create(pwd)
+        return ctx.invoke(f, *args, **kwargs)
+    return update_wrapper(new_func, f)
+
+
+def reset_nodes(f):
+    @click.pass_context
+    def new_func(ctx, *args, **kwargs):
+        if not os.path.isfile(ctx.obj["configfile"]):
+            Config(path=ctx.obj['configfile'])
+        ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
+        # reset to default
+        ctx.config["node"] = Config().node_list
+        if ctx.obj.get("sortnodes"):
+            nodelist = sort_nodes(ctx)
+            # sort nodes if option is given
+            ctx.config["node"] = nodelist
+        with open(ctx.obj["configfile"], 'w') as file:
+            yaml.dump(ctx.config, file, default_flow_style=False)
         return ctx.invoke(f, *args, **kwargs)
     return update_wrapper(new_func, f)
 
