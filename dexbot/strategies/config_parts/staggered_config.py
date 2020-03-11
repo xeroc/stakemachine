@@ -52,11 +52,11 @@ class StaggeredConfig(BaseConfig):
                 (0, 1000000000, 8, '')),
             ConfigElement(
                 'lower_bound', 'float', 1, 'Lower bound',
-                'The bottom price in the range',
+                'The lowest price (Quote/Base) in the range',
                 (0, 1000000000, 8, '')),
             ConfigElement(
                 'upper_bound', 'float', 1000000, 'Upper bound',
-                'The top price in the range',
+                'The highest price (Quote/Base) in the range',
                 (0, 1000000000, 8, '')),
             ConfigElement(
                 'instant_fill', 'bool', True, 'Allow instant fill',
