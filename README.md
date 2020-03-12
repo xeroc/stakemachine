@@ -62,6 +62,13 @@ Join the [Telegram Chat for DEXBot](https://t.me/DEXBOTbts).
 
 Install the software, use it and report any problems by creating a ticket.
 
+Before commiting any changes first time, make sure to install pre-commit hooks!
+
+```
+pip install -r requirements-dev.txt
+pre-commit install
+```
+
 * [New Contributors Guide](https://github.com/Codaone/DEXBot/wiki/New-Contributors-Guide)
 * [Git Workflow](https://github.com/Codaone/DEXBot/wiki/Git-Workflow)
 
