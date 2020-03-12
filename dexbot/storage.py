@@ -1,22 +1,20 @@
+import json
 import os
 import os.path
-import sys
-import json
-import threading
 import queue
+import sys
+import threading
 import uuid
+
 import alembic
 import alembic.config
-
 from appdirs import user_data_dir
+from dexbot import APP_NAME, AUTHOR
+from sqlalchemy import Boolean, Column, Float, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import load_only, sessionmaker
 
 from . import helper
-from dexbot import APP_NAME, AUTHOR
-
-from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, load_only
-
 
 Base = declarative_base()
 
@@ -227,6 +225,7 @@ class DatabaseWorker(threading.Thread):
             migrations_dir = os.path.join(bundle_dir, 'migrations')
         else:
             from pkg_resources import resource_filename
+
             migrations_dir = resource_filename('dexbot', 'migrations')
 
         if os.path.exists(sqlite_file) and os.path.getsize(sqlite_file) > 0:

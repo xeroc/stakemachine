@@ -1,5 +1,4 @@
-from dexbot.styles import green, blue, yellow, red, pink, bold, underline
-
+from dexbot.styles import blue, bold, green, pink, red, underline, yellow
 
 if __name__ == '__main__':
     # Test each text style

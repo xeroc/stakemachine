@@ -32,7 +32,7 @@ On CentOS/RedHat::
    sudo yum install openssl-devel python34-pip python34-devel newt
 
 On other distros you need to check the documentation for how to install these packages, the names should be very similar.
-  
+
 Installation
 ------------
 
@@ -54,8 +54,8 @@ bot's account into a local wallet. This can be done using
    uptick addkey
 
 You can get your private key from the BitShares Web Wallet: click the menu on the top right,
-then "Settings", "Accounts", "View keys", then tab "Owner Permissions", click 
-on the public key, then "Show". 
+then "Settings", "Accounts", "View keys", then tab "Owner Permissions", click
+on the public key, then "Show".
 
 Look for the private key in Wallet Import Format (WIF), it's a "5" followed
 by a long list of letters. Select, copy and paste this into the screen
@@ -76,4 +76,3 @@ Configuration
 
 This will walk you through the configuration process.
 Read more about this in the :doc:`configuration`.
-

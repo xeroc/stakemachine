@@ -1,4 +1,4 @@
-from dexbot.strategies.external_feeds.process_pair import split_pair, filter_prefix_symbol, filter_bit_symbol
+from dexbot.strategies.external_feeds.process_pair import filter_bit_symbol, filter_prefix_symbol, split_pair
 from dexbot.strategies.external_feeds.waves_feed import get_waves_price
 
 """ This is the unit test for getting external feed data from waves DEX.

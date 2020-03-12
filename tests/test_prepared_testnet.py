@@ -1,5 +1,4 @@
 import pytest
-
 from bitshares.account import Account
 from bitshares.asset import Asset
 

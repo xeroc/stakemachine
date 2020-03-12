@@ -1,13 +1,12 @@
-import os
-import pytest
-import tempfile
 import logging
+import os
+import tempfile
 
-from sqlalchemy import create_engine, Column, String, Integer, Float
+import pytest
+from dexbot.storage import DatabaseWorker
+from sqlalchemy import Column, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
-from dexbot.storage import DatabaseWorker
 
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)

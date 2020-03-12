@@ -1,13 +1,11 @@
 # Python imports
 import copy
-
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 # Project imports
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.koth_config import KothConfig
-
 
 STRATEGY_NAME = 'King of the Hill'
 

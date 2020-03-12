@@ -17,12 +17,12 @@ class StrategyConfig(BaseConfig):
             Documentation of ConfigElements can be found from base.py.
         """
         return BaseConfig.configure(return_base_config) + [
-            ConfigElement('lower_bound', 'float', 1, 'Lower bound',
-                          'The bottom price in the range',
-                          (0, 10000000, 8, '')),
-            ConfigElement('upper_bound', 'float', 10, 'Upper bound',
-                          'The top price in the range',
-                          (0, 10000000, 8, '')),
+            ConfigElement(
+                'lower_bound', 'float', 1, 'Lower bound', 'The bottom price in the range', (0, 10000000, 8, '')
+            ),
+            ConfigElement(
+                'upper_bound', 'float', 10, 'Upper bound', 'The top price in the range', (0, 10000000, 8, '')
+            ),
         ]
 
     @classmethod
@@ -37,5 +37,5 @@ class StrategyConfig(BaseConfig):
         return BaseConfig.configure_details(include_default_tabs) + [
             DetailElement('graph', 'Graph', 'Graph', 'graph.jpg'),
             DetailElement('table', 'Orders', 'Data from csv file', 'example.csv'),
-            DetailElement('text', 'Log', 'Log data', 'example.log')
+            DetailElement('text', 'Log', 'Log data', 'example.log'),
         ]

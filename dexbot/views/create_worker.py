@@ -1,11 +1,10 @@
-from .ui.create_worker_window_ui import Ui_Dialog
-from dexbot.controllers.worker_controller import WorkerController, UppercaseValidator
-
+from dexbot.controllers.worker_controller import UppercaseValidator, WorkerController
 from PyQt5 import QtWidgets
+
+from .ui.create_worker_window_ui import Ui_Dialog
 
 
 class CreateWorkerView(QtWidgets.QDialog, Ui_Dialog):
-
     def __init__(self, bitshares_instance):
         super().__init__()
         self.strategy_widget = None

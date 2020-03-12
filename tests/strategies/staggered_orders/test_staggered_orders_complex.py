@@ -1,8 +1,8 @@
 import logging
-import pytest
 import math
-
 from datetime import datetime
+
+import pytest
 from bitshares.account import Account
 from bitshares.amount import Amount
 

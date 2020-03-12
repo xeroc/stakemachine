@@ -1,7 +1,7 @@
 import logging
 import math
-import pytest
 
+import pytest
 from dexbot.strategies.staggered_orders import VirtualOrder
 
 # Turn on debug for dexbot logger

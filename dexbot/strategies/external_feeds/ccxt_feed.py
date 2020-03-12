@@ -22,14 +22,13 @@ async def fetch_ticker(exchange, symbol):
     try:
         ticker = await exchange.fetch_ticker(symbol.upper())
     except Exception as exception:
-        print(type(exception).__name__, exception.args,
-              'Exchange Error (ignoring)')
+        print(type(exception).__name__, exception.args, 'Exchange Error (ignoring)')
     except accxt.RequestTimeout as exception:
-        print(type(exception).__name__, exception.args,
-              'Request Timeout (ignoring)')
+        print(type(exception).__name__, exception.args, 'Request Timeout (ignoring)')
     except accxt.ExchangeNotAvailable as exception:
-        print(type(exception).__name__, exception.args,
-              'Exchange Not Available due to downtime or maintenance (ignoring)')
+        print(
+            type(exception).__name__, exception.args, 'Exchange Not Available due to downtime or maintenance (ignoring)'
+        )
     await exchange.close()
     return ticker
 

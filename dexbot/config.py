@@ -1,20 +1,17 @@
 import os
 import pathlib
-
-from dexbot import APP_NAME, AUTHOR
-from dexbot.node_manager import get_sorted_nodelist
-
+from collections import OrderedDict, defaultdict
 
 import appdirs
+from dexbot import APP_NAME, AUTHOR
+from dexbot.node_manager import get_sorted_nodelist
 from ruamel import yaml
-from collections import OrderedDict, defaultdict
 
 DEFAULT_CONFIG_DIR = appdirs.user_config_dir(APP_NAME, appauthor=AUTHOR)
 DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')
 
 
 class Config(dict):
-
     def __init__(self, config=None, path=None):
         """ Creates or loads the config file based on if it exists.
             :param dict config: data used to create the config file
@@ -165,9 +162,7 @@ class Config(dict):
             mapping_loader.flatten_mapping(node)
             return object_pairs_hook(mapping_loader.construct_pairs(node))
 
-        OrderedLoader.add_constructor(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            construct_mapping)
+        OrderedLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
         return yaml.load(stream, OrderedLoader)
 
     @staticmethod
@@ -194,6 +189,7 @@ class Config(dict):
                      }
                 }
         """
+
         def update_data(asset, operational_percent):
             if isinstance(data[account][asset]['sum_pct'], float):
                 # Existing dict key
@@ -210,8 +206,7 @@ class Config(dict):
                     data[account][asset]['num_zero_workers'] = 1
 
             if data[account][asset]['sum_pct'] > 1:
-                raise ValueError('Operational percent for asset {} is more than 100%'
-                                 .format(asset))
+                raise ValueError('Operational percent for asset {} is more than 100%'.format(asset))
 
         def tree():
             return defaultdict(tree)

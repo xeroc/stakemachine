@@ -15,9 +15,8 @@ class BitsharesPriceFeed:
             - Buy orders reserve BASE
             - Sell orders reserve QUOTE
     """
-    def __init__(self,
-                 market,
-                 bitshares_instance=None):
+
+    def __init__(self, market, bitshares_instance=None):
 
         self.market = market
         self.ticker = self.market.ticker
@@ -28,9 +27,7 @@ class BitsharesPriceFeed:
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
-        self.log = logging.LoggerAdapter(
-            logging.getLogger('dexbot.pricefeed_log'), {}
-        )
+        self.log = logging.LoggerAdapter(logging.getLogger('dexbot.pricefeed_log'), {})
 
     def get_limit_orders(self, depth=1):
         """ Returns orders from the current market. Orders are sorted by price. Does not require account info.

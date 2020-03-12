@@ -1,10 +1,12 @@
 import time
-from threading import Thread
 import webbrowser
+from threading import Thread
 
 from dexbot import __version__
 from dexbot.config import Config
 from dexbot.controllers.wallet_controller import WalletController
+from dexbot.qt_queue.idle_queue import idle_add
+from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
 from dexbot.views.create_wallet import CreateWalletView
 from dexbot.views.create_worker import CreateWorkerView
 from dexbot.views.errors import gui_error
@@ -13,17 +15,13 @@ from dexbot.views.settings import SettingsView
 from dexbot.views.ui.worker_list_window_ui import Ui_MainWindow
 from dexbot.views.unlock_wallet import UnlockWalletView
 from dexbot.views.worker_item import WorkerItemWidget
-from dexbot.qt_queue.idle_queue import idle_add
-from dexbot.qt_queue.queue_dispatcher import ThreadDispatcher
-
+from grapheneapi.exceptions import NumRetriesReached
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QFontDatabase
 from PyQt5.QtWidgets import QMainWindow
-from grapheneapi.exceptions import NumRetriesReached
 
 
 class MainView(QMainWindow, Ui_MainWindow):
-
     def __init__(self, main_controller):
         super().__init__()
         self.setupUi(self)
@@ -61,8 +59,10 @@ class MainView(QMainWindow, Ui_MainWindow):
             try:
                 self.main_controller.measure_latency(self.config['node'])
             except NumRetriesReached:
-                self.status_bar.showMessage('ver {} - Coudn\'t connect to Bitshares. '
-                                            'Please use different node(s) and retry.'.format(__version__))
+                self.status_bar.showMessage(
+                    'ver {} - Coudn\'t connect to Bitshares. '
+                    'Please use different node(s) and retry.'.format(__version__)
+                )
                 self.main_controller.set_bitshares_instance(None)
                 return False
 
@@ -71,8 +71,9 @@ class MainView(QMainWindow, Ui_MainWindow):
             return True
         else:
             # Config has no nodes in it
-            self.status_bar.showMessage('ver {} - Node(s) not found. '
-                                        'Please add node(s) from settings.'.format(__version__))
+            self.status_bar.showMessage(
+                'ver {} - Node(s) not found. ' 'Please add node(s) from settings.'.format(__version__)
+            )
             return False
 
     @pyqtSlot(name='handle_login')

@@ -1,15 +1,14 @@
+import copy
 import importlib
-import sys
 import logging
 import os.path
+import sys
 import threading
-import copy
 
 import dexbot.errors as errors
-from dexbot.strategies.base import StrategyBase
-
-from bitshares.notify import Notify
 from bitshares.instance import shared_bitshares_instance
+from bitshares.notify import Notify
+from dexbot.strategies.base import StrategyBase
 
 log = logging.getLogger(__name__)
 log_workers = logging.getLogger('dexbot.per_worker')
@@ -20,13 +19,7 @@ log_workers = logging.getLogger('dexbot.per_worker')
 
 
 class WorkerInfrastructure(threading.Thread):
-
-    def __init__(
-        self,
-        config,
-        bitshares_instance=None,
-        view=None
-    ):
+    def __init__(self, config, bitshares_instance=None, view=None):
         super().__init__()
 
         # BitShares instance
@@ -52,35 +45,44 @@ class WorkerInfrastructure(threading.Thread):
         self.config_lock.acquire()
         for worker_name, worker in config["workers"].items():
             if "account" not in worker:
-                log_workers.critical("Worker has no account", extra={
-                    'worker_name': worker_name, 'account': 'unknown',
-                    'market': 'unknown', 'is_disabled': (lambda: True)
-                })
+                log_workers.critical(
+                    "Worker has no account",
+                    extra={
+                        'worker_name': worker_name,
+                        'account': 'unknown',
+                        'market': 'unknown',
+                        'is_disabled': (lambda: True),
+                    },
+                )
                 continue
             if "market" not in worker:
-                log_workers.critical("Worker has no market", extra={
-                    'worker_name': worker_name, 'account': worker['account'],
-                    'market': 'unknown', 'is_disabled': (lambda: True)
-                })
+                log_workers.critical(
+                    "Worker has no market",
+                    extra={
+                        'worker_name': worker_name,
+                        'account': worker['account'],
+                        'market': 'unknown',
+                        'is_disabled': (lambda: True),
+                    },
+                )
                 continue
             try:
-                strategy_class = getattr(
-                    importlib.import_module(worker["module"]),
-                    'Strategy'
-                )
+                strategy_class = getattr(importlib.import_module(worker["module"]), 'Strategy')
                 self.workers[worker_name] = strategy_class(
-                    config=config,
-                    name=worker_name,
-                    bitshares_instance=self.bitshares,
-                    view=self.view
+                    config=config, name=worker_name, bitshares_instance=self.bitshares, view=self.view
                 )
                 self.markets.add(worker['market'])
                 self.accounts.add(worker['account'])
             except BaseException:
-                log_workers.exception("Worker initialisation", extra={
-                    'worker_name': worker_name, 'account': worker['account'],
-                    'market': 'unknown', 'is_disabled': (lambda: True)
-                })
+                log_workers.exception(
+                    "Worker initialisation",
+                    extra={
+                        'worker_name': worker_name,
+                        'account': worker['account'],
+                        'market': 'unknown',
+                        'is_disabled': (lambda: True),
+                    },
+                )
         self.config_lock.release()
 
     def update_notify(self):
@@ -101,7 +103,7 @@ class WorkerInfrastructure(threading.Thread):
                 on_market=self.on_market,
                 on_account=self.on_account,
                 on_block=self.on_block,
-                bitshares_instance=self.bitshares
+                bitshares_instance=self.bitshares,
             )
 
     # Events

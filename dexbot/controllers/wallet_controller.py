@@ -2,7 +2,6 @@ import bitshares
 
 
 class WalletController:
-
     def __init__(self, bitshares_instance):
         self.bitshares = bitshares_instance
 

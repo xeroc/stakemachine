@@ -2,20 +2,17 @@ import logging
 import math
 import time
 
+import bitshares.exceptions
+from bitshares.account import Account
+from bitshares.amount import Asset
+from bitshares.instance import shared_bitshares_instance
+from bitshares.market import Market
 from dexbot.config import Config
-from dexbot.storage import Storage
-from dexbot.qt_queue.idle_queue import idle_add
-from dexbot.strategies.config_parts.base_config import BaseConfig
-
 from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
 from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
-
-import bitshares.exceptions
-from bitshares.instance import shared_bitshares_instance
-from bitshares.amount import Asset
-from bitshares.account import Account
-from bitshares.market import Market
-
+from dexbot.qt_queue.idle_queue import idle_add
+from dexbot.storage import Storage
+from dexbot.strategies.config_parts.base_config import BaseConfig
 from events import Events
 
 # Number of maximum retries used to retry action before failing
@@ -91,18 +88,20 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         'error_ontick',
     ]
 
-    def __init__(self,
-                 name,
-                 config=None,
-                 onAccount=None,
-                 onOrderMatched=None,
-                 onOrderPlaced=None,
-                 onMarketUpdate=None,
-                 onUpdateCallOrder=None,
-                 ontick=None,
-                 bitshares_instance=None,
-                 *args,
-                 **kwargs):
+    def __init__(
+        self,
+        name,
+        config=None,
+        onAccount=None,
+        onOrderMatched=None,
+        onOrderPlaced=None,
+        onMarketUpdate=None,
+        onUpdateCallOrder=None,
+        ontick=None,
+        bitshares_instance=None,
+        *args,
+        **kwargs
+    ):
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
@@ -190,8 +189,8 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
                 'worker_name': name,
                 'account': self.worker['account'],
                 'market': self.worker['market'],
-                'is_disabled': lambda: self.disabled
-            }
+                'is_disabled': lambda: self.disabled,
+            },
         )
 
         self.orders_log = logging.LoggerAdapter(logging.getLogger('dexbot.orders_log'), {})
@@ -256,16 +255,18 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
             return None
         timestamp = time.time()
 
-        self.store_balance_entry(account, self.worker_name, base_amount, base_symbol,
-                                 quote_amount, quote_symbol, center_price, timestamp)
+        self.store_balance_entry(
+            account, self.worker_name, base_amount, base_symbol, quote_amount, quote_symbol, center_price, timestamp
+        )
 
     def get_profit_estimation_data(self, seconds):
         """ Get balance history closest to the given time
 
             :returns The data as dict from the first timestamp going backwards from seconds argument
         """
-        return self.get_balance_history(self.config['workers'][self.worker_name].get('account'),
-                                        self.worker_name, seconds)
+        return self.get_balance_history(
+            self.config['workers'][self.worker_name].get('account'), self.worker_name, seconds
+        )
 
     def calc_profit(self):
         """ Calculate relative profit for the current worker
@@ -276,8 +277,13 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         timestamp = current_time - time_range
 
         # Fetch the balance from history
-        old_data = self.get_balance_history(self.config['workers'][self.worker_name].get('account'), self.worker_name,
-                                            timestamp, self.base_asset, self.quote_asset)
+        old_data = self.get_balance_history(
+            self.config['workers'][self.worker_name].get('account'),
+            self.worker_name,
+            timestamp,
+            self.base_asset,
+            self.quote_asset,
+        )
         if old_data:
             earlier_base = old_data.base_total
             earlier_quote = old_data.quote_total

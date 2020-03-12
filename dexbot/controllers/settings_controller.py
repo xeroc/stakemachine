@@ -1,11 +1,9 @@
 from dexbot.config import Config
-
-from PyQt5.QtWidgets import QTreeWidgetItem
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 
 class SettingsController:
-
     def __init__(self, view):
         self.config = Config()
         self.view = view

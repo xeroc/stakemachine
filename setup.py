@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-from dexbot import VERSION, APP_NAME
-
-from setuptools import setup, find_packages
 from distutils.command import build as build_module
+
+from setuptools import find_packages, setup
+
+from dexbot import APP_NAME, VERSION
 
 cmd_class = {}
 console_scripts = ['dexbot-cli = dexbot.cli:main']
@@ -17,10 +18,8 @@ class BuildCommand(build_module.build):
 
 try:
     from pyqt_distutils.build_ui import build_ui
-    cmd_class = {
-        'build_ui': build_ui,
-        'build': BuildCommand
-    }
+
+    cmd_class = {'build_ui': build_ui, 'build': BuildCommand}
     console_scripts.append('dexbot-gui = dexbot.gui:main')
     install_requires.extend(["pyqt-distutils"])
 except BaseException as e:
@@ -47,9 +46,7 @@ setup(
         'Intended Audience :: Developers',
     ],
     cmdclass=cmd_class,
-    entry_points={
-        'console_scripts': console_scripts
-    },
+    entry_points={'console_scripts': console_scripts},
     install_requires=install_requires,
     include_package_data=True,
 )

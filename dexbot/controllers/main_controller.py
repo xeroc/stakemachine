@@ -1,22 +1,20 @@
-import os
 import logging
+import os
 import sys
 import time
-
-from dexbot import VERSION, APP_NAME, AUTHOR
-from dexbot.helper import initialize_orders_log, initialize_data_folders
-from dexbot.worker import WorkerInfrastructure
-from dexbot.views.errors import PyQtHandler
 
 from appdirs import user_data_dir
 from bitshares.bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
+from dexbot import APP_NAME, AUTHOR, VERSION
+from dexbot.helper import initialize_data_folders, initialize_orders_log
+from dexbot.views.errors import PyQtHandler
+from dexbot.worker import WorkerInfrastructure
 from grapheneapi.exceptions import NumRetriesReached
 
 
 class MainController:
-
     def __init__(self, config):
         self.bitshares_instance = None
         self.config = config
@@ -26,7 +24,8 @@ class MainController:
         data_dir = user_data_dir(APP_NAME, AUTHOR)
         filename = os.path.join(data_dir, 'dexbot.log')
         formatter = logging.Formatter(
-            '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+            '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s'
+        )
         logger = logging.getLogger("dexbot.per_worker")
         fh = logging.FileHandler(filename)
         fh.setFormatter(formatter)
@@ -35,8 +34,10 @@ class MainController:
         self.pyqt_handler = PyQtHandler()
         self.pyqt_handler.setLevel(logging.INFO)
         logger.addHandler(self.pyqt_handler)
-        logger.info("DEXBot {} on python {} {}".format(VERSION, sys.version[:6], sys.platform), extra={
-                    'worker_name': 'NONE', 'account': 'NONE', 'market': 'NONE'})
+        logger.info(
+            "DEXBot {} on python {} {}".format(VERSION, sys.version[:6], sys.platform),
+            extra={'worker_name': 'NONE', 'account': 'NONE', 'market': 'NONE'},
+        )
 
         # Configure orders logging
         initialize_orders_log()

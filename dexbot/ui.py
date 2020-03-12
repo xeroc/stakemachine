@@ -1,21 +1,19 @@
+import logging
+import logging.config
 import os
 import os.path
 import sys
-import logging
-import logging.config
 from functools import update_wrapper
 
 import click
-from ruamel import yaml
 from appdirs import user_data_dir
-
 from bitshares import BitShares
-from bitshares.instance import set_shared_bitshares_instance
 from bitshares.exceptions import WrongMasterPasswordException
-
-from dexbot import VERSION, APP_NAME, AUTHOR
+from bitshares.instance import set_shared_bitshares_instance
+from dexbot import APP_NAME, AUTHOR, VERSION
 from dexbot.config import Config
 from dexbot.node_manager import get_sorted_nodelist, ping
+from ruamel import yaml
 
 log = logging.getLogger(__name__)
 
@@ -23,23 +21,24 @@ log = logging.getLogger(__name__)
 def verbose(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
-        verbosity = [
-            "critical", "error", "warn", "info", "debug"
-        ][int(min(ctx.obj.get("verbose", 0), 4))]
+        verbosity = ["critical", "error", "warn", "info", "debug"][int(min(ctx.obj.get("verbose", 0), 4))]
         if ctx.obj.get("systemd", False):
             # Don't print the timestamps: systemd will log it for us
             formatter1 = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
             formatter2 = logging.Formatter(
-                '%(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+                '%(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s'
+            )
         elif verbosity == "debug":
             # When debugging: log where the log call came from
             formatter1 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - %(levelname)s - %(message)s')
             formatter2 = logging.Formatter(
-                '%(asctime)s (%(module)s:%(lineno)d) - %(worker_name)s - %(levelname)s - %(message)s')
+                '%(asctime)s (%(module)s:%(lineno)d) - %(worker_name)s - %(levelname)s - %(message)s'
+            )
         else:
             formatter1 = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             formatter2 = logging.Formatter(
-                '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s')
+                '%(asctime)s - %(worker_name)s using account %(account)s on %(market)s - %(levelname)s - %(message)s'
+            )
 
         # Use special format for special workers logger
         logger = logging.getLogger("dexbot.per_worker")
@@ -73,22 +72,19 @@ def verbose(f):
 
         # GrapheneAPI logging
         if ctx.obj["verbose"] > 4:
-            verbosity = [
-                "critical", "error", "warn", "info", "debug"
-            ][int(min(ctx.obj.get("verbose", 4) - 4, 4))]
+            verbosity = ["critical", "error", "warn", "info", "debug"][int(min(ctx.obj.get("verbose", 4) - 4, 4))]
             logger = logging.getLogger("grapheneapi")
             logger.setLevel(getattr(logging, verbosity.upper()))
             logger.addHandler(ch)
 
         if ctx.obj["verbose"] > 8:
-            verbosity = [
-                "critical", "error", "warn", "info", "debug"
-            ][int(min(ctx.obj.get("verbose", 8) - 8, 4))]
+            verbosity = ["critical", "error", "warn", "info", "debug"][int(min(ctx.obj.get("verbose", 8) - 8, 4))]
             logger = logging.getLogger("graphenebase")
             logger.setLevel(getattr(logging, verbosity.upper()))
             logger.addHandler(ch)
 
         return ctx.invoke(f, *args, **kwargs)
+
     return update_wrapper(new_func, f)
 
 
@@ -113,14 +109,10 @@ def chain(f):
     @click.pass_context
     def new_func(ctx, *args, **kwargs):
         nodelist = sort_nodes(ctx)
-        ctx.bitshares = BitShares(
-            nodelist,
-            num_retries=-1,
-            expiration=60,
-            **ctx.obj
-        )
+        ctx.bitshares = BitShares(nodelist, num_retries=-1, expiration=60, **ctx.obj)
         set_shared_bitshares_instance(ctx.bitshares)
         return ctx.invoke(f, *args, **kwargs)
+
     return update_wrapper(new_func, f)
 
 
@@ -139,8 +131,7 @@ def unlock(f):
                         # No user available to interact with
                         log.critical("Uptick Passphrase not available, exiting")
                         sys.exit(78)  # 'configuration error' in sysexits.h
-                    pwd = click.prompt(
-                        "Current Uptick Wallet Passphrase", hide_input=True)
+                    pwd = click.prompt("Current Uptick Wallet Passphrase", hide_input=True)
                 try:
                     ctx.bitshares.wallet.unlock(pwd)
                 except WrongMasterPasswordException:
@@ -151,15 +142,15 @@ def unlock(f):
                     # No user available to interact with
                     log.critical("Uptick Wallet not installed, cannot run")
                     sys.exit(78)
-                click.echo("No Uptick wallet installed yet. \n" +
-                           "This is a password for encrypting " +
-                           "the file that contains your private keys.  Creating ...")
-                pwd = click.prompt(
-                    "Uptick Wallet Encryption Passphrase",
-                    hide_input=True,
-                    confirmation_prompt=True)
+                click.echo(
+                    "No Uptick wallet installed yet. \n"
+                    + "This is a password for encrypting "
+                    + "the file that contains your private keys.  Creating ..."
+                )
+                pwd = click.prompt("Uptick Wallet Encryption Passphrase", hide_input=True, confirmation_prompt=True)
                 ctx.bitshares.wallet.create(pwd)
         return ctx.invoke(f, *args, **kwargs)
+
     return update_wrapper(new_func, f)
 
 
@@ -178,6 +169,7 @@ def reset_nodes(f):
         with open(ctx.obj["configfile"], 'w') as file:
             yaml.dump(ctx.config, file, default_flow_style=False)
         return ctx.invoke(f, *args, **kwargs)
+
     return update_wrapper(new_func, f)
 
 
@@ -188,6 +180,7 @@ def configfile(f):
             Config(path=ctx.obj['configfile'])
         ctx.config = yaml.safe_load(open(ctx.obj["configfile"]))
         return ctx.invoke(f, *args, **kwargs)
+
     return update_wrapper(new_func, f)
 
 
@@ -211,35 +204,20 @@ def formatStd(f):
 
 
 def warning(msg):
-    click.echo(
-        "[" +
-        click.style("Warning", fg="yellow") +
-        "] " + msg
-    )
+    click.echo("[" + click.style("Warning", fg="yellow") + "] " + msg)
 
 
 def confirmwarning(msg):
-    return click.confirm(
-        "[" +
-        click.style("Warning", fg="yellow") +
-        "] " + msg
-    )
+    return click.confirm("[" + click.style("Warning", fg="yellow") + "] " + msg)
 
 
 def alert(msg):
-    click.echo(
-        "[" +
-        click.style("Alert", fg="red") +
-        "] " + msg
-    )
+    click.echo("[" + click.style("Alert", fg="red") + "] " + msg)
 
 
 def confirmalert(msg):
-    return click.confirm(
-        "[" +
-        click.style("Alert", fg="red") +
-        "] " + msg
-    )
+    return click.confirm("[" + click.style("Alert", fg="red") + "] " + msg)
+
 
 # error message "translation"
 # here we convert some of the cryptic Graphene API error messages into a longer sentence
@@ -248,8 +226,10 @@ def confirmalert(msg):
 # it's here because both GUI and CLI might use it
 
 
-TRANSLATIONS = {'amount_to_sell.amount > 0': "You need to have sufficient buy and sell amounts in your account",
-                'now <= trx.expiration': "Your node has difficulty syncing to the blockchain, consider changing nodes"}
+TRANSLATIONS = {
+    'amount_to_sell.amount > 0': "You need to have sufficient buy and sell amounts in your account",
+    'now <= trx.expiration': "Your node has difficulty syncing to the blockchain, consider changing nodes",
+}
 
 
 def translate_error(err):

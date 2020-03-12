@@ -1,18 +1,15 @@
-from websocket import create_connection as wss_create
-from time import time
-from itertools import repeat
 import logging
 import multiprocessing as mp
-import subprocess
 import platform
+import subprocess
+from itertools import repeat
+from time import time
 
+from websocket import create_connection as wss_create
 
 log = logging.getLogger(__name__)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 max_timeout = 2.0  # default ping time is set to 2s. use for internal testing.
 host_ip = '8.8.8.8'  # default host to ping to check internet
@@ -52,7 +49,7 @@ def wss_test(node, timeout):
     try:
         start = time()
         wss_create(node, timeout=timeout)
-        latency = (time() - start)
+        latency = time() - start
         return latency
     except Exception as e:
         log.info('websocket test: {}'.format(e))
@@ -74,7 +71,7 @@ def get_sorted_nodelist(nodelist, timeout):
     """
 
     print('get_sorted_nodelist max timeout: {}'.format(timeout))
-    pool_size = mp.cpu_count()*2
+    pool_size = mp.cpu_count() * 2
 
     with mp.Pool(processes=pool_size) as pool:
         latency_info = pool.starmap(check_node, zip(nodelist, repeat(timeout)))

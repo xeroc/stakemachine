@@ -1,10 +1,10 @@
-import pytest
-import time
-import logging
-
-from dexbot.strategies.king_of_the_hill import Strategy
-from dexbot.strategies.base import StrategyBase
 import copy
+import logging
+import time
+
+import pytest
+from dexbot.strategies.base import StrategyBase
+from dexbot.strategies.king_of_the_hill import Strategy
 
 log = logging.getLogger("dexbot")
 

@@ -26,7 +26,7 @@
   <String Id="OptionsCancelButton">&amp;Cancel</String>
 
 
-  <String Id="ProgressHeader">Setup Progress</String>  
+  <String Id="ProgressHeader">Setup Progress</String>
   <String Id="ProgressDescription">Please wait until the setup is completed...</String>
   <String Id="ProgressLabel">Processing:</String>
   <String Id="OverallProgressPackageText">Initializing...</String>

@@ -1,6 +1,6 @@
 import logging
-import pytest
 
+import pytest
 
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)

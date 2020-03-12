@@ -1,10 +1,10 @@
-import os
-import math
-import shutil
 import errno
 import logging
-from appdirs import user_data_dir
+import math
+import os
+import shutil
 
+from appdirs import user_data_dir
 from dexbot import APP_NAME, AUTHOR
 
 
@@ -93,6 +93,7 @@ try:
         yields a 2-tuple: description, module name"""
         for entry_point in pkg_resources.iter_entry_points("dexbot.strategy"):
             yield (entry_point.name, entry_point.module_name)
+
 
 except ImportError:
     # Our system doesn't have setuptools, so no way to find external strategies

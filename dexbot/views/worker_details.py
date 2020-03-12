@@ -1,20 +1,17 @@
+import importlib
 import os
 
 from dexbot.controllers.worker_details_controller import WorkerDetailsController
 from dexbot.helper import get_user_data_directory
-from dexbot.views.ui.worker_details_window_ui import Ui_details_dialog
 from dexbot.views.ui.tabs.graph_tab_ui import Ui_Graph_Tab
 from dexbot.views.ui.tabs.table_tab_ui import Ui_Table_Tab
 from dexbot.views.ui.tabs.text_tab_ui import Ui_Text_Tab
-
+from dexbot.views.ui.worker_details_window_ui import Ui_details_dialog
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QWidget
 
-import importlib
-
 
 class WorkerDetailsView(QtWidgets.QDialog, Ui_details_dialog, Ui_Graph_Tab, Ui_Table_Tab, Ui_Text_Tab):
-
     def __init__(self, worker_name, config):
         super().__init__()
 

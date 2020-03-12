@@ -28,7 +28,7 @@ The config.yml file
         NAME_OF_BOT:
 
             # Python module to look for the strategy (can be custom)
-	    # dexbot will search in ~/bots as well as standard dirs 
+	    # dexbot will search in ~/bots as well as standard dirs
 	    module: "dexbot.strategies.echo"
 
             # The bot class in that module to use
@@ -49,6 +49,3 @@ Using the configuration in custom strategies
 The bot's configuration is available to in each strategy as dictionary
 in ``self.bot``. The whole configuration is avaialable in
 ``self.config``. The name of your bot can be found in ``self.name``.
-
-
-

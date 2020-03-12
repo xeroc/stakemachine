@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension">
-  
+
   <?include ..\bundle\resources\variables.wxi ?>
-  
+
 	<Bundle Name="$(var.ApplicationName)"
           Version='$(var.ApplicationVersion)'
           Manufacturer="$(var.Manufacturer)"
@@ -29,7 +29,7 @@
     <Variable Name="LaunchTarget" Value="[ProgramFilesFolder]\Bitshares\DEXBot\DEXBot.exe"/>
 
     <Chain>
-      
+
       <ExePackage Id="Python"
                   SourceFile="prerequisites\python-3.6.6.exe"
                   Cache="yes"

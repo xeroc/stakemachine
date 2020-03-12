@@ -1,29 +1,21 @@
 import importlib
 
 import dexbot.controllers.strategy_controller
-
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class StrategyFormWidget(QtWidgets.QWidget):
-
     def __init__(self, controller, strategy_module, worker_config=None):
         super().__init__()
         self.controller = controller
         self.module_name = strategy_module.split('.')[-1]
 
-        strategy_class = getattr(
-            importlib.import_module(strategy_module),
-            'Strategy'
-        )
+        strategy_class = getattr(importlib.import_module(strategy_module), 'Strategy')
         # For strategies uses autogeneration, we need the strategy configs without the defaults
         configure = strategy_class.configure(return_base_config=False)
         form_module = controller.strategies[strategy_module].get('form_module')
         try:
-            widget = getattr(
-                importlib.import_module(form_module),
-                'Ui_Form'
-            )
+            widget = getattr(importlib.import_module(form_module), 'Ui_Form')
             self.strategy_widget = widget()
             self.strategy_widget.setupUi(self)
         except (ValueError, AttributeError):
@@ -37,23 +29,14 @@ class StrategyFormWidget(QtWidgets.QWidget):
 
         try:
             # Try to get the controller from the internal set
-            strategy_controller = getattr(
-                dexbot.controllers.strategy_controller,
-                class_name
-            )
+            strategy_controller = getattr(dexbot.controllers.strategy_controller, class_name)
         except AttributeError:
             try:
                 # look in the strategy module itself (external strategies may do this)
-                strategy_controller = getattr(
-                    importlib.import_module(strategy_module),
-                    'StrategyController'
-                )
+                strategy_controller = getattr(importlib.import_module(strategy_module), 'StrategyController')
             except AttributeError:
                 # The controller doesn't exist, use the default controller
-                strategy_controller = getattr(
-                    dexbot.controllers.strategy_controller,
-                    'StrategyController'
-                )
+                strategy_controller = getattr(dexbot.controllers.strategy_controller, 'StrategyController')
 
         self.strategy_controller = strategy_controller(self, configure, controller, worker_config)
 
@@ -98,11 +81,9 @@ class AutoStrategyFormGenerator:
         extra = option.extra
 
         if element_type == 'float':
-            element = self.add_double_spin_box(
-                key, title, extra[0], extra[1], extra[2], extra[3], description)
+            element = self.add_double_spin_box(key, title, extra[0], extra[1], extra[2], extra[3], description)
         elif element_type == 'int':
-            element = self.add_spin_box(
-                key, title, extra[0], extra[1], extra[2], description)
+            element = self.add_spin_box(key, title, extra[0], extra[1], extra[2], description)
         elif element_type == 'string':
             element = self.add_line_edit(key, title, description)
         elif element_type == 'bool':

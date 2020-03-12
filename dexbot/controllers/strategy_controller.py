@@ -66,7 +66,7 @@ class StrategyController:
             QtWidgets.QLineEdit,
             QtWidgets.QCheckBox,
             QtWidgets.QComboBox,
-            QtWidgets.QSlider
+            QtWidgets.QSlider,
         )
 
         for option in self.configure:
@@ -78,7 +78,6 @@ class StrategyController:
 
 
 class RelativeOrdersController(StrategyController):
-
     def __init__(self, view, configure, worker_controller, worker_data):
         # Check if there is worker data. This prevents error when multiplying None type when creating worker.
         if worker_data:
@@ -254,7 +253,6 @@ class RelativeOrdersController(StrategyController):
 
 
 class StaggeredOrdersController(StrategyController):
-
     def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
         self.configure = configure
@@ -298,7 +296,6 @@ class StaggeredOrdersController(StrategyController):
 
 
 class KingOfTheHillController(StrategyController):
-
     def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
         self.configure = configure

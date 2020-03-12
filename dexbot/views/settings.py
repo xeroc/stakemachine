@@ -1,11 +1,9 @@
 from dexbot.controllers.settings_controller import SettingsController
 from dexbot.views.ui.settings_window_ui import Ui_settings_dialog
-
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox
 
 
 class SettingsView(QDialog, Ui_settings_dialog):
-
     def __init__(self):
         super().__init__()
 

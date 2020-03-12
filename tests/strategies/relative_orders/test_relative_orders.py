@@ -1,8 +1,8 @@
-import math
-import pytest
 import logging
+import math
 import time
 
+import pytest
 from bitshares.market import Market
 
 # Turn on debug for dexbot logger

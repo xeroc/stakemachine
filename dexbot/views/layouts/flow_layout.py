@@ -3,7 +3,6 @@ from PyQt5.QtCore import Qt
 
 
 class FlowLayout(QtWidgets.QLayout):
-
     def __init__(self, parent=None, margin=0, spacing=-1):
         super(FlowLayout, self).__init__(parent)
 
@@ -76,8 +75,7 @@ class FlowLayout(QtWidgets.QLayout):
                 line_height = 0
 
             if not test_only:
-                item.setGeometry(
-                    QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
+                item.setGeometry(QtCore.QRect(QtCore.QPoint(x, y), item.sizeHint()))
 
             x = next_x
             line_height = max(line_height, item.sizeHint().height())

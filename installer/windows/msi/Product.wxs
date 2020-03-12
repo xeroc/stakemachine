@@ -20,7 +20,7 @@
     <Icon Id="icon.ico" SourceFile="assets\dexbot-icon.ico"/>
     <Property Id='ARPPRODUCTICON' Value='icon.ico' />
     <Directory Id="TARGETDIR" Name="SourceDir">
-      
+
       <!-- Begin desktop shortcut -->
       <Directory Id="DesktopFolder" Name="Desktop">
         <Component Id="ApplicationShortcutDesktop" Guid="*">
@@ -43,7 +43,7 @@
         </Component>
       </Directory>
       <!-- End desktop shortcut -->
-      
+
       <!-- Begin program files entry-->
       <Directory Id="ProgramFilesFolder">
         <Directory Id="APPLICATIONFOLDER" Name="Bitshares">
@@ -52,7 +52,7 @@
         </Directory>
       </Directory>
       <!-- End program files entry-->
-      
+
       <!-- Begin start menu entry -->
       <Directory Id="ProgramMenuFolder">
         <Directory Id="ApplicationProgramsFolder" Name="Bitshares"/>

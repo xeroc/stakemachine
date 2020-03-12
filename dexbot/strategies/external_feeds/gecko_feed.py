@@ -1,7 +1,7 @@
-import requests
 import asyncio
 
-from dexbot.strategies.external_feeds.process_pair import split_pair, debug
+import requests
+from dexbot.strategies.external_feeds.process_pair import debug, split_pair
 
 """ To use Gecko API, note that gecko does not provide pairs by default.
     For base/quote one must be listed as ticker and the other as fullname,

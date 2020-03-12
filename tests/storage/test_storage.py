@@ -1,4 +1,5 @@
 import logging
+
 import pytest
 
 log = logging.getLogger("dexbot")

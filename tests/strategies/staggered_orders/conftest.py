@@ -1,12 +1,11 @@
-import pytest
 import copy
-import time
-import tempfile
-import os
 import logging
+import os
+import tempfile
+import time
 
+import pytest
 from bitshares.amount import Amount
-
 from dexbot.strategies.staggered_orders import Strategy
 
 log = logging.getLogger("dexbot")

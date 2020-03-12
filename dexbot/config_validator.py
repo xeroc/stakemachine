@@ -1,10 +1,9 @@
-from dexbot.config import Config
-
-from bitshares.instance import shared_bitshares_instance
 from bitshares.account import Account
 from bitshares.asset import Asset
-from bitshares.exceptions import KeyAlreadyInStoreException, AccountDoesNotExistsException, AssetDoesNotExistsException
+from bitshares.exceptions import AccountDoesNotExistsException, AssetDoesNotExistsException, KeyAlreadyInStoreException
+from bitshares.instance import shared_bitshares_instance
 from bitsharesbase.account import PrivateKey
+from dexbot.config import Config
 
 
 class ConfigValidator:

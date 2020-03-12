@@ -1,18 +1,17 @@
 import re
 
-from .ui.worker_item_widget_ui import Ui_widget
-from .confirmation import ConfirmationDialog
-from .worker_details import WorkerDetailsView
-from .edit_worker import EditWorkerView
-from dexbot.storage import db_worker
 from dexbot.controllers.worker_controller import WorkerController
+from dexbot.storage import db_worker
 from dexbot.views.errors import gui_error
-
 from PyQt5 import QtCore, QtWidgets
+
+from .confirmation import ConfirmationDialog
+from .edit_worker import EditWorkerView
+from .ui.worker_item_widget_ui import Ui_widget
+from .worker_details import WorkerDetailsView
 
 
 class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
-
     def __init__(self, worker_name, config, main_ctrl, view):
         super().__init__()
 
@@ -55,7 +54,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             self.set_worker_slider(50)
 
     @gui_error
-    def toggle_worker(self, ):
+    def toggle_worker(self,):
         if self.horizontalLayout_5.alignment() != QtCore.Qt.AlignRight:
             self.start_worker()
         else:
@@ -127,7 +126,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         margin_left = self.bar.layout().contentsMargins().left()
         margin_right = self.bar.layout().contentsMargins().right()
         total_padding = spacing + margin_left + margin_right
-        usable_width = (bar_width - total_padding)
+        usable_width = bar_width - total_padding
 
         # So we keep the roundness of bars.
         # If bar width is less than 2 * border-radius, it squares the corners
@@ -142,8 +141,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def remove_widget_dialog(self):
-        dialog = ConfirmationDialog(
-            'Are you sure you want to remove worker "{}"?'.format(self.worker_name))
+        dialog = ConfirmationDialog('Are you sure you want to remove worker "{}"?'.format(self.worker_name))
         return_value = dialog.exec_()
         if return_value:
             self.remove_widget()
@@ -167,8 +165,9 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
 
     @gui_error
     def handle_edit_worker(self):
-        edit_worker_dialog = EditWorkerView(self, self.main_ctrl.bitshares_instance,
-                                            self.worker_name, self.worker_config)
+        edit_worker_dialog = EditWorkerView(
+            self, self.main_ctrl.bitshares_instance, self.worker_name, self.worker_config
+        )
         return_value = edit_worker_dialog.exec_()
 
         # User clicked save
@@ -176,9 +175,9 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
             new_worker_name = edit_worker_dialog.worker_name
             self.view.change_worker_widget_name(self.worker_name, new_worker_name)
             self.main_ctrl.pause_worker(self.worker_name, config=self.worker_config)
-            self.main_ctrl.config.replace_worker_config(self.worker_name,
-                                                        new_worker_name,
-                                                        edit_worker_dialog.worker_data)
+            self.main_ctrl.config.replace_worker_config(
+                self.worker_name, new_worker_name, edit_worker_dialog.worker_data
+            )
             self.worker_name = new_worker_name
             self.reload_widget(new_worker_name)
 

@@ -1,12 +1,11 @@
 import csv
 import os
 
-from PyQt5.QtWidgets import QTableWidgetItem
 from PyQt5.QtGui import QTextCursor
+from PyQt5.QtWidgets import QTableWidgetItem
 
 
 class WorkerDetailsController:
-
     def __init__(self, view, worker_name, config):
         """ Initializes controller
 

@@ -1,18 +1,17 @@
-import uuid
-import docker
 import os.path
-import pytest
-import socket
 import random
+import socket
 import time
+import uuid
 
+import docker
+import pytest
 from bitshares import BitShares
-from bitshares.instance import set_shared_bitshares_instance
-from bitshares.genesisbalance import GenesisBalance
 from bitshares.account import Account
 from bitshares.asset import Asset
-from bitshares.exceptions import AssetDoesNotExistsException, AccountDoesNotExistsException
-
+from bitshares.exceptions import AccountDoesNotExistsException, AssetDoesNotExistsException
+from bitshares.genesisbalance import GenesisBalance
+from bitshares.instance import set_shared_bitshares_instance
 from bitsharesbase.account import PublicKey
 from bitsharesbase.chains import known_chains
 

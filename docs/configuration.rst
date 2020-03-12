@@ -5,19 +5,19 @@ The configuration consists of a series of questions about the bots you wish to c
 
 
 1. The Bot Name.
-      
+
    Choose a unique name for your bot, DEXBot doesn't care what you call it.
    It is used to identify the bot in the logs so should be fairly short.
 
 2. The Bot Strategy
-      
+
    DEXBot provides a number of different bot strategies. They can be quite different in
    how they behave (i.e. spend *your* money) so it is important you understand the strategy
    before deploying a bot.
 
    a. :doc:`echo` For testing this just logs events on a market, does no trading.
    b. :doc:`follow_orders` My (Ian Haywood) main bot, an extension of stakemachine's `wall`,
-      it has been used to provide liquidity on AUD:BTS. 
+      it has been used to provide liquidity on AUD:BTS.
       Does function but by no mean perfect, see caveats in the docs.
 
 3. Strategy-specific questions
@@ -25,14 +25,14 @@ The configuration consists of a series of questions about the bots you wish to c
    The questions that follow are determined by the strategy chosen, and each strategy will have its own questions around
    amounts to trade, spreads etc. See the strategy documentations linked above. But the first two strategy questions
    are nearly universal amongst the strategies so are documented here:
-   
+
    a. The Account.
 
       This is the same account name as the one where you entered the keys into ``uptick`` earlier on: the bot must
       always have the private key so it can execute trades.
 
    b. The Market.
-      
+
       This is the main market the bot trade on. They are specified by the quote asset, a colon (:), and the base asset, for example
       the market for BitShares priced in US dollars is called BTS:USD. BitShares always provides a "reverse" market so
       there will be a USD:BTS with the same trades, the only difference is the prices will be the inverse (1/x) of BTS:USD.

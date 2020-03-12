@@ -40,6 +40,7 @@ class Strategy(StrategyBase):
 
         NOTE: Change this comment section to describe the strategy.
     """
+
     @classmethod
     def configure(cls, return_base_config=True):
         return StrategyConfig.configure(return_base_config)
