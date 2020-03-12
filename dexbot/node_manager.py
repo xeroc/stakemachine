@@ -65,7 +65,7 @@ def check_node(node, timeout):
     return node_info
 
 
-def get_sorted_nodelist(nodelist, timeout):
+def get_sorted_nodelist(nodelist, timeout=2):
     """ Check all nodes and poll for latency, eliminate nodes with no response, then sort
         nodes by increasing latency and return as a list
     """
