@@ -8,8 +8,8 @@ requests==2.21.0
 yarl==1.1.0
 ccxt==1.17.434
 pywaves==0.8.20
-git+https://github.com/Codaone/python-graphenelib.git@ba3702a25498f56a8ade8b855b812e7ec00311e2#egg=graphenelib
-git+https://github.com/Codaone/python-bitshares.git@0c9bf5ef3808572b7a10dfc32615906083e6b8ff#egg=bitshares
+graphenelib==1.2.0
+bitshares==0.4.0
 uptick==0.2.4
 ruamel.yaml>=0.15.37
 appdirs>=1.4.3
