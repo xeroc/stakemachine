@@ -258,10 +258,6 @@ class StaggeredOrdersController(StrategyController):
         self.configure = configure
         self.worker_controller = worker_controller
 
-        if view:
-            if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
-                self.view.strategy_widget.center_price_input.setDisabled(False)
-
         super().__init__(view, configure, worker_controller, worker_data)
 
         widget = self.view.strategy_widget
