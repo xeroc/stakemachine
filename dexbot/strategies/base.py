@@ -1,6 +1,7 @@
 import logging
 import math
 import time
+from datetime import datetime
 
 import bitshares.exceptions
 from bitshares.account import Account
@@ -175,6 +176,9 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
 
         # Disabled flag - this flag can be flipped to True by a worker and will be reset to False after reset only
         self.disabled = False
+
+        # Initial value for check_last_run decorator in dexbot/decorators.py
+        self.last_check = datetime(1970, 1, 1)
 
         # Order expiration time in seconds
         self.expiration = 60 * 60 * 24 * 365 * 5
