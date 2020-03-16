@@ -638,6 +638,9 @@ class BitsharesOrderEngine(Storage, Events):
         tries = 0
         while True:
             try:
+                ref_block = self.bitshares.txbuffer.get("ref_block_num")
+                ref_block_prefix = self.bitshares.txbuffer.get("ref_block_prefix")
+                self.log.debug('Ref block num: {}, prefix: {}'.format(ref_block, ref_block_prefix))
                 return action(*args, **kwargs)
             except bitsharesapi.exceptions.UnhandledRPCError as exception:
                 if "Assert Exception: amount_to_sell.amount > 0" in str(exception):
@@ -669,13 +672,26 @@ class BitsharesOrderEngine(Storage, Events):
                     else:
                         tries += 1
                         self.log.warning(
-                            'Too much difference between node block time and trx expiration, switching ' 'node'
+                            'Too much difference between node block time and trx expiration, switching node'
                         )
                         self.bitshares.txbuffer.clear()
                         self.bitshares.rpc.next()
                 elif "Assert Exception: delta.amount > 0: Insufficient Balance" in str(exception):
                     self.log.critical('Insufficient balance of fee asset')
                     raise
+                elif "trx.ref_block_prefix == tapos_block_summary.block_id._hash" in str(exception):
+                    if tries > MAX_TRIES:
+                        raise
+                    else:
+                        # TODO: move node switch to a function
+                        old = self.bitshares.rpc.url
+                        self.log.warning('Got tapos_block_summary exception, switching node')
+                        self.bitshares.clear()  # reinstantiates txbuilder (it caches ref_block_num)
+                        # TODO: Notify still uses old node, needs to be switched!
+                        self.bitshares.rpc.next()
+                        new = self.bitshares.rpc.url
+                        self.log.info('Old: {}, new: {}'.format(old, new))
+                        tries += 1
                 else:
                     raise
 
