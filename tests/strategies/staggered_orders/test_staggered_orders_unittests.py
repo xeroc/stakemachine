@@ -10,12 +10,6 @@ logger.setLevel(logging.DEBUG)
 ###################
 
 
-def test_log_maintenance_time(worker):
-    """ Should just not fail
-    """
-    worker.log_maintenance_time()
-
-
 def test_calculate_min_amounts(worker):
     """ Min amounts should be greater than assets precision
     """
