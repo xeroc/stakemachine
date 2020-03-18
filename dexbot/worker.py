@@ -131,6 +131,8 @@ class WorkerInfrastructure(threading.Thread):
                     self.workers[worker_name].error_ontick(e)
                 except Exception:
                     self.workers[worker_name].log.exception("in error_ontick()")
+            finally:
+                self.bitshares.txbuffer.clear()
         self.config_lock.release()
 
     def on_market(self, data):
@@ -154,6 +156,9 @@ class WorkerInfrastructure(threading.Thread):
                         self.workers[worker_name].error_onMarketUpdate(e)
                     except Exception:
                         self.workers[worker_name].log.exception("in error_onMarketUpdate()")
+                finally:
+                    self.bitshares.txbuffer.clear()
+
         self.config_lock.release()
 
     def on_account(self, account_update):
@@ -175,6 +180,8 @@ class WorkerInfrastructure(threading.Thread):
                         self.workers[worker_name].error_onAccount(e)
                     except Exception:
                         self.workers[worker_name].log.exception("in error_onAccountUpdate()")
+                finally:
+                    self.bitshares.txbuffer.clear()
         self.config_lock.release()
 
     def add_worker(self, worker_name, config):
