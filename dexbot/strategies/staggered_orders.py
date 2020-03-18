@@ -1644,11 +1644,12 @@ class Strategy(StrategyBase):
         # Check whether new order will excess the limiter. Limiter is set based on own_aseet_limit or
         # opposite_asset_limit kwargs
         if balance < limiter:
+            missing = limiter - balance
             if allow_partial or (
                 # Accept small inaccuracy for full-sized closer order
                 place_order
                 and not allow_partial
-                and limiter - balance < 20 * 10 ** -precision
+                and missing / limiter < 0.05
             ):
                 self.log.debug(
                     'Limiting {} order amount to available asset balance: {:.{prec}f} {}'.format(
