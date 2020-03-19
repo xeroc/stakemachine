@@ -201,7 +201,7 @@ class Strategy(StrategyBase):
         if not self.bitshares.txbuffer.is_empty():
             trx_executed = True
             try:
-                self.execute()
+                trx = self.retry_action(self.execute)
             except bitsharesapi.exceptions.RPCError as exception:
                 """ Handle exception without stopping the worker. The goal is to handle race condition when partially
                     filled order was further filled before we actually replaced them.
@@ -212,6 +212,8 @@ class Strategy(StrategyBase):
                     return
                 else:
                     raise
+            order_ids = [result[1] for result in trx['operation_results']]
+            self.log.debug('Placed orders: %s', order_ids)
             self.refresh_orders()
             self.sync_current_orders()
 
