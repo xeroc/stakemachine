@@ -853,7 +853,6 @@ def test_allocate_asset_basic(worker):
     """ Check that free balance is shrinking after each allocation and spread is decreasing
     """
 
-    worker.calculate_asset_thresholds()
     worker.refresh_balances()
     spread_after = worker.get_actual_spread()
 

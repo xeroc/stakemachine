@@ -156,10 +156,6 @@ class Strategy(StrategyBase):
         # Store balance entry for profit estimation if needed
         self.store_profit_estimation_data()
 
-        # Calculate asset thresholds once
-        if not self.quote_asset_threshold or not self.base_asset_threshold:
-            self.calculate_asset_thresholds()
-
         # Remove orders that exceed boundaries
         success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
         if not success:
@@ -321,22 +317,6 @@ class Strategy(StrategyBase):
         """
         self.order_min_base = 2 * 10 ** -self.market['base']['precision'] / self.increment
         self.order_min_quote = 2 * 10 ** -self.market['quote']['precision'] / self.increment
-
-    def calculate_asset_thresholds(self):
-        """ Calculate minimal asset thresholds to allocate.
-
-            The goal is to avoid trying to allocate too small amounts which may lead to "Trying to buy/sell 0"
-            situations.
-        """
-        # Keep at least N of precision
-        reserve_ratio = 10
-
-        if self.market['quote']['precision'] <= self.market['base']['precision']:
-            self.quote_asset_threshold = reserve_ratio * 10 ** -self.market['quote']['precision']
-            self.base_asset_threshold = self.quote_asset_threshold * self.market_center_price
-        else:
-            self.base_asset_threshold = reserve_ratio * 10 ** -self.market['base']['precision']
-            self.quote_asset_threshold = self.base_asset_threshold / self.market_center_price
 
     def refresh_balances(self, use_cached_orders=False):
         """ This function is used to refresh account balances
@@ -1049,6 +1029,10 @@ class Strategy(StrategyBase):
                     order_type, price, asset_balance['amount'], needed_balance, symbol, prec=precision
                 )
             )
+            if asset == 'quote':
+                self.quote_asset_threshold = needed_balance
+            elif asset == 'base':
+                self.base_asset_threshold = needed_balance
             # Increase finished
             return True
 
