@@ -1,12 +1,12 @@
 import math
 import time
 import uuid
-from datetime import datetime, timedelta
 from functools import reduce
 
 import bitsharesapi.exceptions
 from bitshares.amount import Amount
 from bitshares.dex import Dex
+from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.staggered_config import StaggeredConfig
 
@@ -99,8 +99,6 @@ class Strategy(StrategyBase):
 
         # Order expiration time
         self.expiration = 60 * 60 * 24 * 365 * 5
-        self.start = datetime.now()
-        self.last_check = datetime.now()
 
         # We do not waiting for order ids to be able to bundle operations
         self.returnOrderId = None
@@ -112,7 +110,7 @@ class Strategy(StrategyBase):
         # Minimal check interval is needed to prevent event queue accumulation
         self.min_check_interval = 1
         self.max_check_interval = 120
-        self.current_check_interval = self.min_check_interval
+        self.check_interval = self.min_check_interval
 
         # If no bootstrap state is recorded, assume we're in bootstrap
         self.get('bootstrapping', True)
@@ -121,18 +119,12 @@ class Strategy(StrategyBase):
             self.update_gui_profit()
             self.update_gui_slider()
 
+    @check_last_run
     def maintain_strategy(self, *args, **kwargs):
         """ Logic of the strategy
             :param args:
             :param kwargs:
         """
-        self.start = datetime.now()
-        delta = self.start - self.last_check
-
-        # Only allow to maintain whether minimal time passed.
-        if delta < timedelta(seconds=self.current_check_interval):
-            return
-
         # Get all user's orders on current market
         self.refresh_orders()
 
@@ -163,7 +155,6 @@ class Strategy(StrategyBase):
         success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
         if not success:
             # Return back to beginning
-            self.log_maintenance_time()
             return
 
         # Restore virtual orders on startup if needed
@@ -172,7 +163,6 @@ class Strategy(StrategyBase):
 
             if self.virtual_orders_restored:
                 self.log.info('Virtual orders restored')
-                self.log_maintenance_time()
                 return
 
         # Ensure proper operational depth
@@ -235,7 +225,7 @@ class Strategy(StrategyBase):
         # Greatly increase check interval to lower CPU load whether there is no funds to allocate or we cannot
         # allocate funds for some reason
         if (
-            self.current_check_interval == self.min_check_interval
+            self.check_interval == self.min_check_interval
             and self.base_balance_history[1] == self.base_balance_history[2]
             and self.quote_balance_history[1] == self.quote_balance_history[2]
         ):
@@ -243,8 +233,8 @@ class Strategy(StrategyBase):
             self.log.debug(
                 'Raising check interval up to {} seconds to reduce CPU usage'.format(self.max_check_interval)
             )
-            self.current_check_interval = self.max_check_interval
-        elif self.current_check_interval == self.max_check_interval and (
+            self.check_interval = self.max_check_interval
+        elif self.check_interval == self.max_check_interval and (
             self.base_balance_history[1] != self.base_balance_history[2]
             or self.quote_balance_history[1] != self.quote_balance_history[2]
         ):
@@ -252,7 +242,7 @@ class Strategy(StrategyBase):
             self.log.debug(
                 'Reducing check interval to {} seconds because of changed ' 'balances'.format(self.min_check_interval)
             )
-            self.current_check_interval = self.min_check_interval
+            self.check_interval = self.min_check_interval
 
         if previous_bootstrap_state is True and self['bootstrapping'] is False:
             # Bootstrap was turned off, dump initial orders
@@ -269,8 +259,6 @@ class Strategy(StrategyBase):
             or trx_executed
             or not self.enable_fallback_logic
         ):
-            self.last_check = datetime.now()
-            self.log_maintenance_time()
             return
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders.
@@ -279,8 +267,6 @@ class Strategy(StrategyBase):
         actual_spread = self.get_actual_spread()
         if actual_spread < self.target_spread + self.increment:
             # Target spread is reached, no need to cancel anything
-            self.last_check = datetime.now()
-            self.log_maintenance_time()
             return
         elif self.buy_orders:
             # If target spread is not reached and no balance to allocate, cancel lowest buy order
@@ -289,9 +275,6 @@ class Strategy(StrategyBase):
                 'Cancelling lowest buy order as a fallback'
             )
             self.cancel_orders_wrapper(self.buy_orders[-1])
-
-        self.last_check = datetime.now()
-        self.log_maintenance_time()
 
         # Update profit estimate
         if self.view:
@@ -313,12 +296,6 @@ class Strategy(StrategyBase):
                 return float('Inf')
         spread = (lowest_sell_price / highest_buy_price) - 1
         return spread
-
-    def log_maintenance_time(self):
-        """ Measure time from self.start and print a log message
-        """
-        delta = datetime.now() - self.start
-        self.log.debug('Maintenance execution took: {:.2f} seconds'.format(delta.total_seconds()))
 
     def calculate_min_amounts(self):
         """ Calculate minimal order amounts depending on defined increment

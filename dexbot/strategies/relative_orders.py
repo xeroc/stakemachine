@@ -1,6 +1,6 @@
 import math
-from datetime import datetime, timedelta
 
+from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.relative_config import RelativeConfig
 from dexbot.strategies.external_feeds.price_feed import PriceFeed
@@ -90,8 +90,7 @@ class Strategy(StrategyBase):
             self.expiration = self.default_expiration
             self.ontick -= self.tick  # Save a few cycles there
 
-        self.last_check = datetime.now()
-        self.min_check_interval = 8
+        self.check_interval = 8
 
         self.buy_price = None
         self.sell_price = None
@@ -543,18 +542,12 @@ class Strategy(StrategyBase):
         else:
             return center_price * (1 + manual_offset)
 
+    @check_last_run
     def check_orders(self, *args, **kwargs):
         """ Tests if the orders need updating
         """
-        delta = datetime.now() - self.last_check
-
         # Store current available balance and balance in orders to the database for profit calculation purpose
         self.store_profit_estimation_data()
-
-        # Only allow to check orders whether minimal time passed
-        if delta < timedelta(seconds=self.min_check_interval) and not self.initializing:
-            self.log.debug('Ignoring market_update event as min_check_interval is not passed')
-            return
 
         orders = self.fetch_orders()
 
@@ -616,8 +609,6 @@ class Strategy(StrategyBase):
         if self.view:
             self.update_gui_slider()
             self.update_gui_profit()
-
-        self.last_check = datetime.now()
 
     def get_own_last_trade(self):
         """ Returns dict with amounts and price of last trade """

@@ -1,9 +1,7 @@
-# Python imports
 import copy
-from datetime import datetime, timedelta
 from decimal import Decimal
 
-# Project imports
+from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.koth_config import KothConfig
 
@@ -74,9 +72,7 @@ class Strategy(StrategyBase):
         # We put an order to be higher than that order
         self.beaten_buy_order = None
         self.beaten_sell_order = None
-        # Set last check in the past to get immediate check at startup
-        self.last_check = datetime(2000, 1, 1)
-        self.min_check_interval = self.min_order_lifetime
+        self.check_interval = self.min_order_lifetime
         self.partial_fill_threshold = 0.8
         # Stubs
         self.highest_bid = 0
@@ -90,20 +86,15 @@ class Strategy(StrategyBase):
 
         self.log.info("{} initialized.".format(STRATEGY_NAME))
 
+    @check_last_run
     def maintain_strategy(self, *args):
         """ Strategy main logic
         """
-        delta = datetime.now() - self.last_check
-        # Only allow to check orders whether minimal time passed
-        if delta < timedelta(seconds=self.min_check_interval):
-            return
 
         if self.orders:
             self.check_orders()
         else:
             self.place_orders()
-
-        self.last_check = datetime.now()
 
     def check_orders(self):
         """ Check whether own orders needs intervention
