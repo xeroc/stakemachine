@@ -95,6 +95,38 @@ class StaggeredConfig(BaseConfig):
                 'Order depth to maintain on books',
                 (2, 9999999, None),
             ),
+            ConfigElement(
+                'enable_fallback_logic',
+                'bool',
+                True,
+                'Enable fallback logic',
+                'When unable to close the spread, cancel lowest buy order and place closer buy order',
+                None,
+            ),
+            ConfigElement(
+                'enable_stop_loss',
+                'bool',
+                False,
+                'Enable Stop Loss',
+                'Stop Loss order placed when bid price comes near lower bound',
+                None,
+            ),
+            ConfigElement(
+                'stop_loss_discount',
+                'float',
+                5,
+                'Stop Loss discount',
+                'Discount percent, Stop Loss order price = bid price / (1 + discount percent)',
+                (0, None, 2, '%'),
+            ),
+            ConfigElement(
+                'stop_loss_amount',
+                'float',
+                50,
+                'Stop Loss Amount',
+                'Relative amount of QUOTE asset to sell at Stop Loss, percentage',
+                (0, None, 2, '%'),
+            ),
         ]
 
     @classmethod

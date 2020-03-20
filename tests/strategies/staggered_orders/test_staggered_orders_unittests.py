@@ -18,16 +18,6 @@ def test_calculate_min_amounts(worker):
     assert worker.order_min_quote > 10 ** -worker.market['quote']['precision']
 
 
-def test_calculate_asset_thresholds(worker):
-    """ Check asset threshold
-
-        Todo: https://github.com/Codaone/DEXBot/issues/554
-    """
-    worker.calculate_asset_thresholds()
-    assert worker.base_asset_threshold > 0
-    assert worker.quote_asset_threshold > 0
-
-
 def test_calc_buy_orders_count(worker):
     worker.increment = 0.01
     assert worker.calc_buy_orders_count(100, 90) == 11

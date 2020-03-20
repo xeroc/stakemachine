@@ -49,6 +49,10 @@ class Strategy(StrategyBase):
         self.is_instant_fill_enabled = self.worker.get('instant_fill', True)
         self.is_center_price_dynamic = self.worker['center_price_dynamic']
         self.operational_depth = self.worker.get('operational_depth', 6)
+        self.enable_fallback_logic = self.worker.get('enable_fallback_logic', True)
+        self.enable_stop_loss = self.worker.get('enable_stop_loss', False)
+        self.stop_loss_discount = self.worker.get('stop_loss_discount', 5) / 100
+        self.stop_loss_amount = self.worker.get('stop_loss_amount', 50) / 100
 
         if self.is_center_price_dynamic:
             self.center_price = None
@@ -78,7 +82,6 @@ class Strategy(StrategyBase):
         self.virtual_buy_orders = []
         self.virtual_sell_orders = []
         self.virtual_orders_restored = False
-        self.actual_spread = self.target_spread + 1
         self.quote_total_balance = 0
         self.base_total_balance = 0
         self.quote_balance = None
@@ -148,10 +151,6 @@ class Strategy(StrategyBase):
         # Store balance entry for profit estimation if needed
         self.store_profit_estimation_data()
 
-        # Calculate asset thresholds once
-        if not self.quote_asset_threshold or not self.base_asset_threshold:
-            self.calculate_asset_thresholds()
-
         # Remove orders that exceed boundaries
         success = self.remove_outside_orders(self.sell_orders, self.buy_orders)
         if not success:
@@ -167,8 +166,9 @@ class Strategy(StrategyBase):
                 return
 
         # Ensure proper operational depth
-        self.check_operational_depth(self.real_buy_orders, self.virtual_buy_orders)
-        self.check_operational_depth(self.real_sell_orders, self.virtual_sell_orders)
+        if self.get_actual_spread() < self.target_spread + self.increment:
+            self.check_operational_depth(self.real_buy_orders, self.virtual_buy_orders)
+            self.check_operational_depth(self.real_sell_orders, self.virtual_sell_orders)
 
         # Remember current boostrapping state before sending transactions
         previous_bootstrap_state = self['bootstrapping']
@@ -216,6 +216,10 @@ class Strategy(StrategyBase):
             del self.base_balance_history[0]
             del self.quote_balance_history[0]
 
+        # Ensure proper operational depth
+        self.check_operational_depth(self.real_buy_orders, self.virtual_buy_orders)
+        self.check_operational_depth(self.real_sell_orders, self.virtual_sell_orders)
+
         # Greatly increase check interval to lower CPU load whether there is no funds to allocate or we cannot
         # allocate funds for some reason
         if (
@@ -242,46 +246,54 @@ class Strategy(StrategyBase):
             # Bootstrap was turned off, dump initial orders
             self.dump_initial_orders()
 
+        if self.enable_stop_loss:
+            self.stop_loss_check()
+
         # Do not continue whether balances are changing or bootstrap is on
         if (
             self['bootstrapping']
             or self.base_balance_history[0] != self.base_balance_history[2]
             or self.quote_balance_history[0] != self.quote_balance_history[2]
             or trx_executed
+            or not self.enable_fallback_logic
         ):
             return
 
         # There are no funds and current orders aren't close enough, try to fix the situation by shifting orders.
         # This is a fallback logic.
 
-        # Get highest buy and lowest sell prices from orders
-        highest_buy_price = 0
-        lowest_sell_price = 0
-
-        if self.buy_orders:
-            highest_buy_price = self.buy_orders[0].get('price')
-
-        if self.sell_orders:
-            lowest_sell_price = self.sell_orders[0].get('price')
-            # Invert the sell price to BASE so it can be used in comparison
-            lowest_sell_price = lowest_sell_price ** -1
-
-        if highest_buy_price and lowest_sell_price:
-            self.actual_spread = (lowest_sell_price / highest_buy_price) - 1
-            if self.actual_spread < self.target_spread + self.increment:
-                # Target spread is reached, no need to cancel anything
-                return
-            elif self.buy_orders:
-                # If target spread is not reached and no balance to allocate, cancel lowest buy order
-                self.log.info(
-                    'Free balances are not changing, bootstrap is off and target spread is not reached. '
-                    'Cancelling lowest buy order as a fallback'
-                )
-                self.cancel_orders_wrapper(self.buy_orders[-1])
+        actual_spread = self.get_actual_spread()
+        if actual_spread < self.target_spread + self.increment:
+            # Target spread is reached, no need to cancel anything
+            return
+        elif self.buy_orders:
+            # If target spread is not reached and no balance to allocate, cancel lowest buy order
+            self.log.info(
+                'Free balances are not changing, bootstrap is off and target spread is not reached. '
+                'Cancelling lowest buy order as a fallback'
+            )
+            self.cancel_orders_wrapper(self.buy_orders[-1])
 
         # Update profit estimate
         if self.view:
             self.update_gui_profit()
+
+    def get_actual_spread(self, buy_price=None, sell_price=None):
+        """ Calculates current spread on own orders using cached orders
+        """
+        if buy_price and sell_price:
+            highest_buy_price = buy_price
+            lowest_sell_price = sell_price
+        else:
+            try:
+                highest_buy_price = self.buy_orders[0].get('price')
+                lowest_sell_price = self.sell_orders[0].get('price')
+                # Invert the sell price to BASE so it can be used in comparison
+                lowest_sell_price = lowest_sell_price ** -1
+            except IndexError:
+                return float('Inf')
+        spread = (lowest_sell_price / highest_buy_price) - 1
+        return spread
 
     def calculate_min_amounts(self):
         """ Calculate minimal order amounts depending on defined increment
@@ -289,21 +301,30 @@ class Strategy(StrategyBase):
         self.order_min_base = 2 * 10 ** -self.market['base']['precision'] / self.increment
         self.order_min_quote = 2 * 10 ** -self.market['quote']['precision'] / self.increment
 
-    def calculate_asset_thresholds(self):
-        """ Calculate minimal asset thresholds to allocate.
-
-            The goal is to avoid trying to allocate too small amounts which may lead to "Trying to buy/sell 0"
-            situations.
+    def stop_loss_check(self):
+        """ Check for Stop Loss condition and execute SL if needed
         """
-        # Keep at least N of precision
-        reserve_ratio = 10
+        if self.buy_orders:
+            return
 
-        if self.market['quote']['precision'] <= self.market['base']['precision']:
-            self.quote_asset_threshold = reserve_ratio * 10 ** -self.market['quote']['precision']
-            self.base_asset_threshold = self.quote_asset_threshold * self.market_center_price
-        else:
-            self.base_asset_threshold = reserve_ratio * 10 ** -self.market['base']['precision']
-            self.quote_asset_threshold = self.base_asset_threshold / self.market_center_price
+        highest_bid = float(self.ticker().get('highestBid'))
+        if not highest_bid < self.lower_bound:
+            return
+
+        if not highest_bid:
+            # highest_bid is 0
+            highest_bid = self.lower_bound
+
+        stop_loss_price = highest_bid / (1 + self.stop_loss_discount)
+        amount = self.quote_total_balance * self.stop_loss_amount
+        self.cancel_all_orders()
+        self.log.warning(
+            'Executing Stop Loss, selling {:.{prec}f} {} @ {:.8f}'.format(
+                amount, self.market['quote']['symbol'], stop_loss_price, prec=self.market['quote']['precision']
+            )
+        )
+        self.place_market_sell_order(amount, stop_loss_price, returnOrderId=True)
+        self.error()
 
     def refresh_balances(self, use_cached_orders=False):
         """ This function is used to refresh account balances
@@ -755,9 +776,9 @@ class Strategy(StrategyBase):
                 closest_opposite_price = (self.market_center_price / (1 + self.target_spread / 2)) ** -1
 
             closest_own_price = closest_own_order['price']
-            self.actual_spread = (closest_opposite_price / closest_own_price) - 1
+            actual_spread = self.get_actual_spread(buy_price=closest_own_price, sell_price=closest_opposite_price)
 
-            if self.actual_spread >= self.target_spread + self.increment:
+            if actual_spread >= self.target_spread + self.increment:
                 if not self.check_partial_fill(closest_own_order, fill_threshold=0):
                     # Replace closest order if it was partially filled for any %
                     """ Note on partial filled orders handling: if target spread is not reached and we need to place
@@ -782,7 +803,7 @@ class Strategy(StrategyBase):
                     self['bootstrapping'] = False
 
                 """ Note: because we're using operations batching, there is possible a situation when we will have
-                    both free balances and `self.actual_spread >= self.target_spread + self.increment`. In such case
+                    both free balances and `actual_spread >= self.target_spread + self.increment`. In such case
                     there will be TWO orders placed, one buy and one sell despite only one would be enough to reach
                     target spread. Sure, we can add a workaround for that by overriding `closest_opposite_price` for
                     second call of allocate_asset(). We are not doing this because we're not doing assumption on
@@ -793,12 +814,12 @@ class Strategy(StrategyBase):
                 # Place order closer to the center price
                 self.log.debug(
                     'Placing closer {} order; actual spread: {:.4%}, target + increment: {:.4%}'.format(
-                        order_type, self.actual_spread, self.target_spread + self.increment
+                        order_type, actual_spread, self.target_spread + self.increment
                     )
                 )
                 if self['bootstrapping']:
                     self.place_closer_order(asset, closest_own_order)
-                elif opposite_orders and self.actual_spread - self.increment < self.target_spread + self.increment:
+                elif opposite_orders and actual_spread - self.increment < self.target_spread + self.increment:
                     """ Place max-sized closer order if only one order needed to reach target spread (avoid unneeded
                         increases)
                     """
@@ -856,7 +877,7 @@ class Strategy(StrategyBase):
                     self.place_closer_order(asset, closest_own_order, allow_partial=True)
 
                 # Store balance data whether new actual spread will match target spread
-                if self.actual_spread + self.increment >= self.target_spread and not self.bitshares.txbuffer.is_empty():
+                if actual_spread + self.increment >= self.target_spread and not self.bitshares.txbuffer.is_empty():
                     # Transactions are not yet sent, so balance refresh is not needed
                     self.store_profit_estimation_data(force=True)
             elif not opposite_orders:
@@ -1016,6 +1037,10 @@ class Strategy(StrategyBase):
                     order_type, price, asset_balance['amount'], needed_balance, symbol, prec=precision
                 )
             )
+            if asset == 'quote':
+                self.quote_asset_threshold = needed_balance
+            elif asset == 'base':
+                self.base_asset_threshold = needed_balance
             # Increase finished
             return True
 
@@ -2129,7 +2154,7 @@ class Strategy(StrategyBase):
 
         self.log.info(
             'Placing a virtual sell order with {:.{prec}f} {} @ {:.8f}'.format(
-                amount, symbol, order['price'], prec=self.market['quote']['precision']
+                amount, symbol, order['price'] ** -1, prec=self.market['quote']['precision']
             )
         )
         self.virtual_orders.append(order)

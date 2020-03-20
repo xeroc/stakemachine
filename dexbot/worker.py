@@ -8,6 +8,7 @@ import threading
 import dexbot.errors as errors
 from bitshares.instance import shared_bitshares_instance
 from bitshares.notify import Notify
+from bitshares.utils import parse_time
 from dexbot.strategies.base import StrategyBase
 
 log = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ class WorkerInfrastructure(threading.Thread):
 
         # BitShares instance
         self.bitshares = bitshares_instance or shared_bitshares_instance()
+        self.block_time = None
         self.config = copy.deepcopy(config)
         self.view = view
         self.jobs = set()
@@ -115,6 +117,8 @@ class WorkerInfrastructure(threading.Thread):
             finally:
                 self.jobs = set()
 
+        self.check_node_time()
+
         self.config_lock.acquire()
         for worker_name, worker in self.config["workers"].items():
             if worker_name not in self.workers:
@@ -187,6 +191,23 @@ class WorkerInfrastructure(threading.Thread):
         self.init_workers(self.config)
         self.update_notify()
         self.notify.listen()
+
+    def check_node_time(self):
+        """ Check that we're connected to synced node
+        """
+        props = self.bitshares.info()
+        current_time = parse_time(props['time'])
+
+        if not self.block_time:
+            self.block_time = current_time
+        elif current_time < self.block_time:
+            current_node = self.bitshares.rpc.url
+            self.bitshares.rpc.next()
+            new_node = self.bitshares.rpc.url
+            log.warning('Current node out of sync, switching: {} -> {}'.format(current_node, new_node))
+            return
+        else:
+            self.block_time = current_time
 
     def stop(self, worker_name=None, pause=False):
         """ Used to stop the worker(s)

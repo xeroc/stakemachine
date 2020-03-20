@@ -24,7 +24,6 @@ Developing own Strategies
    :maxdepth: 1
 
    storage
-   statemachine
    strategybase
    events
 
