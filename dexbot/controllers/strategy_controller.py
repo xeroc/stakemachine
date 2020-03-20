@@ -258,25 +258,31 @@ class StaggeredOrdersController(StrategyController):
         self.configure = configure
         self.worker_controller = worker_controller
 
-        if view:
-            if not self.view.strategy_widget.center_price_dynamic_input.isChecked():
-                self.view.strategy_widget.center_price_input.setDisabled(False)
-
         super().__init__(view, configure, worker_controller, worker_data)
 
         widget = self.view.strategy_widget
 
         # Event connecting
         widget.center_price_dynamic_input.clicked.connect(self.onchange_center_price_dynamic_input)
+        widget.enable_stop_loss_input.clicked.connect(self.onchange_enable_stop_loss_input)
 
         # Trigger the onchange events once
         self.onchange_center_price_dynamic_input(widget.center_price_dynamic_input.isChecked())
+        self.onchange_enable_stop_loss_input(widget.enable_stop_loss_input.isChecked())
 
     def onchange_center_price_dynamic_input(self, checked):
         if checked:
             self.view.strategy_widget.center_price_input.setDisabled(True)
         else:
             self.view.strategy_widget.center_price_input.setDisabled(False)
+
+    def onchange_enable_stop_loss_input(self, checked):
+        if checked:
+            self.view.strategy_widget.stop_loss_discount_input.setDisabled(False)
+            self.view.strategy_widget.stop_loss_amount_input.setDisabled(False)
+        else:
+            self.view.strategy_widget.stop_loss_discount_input.setDisabled(True)
+            self.view.strategy_widget.stop_loss_amount_input.setDisabled(True)
 
     def set_required_base(self, text):
         self.view.strategy_widget.required_base_text.setText(text)

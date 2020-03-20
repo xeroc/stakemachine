@@ -1,5 +1,6 @@
 import logging
 import math
+import time
 from datetime import datetime
 
 import pytest
@@ -1303,6 +1304,37 @@ def test_get_actual_spread(worker):
     worker.refresh_orders()
     spread = worker.get_actual_spread()
     assert float('Inf') > spread > 0
+
+
+def test_stop_loss_check(worker, base_account, do_initial_allocation, issue_asset):
+    worker.operational_depth = 100
+    worker.target_spread = 0.1  # speed up allocation
+    do_initial_allocation(worker, worker.mode)
+    additional_account = base_account()
+    # Issue additional QUOTE to 2nd account
+    issue_asset(worker.market['quote']['symbol'], 500, additional_account)
+
+    # Sleep is needed to allow node to update ticker
+    time.sleep(2)
+
+    # Normal conditions - stop loss should not be executed
+    worker.stop_loss_check()
+    assert worker.disabled is False
+
+    # Place bid below lower bound
+    worker.market.buy(worker.lower_bound / 1.01, 1, account=additional_account)
+
+    # Fill all orders pushing price below lower bound
+    worker.market.sell(worker.lower_bound, 500, account=additional_account)
+
+    time.sleep(2)
+    worker.refresh_orders()
+    worker.stop_loss_check()
+    worker.refresh_orders()
+    assert len(worker.sell_orders) == 1
+    order = worker.sell_orders[0]
+    assert order['price'] ** -1 < worker.lower_bound
+    assert worker.disabled is True
 
 
 def test_tick(worker):
