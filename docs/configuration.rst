@@ -15,11 +15,6 @@ The configuration consists of a series of questions about the bots you wish to c
    how they behave (i.e. spend *your* money) so it is important you understand the strategy
    before deploying a bot.
 
-   a. :doc:`echo` For testing this just logs events on a market, does no trading.
-   b. :doc:`follow_orders` My (Ian Haywood) main bot, an extension of stakemachine's `wall`,
-      it has been used to provide liquidity on AUD:BTS.
-      Does function but by no mean perfect, see caveats in the docs.
-
 3. Strategy-specific questions
 
    The questions that follow are determined by the strategy chosen, and each strategy will have its own questions around
