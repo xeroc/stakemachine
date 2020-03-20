@@ -127,7 +127,7 @@ class Strategy(StrategyBase):
 
     def error(self, *args, **kwargs):
         """ Defines what happens when error occurs """
-        self.disabled = False
+        self.disabled = True
 
     def pause(self):
         """ Override pause() in StrategyBase """
