@@ -3,16 +3,17 @@ from bitshares.asset import Asset
 from bitshares.exceptions import AccountDoesNotExistsException, AssetDoesNotExistsException, KeyAlreadyInStoreException
 from bitshares.instance import shared_bitshares_instance
 from bitsharesbase.account import PrivateKey
-from dexbot.config import Config
 
 
 class ConfigValidator:
     """ Config validation methods
 
+        :param dexbot.config.Config config: dexbot config
         :param bitshares.BitShares: BitShares instance
     """
 
-    def __init__(self, bitshares_instance):
+    def __init__(self, config, bitshares_instance):
+        self.config = config
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
     def validate_account_name(self, account):
@@ -70,28 +71,26 @@ class ConfigValidator:
             return False
         return True
 
-    @staticmethod
-    def validate_worker_name(worker_name, old_worker_name=None):
+    def validate_worker_name(self, worker_name, old_worker_name=None):
         """ Check whether worker name is unique or not
 
             :param str worker_name: name of the new worker
             :param str old_worker_name: old name of the worker
         """
         if old_worker_name != worker_name:
-            worker_names = Config().workers_data.keys()
+            worker_names = self.config.workers_data.keys()
             # Check that the name is unique
             if worker_name in worker_names:
                 return False
             return True
         return True
 
-    @staticmethod
-    def validate_account_not_in_use(account):
+    def validate_account_not_in_use(self, account):
         """ Check whether account is already used for another worker or not
 
             :param str account: bitshares account name
         """
-        workers = Config().workers_data
+        workers = self.config.workers_data
         for worker_name, worker in workers.items():
             if worker['account'] == account:
                 return False

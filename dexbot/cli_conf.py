@@ -187,12 +187,12 @@ def get_strategy_tag(strategy_class):
     return None
 
 
-def configure_worker(whiptail, worker_config, bitshares_instance):
+def configure_worker(whiptail, worker_config, validator):
     """ Single worker configurator
 
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param collections.OrderedDict worker_config: the config dictionary for this worker
-        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+        :param collections.OrderedDict worker_config: tohe config dictionary for this worker
+        :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
     """
     # By default always editing
     editing = True
@@ -249,7 +249,7 @@ def configure_worker(whiptail, worker_config, bitshares_instance):
                 account_name = None
                 # Query user until correct account and key provided
                 while not account_name:
-                    account_name = add_account(whiptail, bitshares_instance)
+                    account_name = add_account(validator, whiptail)
                 worker_config[elem.key] = account_name
             else:  # account name only for edit worker
                 process_config_element(elem, whiptail, worker_config)
@@ -270,7 +270,7 @@ def configure_dexbot(config, ctx):
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
     bitshares_instance = ctx.bitshares
-    validator = ConfigValidator(bitshares_instance)
+    validator = ConfigValidator(config, bitshares_instance)
 
     if not workers:
         while True:
@@ -278,7 +278,7 @@ def configure_dexbot(config, ctx):
             if len(txt) == 0:
                 whiptail.alert("Worker name cannot be blank. ")
             else:
-                config['workers'] = {txt: configure_worker(whiptail, {}, bitshares_instance)}
+                config['workers'] = {txt: configure_worker(whiptail, {}, validator)}
                 if not whiptail.confirm("Set up another worker?\n(DEXBot can run multiple workers in one instance)"):
                     break
         setup_systemd(whiptail, config)
@@ -324,7 +324,7 @@ def configure_dexbot(config, ctx):
                 if len(my_workers):
                     worker_name = whiptail.menu("Select worker to edit", my_workers)
                     config['workers'][worker_name] = configure_worker(
-                        whiptail, config['workers'][worker_name], bitshares_instance
+                        whiptail, config['workers'][worker_name], validator
                     )
                 else:
                     whiptail.alert('No workers to edit.')
@@ -347,7 +347,7 @@ def configure_dexbot(config, ctx):
                 elif not validator.validate_worker_name(worker_name):
                     whiptail.alert('Worker name needs to be unique. "{}" is already in use.'.format(worker_name))
                 else:
-                    config['workers'][worker_name] = configure_worker(whiptail, {}, bitshares_instance)
+                    config['workers'][worker_name] = configure_worker(whiptail, {}, validator)
             elif action == 'ADD':
                 add_account(whiptail, bitshares_instance)
             elif action == 'DEL_ACCOUNT':
@@ -390,14 +390,13 @@ def configure_dexbot(config, ctx):
     return config
 
 
-def add_account(whiptail, bitshares_instance):
+def add_account(validator, whiptail):
     """ "Add account" dialog
 
+        :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
         :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
         :return str: user-supplied account name
     """
-    validator = ConfigValidator(bitshares_instance)
 
     account = whiptail.prompt("Your Account Name")
     private_key = whiptail.prompt("Your Private Key", password=True)
