@@ -92,6 +92,13 @@ def test_place_order_zero_amount(worker, other_orders, monkeypatch):
     monkeypatch.setattr(worker.__class__, 'amount_base', 0)
     assert worker.place_order('buy') is False
 
+    # Test other modes too
+    worker.mode = 'buy'
+    assert worker.place_order('buy') is False
+
+    worker.mode = 'sell'
+    assert worker.place_order('sell') is False
+
 
 def test_place_orders(worker2, other_orders):
     """ Test that orders are placed according to mode (buy, sell, buy + sell). Simple test, just make sure buy/sell
