@@ -16,7 +16,7 @@ class WorkerController:
     def __init__(self, view, bitshares_instance, mode):
         self.view = view
         self.mode = mode
-        self.validator = ConfigValidator(bitshares_instance or shared_bitshares_instance())
+        self.validator = ConfigValidator(Config(), bitshares_instance or shared_bitshares_instance())
 
     @property
     def strategies(self):
