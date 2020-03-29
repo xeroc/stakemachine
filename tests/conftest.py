@@ -21,10 +21,14 @@ from bitsharesbase.chains import known_chains
 known_chains["TEST"]["chain_id"] = "c74ddb39b3a233445dd95d7b6fc2d0fa4ba666698db26b53855d94fffcc460af"
 
 PRIVATE_KEYS = ['5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3']
-DEFAULT_ACCOUNT = 'init0'
 
 # Example how to split conftest.py into multiple files
 # pytest_plugins = ['fixture_a.py', 'fixture_b.py']
+
+
+@pytest.fixture(scope="session")
+def default_account():
+    return "init0"
 
 
 @pytest.fixture(scope='session')
@@ -100,11 +104,11 @@ def bitshares_instance(bitshares_testnet):
 
 
 @pytest.fixture(scope='session')
-def claim_balance(bitshares_instance):
+def claim_balance(bitshares_instance, default_account):
     """ Transfer balance from genesis into actual account
     """
     genesis_balance = GenesisBalance('1.15.0', bitshares_instance=bitshares_instance)
-    genesis_balance.claim(account=DEFAULT_ACCOUNT)
+    genesis_balance.claim(account=default_account)
 
 
 @pytest.fixture(scope='session')
@@ -115,14 +119,14 @@ def bitshares(bitshares_instance, claim_balance):
 
 
 @pytest.fixture(scope='session')
-def create_asset(bitshares):
+def create_asset(bitshares, default_account):
     """ Create a new asset
     """
 
     def _create_asset(asset, precision, is_bitasset=False):
         max_supply = 1000000000000000 / 10 ** precision if precision > 0 else 1000000000000000
         bitshares.create_asset(
-            asset, precision, max_supply, is_bitasset=is_bitasset, account=DEFAULT_ACCOUNT,
+            asset, precision, max_supply, is_bitasset=is_bitasset, account=default_account,
         )
 
     return _create_asset
@@ -145,7 +149,7 @@ def issue_asset(bitshares):
 
 
 @pytest.fixture(scope="session")
-def base_bitasset(bitshares, unused_asset):
+def base_bitasset(bitshares, unused_asset, default_account):
     def func():
         bitasset_options = {
             "feed_lifetime_sec": 86400,
@@ -159,23 +163,23 @@ def base_bitasset(bitshares, unused_asset):
         symbol = unused_asset()
         bitshares.create_asset(symbol, 5, 10000000000, is_bitasset=True, bitasset_options=bitasset_options)
         asset = Asset(symbol)
-        asset.update_feed_producers([DEFAULT_ACCOUNT])
+        asset.update_feed_producers([default_account])
         return asset
 
     return func
 
 
 @pytest.fixture(scope='session')
-def create_account(bitshares):
+def create_account(bitshares, default_account):
     """ Create new account
     """
 
     def _create_account(account):
-        parent_account = Account(DEFAULT_ACCOUNT, bitshares_instance=bitshares)
+        parent_account = Account(default_account, bitshares_instance=bitshares)
         public_key = PublicKey.from_privkey(PRIVATE_KEYS[0], prefix=bitshares.prefix)
         bitshares.create_account(
             account,
-            registrar=DEFAULT_ACCOUNT,
+            registrar=default_account,
             referrer=parent_account['id'],
             referrer_percent=0,
             owner_key=public_key,
@@ -218,7 +222,7 @@ def unused_asset(bitshares):
 
 
 @pytest.fixture(scope='session')
-def prepare_account(bitshares, unused_account, create_account, create_asset, issue_asset):
+def prepare_account(bitshares, unused_account, create_account, create_asset, issue_asset, default_account):
     """ Ensure an account with specified amounts of assets. Account must not exist!
 
         :param dict assets: assets to credit account balance with
@@ -244,7 +248,7 @@ def prepare_account(bitshares, unused_account, create_account, create_asset, iss
                 create_asset(asset, 5)
 
             if asset == 'TEST':
-                bitshares.transfer(account, amount, 'TEST', memo='prepare account', account=DEFAULT_ACCOUNT)
+                bitshares.transfer(account, amount, 'TEST', memo='prepare account', account=default_account)
             else:
                 issue_asset(asset, amount, account)
 
