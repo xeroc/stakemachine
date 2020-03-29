@@ -1,6 +1,7 @@
 import os.path
 import random
 import socket
+import string
 import time
 import uuid
 
@@ -118,9 +119,11 @@ def create_asset(bitshares):
     """ Create a new asset
     """
 
-    def _create_asset(asset, precision):
+    def _create_asset(asset, precision, is_bitasset=False):
         max_supply = 1000000000000000 / 10 ** precision if precision > 0 else 1000000000000000
-        bitshares.create_asset(asset, precision, max_supply, account=DEFAULT_ACCOUNT)
+        bitshares.create_asset(
+            asset, precision, max_supply, is_bitasset=is_bitasset, account=DEFAULT_ACCOUNT,
+        )
 
     return _create_asset
 
@@ -139,6 +142,27 @@ def issue_asset(bitshares):
         asset.issue(amount, to)
 
     return _issue_asset
+
+
+@pytest.fixture(scope="session")
+def base_bitasset(bitshares, unused_asset):
+    def func():
+        bitasset_options = {
+            "feed_lifetime_sec": 86400,
+            "minimum_feeds": 1,
+            "force_settlement_delay_sec": 86400,
+            "force_settlement_offset_percent": 100,
+            "maximum_force_settlement_volume": 50,
+            "short_backing_asset": "1.3.0",
+            "extensions": [],
+        }
+        symbol = unused_asset()
+        bitshares.create_asset(symbol, 5, 10000000000, is_bitasset=True, bitasset_options=bitasset_options)
+        asset = Asset(symbol)
+        asset.update_feed_producers([DEFAULT_ACCOUNT])
+        return asset
+
+    return func
 
 
 @pytest.fixture(scope='session')
@@ -178,6 +202,19 @@ def unused_account(bitshares):
                 return account
 
     return _unused_account
+
+
+@pytest.fixture(scope="session")
+def unused_asset(bitshares):
+    def func():
+        while True:
+            asset = "".join(random.choice(string.ascii_uppercase) for x in range(7))
+            try:
+                Asset(asset, bitshares_instance=bitshares)
+            except AssetDoesNotExistsException:
+                return asset
+
+    return func
 
 
 @pytest.fixture(scope='session')
