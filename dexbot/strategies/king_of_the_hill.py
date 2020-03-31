@@ -285,9 +285,12 @@ class Strategy(StrategyBase):
 
             amount_base = Decimal(self.amount_base).quantize(Decimal(0).scaleb(-self.market['base']['precision']))
             if not amount_base:
-                self.log.error(
-                    'Cannot place {} order with 0 amount. Adjust your settings or add balance'.format(order_type)
-                )
+                if self.mode == 'both':
+                    self.log.debug('Not placing %s order in "both" mode due to insufficient balance', order_type)
+                else:
+                    self.log.error(
+                        'Cannot place {} order with 0 amount. Adjust your settings or add balance'.format(order_type)
+                    )
                 return False
 
             price = Decimal(self.top_buy_price)
@@ -326,9 +329,12 @@ class Strategy(StrategyBase):
 
             amount_quote = Decimal(self.amount_quote).quantize(Decimal(0).scaleb(-self.market['quote']['precision']))
             if not amount_quote:
-                self.log.error(
-                    'Cannot place {} order with 0 amount. Adjust your settings or add balance'.format(order_type)
-                )
+                if self.mode == 'both':
+                    self.log.debug('Not placing %s order in "both" mode due to insufficient balance', order_type)
+                else:
+                    self.log.error(
+                        'Cannot place {} order with 0 amount. Adjust your settings or add balance'.format(order_type)
+                    )
                 return False
 
             price = Decimal(self.top_sell_price)
