@@ -3,6 +3,10 @@ import logging
 import time
 
 import pytest
+from bitshares.amount import Amount
+from bitshares.asset import Asset
+from bitshares.dex import Dex
+from bitshares.price import Price
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.king_of_the_hill import Strategy
 
@@ -87,6 +91,36 @@ def config_variable_modes(request, config, kh_worker_name):
     return config
 
 
+@pytest.fixture(params=[0, 1])
+def config_bitasset_market(request, kh_worker_name, bitasset_local, bitshares, account):
+    """ Produces a config with market MPA:COLLATERAL or COLLATERAL:MPA
+    """
+    worker_name = kh_worker_name
+    bitasset = bitasset_local
+    market = f'{bitasset.symbol}/TEST' if request.param == 0 else f'TEST/{bitasset.symbol}'
+    config = {
+        'node': '{}'.format(bitshares.rpc.url),
+        'workers': {
+            worker_name: {
+                'account': '{}'.format(account),
+                'buy_order_amount': 1.0,
+                'buy_order_size_threshold': 0.0,
+                'fee_asset': 'TEST',
+                'lower_bound': 1.8,
+                'market': market,
+                'min_order_lifetime': 60,
+                'mode': 'both',
+                'module': 'dexbot.strategies.king_of_the_hill',
+                'relative_order_size': False,
+                'sell_order_amount': 1.0,
+                'sell_order_size_threshold': 0.0,
+                'upper_bound': 1.2,
+            }
+        },
+    }
+    return config
+
+
 @pytest.fixture
 def config_other_account(config, base_account, kh_worker_name):
     """ Config for other account which simulates foreign trader
@@ -130,6 +164,14 @@ def worker2(base_worker, config_variable_modes):
     """ Worker to test all modes
     """
     worker = base_worker(config_variable_modes)
+    return worker
+
+
+@pytest.fixture
+def worker_bitasset(base_worker, config_bitasset_market):
+    """ Worker operating on MPA/COLLATERAL market
+    """
+    worker = base_worker(config_bitasset_market)
     return worker
 
 
@@ -195,3 +237,23 @@ def other_orders_zero_spread(other_worker):
         buy_order = worker.get_order(orderid)
     log.debug('Other orders after match: {}'.format(worker.own_orders))
     return worker
+
+
+@pytest.fixture(scope="session")
+def bitasset_local(bitshares, base_bitasset, default_account):
+    asset = base_bitasset()
+    dex = Dex(blockchain_instance=bitshares)
+
+    # Set initial price feed
+    price = Price(1.5, base=asset, quote=Asset("TEST"))
+    bitshares.publish_price_feed(asset.symbol, price, account=default_account)
+
+    # Borrow some amount
+    to_borrow = Amount(100, asset)
+    dex.borrow(to_borrow, collateral_ratio=2.1, account=default_account)
+
+    # Drop pricefeed to cause margin call
+    price = Price(1.0, base=asset, quote=Asset("TEST"))
+    bitshares.publish_price_feed(asset.symbol, price, account=default_account)
+
+    return asset
