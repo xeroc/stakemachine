@@ -3,18 +3,12 @@ import math
 import time
 from datetime import datetime
 
-import bitshares.exceptions
-from bitshares.account import Account
-from bitshares.amount import Asset
-from bitshares.instance import shared_bitshares_instance
-from bitshares.market import Market
 from dexbot.config import Config
 from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
 from dexbot.pricefeeds.bitshares_feed import BitsharesPriceFeed
 from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.storage import Storage
 from dexbot.strategies.config_parts.base_config import BaseConfig
-from events import Events
 
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
@@ -104,14 +98,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         **kwargs
     ):
 
-        # BitShares instance
-        self.bitshares = bitshares_instance or shared_bitshares_instance()
-
-        # Storage
-        Storage.__init__(self, name)
-
-        # Events
-        Events.__init__(self)
+        BitsharesOrderEngine.__init__(self, name, config=config, *args, **kwargs)
 
         if ontick:
             self.ontick += ontick
@@ -136,55 +123,12 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         else:
             self.config = config = Config.get_worker_config_file(name)
 
-        # Get worker's parameters from the config
-        self.worker = config["workers"][name]
-
-        # Recheck flag - Tell the strategy to check for updated orders
-        self.recheck_orders = False
-
-        # Count of orders to be fetched from the API
-        self.fetch_depth = 8
-
         # What percent of balance the worker should use
         self.operational_percent_quote = self.worker.get('operational_percent_quote', 0) / 100
         self.operational_percent_base = self.worker.get('operational_percent_base', 0) / 100
 
-        # Get Bitshares account and market for this worker
-        self._account = Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
-        self._market = Market(config["workers"][name]["market"], bitshares_instance=self.bitshares)
-
-        # Set fee asset
-        fee_asset_symbol = self.worker.get('fee_asset')
-
-        if fee_asset_symbol:
-            try:
-                self.fee_asset = Asset(fee_asset_symbol, bitshares_instance=self.bitshares)
-            except bitshares.exceptions.AssetDoesNotExistsException:
-                self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
-        else:
-            # If there is no fee asset, use BTS
-            self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
-
-        # CER cache
-        self.core_exchange_rate = None
-
-        # Ticker
-        self.ticker = self._market.ticker
-
-        # Settings for bitshares instance
-        self.bitshares.bundle = bool(self.worker.get("bundle", False))
-
-        # Disabled flag - this flag can be flipped to True by a worker and will be reset to False after reset only
-        self.disabled = False
-
         # Initial value for check_last_run decorator in dexbot/decorators.py
         self.last_check = datetime(1970, 1, 1)
-
-        # Order expiration time in seconds
-        self.expiration = 60 * 60 * 24 * 365 * 5
-
-        # buy/sell actions will return order id by default
-        self.returnOrderId = 'head'
 
         # A private logger that adds worker identify data to the LogRecord
         self.log = logging.LoggerAdapter(

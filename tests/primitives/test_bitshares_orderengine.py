@@ -1,7 +1,14 @@
 import logging
 
+import pytest
+
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)
+
+
+@pytest.fixture()
+def worker(orderengine):
+    return orderengine
 
 
 def test_init(worker):

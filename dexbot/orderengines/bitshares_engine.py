@@ -6,6 +6,7 @@ import time
 import bitshares.exceptions
 import bitsharesapi
 import bitsharesapi.exceptions
+from bitshares.account import Account
 from bitshares.amount import Amount, Asset
 from bitshares.dex import Dex
 from bitshares.instance import shared_bitshares_instance
@@ -43,7 +44,6 @@ class BitsharesOrderEngine(Storage, Events):
         _market=None,
         fee_asset_symbol=None,
         bitshares_instance=None,
-        bitshares_bundle=None,
         *args,
         **kwargs
     ):
@@ -68,8 +68,10 @@ class BitsharesOrderEngine(Storage, Events):
         else:
             self.config = Config.get_worker_config_file(name)
 
-        self._market = _market
-        self._account = _account
+        # Get worker's parameters from the config
+        self.worker = config["workers"][name]
+        self._market = _market or Market(self.worker["market"], bitshares_instance=self.bitshares)
+        self._account = _account or Account(self.worker["account"], full=True, bitshares_instance=self.bitshares)
 
         # Recheck flag - Tell the strategy to check for updated orders
         self.recheck_orders = False
@@ -77,7 +79,17 @@ class BitsharesOrderEngine(Storage, Events):
         # Count of orders to be fetched from the API
         self.fetch_depth = 8
 
-        self.fee_asset = fee_asset_symbol
+        # Set fee asset
+        fee_asset_symbol = fee_asset_symbol or self.worker.get('fee_asset')
+
+        if fee_asset_symbol:
+            try:
+                self.fee_asset = Asset(fee_asset_symbol, bitshares_instance=self.bitshares)
+            except bitshares.exceptions.AssetDoesNotExistsException:
+                self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
+        else:
+            # If there is no fee asset, use BTS
+            self.fee_asset = Asset('1.3.0', bitshares_instance=self.bitshares)
 
         # CER cache
         self.core_exchange_rate = None
@@ -86,7 +98,7 @@ class BitsharesOrderEngine(Storage, Events):
         self.ticker = self._market.ticker
 
         # Settings for bitshares instance
-        self.bitshares.bundle = bitshares_bundle
+        self.bitshares.bundle = bool(self.worker.get("bundle", False))
 
         # Disabled flag - this flag can be flipped to True by a worker and will be reset to False after reset only
         self.disabled = False
@@ -96,6 +108,8 @@ class BitsharesOrderEngine(Storage, Events):
 
         # buy/sell actions will return order id by default
         self.returnOrderId = 'head'
+
+        self.log = logging.LoggerAdapter(logging.getLogger('dexbot.orderengine'), {})
 
     def _callbackPlaceFillOrders(self, d):
         """ This method distinguishes notifications caused by Matched orders from those caused by placed orders

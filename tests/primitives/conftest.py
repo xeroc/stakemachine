@@ -2,6 +2,7 @@ import time
 
 import pytest
 from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
+from dexbot.strategies.base import StrategyBase
 
 
 @pytest.fixture(scope='module')
@@ -23,7 +24,7 @@ def base_account(assets, prepare_account):
     """
 
     def func():
-        account = prepare_account({'BASEA': 10000, 'QUOTEA': 100})
+        account = prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'TEST': 1000})
         return account
 
     return func
@@ -58,8 +59,16 @@ def config(bitshares, account, worker_name):
 
 
 @pytest.fixture()
-def worker(worker_name, config, bitshares):
+def orderengine(worker_name, config, bitshares):
     worker = BitsharesOrderEngine(worker_name, config=config, bitshares_instance=bitshares)
+    yield worker
+    worker.cancel_all_orders()
+    time.sleep(1.1)
+
+
+@pytest.fixture()
+def strategybase(worker_name, config, bitshares):
+    worker = StrategyBase(worker_name, config=config, bitshares_instance=bitshares)
     yield worker
     worker.cancel_all_orders()
     time.sleep(1.1)
