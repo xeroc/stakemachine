@@ -11,5 +11,6 @@ def worker(strategybase):
     return strategybase
 
 
+@pytest.mark.mandatory
 def test_init(worker):
     pass

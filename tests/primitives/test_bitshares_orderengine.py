@@ -11,6 +11,7 @@ def worker(orderengine):
     return orderengine
 
 
+@pytest.mark.mandatory
 def test_init(worker):
     pass
 
