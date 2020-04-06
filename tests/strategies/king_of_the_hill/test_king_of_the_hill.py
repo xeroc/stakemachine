@@ -7,8 +7,7 @@ log.setLevel(logging.DEBUG)
 
 
 def test_amount_quote(worker):
-    """ Test quote amount calculation
-    """
+    """Test quote amount calculation."""
     # config: 'sell_order_amount': 1.0,
     assert worker.amount_quote == 1
 
@@ -19,8 +18,7 @@ def test_amount_quote(worker):
 
 
 def test_amount_base(worker):
-    """ Test base amount calculation
-    """
+    """Test base amount calculation."""
     # config: 'buy_order_amount': 1.0,
     assert worker.amount_base == 1
 
@@ -31,8 +29,7 @@ def test_amount_base(worker):
 
 
 def test_get_top_prices(other_orders, worker):
-    """ Test if orders prices are calculated
-    """
+    """Test if orders prices are calculated."""
     orderbook = worker.market.orderbook(limit=1)
     top_price_bid = orderbook['bids'][0]['price']
     top_price_ask = orderbook['asks'][0]['price']
@@ -53,8 +50,10 @@ def test_get_top_prices_margin_call(worker_bitasset):
 
 
 def test_place_order_correct_price(worker, other_orders):
-    """ Test that buy order is placed at correct price. Similar to test_get_top_prices(), but with actual order
-        placement
+    """
+    Test that buy order is placed at correct price.
+
+    Similar to test_get_top_prices(), but with actual order placement
     """
     worker.get_top_prices()
     orderbook = worker.market.orderbook(limit=1)
@@ -79,8 +78,7 @@ def test_place_order_correct_price(worker, other_orders):
 
 
 def test_place_order_zero_price(worker):
-    """ Check that worker goes into error if no prices are calculated
-    """
+    """Check that worker goes into error if no prices are calculated."""
     worker.top_sell_price = 0
     worker.place_order('sell')
     assert worker.disabled
@@ -92,8 +90,7 @@ def test_place_order_zero_price(worker):
 
 
 def test_place_order_zero_amount(worker, other_orders, monkeypatch):
-    """ Check that worker doesn't try to place an order if amounts are 0
-    """
+    """Check that worker doesn't try to place an order if amounts are 0."""
     worker.get_top_prices()
 
     monkeypatch.setattr(worker.__class__, 'amount_quote', 0)
@@ -111,8 +108,10 @@ def test_place_order_zero_amount(worker, other_orders, monkeypatch):
 
 
 def test_place_orders(worker2, other_orders):
-    """ Test that orders are placed according to mode (buy, sell, buy + sell). Simple test, just make sure buy/sell
-        order gets placed.
+    """
+    Test that orders are placed according to mode (buy, sell, buy + sell).
+
+    Simple test, just make sure buy/sell order gets placed.
     """
     worker = worker2
     worker.place_orders()
@@ -126,8 +125,7 @@ def test_place_orders(worker2, other_orders):
 
 
 def test_place_orders_check_bounds(worker, other_orders_out_of_bounds):
-    """ Test that orders aren't going out of bounds
-    """
+    """Test that orders aren't going out of bounds."""
     worker.place_orders()
     own_buy_orders = worker.get_own_buy_orders()
     own_sell_orders = worker.get_own_sell_orders()
@@ -141,8 +139,7 @@ def test_place_orders_check_bounds(worker, other_orders_out_of_bounds):
 
 
 def test_check_orders_fully_filled(worker, other_orders):
-    """ When our order is fully filled, the strategy should place a new one
-    """
+    """When our order is fully filled, the strategy should place a new one."""
     worker2 = other_orders
 
     worker.place_orders()
@@ -171,8 +168,7 @@ def test_check_orders_fully_filled(worker, other_orders):
 
 
 def test_check_orders_partially_filled(worker, other_orders):
-    """ When our order is partially filled more than threshold, order should be replaced
-    """
+    """When our order is partially filled more than threshold, order should be replaced."""
     worker2 = other_orders
 
     worker.place_orders()
@@ -202,8 +198,7 @@ def test_check_orders_partially_filled(worker, other_orders):
 
 
 def test_check_orders_beaten_order_cancelled(worker, other_orders):
-    """ Beaten order was cancelled, own order should be moved
-    """
+    """Beaten order was cancelled, own order should be moved."""
     worker2 = other_orders
 
     worker.place_orders()
@@ -230,8 +225,7 @@ def test_check_orders_beaten_order_cancelled(worker, other_orders):
 
 
 def test_check_orders_new_order_above_our(worker, other_orders):
-    """ Someone put order above ours, own order must be moved
-    """
+    """Someone put order above ours, own order must be moved."""
     worker2 = other_orders
 
     worker.place_orders()
@@ -263,8 +257,7 @@ def test_check_orders_new_order_above_our(worker, other_orders):
 
 
 def test_check_orders_no_looping(worker, other_orders):
-    """ Make sure order placement is correct so check_orders() doesn't want to continuously move orders
-    """
+    """Make sure order placement is correct so check_orders() doesn't want to continuously move orders."""
     worker.place_orders()
     ids = [order['id'] for order in worker.own_orders]
 
@@ -275,17 +268,18 @@ def test_check_orders_no_looping(worker, other_orders):
 
 
 def test_maintain_strategy(worker, other_orders):
-    """ maintain_strategy() should run without errors.
-        No logic is checked here because it's done inside other tests.
-        The goal of this test is to make sure maintain_strategy() places orders
+    """
+    maintain_strategy() should run without errors.
+
+    No logic is checked here because it's done inside other tests. The goal of this test is to make sure
+    maintain_strategy() places orders
     """
     worker.maintain_strategy()
     assert len(worker.own_orders) == 2
 
 
 def test_zero_spread(worker, other_orders_zero_spread):
-    """ Make sure the strategy doesn't crossing opposite side orders when market spread is too close
-    """
+    """Make sure the strategy doesn't crossing opposite side orders when market spread is too close."""
     other_worker = other_orders_zero_spread
     other_orders_before = other_worker.own_orders
 
@@ -313,15 +307,13 @@ def test_zero_spread(worker, other_orders_zero_spread):
 
 
 def test_check_bitasset_market_non_bitasset(worker):
-    """ Worker market is not MPA/COLLATERAL
-    """
+    """Worker market is not MPA/COLLATERAL."""
     worker.check_bitasset_market()
     assert worker.call_orders_expected is False
 
 
 def test_check_bitasset_market_bitasset(worker_bitasset):
-    """ Correctly determine if worker market is MPA/COLLATERAL
-    """
+    """Correctly determine if worker market is MPA/COLLATERAL."""
     worker = worker_bitasset
     worker.check_bitasset_market()
     assert worker.call_orders_expected is True

@@ -2,15 +2,15 @@ from dexbot.strategies.config_parts.base_config import BaseConfig, ConfigElement
 
 
 class StrategyConfig(BaseConfig):
-    """ this is the configuration template for the strategy_template class
-    """
+    """this is the configuration template for the strategy_template class."""
 
     @classmethod
     def configure(cls, return_base_config=True):
-        """ This function is used to auto generate fields for GUI
+        """
+        This function is used to auto generate fields for GUI.
 
-            :param return_base_config: If base config is used in addition to this configuration.
-            :return: List of ConfigElement(s)
+        :param return_base_config: If base config is used in addition to this configuration.
+        :return: List of ConfigElement(s)
         """
 
         """ As a demonstration this template has two fields in the worker configuration. Upper and lower bound.
@@ -27,12 +27,13 @@ class StrategyConfig(BaseConfig):
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        """ This function defines the tabs for detailed view of the worker. Further documentation is found in base.py
+        """
+        This function defines the tabs for detailed view of the worker. Further documentation is found in base.py.
 
-            :param include_default_tabs: If default tabs are included as well
-            :return: List of DetailElement(s)
+        :param include_default_tabs: If default tabs are included as well
+        :return: List of DetailElement(s)
 
-            NOTE: Add files to user data folders to see how they behave as an example.
+        NOTE: Add files to user data folders to see how they behave as an example.
         """
         return BaseConfig.configure_details(include_default_tabs) + [
             DetailElement('graph', 'Graph', 'Graph', 'graph.jpg'),

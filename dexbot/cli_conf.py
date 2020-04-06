@@ -1,8 +1,7 @@
 """
-A module to provide an interactive text-based tool for dexbot configuration
-The result is dexbot can be run without having to hand-edit config files.
-If systemd is detected it will offer to install a user service unit (under ~/.local/share/systemd)
-This requires a per-user systemd process to be running
+A module to provide an interactive text-based tool for dexbot configuration The result is dexbot can be run without
+having to hand-edit config files. If systemd is detected it will offer to install a user service unit (under
+~/.local/share/systemd) This requires a per-user systemd process to be running.
 
 Requires the 'whiptail' tool for text-based configuration (so UNIX only)
 if not available, falls back to a line-based configurator ("NoWhiptail")
@@ -66,17 +65,17 @@ WantedBy=default.target
 
 
 def select_choice(current, choices):
-    """ For the radiolist, get us a list with the current value selected
-    """
+    """For the radiolist, get us a list with the current value selected."""
     return [(tag, text, (current == tag and "ON") or "OFF") for tag, text in choices]
 
 
 def process_config_element(element, whiptail, worker_config):
-    """ Process an item of configuration metadata, display a widget as appropriate
+    """
+    Process an item of configuration metadata, display a widget as appropriate.
 
-        :param base_config.ConfigElement element: config element
-        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param collections.OrderedDict worker_config: the config dictionary for this worker
+    :param base_config.ConfigElement element: config element
+    :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+    :param collections.OrderedDict worker_config: the config dictionary for this worker
     """
     if element.description:
         title = '{} - {}'.format(element.title, element.description)
@@ -125,8 +124,7 @@ def process_config_element(element, whiptail, worker_config):
 
 
 def dexbot_service_running():
-    """ Return True if dexbot service is running
-    """
+    """Return True if dexbot service is running."""
     cmd = 'systemctl --user status dexbot'
     output = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for line in output.stdout.readlines():
@@ -136,10 +134,11 @@ def dexbot_service_running():
 
 
 def setup_systemd(whiptail, config):
-    """ Setup systemd unit to auto-start dexbot
+    """
+    Setup systemd unit to auto-start dexbot.
 
-        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param dexbot.config.Config config: dexbot config
+    :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+    :param dexbot.config.Config config: dexbot config
     """
     if not os.path.exists("/etc/systemd"):
         return  # No working systemd
@@ -175,11 +174,12 @@ def setup_systemd(whiptail, config):
 
 
 def get_strategy_tag(strategy_class):
-    """ Obtain tag for a strategy
+    """
+    Obtain tag for a strategy.
 
-        :param str strategy_class: strategy class name, example: dexbot.strategies.foo_bar
+    :param str strategy_class: strategy class name, example: dexbot.strategies.foo_bar
 
-        It may seems that tags may be common across strategies, but it is not. Every strategy must use unique tag.
+    It may seems that tags may be common across strategies, but it is not. Every strategy must use unique tag.
     """
     for strategy in STRATEGIES:
         if strategy_class == strategy['class']:
@@ -188,11 +188,12 @@ def get_strategy_tag(strategy_class):
 
 
 def configure_worker(whiptail, worker_config, validator):
-    """ Single worker configurator
+    """
+    Single worker configurator.
 
-        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param collections.OrderedDict worker_config: tohe config dictionary for this worker
-        :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
+    :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+    :param collections.OrderedDict worker_config: tohe config dictionary for this worker
+    :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
     """
     # By default always editing
     editing = True
@@ -263,9 +264,10 @@ def configure_worker(whiptail, worker_config, validator):
 
 
 def configure_dexbot(config, ctx):
-    """ Main `cli configure` entrypoint
+    """
+    Main `cli configure` entrypoint.
 
-        :param dexbot.config.Config config: dexbot config
+    :param dexbot.config.Config config: dexbot config
     """
     whiptail = get_whiptail('DEXBot configure')
     workers = config.get('workers', {})
@@ -391,11 +393,12 @@ def configure_dexbot(config, ctx):
 
 
 def add_account(validator, whiptail):
-    """ "Add account" dialog
+    """
+    "Add account" dialog.
 
-        :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
-        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :return str: user-supplied account name
+    :param dexbot.config_validator.ConfigValidator validator: dexbot config validator
+    :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+    :return str: user-supplied account name
     """
 
     account = whiptail.prompt("Your Account Name")
@@ -420,10 +423,11 @@ def add_account(validator, whiptail):
 
 
 def del_account(whiptail, bitshares_instance):
-    """ Delete account from the wallet
+    """
+    Delete account from the wallet.
 
-        :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
-        :param bitshares.BitShares bitshares_instance: an instance of BitShares class
+    :param whiptail.Whiptail whiptail: instance of Whiptail or NoWhiptail
+    :param bitshares.BitShares bitshares_instance: an instance of BitShares class
     """
     account = whiptail.prompt("Account Name")
     wallet = bitshares_instance.wallet
@@ -431,11 +435,12 @@ def del_account(whiptail, bitshares_instance):
 
 
 def list_accounts(bitshares_instance):
-    """ Get all accounts installed in local wallet in format suitable for Whiptail.menu()
+    """
+    Get all accounts installed in local wallet in format suitable for Whiptail.menu()
 
-        Returning format is compatible both with Whiptail and NoWhiptail.
+    Returning format is compatible both with Whiptail and NoWhiptail.
 
-        :return: list of tuples (int, 'account_name - key_type')
+    :return: list of tuples (int, 'account_name - key_type')
     """
     accounts = []
     pubkeys = bitshares_instance.wallet.getPublicKeys(current=True)

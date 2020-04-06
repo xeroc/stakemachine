@@ -11,8 +11,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def test_calculate_min_amounts(worker):
-    """ Min amounts should be greater than assets precision
-    """
+    """Min amounts should be greater than assets precision."""
     worker.calculate_min_amounts()
     assert worker.order_min_base > 10 ** -worker.market['base']['precision']
     assert worker.order_min_quote > 10 ** -worker.market['quote']['precision']

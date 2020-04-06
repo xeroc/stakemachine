@@ -79,10 +79,11 @@ class Balances(Base):
 
 
 class Storage(dict):
-    """ Storage class
+    """
+    Storage class.
 
-        :param string category: The category to distinguish
-                                different storage namespaces
+    :param string category: The category to distinguish
+                            different storage namespaces
     """
 
     def __init__(self, category):
@@ -107,25 +108,26 @@ class Storage(dict):
         db_worker.clear(self.category)
 
     def save_order(self, order):
-        """ Save the order to the database
-        """
+        """Save the order to the database."""
         order_id = order['id']
         db_worker.save_order(self.category, order_id, order)
 
     def save_order_extended(self, order, virtual=None, custom=None):
-        """ Save the order to the database providing additional data
+        """
+        Save the order to the database providing additional data.
 
-            :param dict order:
-            :param bool virtual: True = order is virtual order
-            :param str custom: any additional data
+        :param dict order:
+        :param bool virtual: True = order is virtual order
+        :param str custom: any additional data
         """
         order_id = order['id']
         db_worker.save_order_extended(self.category, order_id, order, virtual, custom)
 
     def remove_order(self, order):
-        """ Removes an order from the database
+        """
+        Removes an order from the database.
 
-            :param dict,str order: order to remove, could be an Order instance or just order id
+        :param dict,str order: order to remove, could be an Order instance or just order id
         """
         if isinstance(order, dict):
             order_id = order['id']
@@ -134,17 +136,17 @@ class Storage(dict):
         db_worker.remove_order(self.category, order_id)
 
     def clear_orders(self):
-        """ Removes all worker's orders from the database
-        """
+        """Removes all worker's orders from the database."""
         db_worker.clear_orders(self.category)
 
     def clear_orders_extended(self, worker=None, only_virtual=False, only_real=False, custom=None):
-        """ Removes worker's orders matching a criteria from the database
+        """
+        Removes worker's orders matching a criteria from the database.
 
-            :param str worker: worker name (None means current worker name will be used)
-            :param bool only_virtual: True = only virtual orders
-            :param bool only_real: True = only real orders
-            :param str custom: filter orders by custom field
+        :param str worker: worker name (None means current worker name will be used)
+        :param bool only_virtual: True = only virtual orders
+        :param bool only_real: True = only real orders
+        :param str custom: filter orders by custom field
         """
         if only_virtual and only_real:
             raise ValueError('only_virtual and only_real are mutually exclusive')
@@ -153,9 +155,10 @@ class Storage(dict):
         return db_worker.clear_orders_extended(worker, only_virtual, only_real, custom)
 
     def fetch_orders(self, worker=None):
-        """ Get all the orders (or just specific worker's orders) from the database
+        """
+        Get all the orders (or just specific worker's orders) from the database.
 
-            :param str worker: worker name (None means current worker name will be used)
+        :param str worker: worker name (None means current worker name will be used)
         """
         if not worker:
             worker = self.category
@@ -164,16 +167,17 @@ class Storage(dict):
     def fetch_orders_extended(
         self, worker=None, only_virtual=False, only_real=False, custom=None, return_ids_only=False
     ):
-        """ Get orders from the database in extended format (returning all columns)
+        """
+        Get orders from the database in extended format (returning all columns)
 
-            :param str worker: worker name (None means current worker name will be used)
-            :param bool only_virtual: True = fetch only virtual orders
-            :param bool only_real: True = fetch only real orders
-            :param str custom: filter orders by custom field
-            :param bool return_ids_only: instead of returning full row data, return only order ids
-            :rtype: list
-            :return: list of dicts in format [{order_id: '', order: '', virtual: '', custom: ''}], or [order_id] if
-                return_ids_only used
+        :param str worker: worker name (None means current worker name will be used)
+        :param bool only_virtual: True = fetch only virtual orders
+        :param bool only_real: True = fetch only real orders
+        :param str custom: filter orders by custom field
+        :param bool return_ids_only: instead of returning full row data, return only order ids
+        :rtype: list
+        :return: list of dicts in format [{order_id: '', order: '', virtual: '', custom: ''}], or [order_id] if
+            return_ids_only used
         """
         if only_virtual and only_real:
             raise ValueError('only_virtual and only_real are mutually exclusive')
@@ -204,8 +208,7 @@ class Storage(dict):
 
 
 class DatabaseWorker(threading.Thread):
-    """ Thread safe database worker
-    """
+    """Thread safe database worker."""
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -247,11 +250,12 @@ class DatabaseWorker(threading.Thread):
 
     @staticmethod
     def run_migrations(script_location, dsn, stamp_only=False):
-        """ Apply database migrations using alembic
+        """
+        Apply database migrations using alembic.
 
-            :param str script_location: path to migration scripts
-            :param str dsn: database URL
-            :param bool stamp_only: True = only mark the db as "head" without applying migrations
+        :param str script_location: path to migration scripts
+        :param str dsn: database URL
+        :param bool stamp_only: True = only mark the db as "head" without applying migrations
         """
         alembic_cfg = alembic.config.Config()
         alembic_cfg.set_main_option('script_location', script_location)
@@ -265,8 +269,7 @@ class DatabaseWorker(threading.Thread):
 
     @staticmethod
     def get_filter_by(worker, only_virtual, only_real, custom):
-        """ Make filter_by for sqlalchemy query based on args
-        """
+        """Make filter_by for sqlalchemy query based on args."""
         filter_by = {'worker': worker}
         if only_virtual:
             filter_by['virtual'] = True
@@ -463,8 +466,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._get_balance, account, worker, timestamp, base_asset, quote_asset)
 
     def _get_balance(self, account, worker, timestamp, base_asset, quote_asset, token):
-        """ Get first item that has bigger time as given timestamp and matches account and worker name
-        """
+        """Get first item that has bigger time as given timestamp and matches account and worker name."""
         result = (
             self.session.query(Balances)
             .filter(
@@ -483,8 +485,7 @@ class DatabaseWorker(threading.Thread):
         return self.execute(self._get_recent_balance_entry, account, worker, base_asset, quote_asset)
 
     def _get_recent_balance_entry(self, account, worker, base_asset, quote_asset, token):
-        """ Get most recent balance history item that matches account and worker name
-        """
+        """Get most recent balance history item that matches account and worker name."""
         result = (
             self.session.query(Balances)
             .filter(

@@ -14,9 +14,7 @@ from dexbot.strategies.external_feeds.waves_feed import get_waves_price
 
 
 class PriceFeed:
-    """
-    price feed class, which handles all data requests for external center price
-    """
+    """price feed class, which handles all data requests for external center price."""
 
     def __init__(self, exchange, symbol):
         self._alt_exchanges = ['gecko', 'waves']  # assume all other exchanges are ccxt

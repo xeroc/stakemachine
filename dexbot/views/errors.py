@@ -11,6 +11,7 @@ from .ui.error_dialog_ui import Ui_Dialog
 class PyQtHandler(logging.Handler):
     """
     Logging handler for Py Qt events.
+
     Based on Vinay Sajip's DBHandler class (http://www.red-dove.com/python_logging.html)
     """
 

@@ -46,19 +46,21 @@ class MainController:
         initialize_data_folders()
 
     def set_bitshares_instance(self, bitshares_instance):
-        """ Set bitshares instance
+        """
+        Set bitshares instance.
 
-            :param bitshares_instance: A bitshares instance
+        :param bitshares_instance: A bitshares instance
         """
         self.bitshares_instance = bitshares_instance
         set_shared_bitshares_instance(bitshares_instance)
 
     def new_bitshares_instance(self, node, retries=-1, expiration=60):
-        """ Create bitshares instance
+        """
+        Create bitshares instance.
 
-            :param retries: Number of retries to connect, -1 default to infinity
-            :param expiration: Delay in seconds until transactions are supposed to expire
-            :param list node: Node or a list of nodes
+        :param retries: Number of retries to connect, -1 default to infinity
+        :param expiration: Delay in seconds until transactions are supposed to expire
+        :param list node: Node or a list of nodes
         """
         self.bitshares_instance = BitShares(node, num_retries=retries, expiration=expiration)
         set_shared_bitshares_instance(self.bitshares_instance)
@@ -99,11 +101,12 @@ class MainController:
 
     @staticmethod
     def measure_latency(nodes):
-        """ Measures latency of first alive node from given nodes in milliseconds
+        """
+        Measures latency of first alive node from given nodes in milliseconds.
 
-            :param str,list nodes: Bitshares node address(-es)
-            :return: int: latency in milliseconds
-            :raises grapheneapi.exceptions.NumRetriesReached: if failed to find a working node
+        :param str,list nodes: Bitshares node address(-es)
+        :return: int: latency in milliseconds
+        :raises grapheneapi.exceptions.NumRetriesReached: if failed to find a working node
         """
         if isinstance(nodes, str):
             nodes = [nodes]

@@ -20,8 +20,7 @@ MODES = ['mountain', 'valley', 'neutral', 'buy_slope', 'sell_slope']
 
 
 def test_maintain_strategy_manual_cp_empty_market(worker):
-    """ On empty market, center price should be set to manual CP
-    """
+    """On empty market, center price should be set to manual CP."""
     worker.cancel_all_orders()
     # Undefine market_center_price
     worker.market_center_price = None
@@ -32,8 +31,7 @@ def test_maintain_strategy_manual_cp_empty_market(worker):
 
 
 def test_maintain_strategy_no_manual_cp_empty_market(worker):
-    """ Strategy should not work on empty market if no manual CP was set
-    """
+    """Strategy should not work on empty market if no manual CP was set."""
     worker.cancel_all_orders()
     # Undefine market_center_price
     worker.market_center_price = None
@@ -46,8 +44,7 @@ def test_maintain_strategy_no_manual_cp_empty_market(worker):
 
 @pytest.mark.parametrize('mode', MODES)
 def test_maintain_strategy_basic(mode, worker, do_initial_allocation):
-    """ Check if intial orders placement is correct
-    """
+    """Check if intial orders placement is correct."""
     worker = do_initial_allocation(worker, mode)
 
     # Check target spread is reached
@@ -75,8 +72,7 @@ def test_maintain_strategy_basic(mode, worker, do_initial_allocation):
 
 @pytest.mark.parametrize('mode', MODES)
 def test_maintain_strategy_one_sided(mode, base_worker, config_only_base, do_initial_allocation):
-    """ Test for one-sided start (buy only)
-    """
+    """Test for one-sided start (buy only)"""
     worker = base_worker(config_only_base)
     do_initial_allocation(worker, mode)
 
@@ -127,9 +123,8 @@ def test_maintain_strategy_1sat(base_worker, config_1_sat, do_initial_allocation
 # Combine each mode with base and quote
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_maintain_strategy_fallback_logic(asset, worker, do_initial_allocation):
-    """ Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to
-        close spread
-    """
+    """Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to close
+    spread."""
     do_initial_allocation(worker, worker.mode)
     # TODO: strategy must turn off bootstrapping once target spread is reached
     worker['bootstrapping'] = False
@@ -157,9 +152,8 @@ def test_maintain_strategy_fallback_logic(asset, worker, do_initial_allocation):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_maintain_strategy_fallback_logic_disabled(asset, worker, do_initial_allocation):
-    """ Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to
-        close spread
-    """
+    """Check fallback logic: when spread is not reached, furthest order should be cancelled to make free funds to close
+    spread."""
     worker.enable_fallback_logic = False
     worker.operational_depth = 2
     do_initial_allocation(worker, 'valley')
@@ -192,8 +186,7 @@ def test_maintain_strategy_fallback_logic_disabled(asset, worker, do_initial_all
 
 
 def test_check_operational_depth(worker, do_initial_allocation):
-    """ Test for correct operational depth following
-    """
+    """Test for correct operational depth following."""
     worker.operational_depth = 10
     do_initial_allocation(worker, worker.mode)
     worker['bootstrapping'] = False
@@ -219,8 +212,7 @@ def test_check_operational_depth(worker, do_initial_allocation):
 
 
 def test_increase_order_sizes_valley_basic(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Test increases in valley mode when all orders are equal (new allocation round).
-    """
+    """Test increases in valley mode when all orders are equal (new allocation round)."""
     do_initial_allocation(worker, 'valley')
     # Double worker's balance
     issue_asset(worker.market['base']['symbol'], worker.base_total_balance, worker.account.name)
@@ -236,14 +228,15 @@ def test_increase_order_sizes_valley_basic(worker, do_initial_allocation, issue_
 
 
 def test_increase_order_sizes_valley_direction(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Test increase direction in valley mode: new allocation round must be started from closest order.
+    """
+    Test increase direction in valley mode: new allocation round must be started from closest order.
 
-        Buy side, amounts in BASE:
+    Buy side, amounts in BASE:
 
-        100 100 100 100 100
-        100 100 100 100 115
-        100 100 100 115 115
-        100 100 115 115 115
+    100 100 100 100 100
+    100 100 100 100 115
+    100 100 100 115 115
+    100 100 115 115 115
     """
     do_initial_allocation(worker, 'valley')
 
@@ -263,14 +256,15 @@ def test_increase_order_sizes_valley_direction(worker, do_initial_allocation, is
 
 
 def test_increase_order_sizes_valley_transit_from_mountain(worker, do_initial_allocation, issue_asset):
-    """ Transition from mountain to valley
+    """
+    Transition from mountain to valley.
 
-        Buy side, amounts in BASE, increase should be like this:
+    Buy side, amounts in BASE, increase should be like this:
 
-        70 80 90 100 <c>
-        80 80 90 100 <c>
-        80 90 90 100 <c>
-        90 90 90 100 <c>
+    70 80 90 100 <c>
+    80 80 90 100 <c>
+    80 90 90 100 <c>
+    90 90 90 100 <c>
     """
     # Set up mountain
     do_initial_allocation(worker, 'mountain')
@@ -299,12 +293,13 @@ def test_increase_order_sizes_valley_transit_from_mountain(worker, do_initial_al
 
 
 def test_increase_order_sizes_valley_smaller_closest_orders(worker, do_initial_allocation, increase_until_allocated):
-    """ Test increase when closest-to-center orders are less than further orders. Normal situation when initial sides
-        are imbalanced and several orders were filled.
+    """
+    Test increase when closest-to-center orders are less than further orders. Normal situation when initial sides are
+    imbalanced and several orders were filled.
 
-        Buy side, amounts in BASE:
+    Buy side, amounts in BASE:
 
-        100 100 100 10 10 10 <center>
+    100 100 100 10 10 10 <center>
     """
     worker = do_initial_allocation(worker, 'valley')
     increase_until_allocated(worker)
@@ -341,16 +336,17 @@ def test_increase_order_sizes_valley_smaller_closest_orders(worker, do_initial_a
 
 
 def test_increase_order_sizes_valley_imbalaced_small_further(worker, do_initial_allocation, increase_until_allocated):
-    """ If furthest orders are smaller than closest, they should be increased first.
-        See https://github.com/Codaone/DEXBot/issues/444 for details
+    """
+    If furthest orders are smaller than closest, they should be increased first. See
+    https://github.com/Codaone/DEXBot/issues/444 for details.
 
-        Buy side, amounts in BASE:
+    Buy side, amounts in BASE:
 
-        5 5 5 100 100 10 10 10 <center>
+    5 5 5 100 100 10 10 10 <center>
 
-        Should be:
+    Should be:
 
-        10 10 10 100 100 10 10 10 <center>
+    10 10 10 100 100 10 10 10 <center>
     """
     worker = do_initial_allocation(worker, 'valley')
 
@@ -392,8 +388,7 @@ def test_increase_order_sizes_valley_imbalaced_small_further(worker, do_initial_
 
 
 def test_increase_order_sizes_valley_closest_order(worker, do_initial_allocation, issue_asset):
-    """ Should test proper calculation of closest order: order should not be less that min_increase_factor
-    """
+    """Should test proper calculation of closest order: order should not be less that min_increase_factor."""
     worker = do_initial_allocation(worker, 'valley')
 
     # Add balance to increase 2 orders
@@ -412,8 +407,10 @@ def test_increase_order_sizes_valley_closest_order(worker, do_initial_allocation
 
 
 def test_increase_order_sizes_mountain_basic(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Test increases in mountain mode when all orders are equal (new allocation round). New orders should be equal in
-        their "quote"
+    """
+    Test increases in mountain mode when all orders are equal (new allocation round).
+
+    New orders should be equal in their "quote"
     """
     do_initial_allocation(worker, 'mountain')
     increase_until_allocated(worker)
@@ -436,14 +433,15 @@ def test_increase_order_sizes_mountain_basic(worker, do_initial_allocation, issu
 
 
 def test_increase_order_sizes_mountain_direction(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Test increase direction in mountain mode
+    """
+    Test increase direction in mountain mode.
 
-        Buy side, amounts in QUOTE:
+    Buy side, amounts in QUOTE:
 
-        10 10 10 10 10
-        15 10 10 10 10
-        15 15 10 10 10
-        15 15 15 10 10
+    10 10 10 10 10
+    15 10 10 10 10
+    15 15 10 10 10
+    15 15 15 10 10
     """
     do_initial_allocation(worker, 'mountain')
     increase_until_allocated(worker)
@@ -474,8 +472,7 @@ def test_increase_order_sizes_mountain_direction(worker, do_initial_allocation, 
 def test_increase_order_sizes_mountain_furthest_order(
     worker, do_initial_allocation, increase_until_allocated, issue_asset
 ):
-    """ Should test proper calculation of furthest order: try to maximize, don't allow too small increase
-    """
+    """Should test proper calculation of furthest order: try to maximize, don't allow too small increase."""
     do_initial_allocation(worker, 'mountain')
     previous_buy_orders = worker.buy_orders
 
@@ -495,14 +492,15 @@ def test_increase_order_sizes_mountain_furthest_order(
 
 
 def test_increase_order_sizes_mountain_imbalanced(worker, do_initial_allocation):
-    """ Test situation when sides was imbalances, several orders filled on opposite side.
-        This also tests transition from vally to mountain.
+    """
+    Test situation when sides was imbalances, several orders filled on opposite side. This also tests transition from
+    vally to mountain.
 
-        Buy side, amounts in QUOTE:
+    Buy side, amounts in QUOTE:
 
-        100 100 100 10 10 10 <c>
-        100 100 100 20 10 10 <c>
-        100 100 100 20 20 10 <c>
+    100 100 100 10 10 10 <c>
+    100 100 100 20 10 10 <c>
+    100 100 100 20 20 10 <c>
     """
     do_initial_allocation(worker, 'mountain')
     worker.mode = 'mountain'
@@ -545,8 +543,7 @@ def test_increase_order_sizes_mountain_imbalanced(worker, do_initial_allocation)
 
 
 def test_increase_order_sizes_neutral_basic(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Test increases in neutral mode when all orders are equal (new allocation round)
-    """
+    """Test increases in neutral mode when all orders are equal (new allocation round)"""
     do_initial_allocation(worker, 'neutral')
     increase_until_allocated(worker)
 
@@ -594,14 +591,15 @@ def test_increase_order_sizes_neutral_basic(worker, do_initial_allocation, issue
 
 
 def test_increase_order_sizes_neutral_direction(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Test increase direction in neutral mode: new allocation round must be started from closest order.
+    """
+    Test increase direction in neutral mode: new allocation round must be started from closest order.
 
-        Buy side, amounts in BASE:
+    Buy side, amounts in BASE:
 
-        100 100 100 100 100
-        100 100 100 100 115
-        100 100 100 114 115
-        100 100 113 114 115
+    100 100 100 100 100
+    100 100 100 100 115
+    100 100 100 114 115
+    100 100 113 114 115
     """
     do_initial_allocation(worker, 'neutral')
 
@@ -621,14 +619,15 @@ def test_increase_order_sizes_neutral_direction(worker, do_initial_allocation, i
 
 
 def test_increase_order_sizes_neutral_transit_from_mountain(worker, do_initial_allocation, issue_asset):
-    """ Transition from mountain to neutral
+    """
+    Transition from mountain to neutral.
 
-        Buy side, amounts in BASE, increase should be like this:
+    Buy side, amounts in BASE, increase should be like this:
 
-        70 80 90 100 <c>
-        80 80 90 100 <c>
-        80 90 90 100 <c>
-        90 90 90 100 <c>
+    70 80 90 100 <c>
+    80 80 90 100 <c>
+    80 90 90 100 <c>
+    90 90 90 100 <c>
     """
     # Set up mountain
     do_initial_allocation(worker, 'mountain')
@@ -657,12 +656,13 @@ def test_increase_order_sizes_neutral_transit_from_mountain(worker, do_initial_a
 
 
 def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_allocation, increase_until_allocated):
-    """ Test increase when closest-to-center orders are less than further orders. Normal situation when initial sides
-        are imbalanced and several orders were filled.
+    """
+    Test increase when closest-to-center orders are less than further orders. Normal situation when initial sides are
+    imbalanced and several orders were filled.
 
-        Buy side, amounts in BASE:
+    Buy side, amounts in BASE:
 
-        100 100 100 10 10 10 <center>
+    100 100 100 10 10 10 <center>
     """
     worker = do_initial_allocation(worker, 'neutral')
     increase_until_allocated(worker)
@@ -701,16 +701,17 @@ def test_increase_order_sizes_neutral_smaller_closest_orders(worker, do_initial_
 
 
 def test_increase_order_sizes_neutral_imbalaced_small_further(worker, do_initial_allocation, increase_until_allocated):
-    """ If furthest orders are smaller than closest, they should be increased first.
-        See https://github.com/Codaone/DEXBot/issues/444 for details
+    """
+    If furthest orders are smaller than closest, they should be increased first. See
+    https://github.com/Codaone/DEXBot/issues/444 for details.
 
-        Buy side, amounts in BASE:
+    Buy side, amounts in BASE:
 
-        5 5 5 100 100 10 10 10 <center>
+    5 5 5 100 100 10 10 10 <center>
 
-        Should be:
+    Should be:
 
-        10 10 10 100 100 10 10 10 <center>
+    10 10 10 100 100 10 10 10 <center>
     """
     worker = do_initial_allocation(worker, 'neutral')
 
@@ -759,8 +760,7 @@ def test_increase_order_sizes_neutral_imbalaced_small_further(worker, do_initial
 def test_increase_order_sizes_neutral_closest_order(
     worker, do_initial_allocation, increase_until_allocated, issue_asset
 ):
-    """ Should test proper calculation of closest order: order should not be less that min_increase_factor
-    """
+    """Should test proper calculation of closest order: order should not be less that min_increase_factor."""
     worker = do_initial_allocation(worker, 'neutral')
     increase_until_allocated(worker)
 
@@ -781,8 +781,7 @@ def test_increase_order_sizes_neutral_closest_order(
 
 
 def test_increase_order_sizes_buy_slope(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Check correct orders sizes on both sides
-    """
+    """Check correct orders sizes on both sides."""
     do_initial_allocation(worker, 'buy_slope')
 
     # Double worker's balance
@@ -814,8 +813,7 @@ def test_increase_order_sizes_buy_slope(worker, do_initial_allocation, issue_ass
 
 
 def test_increase_order_sizes_sell_slope(worker, do_initial_allocation, issue_asset, increase_until_allocated):
-    """ Check correct orders sizes on both sides
-    """
+    """Check correct orders sizes on both sides."""
     do_initial_allocation(worker, 'sell_slope')
 
     # Double worker's balance
@@ -851,8 +849,7 @@ def test_increase_order_sizes_sell_slope(worker, do_initial_allocation, issue_as
 
 
 def test_allocate_asset_basic(worker):
-    """ Check that free balance is shrinking after each allocation and spread is decreasing
-    """
+    """Check that free balance is shrinking after each allocation and spread is decreasing."""
 
     worker.refresh_balances()
     spread_after = worker.get_actual_spread()
@@ -884,8 +881,7 @@ def test_allocate_asset_basic(worker):
 
 
 def test_allocate_asset_replace_closest_partial_order(worker, do_initial_allocation, base_account, issue_asset):
-    """ Test that partially filled order is replaced when target spread is not reached, before placing closer order
-    """
+    """Test that partially filled order is replaced when target spread is not reached, before placing closer order."""
     do_initial_allocation(worker, worker.mode)
     additional_account = base_account()
 
@@ -910,7 +906,10 @@ def test_allocate_asset_replace_closest_partial_order(worker, do_initial_allocat
 def test_allocate_asset_replace_partially_filled_orders(
     worker, do_initial_allocation, base_account, issue_asset, maintain_until_allocated
 ):
-    """ Check replacement of partially filled orders on both sides. Simple check.
+    """
+    Check replacement of partially filled orders on both sides.
+
+    Simple check.
     """
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
@@ -940,8 +939,7 @@ def test_allocate_asset_replace_partially_filled_orders(
 
 
 def test_allocate_asset_increase_orders(worker, do_initial_allocation, maintain_until_allocated, issue_asset):
-    """ Add balance, expect increased orders
-    """
+    """Add balance, expect increased orders."""
     do_initial_allocation(worker, worker.mode)
     order_ids = [order['id'] for order in worker.own_orders]
     balance_in_orders_before = worker.get_allocated_assets(order_ids)
@@ -958,8 +956,7 @@ def test_allocate_asset_increase_orders(worker, do_initial_allocation, maintain_
 
 
 def test_allocate_asset_dust_order_simple(worker, do_initial_allocation, maintain_until_allocated, base_account):
-    """ Make dust order, check if it canceled and closer opposite order placed
-    """
+    """Make dust order, check if it canceled and closer opposite order placed."""
     do_initial_allocation(worker, worker.mode)
     num_sell_orders_before = len(worker.sell_orders)
     num_buy_orders_before = len(worker.buy_orders)
@@ -984,9 +981,8 @@ def test_allocate_asset_dust_order_simple(worker, do_initial_allocation, maintai
 def test_allocate_asset_dust_order_excess_funds(
     worker, do_initial_allocation, maintain_until_allocated, base_account, issue_asset
 ):
-    """ Make dust order, add additional funds, these funds should be allocated
-        and then dust order should be canceled and closer opposite order placed
-    """
+    """Make dust order, add additional funds, these funds should be allocated and then dust order should be canceled and
+    closer opposite order placed."""
     do_initial_allocation(worker, worker.mode)
     num_sell_orders_before = len(worker.sell_orders)
     num_buy_orders_before = len(worker.buy_orders)
@@ -1012,9 +1008,10 @@ def test_allocate_asset_dust_order_excess_funds(
 
 
 def test_allocate_asset_dust_order_increase_race(worker, do_initial_allocation, base_account, issue_asset):
-    """ Test for https://github.com/Codaone/DEXBot/issues/587
+    """
+    Test for https://github.com/Codaone/DEXBot/issues/587.
 
-        Check if cancelling dust orders on opposite side will not cause a race for allocate_asset() on opposite side
+    Check if cancelling dust orders on opposite side will not cause a race for allocate_asset() on opposite side
     """
     do_initial_allocation(worker, worker.mode)
     additional_account = base_account()
@@ -1043,8 +1040,7 @@ def test_allocate_asset_dust_order_increase_race(worker, do_initial_allocation, 
 
 
 def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_account):
-    """ Fill an order and check if opposite order placed
-    """
+    """Fill an order and check if opposite order placed."""
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
@@ -1064,11 +1060,12 @@ def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_accoun
 
 
 def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_initial_allocation, base_account):
-    """ When sides are massively imbalanced, make sure that spread will be closed after filling one order on
-        smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
-        smaller orders. Correct behavior: when order on smaller side filled, big side should place closer order.
+    """
+    When sides are massively imbalanced, make sure that spread will be closed after filling one order on smaller side.
+    The goal is to test a situation when one side has a big-sized orders, and other side has much smaller orders.
+    Correct behavior: when order on smaller side filled, big side should place closer order.
 
-        Test for https://github.com/Codaone/DEXBot/issues/588
+    Test for https://github.com/Codaone/DEXBot/issues/588
     """
     do_initial_allocation(worker, worker.mode)
     spread_before = worker.get_actual_spread()
@@ -1129,14 +1126,15 @@ def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_in
 def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
     worker, do_initial_allocation, base_account
 ):
-    """ When sides are massively imbalanced, make sure that spread will be closed after filling one order on
-        smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
-        smaller orders. Correct behavior: when order on smaller side filled, big side should place closer order.
+    """
+    When sides are massively imbalanced, make sure that spread will be closed after filling one order on smaller side.
+    The goal is to test a situation when one side has a big-sized orders, and other side has much smaller orders.
+    Correct behavior: when order on smaller side filled, big side should place closer order.
 
-        This test is similar to test_allocate_asset_filled_order_on_massively_imbalanced_sides, but tests partially
-        filled order where "calncel dust order" logic is in action.
+    This test is similar to test_allocate_asset_filled_order_on_massively_imbalanced_sides, but tests partially
+    filled order where "calncel dust order" logic is in action.
 
-        Test for https://github.com/Codaone/DEXBot/issues/588
+    Test for https://github.com/Codaone/DEXBot/issues/588
     """
     do_initial_allocation(worker, worker.mode)
     spread_before = worker.get_actual_spread()
@@ -1192,9 +1190,8 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
 
 @pytest.mark.parametrize('mode', MODES)
 def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocation, base_account):
-    """ Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
-        orders on side which is smaller)
-    """
+    """Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
+    orders on side which is smaller)"""
     do_initial_allocation(worker, mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
@@ -1244,9 +1241,8 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
 
 @pytest.mark.parametrize('mode', MODES)
 def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation, base_account, issue_asset):
-    """ Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
-        orders on side which is smaller)
-    """
+    """Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
+    orders on side which is smaller)"""
     worker.center_price = 1
     worker.lower_bound = 0.4
     worker.upper_bound = 1.4
@@ -1338,8 +1334,7 @@ def test_stop_loss_check(worker, base_account, do_initial_allocation, issue_asse
 
 
 def test_tick(worker):
-    """ Check tick counter increment
-    """
+    """Check tick counter increment."""
     counter_before = worker.counter
     worker.tick('foo')
     counter_after = worker.counter

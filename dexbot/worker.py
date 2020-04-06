@@ -42,8 +42,7 @@ class WorkerInfrastructure(threading.Thread):
             sys.path.append(user_worker_path)
 
     def init_workers(self, config):
-        """ Initialize the workers
-        """
+        """Initialize the workers."""
         self.config_lock.acquire()
         for worker_name, worker in config["workers"].items():
             if "account" not in worker:
@@ -200,8 +199,7 @@ class WorkerInfrastructure(threading.Thread):
         self.notify.listen()
 
     def check_node_time(self):
-        """ Check that we're connected to synced node
-        """
+        """Check that we're connected to synced node."""
         props = self.bitshares.info()
         current_time = parse_time(props['time'])
 
@@ -217,10 +215,11 @@ class WorkerInfrastructure(threading.Thread):
             self.block_time = current_time
 
     def stop(self, worker_name=None, pause=False):
-        """ Used to stop the worker(s)
+        """
+        Used to stop the worker(s)
 
-            :param str worker_name: name of the worker to stop
-            :param bool pause: optional argument which tells worker if it was stopped or just paused
+        :param str worker_name: name of the worker to stop
+        :param bool pause: optional argument which tells worker if it was stopped or just paused
         """
         if worker_name:
             try:
@@ -267,8 +266,7 @@ class WorkerInfrastructure(threading.Thread):
                 self.workers[worker].purge()
 
     def remove_market(self, worker_name):
-        """ Remove the market only if the worker is the only one using it
-        """
+        """Remove the market only if the worker is the only one using it."""
         with self.config_lock:
             market = self.config['workers'][worker_name]['market']
             for name, worker in self.config['workers'].items():
@@ -289,5 +287,5 @@ class WorkerInfrastructure(threading.Thread):
         StrategyBase.purge_all_local_worker_data(worker_name)
 
     def do_next_tick(self, job):
-        """ Add a callable to be executed on the next tick """
+        """Add a callable to be executed on the next tick."""
         self.jobs.add(job)

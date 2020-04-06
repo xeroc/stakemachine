@@ -17,8 +17,7 @@ def test_configure(ro_worker, config):
 
 
 def test_error(ro_worker):
-    """ Event method return None
-    """
+    """Event method return None."""
     worker = ro_worker
     worker.error()
     assert worker.disabled is True
@@ -64,8 +63,7 @@ def test_calculate_order_prices(ro_worker):
 
 
 def test_calculate_order_prices_dynamic_spread(ro_worker, other_orders):
-    """ Check if dynamic spread is working overall
-    """
+    """Check if dynamic spread is working overall."""
     worker = ro_worker
     worker.calculate_order_prices()
     buy_price_before = worker.buy_price
@@ -115,8 +113,7 @@ def test_update_orders(ro_worker):
 
 
 def test_calculate_center_price(ro_worker, other_orders):
-    """ Test dynamic center price calculation
-    """
+    """Test dynamic center price calculation."""
     worker = ro_worker
     highest_bid = float(worker.market.ticker().get('highestBid'))
     lowest_ask = float(worker.market.ticker().get('lowestAsk'))
@@ -127,10 +124,10 @@ def test_calculate_center_price(ro_worker, other_orders):
 
 @pytest.mark.parametrize('variant', ['no_shift', 'base_shift', 'quote_shift'])
 def test_calculate_asset_offset(variant, ro_worker, other_orders, monkeypatch):
-    """ Check if automatic asset offset calculation works
+    """
+    Check if automatic asset offset calculation works.
 
-        Instead of duplicating offset calculation code, test offset at different balance and see does it make sense or
-        not.
+    Instead of duplicating offset calculation code, test offset at different balance and see does it make sense or not.
     """
 
     def mocked_balance_b(*args):
@@ -166,16 +163,14 @@ def test_calculate_center_price_with_manual_offset(ro_worker):
 
 
 def test_check_orders(ro_worker):
-    """ check_orders() should result in 2 orders placed if no own orders
-    """
+    """check_orders() should result in 2 orders placed if no own orders."""
     worker = ro_worker
     worker.check_orders()
     assert len(worker.own_orders) == 2
 
 
 def test_check_orders_fully_filled(ro_worker, other_worker):
-    """ When our order is fully filled, the strategy should place a new one
-    """
+    """When our order is fully filled, the strategy should place a new one."""
     worker = ro_worker
     worker2 = other_worker
     log.debug('worker1 account name: {}'.format(worker.account.name))
@@ -215,8 +210,7 @@ def test_check_orders_fully_filled(ro_worker, other_worker):
 
 
 def test_check_orders_partially_filled(ro_worker, other_worker):
-    """ When our order is partially filled more than threshold, order should be replaced
-    """
+    """When our order is partially filled more than threshold, order should be replaced."""
     worker2 = other_worker
     worker = ro_worker
     worker.update_orders()
@@ -246,8 +240,7 @@ def test_check_orders_partially_filled(ro_worker, other_worker):
 
 
 def test_check_orders_reset_on_price_change(ro_worker, other_orders):
-    """ Check if orders resetted on center price change
-    """
+    """Check if orders resetted on center price change."""
     worker2 = other_orders
 
     worker = ro_worker
@@ -313,8 +306,7 @@ def test_get_own_last_trade(base_account, base_worker, config_multiple_workers_1
 
 
 def test_get_own_last_trade_taker_buy(base_account, ro_worker, other_worker):
-    """ Test for https://github.com/Codaone/DEXBot/issues/708
-    """
+    """Test for https://github.com/Codaone/DEXBot/issues/708."""
     worker1 = ro_worker
     worker3 = base_account()
     market1 = Market(worker1.worker["market"])
@@ -341,8 +333,7 @@ def test_get_own_last_trade_taker_buy(base_account, ro_worker, other_worker):
 
 
 def test_get_own_last_trade_taker_sell(base_account, ro_worker, other_worker):
-    """ Test for https://github.com/Codaone/DEXBot/issues/708
-    """
+    """Test for https://github.com/Codaone/DEXBot/issues/708."""
     worker1 = ro_worker
     worker3 = base_account()
     market1 = Market(worker1.worker["market"])
@@ -369,8 +360,7 @@ def test_get_own_last_trade_taker_sell(base_account, ro_worker, other_worker):
 
 
 def test_get_external_market_center_price(monkeypatch, ro_worker):
-    """ Simply test if get_external_market_center_price does correct proxying to PriceFeed class
-    """
+    """Simply test if get_external_market_center_price does correct proxying to PriceFeed class."""
 
     def mocked_cp(*args):
         return 1
@@ -385,8 +375,7 @@ def test_get_external_market_center_price(monkeypatch, ro_worker):
 
 
 def test_mwsa_orders_cancel(base_worker, config_multiple_workers_1):
-    """ Test two RO workers using same account, They should not touch each other orders
-    """
+    """Test two RO workers using same account, They should not touch each other orders."""
     worker1 = base_worker(config_multiple_workers_1, worker_name='ro-worker-1')
     worker2 = base_worker(config_multiple_workers_1, worker_name='ro-worker-2')
     assert len(worker1.own_orders) == 2

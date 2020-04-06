@@ -1,5 +1,4 @@
-""" This is helper file to print out strings in different colours
-"""
+"""This is helper file to print out strings in different colours."""
 
 
 def style(value, styling):

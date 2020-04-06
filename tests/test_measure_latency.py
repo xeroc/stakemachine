@@ -18,14 +18,12 @@ def many_failing_one_working(unused_port, bitshares_testnet):
 
 @pytest.mark.mandatory
 def test_measure_latency_all_failing(failing_nodes):
-    """ Expect an error if no nodes could be reached
-    """
+    """Expect an error if no nodes could be reached."""
     with pytest.raises(NumRetriesReached):
         MainController.measure_latency(failing_nodes)
 
 
 @pytest.mark.mandatory
 def test_measure_latency_one_working(many_failing_one_working):
-    """ Test connection to 3 nodes where only 3rd is working
-    """
+    """Test connection to 3 nodes where only 3rd is working."""
     MainController.measure_latency(many_failing_one_working)

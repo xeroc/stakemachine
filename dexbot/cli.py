@@ -64,9 +64,7 @@ def main(ctx, **kwargs):
 @click.pass_context
 @reset_nodes
 def resetnodes(ctx):
-    """
-    Reset nodes to the default list, use -s option to sort
-    """
+    """Reset nodes to the default list, use -s option to sort."""
     log.info("Resetting node list in config.yml to default list")
     log.info("To sort nodes by timeout, use: `dexbot-cli -s 2 resetnodes`")
 
@@ -78,8 +76,7 @@ def resetnodes(ctx):
 @unlock
 @verbose
 def run(ctx):
-    """ Continuously run the worker
-    """
+    """Continuously run the worker."""
     if ctx.obj['pidfile']:
         with open(ctx.obj['pidfile'], 'w') as fd:
             fd.write(str(os.getpid()))
@@ -120,8 +117,7 @@ def run(ctx):
 @chain
 @unlock
 def runservice():
-    """ Continuously run the worker as a service
-    """
+    """Continuously run the worker as a service."""
     if dexbot_service_running():
         click.echo("Stopping dexbot daemon")
         os.system('systemctl --user stop dexbot')
@@ -139,8 +135,7 @@ def runservice():
 @chain
 @unlock
 def configure(ctx):
-    """ Interactively configure dexbot
-    """
+    """Interactively configure dexbot."""
     # Make sure the dexbot service isn't running while we do the config edits
     if dexbot_service_running():
         click.echo("Stopping dexbot daemon")
@@ -190,8 +185,7 @@ def cancel(ctx, market, account):
 
 @click.argument('worker_name')
 def drop_state(worker_name):
-    """ Drop state of the worker (sqlite data)
-    """
+    """Drop state of the worker (sqlite data)"""
     click.echo('Dropping state for {}'.format(worker_name))
     Storage.clear_worker_data(worker_name)
     time.sleep(1)
@@ -202,10 +196,12 @@ def worker_job(worker, job):
 
 
 if __name__ == '__main__':
-    """ Add freeze_support for when a program which uses multiprocessing (node_manager) has been
-        frozen to produce a Windows executable. If the freeze_support() line is omitted
-        then trying to run the frozen executable will raise RuntimeError. Calling
-        freeze_support() has no effect when invoked on any operating system other than Windows.
+    """
+    Add freeze_support for when a program which uses multiprocessing (node_manager) has been frozen to produce a Windows
+    executable.
+
+    If the freeze_support() line is omitted then trying to run the frozen executable will raise RuntimeError. Calling
+    freeze_support() has no effect when invoked on any operating system other than Windows.
     """
     freeze_support()
     main()

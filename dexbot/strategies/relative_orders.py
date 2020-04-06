@@ -7,8 +7,7 @@ from dexbot.strategies.external_feeds.price_feed import PriceFeed
 
 
 class Strategy(StrategyBase):
-    """ Relative Orders strategy
-    """
+    """Relative Orders strategy."""
 
     @classmethod
     def configure(cls, return_base_config=True):
@@ -123,8 +122,10 @@ class Strategy(StrategyBase):
         self.disabled = True
 
     def tick(self, d):
-        """ Ticks come in on every block. We need to periodically check orders because cancelled orders
-            do not triggers a market_update event
+        """
+        Ticks come in on every block.
+
+        We need to periodically check orders because cancelled orders do not triggers a market_update event
         """
         if self.is_reset_on_price_change and not self.counter % 8:
             self.log.debug('Checking orders by tick threshold')
@@ -133,8 +134,7 @@ class Strategy(StrategyBase):
 
     @property
     def amount_to_sell(self):
-        """ Get quote amount, calculate if order size is relative
-        """
+        """Get quote amount, calculate if order size is relative."""
         amount = self.order_size
         if self.is_relative_order_size:
             quote_balance = float(self.balance(self.market["quote"]))
@@ -150,8 +150,7 @@ class Strategy(StrategyBase):
 
     @property
     def amount_to_buy(self):
-        """ Get base amount, calculate if order size is relative
-        """
+        """Get base amount, calculate if order size is relative."""
         amount = self.order_size
         if self.is_relative_order_size:
             base_balance = float(self.balance(self.market["base"]))
@@ -167,10 +166,11 @@ class Strategy(StrategyBase):
         return amount
 
     def get_external_market_center_price(self, external_price_source):
-        """ Get center price from an external market for current market pair
+        """
+        Get center price from an external market for current market pair.
 
-            :param external_price_source: External market name
-            :return: Center price as float
+        :param external_price_source: External market name
+        :return: Center price as float
         """
         self.log.debug('inside get_external_mcp, exchange: {} '.format(external_price_source))
         market = self.market.get_string('/')
@@ -294,14 +294,15 @@ class Strategy(StrategyBase):
             self.update_orders()
 
     def get_market_buy_price(self, quote_amount=0, base_amount=0, **kwargs):
-        """ Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with
-            moving average or weighted moving average
+        """
+        Returns the BASE/QUOTE price for which [depth] worth of QUOTE could be bought, enhanced with moving average or
+        weighted moving average.
 
-            :param float | quote_amount:
-            :param float | base_amount:
-            :param dict | kwargs:
-                bool | exclude_own_orders: Exclude own orders when calculating a price
-            :return: price as float
+        :param float | quote_amount:
+        :param float | base_amount:
+        :param dict | kwargs:
+            bool | exclude_own_orders: Exclude own orders when calculating a price
+        :return: price as float
         """
         exclude_own_orders = kwargs.get('exclude_own_orders', True)
         market_buy_orders = []
@@ -373,16 +374,17 @@ class Strategy(StrategyBase):
         return base_amount / quote_amount
 
     def get_market_sell_price(self, quote_amount=0, base_amount=0, **kwargs):
-        """ Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought,
-            enhanced with moving average or weighted moving average.
+        """
+        Returns the BASE/QUOTE price for which [quote_amount] worth of QUOTE could be bought, enhanced with moving
+        average or weighted moving average.
 
-            [quote/base]_amount = 0 means lowest regardless of size
+        [quote/base]_amount = 0 means lowest regardless of size
 
-            :param float | quote_amount:
-            :param float | base_amount:
-            :param dict | kwargs:
-                bool | exclude_own_orders: Exclude own orders when calculating a price
-            :return:
+        :param float | quote_amount:
+        :param float | base_amount:
+        :param dict | kwargs:
+            bool | exclude_own_orders: Exclude own orders when calculating a price
+        :return:
         """
         exclude_own_orders = kwargs.get('exclude_own_orders', True)
         market_sell_orders = []
@@ -472,8 +474,7 @@ class Strategy(StrategyBase):
     def calculate_center_price(
         self, center_price=None, asset_offset=False, spread=None, order_ids=None, manual_offset=0, suppress_errors=False
     ):
-        """ Calculate center price which shifts based on available funds
-        """
+        """Calculate center price which shifts based on available funds."""
         if center_price is None:
             # No center price was given so we simply calculate the center price
             calculated_center_price = self._calculate_center_price(suppress_errors)
@@ -497,12 +498,13 @@ class Strategy(StrategyBase):
         return calculated_center_price
 
     def calculate_asset_offset(self, center_price, order_ids, spread):
-        """ Adds offset based on the asset balance of the worker to the center price
+        """
+        Adds offset based on the asset balance of the worker to the center price.
 
-            :param float | center_price: Center price
-            :param list | order_ids: List of order ids that are used to calculate balance
-            :param float | spread: Spread percentage as float (eg. 0.01)
-            :return: Center price with asset offset
+        :param float | center_price: Center price
+        :param list | order_ids: List of order ids that are used to calculate balance
+        :param float | spread: Spread percentage as float (eg. 0.01)
+        :return: Center price with asset offset
         """
         total_balance = self.count_asset(order_ids)
         total = (total_balance['quote'] * center_price) + total_balance['base']
@@ -528,14 +530,15 @@ class Strategy(StrategyBase):
 
     @staticmethod
     def calculate_manual_offset(center_price, manual_offset):
-        """ Adds manual offset to given center price
+        """
+        Adds manual offset to given center price.
 
-            :param float | center_price:
-            :param float | manual_offset:
-            :return: Center price with manual offset
+        :param float | center_price:
+        :param float | manual_offset:
+        :return: Center price with manual offset
 
-            Adjust center price by given percent in symmetrical way. Thus, -1% adjustement on BTS:USD market will be
-            same as adjusting +1% on USD:BTS market.
+        Adjust center price by given percent in symmetrical way. Thus, -1% adjustement on BTS:USD market will be
+        same as adjusting +1% on USD:BTS market.
         """
         if manual_offset < 0:
             return center_price / (1 + abs(manual_offset))
@@ -544,8 +547,7 @@ class Strategy(StrategyBase):
 
     @check_last_run
     def check_orders(self, *args, **kwargs):
-        """ Tests if the orders need updating
-        """
+        """Tests if the orders need updating."""
         # Store current available balance and balance in orders to the database for profit calculation purpose
         self.store_profit_estimation_data()
 
@@ -611,7 +613,7 @@ class Strategy(StrategyBase):
             self.update_gui_profit()
 
     def get_own_last_trade(self):
-        """ Returns dict with amounts and price of last trade """
+        """Returns dict with amounts and price of last trade."""
         history = self.account.history(only_ops=['fill_order'])
         for entry in history:
             trade = entry['op'][1]
