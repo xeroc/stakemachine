@@ -43,7 +43,7 @@ for desc, module in dexbot.helper.find_external_strategies():
     while tag in tags_so_far:
         tag = tag + str(i)
         i += 1
-    tags_so_far.add(tag)
+    tags_so_far.append(tag)
     STRATEGIES.append({'tag': tag, 'class': module, 'name': desc})
 
 SYSTEMD_SERVICE_NAME = os.path.expanduser("~/.local/share/systemd/user/dexbot.service")

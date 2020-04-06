@@ -5,6 +5,7 @@ import queue
 import sys
 import threading
 import uuid
+from typing import Any
 
 import alembic
 import alembic.config
@@ -17,7 +18,7 @@ from dexbot import APP_NAME, AUTHOR
 
 from . import helper
 
-Base = declarative_base()
+Base: Any = declarative_base()
 
 # For dexbot.sqlite file
 storageDatabase = "dexbot.sqlite"
