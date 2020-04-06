@@ -123,7 +123,6 @@ class Strategy(StrategyBase):
 
     def check_orders(self, *args, **kwargs):
         """  """
-        pass
 
     def error(self, *args, **kwargs):
         """ Defines what happens when error occurs """
@@ -131,7 +130,6 @@ class Strategy(StrategyBase):
 
     def pause(self):
         """ Override pause() in StrategyBase """
-        pass
 
     def tick(self, d):
         """ Ticks come in on every block """

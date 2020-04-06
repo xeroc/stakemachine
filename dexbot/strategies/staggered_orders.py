@@ -2196,13 +2196,11 @@ class Strategy(StrategyBase):
 
     def pause(self):
         """ Override pause() """
-        pass
 
     def purge(self):
         """ We are not cancelling orders on save/remove worker from the GUI
             TODO: don't work yet because worker removal is happening via BaseStrategy staticmethod
         """
-        pass
 
     def tick(self, d):
         """ Ticks come in on every block """
