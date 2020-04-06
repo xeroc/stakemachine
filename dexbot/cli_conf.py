@@ -20,8 +20,9 @@ import re
 import subprocess
 import sys
 
-import dexbot.helper
 from bitshares.account import Account
+
+import dexbot.helper
 from dexbot.config_validator import ConfigValidator
 from dexbot.node_manager import get_sorted_nodelist
 from dexbot.strategies.base import StrategyBase

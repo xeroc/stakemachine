@@ -6,6 +6,7 @@ from functools import reduce
 import bitsharesapi.exceptions
 from bitshares.amount import Amount
 from bitshares.dex import Dex
+
 from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.staggered_config import StaggeredConfig

@@ -7,11 +7,12 @@ from appdirs import user_data_dir
 from bitshares.bitshares import BitShares
 from bitshares.instance import set_shared_bitshares_instance
 from bitsharesapi.bitsharesnoderpc import BitSharesNodeRPC
+from grapheneapi.exceptions import NumRetriesReached
+
 from dexbot import APP_NAME, AUTHOR, VERSION
 from dexbot.helper import initialize_data_folders, initialize_orders_log
 from dexbot.views.errors import PyQtHandler
 from dexbot.worker import WorkerInfrastructure
-from grapheneapi.exceptions import NumRetriesReached
 
 
 class MainController:

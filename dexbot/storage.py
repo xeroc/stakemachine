@@ -9,10 +9,11 @@ import uuid
 import alembic
 import alembic.config
 from appdirs import user_data_dir
-from dexbot import APP_NAME, AUTHOR
 from sqlalchemy import Boolean, Column, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import load_only, sessionmaker
+
+from dexbot import APP_NAME, AUTHOR
 
 from . import helper
 

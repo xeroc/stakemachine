@@ -6,6 +6,7 @@ import time
 
 import pytest
 from bitshares.amount import Amount
+
 from dexbot.strategies.staggered_orders import Strategy
 
 log = logging.getLogger("dexbot")

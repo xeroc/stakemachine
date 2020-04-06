@@ -11,12 +11,13 @@ import bitshares.exceptions
 import click  # noqa: E402
 import graphenecommon.exceptions
 from bitshares.market import Market
+from uptick.decorators import online
+
 from dexbot.cli_conf import SYSTEMD_SERVICE_NAME, get_whiptail, setup_systemd
 from dexbot.config import DEFAULT_CONFIG_FILE, Config
 from dexbot.helper import initialize_data_folders, initialize_orders_log
 from dexbot.storage import Storage
 from dexbot.ui import chain, configfile, reset_nodes, unlock, verbose
-from uptick.decorators import online
 
 from . import errors, helper
 from .cli_conf import configure_dexbot, dexbot_service_running

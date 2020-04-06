@@ -1,9 +1,10 @@
 import re
 
+from PyQt5 import QtCore, QtWidgets
+
 from dexbot.controllers.worker_controller import WorkerController
 from dexbot.storage import db_worker
 from dexbot.views.errors import gui_error
-from PyQt5 import QtCore, QtWidgets
 
 from .confirmation import ConfirmationDialog
 from .edit_worker import EditWorkerView

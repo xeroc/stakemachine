@@ -7,6 +7,7 @@ from bitshares.amount import Amount
 from bitshares.asset import Asset
 from bitshares.dex import Dex
 from bitshares.price import Price
+
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.king_of_the_hill import Strategy
 

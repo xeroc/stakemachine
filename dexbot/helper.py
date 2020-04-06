@@ -5,6 +5,7 @@ import os
 import shutil
 
 from appdirs import user_data_dir
+
 from dexbot import APP_NAME, AUTHOR
 
 

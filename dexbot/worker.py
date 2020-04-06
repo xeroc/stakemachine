@@ -5,10 +5,11 @@ import os.path
 import sys
 import threading
 
-import dexbot.errors as errors
 from bitshares.instance import shared_bitshares_instance
 from bitshares.notify import Notify
 from bitshares.utils import parse_time
+
+import dexbot.errors as errors
 from dexbot.strategies.base import StrategyBase
 
 log = logging.getLogger(__name__)

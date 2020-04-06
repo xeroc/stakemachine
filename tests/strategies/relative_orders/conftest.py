@@ -4,6 +4,7 @@ import random
 import time
 
 import pytest
+
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.relative_orders import Strategy
 

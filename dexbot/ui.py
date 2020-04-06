@@ -10,10 +10,11 @@ from appdirs import user_data_dir
 from bitshares import BitShares
 from bitshares.exceptions import WrongMasterPasswordException
 from bitshares.instance import set_shared_bitshares_instance
+from ruamel import yaml
+
 from dexbot import APP_NAME, AUTHOR, VERSION
 from dexbot.config import Config
 from dexbot.node_manager import get_sorted_nodelist, ping
-from ruamel import yaml
 
 log = logging.getLogger(__name__)
 

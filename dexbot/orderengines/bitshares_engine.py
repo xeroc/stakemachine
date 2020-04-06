@@ -12,10 +12,11 @@ from bitshares.instance import shared_bitshares_instance
 from bitshares.market import Market
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.utils import formatTime
+from events import Events
+
 from dexbot.config import Config
 from dexbot.helper import truncate
 from dexbot.storage import Storage
-from events import Events
 
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3

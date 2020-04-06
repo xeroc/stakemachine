@@ -1,6 +1,7 @@
 import pytest
-from dexbot.controllers.main_controller import MainController
 from grapheneapi.exceptions import NumRetriesReached
+
+from dexbot.controllers.main_controller import MainController
 
 
 @pytest.fixture

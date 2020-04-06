@@ -1,7 +1,8 @@
 import importlib
 
-import dexbot.controllers.strategy_controller
 from PyQt5 import QtCore, QtGui, QtWidgets
+
+import dexbot.controllers.strategy_controller
 
 
 class StrategyFormWidget(QtWidgets.QWidget):

@@ -3,9 +3,10 @@ import pathlib
 from collections import OrderedDict, defaultdict
 
 import appdirs
+from ruamel import yaml
+
 from dexbot import APP_NAME, AUTHOR
 from dexbot.node_manager import get_sorted_nodelist
-from ruamel import yaml
 
 DEFAULT_CONFIG_DIR = appdirs.user_config_dir(APP_NAME, appauthor=AUTHOR)
 DEFAULT_CONFIG_FILE = os.path.join(DEFAULT_CONFIG_DIR, 'config.yml')

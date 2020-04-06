@@ -2,6 +2,8 @@ import collections
 import re
 
 from bitshares.instance import shared_bitshares_instance
+from PyQt5 import QtGui
+
 from dexbot.config import Config
 from dexbot.config_validator import ConfigValidator
 from dexbot.helper import find_external_strategies
@@ -9,7 +11,6 @@ from dexbot.views.confirmation import ConfirmationDialog
 from dexbot.views.errors import gui_error
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.strategy_form import StrategyFormWidget
-from PyQt5 import QtGui
 
 
 class WorkerController:

@@ -1,9 +1,10 @@
 import logging
 import traceback
 
+from PyQt5 import QtCore, QtWidgets
+
 from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.ui import translate_error
-from PyQt5 import QtCore, QtWidgets
 
 from .ui.error_dialog_ui import Ui_Dialog
 

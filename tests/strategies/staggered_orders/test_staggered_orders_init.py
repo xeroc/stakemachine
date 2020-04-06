@@ -2,6 +2,7 @@ import copy
 import logging
 
 import pytest
+
 from dexbot.strategies.staggered_orders import Strategy
 
 # Turn on debug for dexbot logger

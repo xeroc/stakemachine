@@ -1,4 +1,5 @@
 import click
+
 from dexbot.strategies.external_feeds.gecko_feed import get_gecko_price
 from dexbot.strategies.external_feeds.process_pair import split_pair
 from dexbot.styles import yellow

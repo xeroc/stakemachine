@@ -3,10 +3,11 @@ import os
 import tempfile
 
 import pytest
-from dexbot.storage import DatabaseWorker
 from sqlalchemy import Column, Float, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+from dexbot.storage import DatabaseWorker
 
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)

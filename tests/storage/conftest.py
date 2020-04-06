@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+
 from dexbot.storage import Storage
 
 log = logging.getLogger("dexbot")

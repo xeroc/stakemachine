@@ -2,6 +2,7 @@ import copy
 from decimal import Decimal
 
 from bitshares.price import Price
+
 from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.koth_config import KothConfig

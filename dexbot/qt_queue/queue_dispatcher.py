@@ -1,6 +1,7 @@
-from dexbot.qt_queue.idle_queue import idle_loop
 from PyQt5.QtCore import QEvent, QThread
 from PyQt5.QtWidgets import QApplication
+
+from dexbot.qt_queue.idle_queue import idle_loop
 
 
 class ThreadDispatcher(QThread):
