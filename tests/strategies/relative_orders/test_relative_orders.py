@@ -32,7 +32,7 @@ def test_amount_to_sell(ro_worker):
     assert amount_to_sell == expected_amount
 
     worker.is_relative_order_size = True
-    quote_balance = float(worker.balance(worker.market['quote']))
+    quote_balance = worker.count_asset()['quote']
     amount_to_sell = worker.amount_to_sell
     expected_amount = quote_balance * (expected_amount / 100)
     assert amount_to_sell == expected_amount
@@ -46,7 +46,7 @@ def test_amount_to_buy(ro_worker):
     assert worker.amount_to_buy == expected_amount
 
     worker.is_relative_order_size = True
-    base_balance = float(worker.balance(worker.market['base']))
+    base_balance = worker.count_asset()['base']
     expected_amount = base_balance * (expected_amount / 100) / worker.buy_price
     assert worker.amount_to_buy == expected_amount
 
