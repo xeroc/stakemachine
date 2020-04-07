@@ -26,14 +26,6 @@ class Strategy(StrategyBase):
     closer to the opposing order book than any other order.
     """
 
-    @classmethod
-    def configure(cls, return_base_config=True):
-        return KothConfig.configure(return_base_config)
-
-    @classmethod
-    def configure_details(cls, include_default_tabs=True):
-        return KothConfig.configure_details(include_default_tabs)
-
     def __init__(self, *args, **kwargs):
         # Initializes StrategyBase class
         super().__init__(*args, **kwargs)
@@ -88,6 +80,34 @@ class Strategy(StrategyBase):
         self.check_bitasset_market()
 
         self.log.info("{} initialized.".format(STRATEGY_NAME))
+
+    @property
+    def amount_quote(self):
+        """Get quote amount, calculate if order size is relative."""
+        amount = self.sell_order_amount
+        if self.is_relative_order_size:
+            quote_balance = float(self.balance(self.market['quote']))
+            amount = quote_balance * (amount / 100)
+
+        return amount
+
+    @property
+    def amount_base(self):
+        """Get base amount, calculate if order size is relative."""
+        amount = self.buy_order_amount
+        if self.is_relative_order_size:
+            base_balance = float(self.balance(self.market['base']))
+            amount = base_balance * (amount / 100)
+
+        return amount
+
+    @classmethod
+    def configure(cls, return_base_config=True):
+        return KothConfig.configure(return_base_config)
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        return KothConfig.configure_details(include_default_tabs)
 
     def check_bitasset_market(self):
         """Check if worker market is MPA:COLLATERAL market."""
@@ -395,31 +415,11 @@ class Strategy(StrategyBase):
         if place_sell:
             self.place_order('sell')
 
-    @property
-    def amount_quote(self):
-        """Get quote amount, calculate if order size is relative."""
-        amount = self.sell_order_amount
-        if self.is_relative_order_size:
-            quote_balance = float(self.balance(self.market['quote']))
-            amount = quote_balance * (amount / 100)
-
-        return amount
-
-    @property
-    def amount_base(self):
-        """Get base amount, calculate if order size is relative."""
-        amount = self.buy_order_amount
-        if self.is_relative_order_size:
-            base_balance = float(self.balance(self.market['base']))
-            amount = base_balance * (amount / 100)
-
-        return amount
-
     def error(self, *args, **kwargs):
         """Defines what happens when error occurs."""
         self.disabled = True
 
-    def tick(self, d):
+    def tick(self, block_hash):
         """Ticks come in on every block."""
         if not (self.counter or 0) % 4:
             self.maintain_strategy()
