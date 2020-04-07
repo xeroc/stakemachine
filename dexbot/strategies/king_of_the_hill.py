@@ -86,8 +86,8 @@ class Strategy(StrategyBase):
         """Get quote amount, calculate if order size is relative."""
         amount = self.sell_order_amount
         if self.is_relative_order_size:
-            quote_balance = float(self.balance(self.market['quote']))
-            amount = quote_balance * (amount / 100)
+            balance = self.get_operational_balance()
+            amount = balance['quote'] * (amount / 100)
 
         return amount
 
@@ -96,8 +96,8 @@ class Strategy(StrategyBase):
         """Get base amount, calculate if order size is relative."""
         amount = self.buy_order_amount
         if self.is_relative_order_size:
-            base_balance = float(self.balance(self.market['base']))
-            amount = base_balance * (amount / 100)
+            balance = self.get_operational_balance()
+            amount = balance['base'] * (amount / 100)
 
         return amount
 
