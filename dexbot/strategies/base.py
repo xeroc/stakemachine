@@ -264,15 +264,6 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
 
         return profit
 
-    @property
-    def balances(self):
-        """
-        Returns all the balances of the account assigned for the worker.
-
-        :return: Balances in list where each asset is in their own Amount object
-        """
-        return self._account.balances
-
     @staticmethod
     def purge_all_local_worker_data(worker_name):
         """
