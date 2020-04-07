@@ -9,14 +9,6 @@ from dexbot.strategies.external_feeds.price_feed import PriceFeed
 class Strategy(StrategyBase):
     """Relative Orders strategy."""
 
-    @classmethod
-    def configure(cls, return_base_config=True):
-        return RelativeConfig.configure(return_base_config)
-
-    @classmethod
-    def configure_details(cls, include_default_tabs=True):
-        return RelativeConfig.configure_details(include_default_tabs)
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.log.info("Initializing Relative Orders")
@@ -118,20 +110,6 @@ class Strategy(StrategyBase):
         else:
             self.check_orders()
 
-    def error(self, *args, **kwargs):
-        self.disabled = True
-
-    def tick(self, d):
-        """
-        Ticks come in on every block.
-
-        We need to periodically check orders because cancelled orders do not triggers a market_update event
-        """
-        if self.is_reset_on_price_change and not self.counter % 8:
-            self.log.debug('Checking orders by tick threshold')
-            self.check_orders()
-        self.counter += 1
-
     @property
     def amount_to_sell(self):
         """Get quote amount, calculate if order size is relative."""
@@ -164,6 +142,45 @@ class Strategy(StrategyBase):
         ):
             amount = 0
         return amount
+
+    @staticmethod
+    def calculate_manual_offset(center_price, manual_offset):
+        """
+        Adds manual offset to given center price.
+
+        :param float | center_price:
+        :param float | manual_offset:
+        :return: Center price with manual offset
+
+        Adjust center price by given percent in symmetrical way. Thus, -1% adjustement on BTS:USD market will be
+        same as adjusting +1% on USD:BTS market.
+        """
+        if manual_offset < 0:
+            return center_price / (1 + abs(manual_offset))
+        else:
+            return center_price * (1 + manual_offset)
+
+    @classmethod
+    def configure(cls, return_base_config=True):
+        return RelativeConfig.configure(return_base_config)
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        return RelativeConfig.configure_details(include_default_tabs)
+
+    def error(self, *args, **kwargs):
+        self.disabled = True
+
+    def tick(self, block_hash):
+        """
+        Ticks come in on every block.
+
+        We need to periodically check orders because cancelled orders do not triggers a market_update event
+        """
+        if self.is_reset_on_price_change and not self.counter % 8:
+            self.log.debug('Checking orders by tick threshold')
+            self.check_orders()
+        self.counter += 1
 
     def get_external_market_center_price(self, external_price_source):
         """
@@ -453,24 +470,6 @@ class Strategy(StrategyBase):
 
         return base_amount / quote_amount
 
-    def _calculate_center_price(self, suppress_errors=False):
-        highest_bid = float(self.ticker().get('highestBid'))
-        lowest_ask = float(self.ticker().get('lowestAsk'))
-
-        if highest_bid is None or highest_bid == 0.0:
-            if not suppress_errors:
-                self.log.critical("Cannot estimate center price, there is no highest bid.")
-                self.disabled = True
-            return None
-        elif lowest_ask is None or lowest_ask == 0.0:
-            if not suppress_errors:
-                self.log.critical("Cannot estimate center price, there is no lowest ask.")
-                self.disabled = True
-            return None
-
-        # Calculate center price between two closest orders on the market
-        return highest_bid * math.sqrt(lowest_ask / highest_bid)
-
     def calculate_center_price(
         self, center_price=None, asset_offset=False, spread=None, order_ids=None, manual_offset=0, suppress_errors=False
     ):
@@ -528,23 +527,6 @@ class Strategy(StrategyBase):
 
         return math.pow(highest_price, base_percent) * math.pow(lowest_price, quote_percent)
 
-    @staticmethod
-    def calculate_manual_offset(center_price, manual_offset):
-        """
-        Adds manual offset to given center price.
-
-        :param float | center_price:
-        :param float | manual_offset:
-        :return: Center price with manual offset
-
-        Adjust center price by given percent in symmetrical way. Thus, -1% adjustement on BTS:USD market will be
-        same as adjusting +1% on USD:BTS market.
-        """
-        if manual_offset < 0:
-            return center_price / (1 + abs(manual_offset))
-        else:
-            return center_price * (1 + manual_offset)
-
     @check_last_run
     def check_orders(self, *args, **kwargs):
         """Tests if the orders need updating."""
@@ -559,7 +541,7 @@ class Strategy(StrategyBase):
             need_update = True
         else:
             # Loop trough the orders and look for changes
-            for order_id, order in orders.items():
+            for order_id, _order in orders.items():
                 if not order_id.startswith('1.7.'):
                     need_update = True
                     break
@@ -637,3 +619,21 @@ class Strategy(StrategyBase):
         except UnboundLocalError:
             # base or quote wasn't obtained
             return None
+
+    def _calculate_center_price(self, suppress_errors=False):
+        highest_bid = float(self.ticker().get('highestBid'))
+        lowest_ask = float(self.ticker().get('lowestAsk'))
+
+        if highest_bid is None or highest_bid == 0.0:
+            if not suppress_errors:
+                self.log.critical("Cannot estimate center price, there is no highest bid.")
+                self.disabled = True
+            return None
+        elif lowest_ask is None or lowest_ask == 0.0:
+            if not suppress_errors:
+                self.log.critical("Cannot estimate center price, there is no lowest ask.")
+                self.disabled = True
+            return None
+
+        # Calculate center price between two closest orders on the market
+        return highest_bid * math.sqrt(lowest_ask / highest_bid)
