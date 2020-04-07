@@ -64,14 +64,6 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
     throw an exception. The framework catches all exceptions thrown from event handlers and logs appropriately.
     """
 
-    @classmethod
-    def configure(cls, return_base_config=True):
-        return BaseConfig.configure(return_base_config)
-
-    @classmethod
-    def configure_details(cls, include_default_tabs=True):
-        return BaseConfig.configure_details(include_default_tabs)
-
     __events__ = [
         'onAccount',
         'onMarketUpdate',
@@ -143,6 +135,23 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         )
 
         self.orders_log = logging.LoggerAdapter(logging.getLogger('dexbot.orders_log'), {})
+
+    @staticmethod
+    def purge_all_local_worker_data(worker_name):
+        """
+        Removes worker's data and orders from local sqlite database.
+
+        :param worker_name: Name of the worker to be removed
+        """
+        Storage.clear_worker_data(worker_name)
+
+    @classmethod
+    def configure(cls, return_base_config=True):
+        return BaseConfig.configure(return_base_config)
+
+    @classmethod
+    def configure_details(cls, include_default_tabs=True):
+        return BaseConfig.configure_details(include_default_tabs)
 
     def pause(self):
         """
@@ -263,16 +272,6 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
             profit = round(math.sqrt(base_roi * quote_roi) - 1, 4)
 
         return profit
-
-    @staticmethod
-    def purge_all_local_worker_data(worker_name):
-        """
-        Removes worker's data and orders from local sqlite database.
-
-        :param worker_name: Name of the worker to be removed
-        """
-        storage = Storage(worker_name)
-        storage.clear_worker_data()
 
     # GUI updaters
     def update_gui_slider(self):
