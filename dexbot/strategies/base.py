@@ -2,6 +2,7 @@ import logging
 import math
 import time
 from datetime import datetime
+from typing import Dict
 
 from dexbot.config import Config
 from dexbot.orderengines.bitshares_engine import BitsharesOrderEngine
@@ -198,6 +199,22 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
                 return (1 - intersections_data['sum_pct']) / intersections_data['num_zero_workers']
         else:
             self.log.error('Got asset which is not used by this worker')
+
+    def get_operational_balance(self) -> Dict[str, float]:
+        """
+        Get operational balance available to a worker.
+
+        Operational balance is a part of the whole account balance which should be designated to this worker
+
+        :return: dict with base and quote balance
+        """
+        balance = self.count_asset()
+        op_percent_quote = self.get_worker_share_for_asset(self.market['quote']['symbol'])
+        op_percent_base = self.get_worker_share_for_asset(self.market['base']['symbol'])
+        balance['base'] *= op_percent_base
+        balance['quote'] *= op_percent_quote
+
+        return balance
 
     def store_profit_estimation_data(self):
         """Save total quote, total base, center_price, and datetime in to the database."""
