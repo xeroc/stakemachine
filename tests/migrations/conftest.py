@@ -52,7 +52,7 @@ class Balances(Base):
 def fresh_db():
 
     _, db_file = tempfile.mkstemp()  # noqa: F811
-    _ = DatabaseWorker(sqlite_file=db_file)
+    _ = DatabaseWorker(db_file)
     yield db_file
     os.unlink(db_file)
 

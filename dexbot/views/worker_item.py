@@ -1,7 +1,7 @@
 import re
 
 from dexbot.controllers.worker_controller import WorkerController
-from dexbot.storage import db_worker
+from dexbot.storage import Storage
 from dexbot.views.errors import gui_error
 from PyQt5 import QtCore, QtWidgets
 
@@ -20,6 +20,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.worker_name = worker_name
         self.worker_config = self.main_ctrl.config.get_worker_config(worker_name)
         self.view = view
+        self.storage = Storage(self.worker_name)
 
         self.setupUi(self)
 
@@ -41,13 +42,13 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         strategies = WorkerController.get_strategies()
         self.set_worker_strategy(strategies[module]['name'])
 
-        profit = db_worker.get_item(worker_name, 'profit')
+        profit = self.storage.db_worker.get_item(worker_name, 'profit')
         if profit:
             self.set_worker_profit(profit)
         else:
             self.set_worker_profit(0)
 
-        percentage = db_worker.get_item(worker_name, 'slider')
+        percentage = self.storage.db_worker.get_item(worker_name, 'slider')
         if percentage:
             self.set_worker_slider(percentage)
         else:

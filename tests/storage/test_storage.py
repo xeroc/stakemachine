@@ -1,11 +1,31 @@
 import logging
+import tempfile
 
 import pytest
+from dexbot.storage import Storage
 
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)
 
 pytestmark = pytest.mark.mandatory
+
+
+def test_init(storage):
+
+    # Storage instances with same db_file using single DatabaseWorker()
+    _, db_file = tempfile.mkstemp()  # noqa: F811
+    storage1 = Storage('test', db_file=db_file)
+    storage2 = Storage('test2', db_file=db_file)
+    assert storage1.db_worker is storage2.db_worker
+
+    # Different db files - different DatabaseWorker()
+    storage3 = Storage('test')
+    assert storage3.db_worker is not storage1.db_worker
+
+
+def test_get_default_db_file(storage):
+    file_ = storage.get_default_db_file()
+    assert isinstance(file_, str)
 
 
 def test_fetch_orders(storage):

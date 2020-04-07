@@ -193,7 +193,8 @@ def drop_state(worker_name):
     """ Drop state of the worker (sqlite data)
     """
     click.echo('Dropping state for {}'.format(worker_name))
-    Storage.clear_worker_data(worker_name)
+    storage = Storage(worker_name)
+    storage.clear_worker_data()
     time.sleep(1)
 
 

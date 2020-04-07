@@ -6,6 +6,7 @@ import time
 
 import pytest
 from bitshares.amount import Amount
+from dexbot.storage import Storage
 from dexbot.strategies.staggered_orders import Strategy
 
 log = logging.getLogger("dexbot")
@@ -220,16 +221,13 @@ def base_worker(bitshares, so_worker_name, storage_db):
 
 
 @pytest.fixture(scope='session')
-def storage_db():
+def storage_db(so_worker_name):
     """ Prepare custom sqlite database to not mess with main one
-
-        TODO: this is doesn't work!!!
     """
-    from dexbot.storage import sqlDataBaseFile
-
-    _, sqlDataBaseFile = tempfile.mkstemp()  # noqa: F811
-    yield
-    os.unlink(sqlDataBaseFile)
+    _, db_file = tempfile.mkstemp()  # noqa: F811
+    storage = Storage(so_worker_name, db_file=db_file)
+    yield storage
+    os.unlink(db_file)
 
 
 @pytest.fixture
