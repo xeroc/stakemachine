@@ -1187,6 +1187,70 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
     assert spread_after < worker.target_spread + worker.increment
 
 
+def test_allocate_asset_several_filled_orders_on_massively_imbalanced_sides(
+    worker, do_initial_allocation, base_account
+):
+    """ When sides are massively imbalanced, make sure that spread will be closed after filling several orders on
+        smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
+        smaller orders. Correct behavior: when multiple orders on smaller side filled at once, big side should place
+        appropriate number of closer orders to close the spread.
+
+        Test for https://github.com/Codaone/DEXBot/issues/601
+    """
+    do_initial_allocation(worker, worker.mode)
+    spread_before = worker.get_actual_spread()
+    log.info('Worker spread after bootstrap: {}'.format(spread_before))
+    # TODO: automatically turn off bootstrapping after target spread is closed?
+    worker['bootstrapping'] = False
+
+    # Cancel several closest orders
+    num_orders_to_cancel = 3
+    worker.cancel_orders_wrapper(worker.sell_orders[:num_orders_to_cancel])
+    worker.refresh_orders()
+    worker.refresh_balances()
+
+    # Place limited orders; the goal is to limit order amount to be much smaller than opposite
+    quote_limit = worker.buy_orders[0]['quote']['amount'] * worker.partial_fill_threshold / 2
+    spread_after = worker.get_actual_spread()
+    while spread_after >= worker.target_spread + worker.increment:
+        # We're using spread check because we cannot just place same number of orders as num_orders_to_cancel because
+        # it may result in too close spread because of price shifts
+        worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=quote_limit)
+        worker.refresh_orders()
+        spread_after = worker.get_actual_spread()
+
+    log.info('Worker spread: {}'.format(worker.get_actual_spread()))
+
+    # Fill only one newly placed order from another account
+    additional_account = base_account()
+    num_orders_to_fill = num_orders_to_cancel
+    for i in range(0, num_orders_to_fill):
+        price = worker.sell_orders[i]['price'] ** -1 * 1.01
+        amount = worker.sell_orders[i]['base']['amount'] * 1.01
+        log.debug('Filling {} @ {}'.format(amount, price))
+        worker.market.buy(price, amount, account=additional_account)
+
+    # Cancel unmatched dust
+    account = Account(additional_account, bitshares_instance=worker.bitshares)
+    ids = [order['id'] for order in account.openorders if 'id' in order]
+    worker.bitshares.cancel(ids, account=additional_account)
+    worker.refresh_orders()
+    worker.refresh_balances(use_cached_orders=True)
+
+    # Allocate obtained BASE
+    counter = 0
+    spread_after = worker.get_actual_spread()
+    while spread_after >= worker.target_spread + worker.increment:
+        worker.allocate_asset('base', worker.base_balance)
+        worker.refresh_orders()
+        worker.refresh_balances(use_cached_orders=True)
+        spread_after = worker.get_actual_spread()
+        counter += 1
+        # Counter is for preventing infinity loop
+        # Success execution means target spread is reached
+        assert counter < 20
+
+
 @pytest.mark.parametrize('mode', MODES)
 def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocation, base_account):
     """ Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
