@@ -1,3 +1,4 @@
+import logging
 import os.path
 import random
 import socket
@@ -15,6 +16,8 @@ from bitshares.genesisbalance import GenesisBalance
 from bitshares.instance import set_shared_bitshares_instance
 from bitsharesbase.account import PublicKey
 from bitsharesbase.chains import known_chains
+
+log = logging.getLogger("dexbot")
 
 # Note: chain_id is generated from genesis.json, every time it's changes you need to get new chain_id from
 # `bitshares.rpc.get_chain_properties()`
@@ -143,6 +146,7 @@ def issue_asset(bitshares):
 
     def _issue_asset(asset, amount, to):
         asset = Asset(asset, bitshares_instance=bitshares)
+        log.debug(f'Issuing {amount} of {asset.symbol} to {to}')
         asset.issue(amount, to)
 
     return _issue_asset
