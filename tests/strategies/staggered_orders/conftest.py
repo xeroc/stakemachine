@@ -204,6 +204,10 @@ def base_worker(bitshares, so_worker_name, storage_db):
         worker = Strategy(config=config, name=worker_name, bitshares_instance=bitshares)
         # Set market center price to avoid calling of maintain_strategy()
         worker.market_center_price = worker.worker['center_price']
+        # Prevent maintenance bypass during tests
+        worker.min_check_interval = 0
+        worker.max_check_interval = 0.00000000001  # should differ from min_check_interval!
+        worker.check_interval = worker.min_check_interval
         log.info('Initialized {} on account {}'.format(worker_name, worker.account.name))
         workers.append(worker)
         return worker
@@ -409,9 +413,6 @@ def maintain_until_allocated():
     """
 
     def func(worker):
-        # Speed up a little
-        worker.min_check_interval = 0.01
-        worker.check_interval = worker.min_check_interval
         while True:
             worker.maintain_strategy()
             if not worker.check_interval == worker.min_check_interval:
@@ -438,7 +439,7 @@ def do_initial_allocation(maintain_until_allocated):
         maintain_until_allocated(worker)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
-        worker.current_check_interval = 0
+        worker.check_interval = 0
         log.info('Initial allocation done')
 
         return worker
