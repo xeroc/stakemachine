@@ -80,9 +80,6 @@ def test_maintain_strategy_one_sided(mode, base_worker, config_only_base, do_ini
     worker = base_worker(config_only_base)
     do_initial_allocation(worker, mode)
 
-    # Check target spread is reached
-    assert worker.actual_spread == pytest.approx(worker.target_spread + worker.increment, abs=(worker.increment / 2))
-
     # Check number of orders
     price = worker.center_price / math.sqrt(1 + worker.target_spread)
     buy_orders_count = worker.calc_buy_orders_count(price, worker.lower_bound)
