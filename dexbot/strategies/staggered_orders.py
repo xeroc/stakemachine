@@ -819,6 +819,7 @@ class Strategy(StrategyBase):
                         order_type, actual_spread, self.target_spread + self.increment
                     )
                 )
+
                 if self['bootstrapping']:
                     self.place_closer_order(asset, closest_own_order)
                 elif opposite_orders and actual_spread - self.increment < self.target_spread + self.increment:
@@ -826,40 +827,42 @@ class Strategy(StrategyBase):
                         increases)
                     """
                     self.place_closer_order(asset, closest_own_order, allow_partial=True)
+                # Place order limited by size of the opposite-side order
                 elif opposite_orders:
-                    # Place order limited by size of the opposite-side order
-                    if self.mode == 'mountain':
-                        opposite_asset_limit = closest_opposite_order['base']['amount'] * (1 + self.increment)
-                        own_asset_limit = None
-                        self.log.debug(
-                            'Limiting {} order by opposite order: {:.{prec}f} {}'.format(
-                                order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision
-                            )
-                        )
-                    elif (self.mode == 'buy_slope' and asset == 'base') or (
-                        self.mode == 'sell_slope' and asset == 'quote'
+                    # Load previously stored opposite orders
+                    result = self.fetch_orders_extended(custom='current')
+                    stored_orders = [entry['order'] for entry in result]
+                    if asset == 'base':
+                        opposite_orders = self.filter_sell_orders(stored_orders, sort='DESC', invert=False)
+                    elif asset == 'quote':
+                        opposite_orders = self.filter_buy_orders(stored_orders, sort='DESC')
+
+                    try:
+                        opposite_order = opposite_orders[0]
+                        self.log.debug('Using stored opposite order')
+                    except IndexError:
+                        self.log.debug('Using real opposite order')
+                        opposite_order = closest_opposite_order
+
+                    if (
+                        self.mode == 'mountain'
+                        or (self.mode == 'buy_slope' and asset == 'base')
+                        or (self.mode == 'sell_slope' and asset == 'quote')
                     ):
                         opposite_asset_limit = None
-                        own_asset_limit = closest_opposite_order['quote']['amount']
+                        own_asset_limit = opposite_order['quote']['amount']
                         self.log.debug(
                             'Limiting {} order by opposite order: {:.{prec}f} {}'.format(
                                 order_type, own_asset_limit, own_symbol, prec=own_precision
                             )
                         )
-                    elif self.mode == 'neutral':
-                        opposite_asset_limit = closest_opposite_order['base']['amount'] * math.sqrt(1 + self.increment)
-                        own_asset_limit = None
-                        self.log.debug(
-                            'Limiting {} order by opposite order: {:.{prec}f} {}'.format(
-                                order_type, opposite_asset_limit, opposite_symbol, prec=opposite_precision
-                            )
-                        )
                     elif (
                         self.mode == 'valley'
+                        or self.mode == 'neutral'
                         or (self.mode == 'buy_slope' and asset == 'quote')
                         or (self.mode == 'sell_slope' and asset == 'base')
                     ):
-                        opposite_asset_limit = closest_opposite_order['base']['amount']
+                        opposite_asset_limit = opposite_order['base']['amount']
                         own_asset_limit = None
                         self.log.debug(
                             'Limiting {} order by opposite order: {:.{prec}f} {}'.format(

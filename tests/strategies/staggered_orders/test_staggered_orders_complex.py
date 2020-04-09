@@ -1187,8 +1187,9 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
     assert spread_after < worker.target_spread + worker.increment
 
 
+@pytest.mark.parametrize('mode', MODES)
 def test_allocate_asset_several_filled_orders_on_massively_imbalanced_sides(
-    worker, do_initial_allocation, base_account
+    mode, worker, do_initial_allocation, base_account
 ):
     """ When sides are massively imbalanced, make sure that spread will be closed after filling several orders on
         smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
@@ -1197,6 +1198,7 @@ def test_allocate_asset_several_filled_orders_on_massively_imbalanced_sides(
 
         Test for https://github.com/Codaone/DEXBot/issues/601
     """
+    worker.mode = mode
     do_initial_allocation(worker, worker.mode)
     spread_before = worker.get_actual_spread()
     log.info('Worker spread after bootstrap: {}'.format(spread_before))
@@ -1211,13 +1213,17 @@ def test_allocate_asset_several_filled_orders_on_massively_imbalanced_sides(
 
     # Place limited orders; the goal is to limit order amount to be much smaller than opposite
     quote_limit = worker.buy_orders[0]['quote']['amount'] * worker.partial_fill_threshold / 2
+    place_limited_order = True
     spread_after = worker.get_actual_spread()
     while spread_after >= worker.target_spread + worker.increment:
         # We're using spread check because we cannot just place same number of orders as num_orders_to_cancel because
         # it may result in too close spread because of price shifts
-        worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=quote_limit)
+        limit = quote_limit if place_limited_order else None
+        worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=limit)
         worker.refresh_orders()
+        worker.sync_current_orders()
         spread_after = worker.get_actual_spread()
+        place_limited_order = False  # only first order should be limited
 
     log.info('Worker spread: {}'.format(worker.get_actual_spread()))
 
@@ -1264,9 +1270,9 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
     # Fill several orders
     num_orders_to_fill = 4
     for i in range(0, num_orders_to_fill):
-        price = worker.buy_orders[i]['price']
-        amount = worker.buy_orders[i]['quote']['amount'] * 1.01
-        log.debug('Filling {} @ {}'.format(amount, price))
+        price = worker.buy_orders[i]['price'] / 1.01
+        amount = worker.buy_orders[i]['quote']['amount']
+        log.debug('Filling buy order buys {} QUOTE @ {}'.format(amount, price))
         worker.market.sell(price, amount, account=additional_account)
 
     # Cancel unmatched dust
@@ -1280,7 +1286,6 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
     spread_after = worker.get_actual_spread()
     counter = 0
     while spread_after >= worker.target_spread + worker.increment:
-        worker.allocate_asset('base', worker.base_balance)
         worker.allocate_asset('quote', worker.quote_balance)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
@@ -1291,8 +1296,14 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
 
     # Check 2 closest orders to match mode
     if worker.mode == 'valley' or worker.mode == 'sell_slope':
-        assert worker.sell_orders[0]['base']['amount'] == worker.sell_orders[1]['base']['amount']
-    elif worker.mode == 'mountain' or worker.mode == 'buy_slope':
+        assert worker.sell_orders[0]['base']['amount'] == pytest.approx(worker.sell_orders[1]['base']['amount'])
+    elif worker.mode == 'mountain':
+        assert (
+            worker.sell_orders[0]['base']['amount']
+            == pytest.approx(worker.sell_orders[1]['base']['amount'], abs=(10 ** -worker.market['quote']['precision']))
+            or worker.sell_orders[0]['base']['amount'] >= worker.sell_orders[1]['base']['amount']
+        )
+    elif worker.mode == 'buy_slope':
         assert worker.sell_orders[0]['quote']['amount'] == pytest.approx(
             worker.sell_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
@@ -1319,9 +1330,9 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     # Fill several orders
     num_orders_to_fill = 5
     for i in range(0, num_orders_to_fill):
-        price = worker.sell_orders[i]['price'] ** -1
-        amount = worker.sell_orders[i]['base']['amount'] * 1.01
-        log.debug('Filling {} @ {}'.format(amount, price))
+        price = worker.sell_orders[i]['price'] ** -1 * 1.01
+        amount = worker.sell_orders[i]['base']['amount']
+        log.debug('Filling {} QUOTE @ {}'.format(amount, price))
         worker.market.buy(price, amount, account=additional_account)
 
     # Cancel unmatched dust
@@ -1336,7 +1347,6 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     counter = 0
     while spread_after >= worker.target_spread + worker.increment:
         worker.allocate_asset('base', worker.base_balance)
-        worker.allocate_asset('quote', worker.quote_balance)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
         spread_after = worker.get_actual_spread()
@@ -1347,7 +1357,14 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     # Check 2 closest orders to match mode
     if worker.mode == 'valley' or worker.mode == 'buy_slope':
         assert worker.buy_orders[0]['base']['amount'] == worker.buy_orders[1]['base']['amount']
-    elif worker.mode == 'mountain' or worker.mode == 'sell_slope':
+    elif worker.mode == 'mountain':
+        # In mountain mode allow both equal orders and increased closest order - it may be placed without limiting
+        assert (
+            worker.buy_orders[0]['base']['amount']
+            == pytest.approx(worker.buy_orders[1]['base']['amount'], abs=(10 ** -worker.market['base']['precision']))
+            or worker.buy_orders[0]['base']['amount'] >= worker.buy_orders[1]['base']['amount']
+        )
+    elif worker.mode == 'sell_slope':
         assert worker.buy_orders[0]['quote']['amount'] == pytest.approx(
             worker.buy_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
