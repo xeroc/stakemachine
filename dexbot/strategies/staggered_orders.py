@@ -60,7 +60,7 @@ class Strategy(StrategyBase):
             self.center_price = self.worker['center_price']
 
         fee_sum = self.market['base'].market_fee_percent + self.market['quote'].market_fee_percent
-        if self.target_spread - self.increment < fee_sum:
+        if self.target_spread - self.increment <= fee_sum:
             self.log.error(
                 'Spread must be greater than increment by at least {}, refusing to work because worker'
                 ' will make losses'.format(fee_sum)
