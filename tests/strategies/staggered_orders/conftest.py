@@ -54,7 +54,7 @@ def account_only_base(assets, prepare_account):
 def account_1_sat(assets, prepare_account):
     """ Prepare worker account to simulate XXX/BTC trading near zero prices
     """
-    account = prepare_account({'BASEB': 0.02, 'QUOTEB': 10000000, 'TEST': 1000})
+    account = prepare_account({'BASEC': 0.02, 'QUOTEC': 10000000, 'TEST': 1000})
     return account
 
 
@@ -124,7 +124,7 @@ def config_1_sat(so_worker_name, bitshares, account_1_sat):
         'workers': {
             worker_name: {
                 'account': '{}'.format(account_1_sat),
-                'market': 'QUOTEB/BASEB',
+                'market': 'QUOTEC/BASEC',
                 'module': 'dexbot.strategies.staggered_orders',
                 'mode': 'valley',
                 'center_price': 0.00000001,
