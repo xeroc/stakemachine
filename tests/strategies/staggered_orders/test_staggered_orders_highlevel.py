@@ -1,13 +1,7 @@
-import logging
 import math
 
 import pytest
 from dexbot.strategies.staggered_orders import VirtualOrder
-
-# Turn on debug for dexbot logger
-logger = logging.getLogger("dexbot")
-logger.setLevel(logging.DEBUG)
-
 
 ###################
 # Higher-level methods which depends on lower-level methods
