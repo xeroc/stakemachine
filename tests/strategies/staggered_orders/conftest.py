@@ -17,10 +17,10 @@ MODES = ['mountain', 'valley', 'neutral', 'buy_slope', 'sell_slope']
 def assets(create_asset):
     """ Create some assets with different precision
     """
-    create_asset('BASEA', 3)
-    create_asset('QUOTEA', 8)
-    create_asset('BASEB', 8)
-    create_asset('QUOTEB', 3)
+    create_asset('BASEA', 8)
+    create_asset('QUOTEA', 3)
+    create_asset('BASEB', 3)
+    create_asset('QUOTEB', 8)
 
 
 @pytest.fixture(scope='module')
@@ -65,7 +65,7 @@ def so_worker_name():
     return 'so-worker'
 
 
-@pytest.fixture(params=[('QUOTEA', 'BASEA'), ('QUOTEB', 'BASEB')])
+@pytest.fixture()
 def config(request, bitshares, account, so_worker_name):
     """ Define worker's config with variable assets
 
@@ -77,7 +77,7 @@ def config(request, bitshares, account, so_worker_name):
         'workers': {
             worker_name: {
                 'account': '{}'.format(account),
-                'market': '{}/{}'.format(request.param[0], request.param[1]),
+                'market': 'QUOTEA/BASEA',
                 'module': 'dexbot.strategies.staggered_orders',
                 'mode': 'valley',
                 'center_price': 100.0,
