@@ -8,7 +8,14 @@ import pytest
 from bitshares.amount import Amount
 from dexbot.strategies.staggered_orders import Strategy
 
+log = logging.getLogger("dexbot.per_worker")
+handler = logging.StreamHandler()
+formatter2 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - %(worker_name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter2)
+log.addHandler(handler)
+
 log = logging.getLogger("dexbot")
+log.setLevel(logging.DEBUG)
 
 MODES = ['mountain', 'valley', 'neutral', 'buy_slope', 'sell_slope']
 
