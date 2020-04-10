@@ -205,12 +205,12 @@ def test_place_closer_order_real_or_virtual(orders5, asset):
     assert closer_order, "Closer order within operational depth must be real"
 
 
-@pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_price_amount(orders5, asset):
     """ Test that closer order price and amounts are correct
     """
     worker = orders5
+    precision = min(worker.market['base']['precision'], worker.market['quote']['precision'])
 
     if asset == 'base':
         order = worker.buy_orders[0]
@@ -221,7 +221,7 @@ def test_place_closer_order_price_amount(orders5, asset):
     closer_order = worker.place_closer_order(asset, order, place_order=True)
 
     # Test for correct price
-    assert closer_order['price'] == order['price'] * (1 + worker.increment)
+    assert closer_order['price'] == pytest.approx(order['price'] * (1 + worker.increment), abs=(11 * 10 ** -precision))
 
     # Test for correct amount
     if (
@@ -237,15 +237,17 @@ def test_place_closer_order_price_amount(orders5, asset):
     ):
         assert closer_order['base']['amount'] == order['base']['amount']
     elif worker.mode == 'neutral':
-        assert closer_order['base']['amount'] == order['base']['amount'] * math.sqrt(1 + worker.increment)
+        assert closer_order['base']['amount'] == pytest.approx(
+            order['base']['amount'] * math.sqrt(1 + worker.increment), abs=(10 ** -order['base']['asset']['precision'])
+        )
 
 
-@pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_no_place_order(orders5, asset):
     """ Test place_closer_order() with place_order=False kwarg
     """
     worker = orders5
+    precision = min(worker.market['base']['precision'], worker.market['quote']['precision'])
 
     if asset == 'base':
         order = worker.buy_orders[0]
@@ -265,8 +267,8 @@ def test_place_closer_order_no_place_order(orders5, asset):
         price = real_order['price'] ** -1
         amount = real_order['base']['amount']
 
-    assert closer_order['price'] == price
-    assert closer_order['amount'] == amount
+    assert closer_order['price'] == pytest.approx(price, abs=(11 * 10 ** -precision))
+    assert closer_order['amount'] == pytest.approx(amount, abs=(10 ** -precision))
 
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
@@ -415,12 +417,12 @@ def test_place_further_order_real_or_virtual(orders5, asset):
     assert isinstance(further_order, VirtualOrder), "Further order outside of operational depth must be virtual"
 
 
-@pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_price_amount(orders5, asset):
     """ Test that further order price and amounts are correct
     """
     worker = orders5
+    precision = min(worker.market['base']['precision'], worker.market['quote']['precision'])
 
     if asset == 'base':
         order = worker.buy_orders[0]
@@ -431,7 +433,7 @@ def test_place_further_order_price_amount(orders5, asset):
     further_order = worker.place_further_order(asset, order, place_order=True)
 
     # Test for correct price
-    assert further_order['price'] == order['price'] / (1 + worker.increment)
+    assert further_order['price'] == pytest.approx(order['price'] / (1 + worker.increment), abs=(2 * 10 ** -precision))
 
     # Test for correct amount
     if (
@@ -447,15 +449,17 @@ def test_place_further_order_price_amount(orders5, asset):
     ):
         assert further_order['base']['amount'] == order['base']['amount']
     elif worker.mode == 'neutral':
-        assert further_order['base']['amount'] == order['base']['amount'] / math.sqrt(1 + worker.increment)
+        assert further_order['base']['amount'] == pytest.approx(
+            order['base']['amount'] / math.sqrt(1 + worker.increment), abs=(10 ** -order['base']['asset']['precision'])
+        )
 
 
-@pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_no_place_order(orders5, asset):
     """ Test place_further_order() with place_order=False kwarg
     """
     worker = orders5
+    precision = min(worker.market['base']['precision'], worker.market['quote']['precision'])
 
     if asset == 'base':
         order = worker.buy_orders[0]
@@ -476,8 +480,8 @@ def test_place_further_order_no_place_order(orders5, asset):
         price = real_order['price'] ** -1
         amount = real_order['base']['amount']
 
-    assert further_order['price'] == price
-    assert further_order['amount'] == amount
+    assert further_order['price'] == pytest.approx(price, abs=(11 * 10 ** -precision))
+    assert further_order['amount'] == pytest.approx(amount, abs=(10 ** -precision))
 
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
