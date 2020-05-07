@@ -4,7 +4,6 @@ import time
 from datetime import datetime
 
 import pytest
-from bitshares.account import Account
 from bitshares.amount import Amount
 
 # Turn on debug for dexbot logger
@@ -75,9 +74,6 @@ def test_maintain_strategy_one_sided(mode, base_worker, config_only_base, do_ini
     """Test for one-sided start (buy only)"""
     worker = base_worker(config_only_base)
     do_initial_allocation(worker, mode)
-
-    # Check target spread is reached
-    assert worker.actual_spread == pytest.approx(worker.target_spread + worker.increment, abs=(worker.increment / 2))
 
     # Check number of orders
     price = worker.center_price / math.sqrt(1 + worker.target_spread)
@@ -880,20 +876,19 @@ def test_allocate_asset_basic(worker):
         assert spread_after < spread_before
 
 
-def test_allocate_asset_replace_closest_partial_order(worker, do_initial_allocation, base_account, issue_asset):
+def test_allocate_asset_replace_closest_partial_order(worker, other_worker, do_initial_allocation, issue_asset):
     """Test that partially filled order is replaced when target spread is not reached, before placing closer order."""
     do_initial_allocation(worker, worker.mode)
-    additional_account = base_account()
 
     # Sell some quote from another account to make PF order on buy side
     price = worker.buy_orders[0]['price'] / 1.01
     amount = worker.buy_orders[0]['quote']['amount'] * (1 - worker.partial_fill_threshold * 1.1)
-    worker.market.sell(price, amount, account=additional_account)
+    other_worker.place_market_sell_order(amount, price)
 
     # Fill sell order
     price = worker.sell_orders[0]['price'] ** -1 * 1.01
     amount = worker.sell_orders[0]['base']['amount']
-    worker.market.buy(price, amount, account=additional_account)
+    other_worker.place_market_buy_order(amount, price)
 
     # Expect replaced closest buy order
     worker.refresh_orders()
@@ -904,7 +899,7 @@ def test_allocate_asset_replace_closest_partial_order(worker, do_initial_allocat
 
 
 def test_allocate_asset_replace_partially_filled_orders(
-    worker, do_initial_allocation, base_account, issue_asset, maintain_until_allocated
+    worker, other_worker, do_initial_allocation, issue_asset, maintain_until_allocated
 ):
     """
     Check replacement of partially filled orders on both sides.
@@ -914,17 +909,17 @@ def test_allocate_asset_replace_partially_filled_orders(
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
-    additional_account = base_account()
 
     # Partially fill closest orders
     price = worker.buy_orders[0]['price']
     amount = worker.buy_orders[0]['quote']['amount'] / 2
     log.debug('Filling {} @ {}'.format(amount, price))
-    worker.market.sell(price, amount, account=additional_account)
+    other_worker.place_market_sell_order(amount, price)
+
     price = worker.sell_orders[0]['price'] ** -1
     amount = worker.sell_orders[0]['base']['amount'] / 2
     log.debug('Filling {} @ {}'.format(amount, price))
-    worker.market.buy(price, amount, account=additional_account)
+    other_worker.place_market_buy_order(amount, price)
 
     # Add some balance to worker
     to_issue = worker.buy_orders[0]['base']['amount']
@@ -955,17 +950,18 @@ def test_allocate_asset_increase_orders(worker, do_initial_allocation, maintain_
     assert balance_in_orders_after['quote'] > balance_in_orders_before['quote']
 
 
-def test_allocate_asset_dust_order_simple(worker, do_initial_allocation, maintain_until_allocated, base_account):
+def test_allocate_asset_dust_order_simple(
+    worker, other_worker, do_initial_allocation, maintain_until_allocated, base_account
+):
     """Make dust order, check if it canceled and closer opposite order placed."""
     do_initial_allocation(worker, worker.mode)
     num_sell_orders_before = len(worker.sell_orders)
     num_buy_orders_before = len(worker.buy_orders)
-    additional_account = base_account()
 
     # Partially fill order from another account
     sell_price = worker.buy_orders[0]['price'] / 1.01
     sell_amount = worker.buy_orders[0]['quote']['amount'] * (1 - worker.partial_fill_threshold) * 1.1
-    worker.market.sell(sell_price, sell_amount, account=additional_account)
+    other_worker.place_market_sell_order(sell_amount, sell_price)
 
     worker.refresh_balances()
     worker.refresh_orders()
@@ -979,19 +975,18 @@ def test_allocate_asset_dust_order_simple(worker, do_initial_allocation, maintai
 
 
 def test_allocate_asset_dust_order_excess_funds(
-    worker, do_initial_allocation, maintain_until_allocated, base_account, issue_asset
+    worker, other_worker, do_initial_allocation, maintain_until_allocated, issue_asset
 ):
     """Make dust order, add additional funds, these funds should be allocated and then dust order should be canceled and
     closer opposite order placed."""
     do_initial_allocation(worker, worker.mode)
     num_sell_orders_before = len(worker.sell_orders)
     num_buy_orders_before = len(worker.buy_orders)
-    additional_account = base_account()
 
     # Partially fill order from another account
     sell_price = worker.buy_orders[0]['price'] / 1.01
     sell_amount = worker.buy_orders[0]['quote']['amount'] * (1 - worker.partial_fill_threshold) * 1.1
-    worker.market.sell(sell_price, sell_amount, account=additional_account)
+    other_worker.place_market_sell_order(sell_amount, sell_price)
 
     # Add some balance to the worker
     issue_asset(worker.market['quote']['symbol'], worker.sell_orders[0]['base']['amount'], worker.account.name)
@@ -1007,14 +1002,13 @@ def test_allocate_asset_dust_order_excess_funds(
     assert num_sell_orders_after - num_sell_orders_before == 1
 
 
-def test_allocate_asset_dust_order_increase_race(worker, do_initial_allocation, base_account, issue_asset):
+def test_allocate_asset_dust_order_increase_race(worker, other_worker, do_initial_allocation, issue_asset):
     """
     Test for https://github.com/Codaone/DEXBot/issues/587.
 
     Check if cancelling dust orders on opposite side will not cause a race for allocate_asset() on opposite side
     """
     do_initial_allocation(worker, worker.mode)
-    additional_account = base_account()
     num_buy_orders_before = len(worker.buy_orders)
 
     # Make closest sell order small enough to be a most likely candidate for increase
@@ -1030,7 +1024,7 @@ def test_allocate_asset_dust_order_increase_race(worker, do_initial_allocation, 
     buy_price = worker.sell_orders[0]['price'] ** -1 * 1.01
     buy_amount = worker.sell_orders[0]['base']['amount'] * (1 - worker.partial_fill_threshold) * 1.1
     log.debug('{}, {}'.format(buy_price, buy_amount))
-    worker.market.buy(buy_price, buy_amount, account=additional_account)
+    other_worker.place_market_buy_order(buy_amount, buy_price)
 
     # PF fill sell order should be cancelled and closer buy placed
     worker.maintain_strategy()
@@ -1039,18 +1033,17 @@ def test_allocate_asset_dust_order_increase_race(worker, do_initial_allocation, 
     assert num_buy_orders_after - num_buy_orders_before == 1
 
 
-def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_account):
+def test_allocate_asset_filled_orders(worker, other_worker, do_initial_allocation, base_account):
     """Fill an order and check if opposite order placed."""
     do_initial_allocation(worker, worker.mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
-    additional_account = base_account()
     num_sell_orders_before = len(worker.sell_orders)
 
     # Fill sell order
     price = worker.buy_orders[0]['price']
     amount = worker.buy_orders[0]['quote']['amount']
-    worker.market.sell(price, amount, account=additional_account)
+    other_worker.place_market_sell_order(amount, price)
     worker.refresh_balances()
     worker.refresh_orders()
     worker.allocate_asset('quote', worker.quote_balance)
@@ -1059,7 +1052,9 @@ def test_allocate_asset_filled_orders(worker, do_initial_allocation, base_accoun
     assert num_sell_orders_after - num_sell_orders_before == 1
 
 
-def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_initial_allocation, base_account):
+def test_allocate_asset_filled_order_on_massively_imbalanced_sides(
+    worker, other_worker, do_initial_allocation, base_account
+):
     """
     When sides are massively imbalanced, make sure that spread will be closed after filling one order on smaller side.
     The goal is to test a situation when one side has a big-sized orders, and other side has much smaller orders.
@@ -1092,18 +1087,15 @@ def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_in
     log.info('Worker spread: {}'.format(worker.get_actual_spread()))
 
     # Fill only one newly placed order from another account
-    additional_account = base_account()
     num_orders_to_fill = 1
     for i in range(0, num_orders_to_fill):
         price = worker.sell_orders[i]['price'] ** -1 * 1.01
         amount = worker.sell_orders[i]['base']['amount'] * 1.01
         log.debug('Filling {} @ {}'.format(amount, price))
-        worker.market.buy(price, amount, account=additional_account)
+        other_worker.place_market_buy_order(amount, price)
 
     # Cancel unmatched dust
-    account = Account(additional_account, bitshares_instance=worker.bitshares)
-    ids = [order['id'] for order in account.openorders if 'id' in order]
-    worker.bitshares.cancel(ids, account=additional_account)
+    other_worker.cancel_all_orders()
     worker.refresh_orders()
     worker.refresh_balances(use_cached_orders=True)
 
@@ -1124,7 +1116,7 @@ def test_allocate_asset_filled_order_on_massively_imbalanced_sides(worker, do_in
 
 
 def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
-    worker, do_initial_allocation, base_account
+    worker, other_worker, do_initial_allocation, base_account
 ):
     """
     When sides are massively imbalanced, make sure that spread will be closed after filling one order on smaller side.
@@ -1161,19 +1153,16 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
     log.info('Worker spread: {}'.format(worker.get_actual_spread()))
 
     # Fill only one newly placed order from another account
-    additional_account = base_account()
     num_orders_to_fill = 1
     for i in range(0, num_orders_to_fill):
         price = worker.sell_orders[i]['price'] ** -1 * 1.01
         # Make partially filled order (dust order)
         amount = worker.sell_orders[i]['base']['amount'] * (1 - worker.partial_fill_threshold) * 1.01
         log.debug('Filling {} @ {}'.format(amount, price))
-        worker.market.buy(price, amount, account=additional_account)
+        other_worker.place_market_buy_order(amount, price)
 
     # Cancel unmatched dust
-    account = Account(additional_account, bitshares_instance=worker.bitshares)
-    ids = [order['id'] for order in account.openorders if 'id' in order]
-    worker.bitshares.cancel(ids, account=additional_account)
+    other_worker.cancel_all_orders()
     worker.refresh_orders()
     worker.refresh_balances(use_cached_orders=True)
 
@@ -1189,26 +1178,90 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
 
 
 @pytest.mark.parametrize('mode', MODES)
-def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocation, base_account):
+def test_allocate_asset_several_filled_orders_on_massively_imbalanced_sides(
+    mode, worker, other_worker, do_initial_allocation, base_account
+):
+    """ When sides are massively imbalanced, make sure that spread will be closed after filling several orders on
+        smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
+        smaller orders. Correct behavior: when multiple orders on smaller side filled at once, big side should place
+        appropriate number of closer orders to close the spread.
+
+        Test for https://github.com/Codaone/DEXBot/issues/601
+    """
+    worker.mode = mode
+    do_initial_allocation(worker, worker.mode)
+    spread_before = worker.get_actual_spread()
+    log.info('Worker spread after bootstrap: {}'.format(spread_before))
+    # TODO: automatically turn off bootstrapping after target spread is closed?
+    worker['bootstrapping'] = False
+
+    # Cancel several closest orders
+    num_orders_to_cancel = 3
+    worker.cancel_orders_wrapper(worker.sell_orders[:num_orders_to_cancel])
+    worker.refresh_orders()
+    worker.refresh_balances()
+
+    # Place limited orders; the goal is to limit order amount to be much smaller than opposite
+    quote_limit = worker.buy_orders[0]['quote']['amount'] * worker.partial_fill_threshold / 2
+    place_limited_order = True
+    spread_after = worker.get_actual_spread()
+    while spread_after >= worker.target_spread + worker.increment:
+        # We're using spread check because we cannot just place same number of orders as num_orders_to_cancel because
+        # it may result in too close spread because of price shifts
+        limit = quote_limit if place_limited_order else None
+        worker.place_closer_order('quote', worker.sell_orders[0], own_asset_limit=limit)
+        worker.refresh_orders()
+        worker.sync_current_orders()
+        spread_after = worker.get_actual_spread()
+        place_limited_order = False  # only first order should be limited
+
+    log.info('Worker spread: {}'.format(worker.get_actual_spread()))
+
+    # Fill only one newly placed order from another account
+    num_orders_to_fill = num_orders_to_cancel
+    for i in range(0, num_orders_to_fill):
+        price = worker.sell_orders[i]['price'] ** -1 * 1.01
+        amount = worker.sell_orders[i]['base']['amount'] * 1.01
+        log.debug('Filling {} @ {}'.format(amount, price))
+        other_worker.place_market_buy_order(amount, price)
+
+    # Cancel unmatched dust
+    other_worker.cancel_all_orders()
+    worker.refresh_orders()
+    worker.refresh_balances(use_cached_orders=True)
+
+    # Allocate obtained BASE
+    counter = 0
+    spread_after = worker.get_actual_spread()
+    while spread_after >= worker.target_spread + worker.increment:
+        worker.allocate_asset('base', worker.base_balance)
+        worker.refresh_orders()
+        worker.refresh_balances(use_cached_orders=True)
+        spread_after = worker.get_actual_spread()
+        counter += 1
+        # Counter is for preventing infinity loop
+        # Success execution means target spread is reached
+        assert counter < 20
+
+
+@pytest.mark.parametrize('mode', MODES)
+def test_allocate_asset_limiting_on_sell_side(mode, worker, other_worker, do_initial_allocation, base_account):
     """Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
     orders on side which is smaller)"""
     do_initial_allocation(worker, mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
-    additional_account = base_account()
 
     # Fill several orders
     num_orders_to_fill = 4
     for i in range(0, num_orders_to_fill):
-        price = worker.buy_orders[i]['price']
-        amount = worker.buy_orders[i]['quote']['amount'] * 1.01
-        log.debug('Filling {} @ {}'.format(amount, price))
-        worker.market.sell(price, amount, account=additional_account)
+        price = worker.buy_orders[i]['price'] / 1.01
+        amount = worker.buy_orders[i]['quote']['amount']
+        log.debug('Filling buy order buys {} QUOTE @ {}'.format(amount, price))
+        other_worker.place_market_sell_order(amount, price)
 
     # Cancel unmatched dust
-    account = Account(additional_account, bitshares_instance=worker.bitshares)
-    ids = [order['id'] for order in account.openorders if 'id' in order]
-    worker.bitshares.cancel(ids, account=additional_account)
+    other_worker.cancel_all_orders()
 
     # Allocate asset until target spread will be reached
     worker.refresh_orders()
@@ -1216,7 +1269,6 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
     spread_after = worker.get_actual_spread()
     counter = 0
     while spread_after >= worker.target_spread + worker.increment:
-        worker.allocate_asset('base', worker.base_balance)
         worker.allocate_asset('quote', worker.quote_balance)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
@@ -1227,8 +1279,14 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
 
     # Check 2 closest orders to match mode
     if worker.mode == 'valley' or worker.mode == 'sell_slope':
-        assert worker.sell_orders[0]['base']['amount'] == worker.sell_orders[1]['base']['amount']
-    elif worker.mode == 'mountain' or worker.mode == 'buy_slope':
+        assert worker.sell_orders[0]['base']['amount'] == pytest.approx(worker.sell_orders[1]['base']['amount'])
+    elif worker.mode == 'mountain':
+        assert (
+            worker.sell_orders[0]['base']['amount']
+            == pytest.approx(worker.sell_orders[1]['base']['amount'], abs=(10 ** -worker.market['quote']['precision']))
+            or worker.sell_orders[0]['base']['amount'] >= worker.sell_orders[1]['base']['amount']
+        )
+    elif worker.mode == 'buy_slope':
         assert worker.sell_orders[0]['quote']['amount'] == pytest.approx(
             worker.sell_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
@@ -1240,7 +1298,7 @@ def test_allocate_asset_limiting_on_sell_side(mode, worker, do_initial_allocatio
 
 
 @pytest.mark.parametrize('mode', MODES)
-def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation, base_account, issue_asset):
+def test_allocate_asset_limiting_on_buy_side(mode, worker, other_worker, do_initial_allocation, issue_asset):
     """Check order size limiting when placing closer order on side which is bigger (using funds obtained from filled
     orders on side which is smaller)"""
     worker.center_price = 1
@@ -1249,20 +1307,17 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     do_initial_allocation(worker, mode)
     # TODO: automatically turn off bootstrapping after target spread is closed?
     worker['bootstrapping'] = False
-    additional_account = base_account()
 
     # Fill several orders
     num_orders_to_fill = 5
     for i in range(0, num_orders_to_fill):
-        price = worker.sell_orders[i]['price'] ** -1
-        amount = worker.sell_orders[i]['base']['amount'] * 1.01
-        log.debug('Filling {} @ {}'.format(amount, price))
-        worker.market.buy(price, amount, account=additional_account)
+        price = worker.sell_orders[i]['price'] ** -1 * 1.01
+        amount = worker.sell_orders[i]['base']['amount']
+        log.debug('Filling {} QUOTE @ {}'.format(amount, price))
+        other_worker.place_market_buy_order(amount, price)
 
     # Cancel unmatched dust
-    account = Account(additional_account, bitshares_instance=worker.bitshares)
-    ids = [order['id'] for order in account.openorders if 'id' in order]
-    worker.bitshares.cancel(ids, account=additional_account)
+    other_worker.cancel_all_orders()
 
     # Allocate asset until target spread will be reached
     worker.refresh_orders()
@@ -1271,7 +1326,6 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     counter = 0
     while spread_after >= worker.target_spread + worker.increment:
         worker.allocate_asset('base', worker.base_balance)
-        worker.allocate_asset('quote', worker.quote_balance)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
         spread_after = worker.get_actual_spread()
@@ -1282,7 +1336,14 @@ def test_allocate_asset_limiting_on_buy_side(mode, worker, do_initial_allocation
     # Check 2 closest orders to match mode
     if worker.mode == 'valley' or worker.mode == 'buy_slope':
         assert worker.buy_orders[0]['base']['amount'] == worker.buy_orders[1]['base']['amount']
-    elif worker.mode == 'mountain' or worker.mode == 'sell_slope':
+    elif worker.mode == 'mountain':
+        # In mountain mode allow both equal orders and increased closest order - it may be placed without limiting
+        assert (
+            worker.buy_orders[0]['base']['amount']
+            == pytest.approx(worker.buy_orders[1]['base']['amount'], abs=(10 ** -worker.market['base']['precision']))
+            or worker.buy_orders[0]['base']['amount'] >= worker.buy_orders[1]['base']['amount']
+        )
+    elif worker.mode == 'sell_slope':
         assert worker.buy_orders[0]['quote']['amount'] == pytest.approx(
             worker.buy_orders[1]['quote']['amount'], rel=(10 ** -worker.market['base']['precision'])
         )
@@ -1302,13 +1363,12 @@ def test_get_actual_spread(worker):
     assert float('Inf') > spread > 0
 
 
-def test_stop_loss_check(worker, base_account, do_initial_allocation, issue_asset):
+def test_stop_loss_check(worker, other_worker, do_initial_allocation, issue_asset):
     worker.operational_depth = 100
     worker.target_spread = 0.1  # speed up allocation
     do_initial_allocation(worker, worker.mode)
-    additional_account = base_account()
     # Issue additional QUOTE to 2nd account
-    issue_asset(worker.market['quote']['symbol'], 500, additional_account)
+    issue_asset(worker.market['quote']['symbol'], 500, other_worker.account.name)
 
     # Sleep is needed to allow node to update ticker
     time.sleep(2)
@@ -1318,10 +1378,10 @@ def test_stop_loss_check(worker, base_account, do_initial_allocation, issue_asse
     assert worker.disabled is False
 
     # Place bid below lower bound
-    worker.market.buy(worker.lower_bound / 1.01, 1, account=additional_account)
+    other_worker.place_market_buy_order(1, worker.lower_bound / 1.01)
 
     # Fill all orders pushing price below lower bound
-    worker.market.sell(worker.lower_bound, 500, account=additional_account)
+    other_worker.place_market_sell_order(500, worker.lower_bound)
 
     time.sleep(2)
     worker.refresh_orders()

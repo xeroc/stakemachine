@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG)
 ###################
 
 
-@pytest.mark.parametrize('spread, increment', [(1, 2), pytest.param(2, 2, marks=pytest.mark.xfail(reason="bug"))])
+@pytest.mark.parametrize('spread, increment', [(1, 2), (2, 2)])
 def test_spread_increment_check(bitshares, config, so_worker_name, spread, increment):
     """Spread must be greater than increment."""
     worker_name = so_worker_name

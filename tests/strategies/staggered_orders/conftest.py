@@ -8,9 +8,17 @@ import pytest
 from bitshares.amount import Amount
 
 from dexbot.storage import Storage
+from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.staggered_orders import Strategy
 
+log = logging.getLogger("dexbot.per_worker")
+handler = logging.StreamHandler()
+formatter2 = logging.Formatter('%(asctime)s (%(module)s:%(lineno)d) - %(worker_name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter2)
+log.addHandler(handler)
+
 log = logging.getLogger("dexbot")
+log.setLevel(logging.DEBUG)
 
 MODES = ['mountain', 'valley', 'neutral', 'buy_slope', 'sell_slope']
 
@@ -61,7 +69,7 @@ def so_worker_name():
     return 'so-worker'
 
 
-@pytest.fixture(params=[('QUOTEA', 'BASEA'), ('QUOTEB', 'BASEB')])
+@pytest.fixture()
 def config(request, bitshares, account, so_worker_name):
     """
     Define worker's config with variable assets.
@@ -74,7 +82,7 @@ def config(request, bitshares, account, so_worker_name):
         'workers': {
             worker_name: {
                 'account': '{}'.format(account),
-                'market': '{}/{}'.format(request.param[0], request.param[1]),
+                'market': 'QUOTEA/BASEA',
                 'module': 'dexbot.strategies.staggered_orders',
                 'mode': 'valley',
                 'center_price': 100.0,
@@ -118,7 +126,7 @@ def config_1_sat(so_worker_name, bitshares, account_1_sat):
         'workers': {
             worker_name: {
                 'account': '{}'.format(account_1_sat),
-                'market': 'QUOTEB/BASEB',
+                'market': 'QUOTEC/BASEC',
                 'module': 'dexbot.strategies.staggered_orders',
                 'mode': 'valley',
                 'center_price': 0.00000001,
@@ -193,6 +201,16 @@ def config_multiple_workers_2(config_multiple_workers_1):
 
 
 @pytest.fixture
+def config_other_account(config, base_account, so_worker_name):
+    """ Config for other account which simulates foreign trader
+    """
+    config = copy.deepcopy(config)
+    worker_name = so_worker_name
+    config['workers'][worker_name]['account'] = base_account()
+    return config
+
+
+@pytest.fixture
 def base_worker(bitshares, so_worker_name, storage_db):
     workers = []
 
@@ -200,6 +218,10 @@ def base_worker(bitshares, so_worker_name, storage_db):
         worker = Strategy(config=config, name=worker_name, bitshares_instance=bitshares)
         # Set market center price to avoid calling of maintain_strategy()
         worker.market_center_price = worker.worker['center_price']
+        # Prevent maintenance bypass during tests
+        worker.min_check_interval = 0
+        worker.max_check_interval = 0.00000000001  # should differ from min_check_interval!
+        worker.check_interval = worker.min_check_interval
         log.info('Initialized {} on account {}'.format(worker_name, worker.account.name))
         workers.append(worker)
         return worker
@@ -240,6 +262,15 @@ def worker2(base_worker, config_variable_modes):
 
 
 @pytest.fixture
+def other_worker(so_worker_name, config_other_account):
+    """ Foreign trader
+    """
+    worker = StrategyBase(name=so_worker_name, config=config_other_account)
+    yield worker
+    worker.cancel_all_orders()
+
+
+@pytest.fixture
 def init_empty_balances(worker, bitshares):
     # Defaults are None, which breaks place_virtual_xxx_order()
     worker.quote_balance = Amount(0, worker.market['quote']['symbol'], bitshares_instance=bitshares)
@@ -253,8 +284,6 @@ def orders1(worker, bitshares, init_empty_balances):
 
     Note: this fixture don't calls refresh.xxx() intentionally!
     """
-    # Make sure there are no orders
-    worker.cancel_all_orders()
     # Prices outside of the range
     buy_price = 1  # price for test_refresh_balances()
     sell_price = worker.upper_bound + 1
@@ -276,7 +305,6 @@ def orders1(worker, bitshares, init_empty_balances):
 @pytest.fixture
 def orders2(worker):
     """Place buy+sell real orders near center price."""
-    worker.cancel_all_orders()
     buy_price = worker.market_center_price - 1
     sell_price = worker.market_center_price + 1
     # Place real orders
@@ -293,7 +321,6 @@ def orders2(worker):
 @pytest.fixture
 def orders3(worker):
     """Place buy+sell virtual orders near center price."""
-    worker.cancel_all_orders()
     worker.refresh_balances()
     buy_price = worker.market_center_price - 1
     sell_price = worker.market_center_price + 1
@@ -318,7 +345,6 @@ def orders5(worker2):
     from center."""
     worker = worker2
 
-    worker.cancel_all_orders()
     worker.refresh_balances()
 
     # Virtual orders outside of operational depth
@@ -355,7 +381,6 @@ def orders5(worker2):
 @pytest.fixture
 def partially_filled_order(worker):
     """Create partially filled order."""
-    worker.cancel_all_orders()
     order = worker.place_market_buy_order(100, 1, returnOrderId=True)
     worker.place_market_sell_order(20, 1)
     worker.refresh_balances()
@@ -398,9 +423,6 @@ def maintain_until_allocated():
     """
 
     def func(worker):
-        # Speed up a little
-        worker.min_check_interval = 0.01
-        worker.check_interval = worker.min_check_interval
         while True:
             worker.maintain_strategy()
             if not worker.check_interval == worker.min_check_interval:
@@ -428,7 +450,7 @@ def do_initial_allocation(maintain_until_allocated):
         maintain_until_allocated(worker)
         worker.refresh_orders()
         worker.refresh_balances(use_cached_orders=True)
-        worker.current_check_interval = 0
+        worker.check_interval = 0
         log.info('Initial allocation done')
 
         return worker
