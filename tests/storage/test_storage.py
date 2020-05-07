@@ -1,12 +1,33 @@
 import logging
+import tempfile
 
 import pytest
+from dexbot.storage import Storage
 
 log = logging.getLogger("dexbot")
 log.setLevel(logging.DEBUG)
 
+pytestmark = pytest.mark.mandatory
 
-@pytest.mark.mandatory
+
+def test_init(storage):
+
+    # Storage instances with same db_file using single DatabaseWorker()
+    _, db_file = tempfile.mkstemp()  # noqa: F811
+    storage1 = Storage('test', db_file=db_file)
+    storage2 = Storage('test2', db_file=db_file)
+    assert storage1.db_worker is storage2.db_worker
+
+    # Different db files - different DatabaseWorker()
+    storage3 = Storage('test')
+    assert storage3.db_worker is not storage1.db_worker
+
+
+def test_get_default_db_file(storage):
+    file_ = storage.get_default_db_file()
+    assert isinstance(file_, str)
+
+
 def test_fetch_orders(storage):
     order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
     storage.save_order(order)
@@ -15,7 +36,6 @@ def test_fetch_orders(storage):
     assert fetched[order['id']] == order
 
 
-@pytest.mark.mandatory
 def test_fetch_orders_extended(storage):
     order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
     text = 'foo bar'
@@ -38,7 +58,6 @@ def test_fetch_orders_extended(storage):
     assert result['order'] == order
 
 
-@pytest.mark.mandatory
 def test_clear_orders(storage):
     order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
     storage.save_order(order)
@@ -47,7 +66,6 @@ def test_clear_orders(storage):
     assert fetched is None
 
 
-@pytest.mark.mandatory
 def test_clear_orders_extended(storage):
     order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
     storage.save_order_extended(order, virtual=True)
@@ -61,7 +79,6 @@ def test_clear_orders_extended(storage):
     assert fetched == []
 
 
-@pytest.mark.mandatory
 def test_remove_order(storage):
     order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
     storage.save_order(order)
@@ -69,7 +86,6 @@ def test_remove_order(storage):
     assert storage.fetch_orders() is None
 
 
-@pytest.mark.mandatory
 def test_remove_order_by_id(storage):
     order = {'id': '111', 'base': '10 CNY', 'quote': '1 BTS'}
     storage.save_order(order)

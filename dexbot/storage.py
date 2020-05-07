@@ -20,9 +20,6 @@ from . import helper
 
 Base: Any = declarative_base()
 
-# For dexbot.sqlite file
-storageDatabase = "dexbot.sqlite"
-
 
 class Config(Base):
     __tablename__ = 'config'
@@ -84,35 +81,61 @@ class Storage(dict):
     """
     Storage class.
 
-    :param string category: The category to distinguish
-                            different storage namespaces
+        Storage can be instantiated with custom database path. For each db file single DatabaseWorker instance is used.
+        This allows threadsafe db access from multiple threads.
     """
 
-    def __init__(self, category):
+    # For each database path as key, we're keeping DatabaseWorker instance as value
+    __db_workers = {}
+
+    def __init__(self, category, db_file=None):
+        """
+        :param string category: The category to distinguish
+                                different storage namespaces
+        :param str db_file: path to sqlite database file
+        """
         self.category = category
 
+        db_file = db_file or self.get_default_db_file()
+        path = os.path.abspath(db_file)
+        # Get or create DatabaseWorker instance
+        self.db_worker = self.__db_workers.setdefault(path, DatabaseWorker(path))
+
+    @staticmethod
+    def get_default_db_file():
+        filename = "dexbot.sqlite"
+
+        # Derive sqlite file directory
+        data_dir = user_data_dir(APP_NAME, AUTHOR)
+        db_file = os.path.join(data_dir, filename)
+
+        # Create directory for sqlite file
+        helper.mkdir(data_dir)
+
+        return db_file
+
     def __setitem__(self, key, value):
-        db_worker.set_item(self.category, key, value)
+        self.db_worker.set_item(self.category, key, value)
 
     def __getitem__(self, key):
-        return db_worker.get_item(self.category, key)
+        return self.db_worker.get_item(self.category, key)
 
     def __delitem__(self, key):
-        db_worker.del_item(self.category, key)
+        self.db_worker.del_item(self.category, key)
 
     def __contains__(self, key):
-        return db_worker.contains(self.category, key)
+        return self.db_worker.contains(self.category, key)
 
     def items(self):
-        return db_worker.get_items(self.category)
+        return self.db_worker.get_items(self.category)
 
     def clear(self):
-        db_worker.clear(self.category)
+        self.db_worker.clear(self.category)
 
     def save_order(self, order):
         """Save the order to the database."""
         order_id = order['id']
-        db_worker.save_order(self.category, order_id, order)
+        self.db_worker.save_order(self.category, order_id, order)
 
     def save_order_extended(self, order, virtual=None, custom=None):
         """
@@ -123,7 +146,7 @@ class Storage(dict):
         :param str custom: any additional data
         """
         order_id = order['id']
-        db_worker.save_order_extended(self.category, order_id, order, virtual, custom)
+        self.db_worker.save_order_extended(self.category, order_id, order, virtual, custom)
 
     def remove_order(self, order):
         """
@@ -135,11 +158,12 @@ class Storage(dict):
             order_id = order['id']
         else:
             order_id = order
-        db_worker.remove_order(self.category, order_id)
+        self.db_worker.remove_order(self.category, order_id)
 
     def clear_orders(self):
-        """Removes all worker's orders from the database."""
-        db_worker.clear_orders(self.category)
+        """ Removes all worker's orders from the database
+        """
+        self.db_worker.clear_orders(self.category)
 
     def clear_orders_extended(self, worker=None, only_virtual=False, only_real=False, custom=None):
         """
@@ -154,7 +178,7 @@ class Storage(dict):
             raise ValueError('only_virtual and only_real are mutually exclusive')
         if not worker:
             worker = self.category
-        return db_worker.clear_orders_extended(worker, only_virtual, only_real, custom)
+        return self.db_worker.clear_orders_extended(worker, only_virtual, only_real, custom)
 
     def fetch_orders(self, worker=None):
         """
@@ -164,7 +188,7 @@ class Storage(dict):
         """
         if not worker:
             worker = self.category
-        return db_worker.fetch_orders(worker)
+        return self.db_worker.fetch_orders(worker)
 
     def fetch_orders_extended(
         self, worker=None, only_virtual=False, only_real=False, custom=None, return_ids_only=False
@@ -185,37 +209,34 @@ class Storage(dict):
             raise ValueError('only_virtual and only_real are mutually exclusive')
         if not worker:
             worker = self.category
-        return db_worker.fetch_orders_extended(worker, only_virtual, only_real, custom, return_ids_only)
+        return self.db_worker.fetch_orders_extended(worker, only_virtual, only_real, custom, return_ids_only)
 
-    @staticmethod
-    def clear_worker_data(worker):
-        db_worker.clear_orders(worker)
-        db_worker.clear(worker)
+    def clear_worker_data(self):
+        self.db_worker.clear_orders(self.category)
+        self.db_worker.clear(self.category)
 
-    @staticmethod
     def store_balance_entry(
-        account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp
+        self, account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp
     ):
         balance = Balances(account, worker, base_total, base_symbol, quote_total, quote_symbol, center_price, timestamp)
         # Save balance to db
-        db_worker.save_balance(balance)
+        self.db_worker.save_balance(balance)
 
-    @staticmethod
-    def get_balance_history(account, worker, timestamp, base_asset, quote_asset):
-        return db_worker.get_balance(account, worker, timestamp, base_asset, quote_asset)
+    def get_balance_history(self, account, worker, timestamp, base_asset, quote_asset):
+        return self.db_worker.get_balance(account, worker, timestamp, base_asset, quote_asset)
 
-    @staticmethod
-    def get_recent_balance_entry(account, worker, base_asset, quote_asset):
-        return db_worker.get_recent_balance_entry(account, worker, base_asset, quote_asset)
+    def get_recent_balance_entry(self, account, worker, base_asset, quote_asset):
+        return self.db_worker.get_recent_balance_entry(account, worker, base_asset, quote_asset)
 
 
 class DatabaseWorker(threading.Thread):
     """Thread safe database worker."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, sqlite_file, **kwargs):
+        """
+        :param str sqlite_file: path to sqlite database file
+        """
         super().__init__()
-
-        sqlite_file = kwargs.get('sqlite_file', sqlDataBaseFile)
 
         # Obtain engine and session
         dsn = 'sqlite:///{}'.format(sqlite_file)
@@ -501,13 +522,3 @@ class DatabaseWorker(threading.Thread):
         )
 
         self._set_result(token, result)
-
-
-# Derive sqlite file directory
-data_dir = user_data_dir(APP_NAME, AUTHOR)
-sqlDataBaseFile = os.path.join(data_dir, storageDatabase)
-
-# Create directory for sqlite file
-helper.mkdir(data_dir)
-
-db_worker = DatabaseWorker()
