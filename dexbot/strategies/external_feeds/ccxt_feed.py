@@ -34,7 +34,7 @@ async def fetch_ticker(exchange, symbol):
 
 
 def get_ccxt_price(symbol, exchange_name):
-    """ Get all tickers from multiple exchanges using async """
+    """Get all tickers from multiple exchanges using async."""
     center_price = None
 
     async_loop = asyncio.new_event_loop()

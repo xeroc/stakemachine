@@ -49,16 +49,17 @@ DetailElement = collections.namedtuple('DetailTab', 'type name title file')
 class BaseConfig:
     @classmethod
     def configure(cls, return_base_config=True):
-        """ Return a list of ConfigElement objects defining the configuration values for this class.
+        """
+        Return a list of ConfigElement objects defining the configuration values for this class.
 
-            User interfaces should then generate widgets based on these values, gather data and save back to
-            the config dictionary for the worker.
+        User interfaces should then generate widgets based on these values, gather data and save back to
+        the config dictionary for the worker.
 
-            NOTE: When overriding you almost certainly will want to call the ancestor and then
-            add your config values to the list.
+        NOTE: When overriding you almost certainly will want to call the ancestor and then
+        add your config values to the list.
 
-            :param return_base_config: bool:
-            :return: Returns a list of config elements
+        :param return_base_config: bool:
+        :return: Returns a list of config elements
         """
 
         # Common configs
@@ -99,16 +100,17 @@ class BaseConfig:
 
     @classmethod
     def configure_details(cls, include_default_tabs=True):
-        """ Return a list of ConfigElement objects defining the configuration values for this class.
+        """
+        Return a list of ConfigElement objects defining the configuration values for this class.
 
-            User interfaces should then generate widgets based on these values, gather data and save back to
-            the config dictionary for the worker.
+        User interfaces should then generate widgets based on these values, gather data and save back to
+        the config dictionary for the worker.
 
-            NOTE: When overriding you almost certainly will want to call the ancestor and then
-            add your config values to the list.
+        NOTE: When overriding you almost certainly will want to call the ancestor and then
+        add your config values to the list.
 
-            :param include_default_tabs: bool:
-            :return: Returns a list of Detail elements
+        :param include_default_tabs: bool:
+        :return: Returns a list of Detail elements
         """
 
         # Common configs

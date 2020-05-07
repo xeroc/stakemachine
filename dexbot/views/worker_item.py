@@ -1,9 +1,10 @@
 import re
 
+from PyQt5 import QtCore, QtWidgets
+
 from dexbot.controllers.worker_controller import WorkerController
 from dexbot.storage import db_worker
 from dexbot.views.errors import gui_error
-from PyQt5 import QtCore, QtWidgets
 
 from .confirmation import ConfirmationDialog
 from .edit_worker import EditWorkerView
@@ -153,8 +154,7 @@ class WorkerItemWidget(QtWidgets.QWidget, Ui_widget):
         self.deleteLater()
 
     def reload_widget(self, worker_name):
-        """ Reload the data of the widget
-        """
+        """Reload the data of the widget."""
         self.worker_config = self.main_ctrl.config.get_worker_config(worker_name)
         self.setup_ui_data(self.worker_config)
         self._pause_worker()

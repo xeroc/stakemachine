@@ -2,6 +2,7 @@ import logging
 import math
 
 import pytest
+
 from dexbot.strategies.staggered_orders import VirtualOrder
 
 # Turn on debug for dexbot logger
@@ -15,8 +16,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def test_refresh_balances(orders1):
-    """ Check if balance refresh works
-    """
+    """Check if balance refresh works."""
     worker = orders1
     worker.refresh_balances()
     balance = worker.count_asset()
@@ -28,9 +28,10 @@ def test_refresh_balances(orders1):
 
 
 def test_refresh_orders(orders1):
-    """ Make sure orders refresh is working
+    """
+    Make sure orders refresh is working.
 
-        Note: this test doesn't checks orders sorting
+    Note: this test doesn't checks orders sorting
     """
     worker = orders1
     worker.refresh_orders()
@@ -43,8 +44,7 @@ def test_refresh_orders(orders1):
 
 
 def test_check_min_order_size(worker):
-    """ Make sure our orders are always match minimal allowed size
-    """
+    """Make sure our orders are always match minimal allowed size."""
     worker.calculate_min_amounts()
     if worker.order_min_quote > worker.order_min_base:
         # Limiting asset is QUOTE
@@ -62,8 +62,7 @@ def test_check_min_order_size(worker):
 
 
 def test_remove_outside_orders(orders1):
-    """ All orders in orders1 fixture are outside of the range, so remove_outside_orders() should cancel all
-    """
+    """All orders in orders1 fixture are outside of the range, so remove_outside_orders() should cancel all."""
     worker = orders1
     worker.refresh_orders()
     assert worker.remove_outside_orders(worker.sell_orders, worker.buy_orders)
@@ -72,8 +71,7 @@ def test_remove_outside_orders(orders1):
 
 
 def test_restore_virtual_orders(orders2):
-    """ Basic test to make sure virtual orders are placed on further ends
-    """
+    """Basic test to make sure virtual orders are placed on further ends."""
     worker = orders2
     # Restore virtual orders from scratch (db is empty at this moment)
     worker.restore_virtual_orders()
@@ -89,8 +87,7 @@ def test_restore_virtual_orders(orders2):
 
 
 def test_replace_real_order_with_virtual(orders2):
-    """ Try to replace 2 furthest orders with virtual, then compare difference
-    """
+    """Try to replace 2 furthest orders with virtual, then compare difference."""
     worker = orders2
     worker.virtual_orders = []
     num_orders_before = len(worker.real_buy_orders) + len(worker.real_sell_orders)
@@ -103,8 +100,7 @@ def test_replace_real_order_with_virtual(orders2):
 
 
 def test_replace_virtual_order_with_real(orders3):
-    """ Try to replace 2 furthest virtual orders with real orders
-    """
+    """Try to replace 2 furthest virtual orders with real orders."""
     worker = orders3
     num_orders_before = len(worker.virtual_orders)
     num_real_orders_before = len(worker.own_orders)
@@ -117,8 +113,7 @@ def test_replace_virtual_order_with_real(orders3):
 
 
 def test_store_profit_estimation_data(worker, storage_db):
-    """ Check if storing of profit estimation data works
-    """
+    """Check if storing of profit estimation data works."""
     worker.refresh_balances()
     worker.store_profit_estimation_data(force=True)
     account = worker.worker.get('account')
@@ -129,8 +124,7 @@ def test_store_profit_estimation_data(worker, storage_db):
 
 
 def test_check_partial_fill(worker, partially_filled_order):
-    """ Test that check_partial_fill() can detect partially filled order
-    """
+    """Test that check_partial_fill() can detect partially filled order."""
     is_not_partially_filled = worker.check_partial_fill(partially_filled_order, fill_threshold=0)
     assert not is_not_partially_filled
     is_not_partially_filled = worker.check_partial_fill(partially_filled_order, fill_threshold=90)
@@ -138,16 +132,14 @@ def test_check_partial_fill(worker, partially_filled_order):
 
 
 def test_replace_partially_filled_order(worker, partially_filled_order):
-    """ Test if replace_partially_filled_order() do correct replacement
-    """
+    """Test if replace_partially_filled_order() do correct replacement."""
     worker.replace_partially_filled_order(partially_filled_order)
     new_order = worker.own_orders[0]
     assert new_order['base']['amount'] == new_order['for_sale']['amount']
 
 
 def test_place_lowest_buy_order(worker2):
-    """ Check if placement of lowest buy order works in general
-    """
+    """Check if placement of lowest buy order works in general."""
     worker = worker2
     worker.refresh_balances()
     worker.place_lowest_buy_order(worker.base_balance)
@@ -158,8 +150,7 @@ def test_place_lowest_buy_order(worker2):
 
 
 def test_place_highest_sell_order(worker2):
-    """ Check if placement of highest sell order works in general
-    """
+    """Check if placement of highest sell order works in general."""
     worker = worker2
     worker.refresh_balances()
     worker.place_highest_sell_order(worker.quote_balance)
@@ -171,11 +162,12 @@ def test_place_highest_sell_order(worker2):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_real_or_virtual(orders5, asset):
-    """ Closer order may be real or virtual, depending on distance from the center and operational_depth
+    """
+    Closer order may be real or virtual, depending on distance from the center and operational_depth.
 
-        1. Closer order within operational depth must be real
-        2. Closer order outside of operational depth must be virtual if previous order is virtual
-        3. Closer order outside of operational depth must be real if previous order is real
+    1. Closer order within operational depth must be real
+    2. Closer order outside of operational depth must be virtual if previous order is virtual
+    3. Closer order outside of operational depth must be real if previous order is real
     """
     worker = orders5
     if asset == 'base':
@@ -208,8 +200,7 @@ def test_place_closer_order_real_or_virtual(orders5, asset):
 @pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_price_amount(orders5, asset):
-    """ Test that closer order price and amounts are correct
-    """
+    """Test that closer order price and amounts are correct."""
     worker = orders5
 
     if asset == 'base':
@@ -243,8 +234,7 @@ def test_place_closer_order_price_amount(orders5, asset):
 @pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_no_place_order(orders5, asset):
-    """ Test place_closer_order() with place_order=False kwarg
-    """
+    """Test place_closer_order() with place_order=False kwarg."""
     worker = orders5
 
     if asset == 'base':
@@ -271,8 +261,7 @@ def test_place_closer_order_no_place_order(orders5, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_allow_partial_hard_limit(orders2, asset):
-    """ Test place_closer_order with allow_partial=True when avail balance is less than minimal allowed order size
-    """
+    """Test place_closer_order with allow_partial=True when avail balance is less than minimal allowed order size."""
     worker = orders2
 
     if asset == 'base':
@@ -294,9 +283,8 @@ def test_place_closer_order_allow_partial_hard_limit(orders2, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_allow_partial(orders2, asset):
-    """ Test place_closer_order with allow_partial=True when avail balance is more than self.partial_fill_threshold
-        restriction (enough for partial order)
-    """
+    """Test place_closer_order with allow_partial=True when avail balance is more than self.partial_fill_threshold
+    restriction (enough for partial order)"""
     worker = orders2
 
     if asset == 'base':
@@ -315,8 +303,7 @@ def test_place_closer_order_allow_partial(orders2, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_not_allow_partial(orders2, asset):
-    """ Test place_closer_order with allow_partial=False
-    """
+    """Test place_closer_order with allow_partial=False."""
     worker = orders2
 
     if asset == 'base':
@@ -335,8 +322,7 @@ def test_place_closer_order_not_allow_partial(orders2, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_own_asset_limit(orders5, asset):
-    """ Place closer order with own_asset_limit, test that amount of a new order is matching limit
-    """
+    """Place closer order with own_asset_limit, test that amount of a new order is matching limit."""
     worker = orders5
 
     if asset == 'base':
@@ -353,8 +339,7 @@ def test_place_closer_order_own_asset_limit(orders5, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_opposite_asset_limit(orders5, asset):
-    """  Place closer order with opposite_asset_limit, test that amount of a new order is matching limit
-    """
+    """Place closer order with opposite_asset_limit, test that amount of a new order is matching limit."""
     worker = orders5
 
     if asset == 'base':
@@ -371,8 +356,7 @@ def test_place_closer_order_opposite_asset_limit(orders5, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_closer_order_instant_fill_disabled(orders5, asset):
-    """ When instant fill is disabled, new order should not cross lowest ask or highest bid
-    """
+    """When instant fill is disabled, new order should not cross lowest ask or highest bid."""
     worker = orders5
 
     if asset == 'base':
@@ -389,11 +373,12 @@ def test_place_closer_order_instant_fill_disabled(orders5, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_real_or_virtual(orders5, asset):
-    """ Further order may be real or virtual, depending on distance from the center and operational_depth
+    """
+    Further order may be real or virtual, depending on distance from the center and operational_depth.
 
-        1. Further order within operational depth must be real
-        2. Further order within operational depth must be virtual if virtual=True was given
-        2. Further order outside of operational depth must be virtual
+    1. Further order within operational depth must be real
+    2. Further order within operational depth must be virtual if virtual=True was given
+    2. Further order outside of operational depth must be virtual
     """
     worker = orders5
     if asset == 'base':
@@ -418,8 +403,7 @@ def test_place_further_order_real_or_virtual(orders5, asset):
 @pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_price_amount(orders5, asset):
-    """ Test that further order price and amounts are correct
-    """
+    """Test that further order price and amounts are correct."""
     worker = orders5
 
     if asset == 'base':
@@ -453,8 +437,7 @@ def test_place_further_order_price_amount(orders5, asset):
 @pytest.mark.xfail(reason='https://github.com/bitshares/python-bitshares/issues/227')
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_no_place_order(orders5, asset):
-    """ Test place_further_order() with place_order=False kwarg
-    """
+    """Test place_further_order() with place_order=False kwarg."""
     worker = orders5
 
     if asset == 'base':
@@ -482,8 +465,7 @@ def test_place_further_order_no_place_order(orders5, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_not_allow_partial(orders2, asset):
-    """ Test place_further_order with allow_partial=False
-    """
+    """Test place_further_order with allow_partial=False."""
     worker = orders2
 
     if asset == 'base':
@@ -502,8 +484,7 @@ def test_place_further_order_not_allow_partial(orders2, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_allow_partial_hard_limit(orders2, asset):
-    """ Test place_further_order with allow_partial=True when avail balance is less than minimal allowed order size
-    """
+    """Test place_further_order with allow_partial=True when avail balance is less than minimal allowed order size."""
     worker = orders2
 
     if asset == 'base':
@@ -525,8 +506,7 @@ def test_place_further_order_allow_partial_hard_limit(orders2, asset):
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])
 def test_place_further_order_allow_partial(orders2, asset):
-    """ Test place_further_order with allow_partial=True
-    """
+    """Test place_further_order with allow_partial=True."""
     worker = orders2
 
     if asset == 'base':

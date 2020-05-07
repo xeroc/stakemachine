@@ -7,6 +7,7 @@ from bitshares.amount import Amount
 from bitshares.asset import Asset
 from bitshares.dex import Dex
 from bitshares.price import Price
+
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.king_of_the_hill import Strategy
 
@@ -17,8 +18,7 @@ MODES = ['both', 'buy', 'sell']
 
 @pytest.fixture(scope='session')
 def assets(create_asset):
-    """ Create some assets with different precision
-    """
+    """Create some assets with different precision."""
     create_asset('BASEA', 3)
     create_asset('QUOTEA', 8)
     create_asset('BASEB', 8)
@@ -27,15 +27,13 @@ def assets(create_asset):
 
 @pytest.fixture(scope='module')
 def kh_worker_name():
-    """ Fixture to share king_of_the_hill Orders worker name
-    """
+    """Fixture to share king_of_the_hill Orders worker name."""
     return 'kh-worker'
 
 
 @pytest.fixture(scope='module')
 def base_account(assets, prepare_account):
-    """ Factory to generate random account with pre-defined balances
-    """
+    """Factory to generate random account with pre-defined balances."""
 
     def func():
         account = prepare_account({'BASEA': 10000, 'QUOTEA': 100, 'BASEB': 10000, 'QUOTEB': 100, 'TEST': 1000})
@@ -46,16 +44,16 @@ def base_account(assets, prepare_account):
 
 @pytest.fixture(scope='module')
 def account(base_account):
-    """ Prepare worker account with some balance
-    """
+    """Prepare worker account with some balance."""
     return base_account()
 
 
 @pytest.fixture(params=[('QUOTEA', 'BASEA'), ('QUOTEB', 'BASEB')])
 def config(request, bitshares, account, kh_worker_name):
-    """ Define worker's config with variable assets
+    """
+    Define worker's config with variable assets.
 
-        This fixture should be function-scoped to use new fresh bitshares account for each test
+    This fixture should be function-scoped to use new fresh bitshares account for each test
     """
     worker_name = kh_worker_name
     config = {
@@ -83,8 +81,7 @@ def config(request, bitshares, account, kh_worker_name):
 
 @pytest.fixture(params=MODES)
 def config_variable_modes(request, config, kh_worker_name):
-    """ Test config which tests all modes
-    """
+    """Test config which tests all modes."""
     worker_name = kh_worker_name
     config = copy.deepcopy(config)
     config['workers'][worker_name]['mode'] = request.param
@@ -93,8 +90,7 @@ def config_variable_modes(request, config, kh_worker_name):
 
 @pytest.fixture(params=[0, 1])
 def config_bitasset_market(request, kh_worker_name, bitasset_local, bitshares, account):
-    """ Produces a config with market MPA:COLLATERAL or COLLATERAL:MPA
-    """
+    """Produces a config with market MPA:COLLATERAL or COLLATERAL:MPA."""
     worker_name = kh_worker_name
     bitasset = bitasset_local
     market = f'{bitasset.symbol}/TEST' if request.param == 0 else f'TEST/{bitasset.symbol}'
@@ -123,8 +119,7 @@ def config_bitasset_market(request, kh_worker_name, bitasset_local, bitshares, a
 
 @pytest.fixture
 def config_other_account(config, base_account, kh_worker_name):
-    """ Config for other account which simulates foreign trader
-    """
+    """Config for other account which simulates foreign trader."""
     config = copy.deepcopy(config)
     worker_name = kh_worker_name
     config['workers'][worker_name]['account'] = base_account()
@@ -133,8 +128,7 @@ def config_other_account(config, base_account, kh_worker_name):
 
 @pytest.fixture
 def base_worker(bitshares, kh_worker_name):
-    """ Fixture to create KOTH worker
-    """
+    """Fixture to create KOTH worker."""
     worker_name = kh_worker_name
     workers = []
 
@@ -153,32 +147,28 @@ def base_worker(bitshares, kh_worker_name):
 
 @pytest.fixture
 def worker(base_worker, config):
-    """ Worker to test in single mode (for methods which not required to be tested against all modes)
-    """
+    """Worker to test in single mode (for methods which not required to be tested against all modes)"""
     worker = base_worker(config)
     return worker
 
 
 @pytest.fixture
 def worker2(base_worker, config_variable_modes):
-    """ Worker to test all modes
-    """
+    """Worker to test all modes."""
     worker = base_worker(config_variable_modes)
     return worker
 
 
 @pytest.fixture
 def worker_bitasset(base_worker, config_bitasset_market):
-    """ Worker operating on MPA/COLLATERAL market
-    """
+    """Worker operating on MPA/COLLATERAL market."""
     worker = base_worker(config_bitasset_market)
     return worker
 
 
 @pytest.fixture
 def orders1(worker):
-    """ Place buy and sell order using worker account
-    """
+    """Place buy and sell order using worker account."""
     worker.place_market_buy_order(1, 100, returnOrderId=True)
     worker.place_market_sell_order(1, 200, returnOrderId=True)
     yield worker
@@ -196,8 +186,7 @@ def other_worker(bitshares, kh_worker_name, config_other_account):
 
 @pytest.fixture
 def other_orders(other_worker):
-    """ Place some orders from second account to simulate foreign trader
-    """
+    """Place some orders from second account to simulate foreign trader."""
     worker = other_worker
     worker.place_market_buy_order(10, 0.9)
     worker.place_market_buy_order(10, 1)
@@ -209,8 +198,7 @@ def other_orders(other_worker):
 
 @pytest.fixture
 def other_orders_out_of_bounds(other_orders):
-    """ Extend other_orders by placing additional orders out of bounds
-    """
+    """Extend other_orders by placing additional orders out of bounds."""
     worker = other_orders
     worker.place_market_buy_order(10, worker.worker['upper_bound'] * 1.2)
     worker.place_market_sell_order(10, worker.worker['lower_bound'] / 1.2)

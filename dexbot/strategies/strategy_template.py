@@ -12,33 +12,34 @@ STRATEGY_NAME = 'Strategy Template'
 
 
 class Strategy(StrategyBase):
-    """ <strategy_name>
+    """
+    <strategy_name>
 
-        Replace <strategy_name> with the name of the strategy.
+    Replace <strategy_name> with the name of the strategy.
 
-        This is a template strategy which can be used to create custom strategies easier. The base for the strategy is
-        ready. It is recommended comment the strategy and functions to help other developers to make changes.
+    This is a template strategy which can be used to create custom strategies easier. The base for the strategy is
+    ready. It is recommended comment the strategy and functions to help other developers to make changes.
 
-        Adding strategy to GUI
-        In dexbot.controller.worker_controller add new strategy inside strategies() as show below:
+    Adding strategy to GUI
+    In dexbot.controller.worker_controller add new strategy inside strategies() as show below:
 
-            strategies['dexbot.strategies.strategy_template'] = {
-                'name': '<strategy_name>',
-                'form_module': ''
-            }
+        strategies['dexbot.strategies.strategy_template'] = {
+            'name': '<strategy_name>',
+            'form_module': ''
+        }
 
-            key: Strategy location in the project
-            name: The name that is shown in the GUI for user
-            form_module: If there is custom form module created with QTDesigner
+        key: Strategy location in the project
+        name: The name that is shown in the GUI for user
+        form_module: If there is custom form module created with QTDesigner
 
-        Adding strategy to CLI
-        In dexbot.cli_conf add strategy in to the STRATEGIES list
+    Adding strategy to CLI
+    In dexbot.cli_conf add strategy in to the STRATEGIES list
 
-            {'tag': 'strategy_temp',
-             'class': 'dexbot.strategies.strategy_template',
-             'name': 'Template Strategy'},
+        {'tag': 'strategy_temp',
+         'class': 'dexbot.strategies.strategy_template',
+         'name': 'Template Strategy'},
 
-        NOTE: Change this comment section to describe the strategy.
+    NOTE: Change this comment section to describe the strategy.
     """
 
     @classmethod
@@ -102,39 +103,37 @@ class Strategy(StrategyBase):
         self.log.info("{} initialized.".format(STRATEGY_NAME))
 
     def maintain_strategy(self):
-        """ Strategy main loop
+        """
+        Strategy main loop.
 
-            This method contains the strategy's logic. Keeping this function as simple as possible is recommended.
+        This method contains the strategy's logic. Keeping this function as simple as possible is recommended.
 
-            Note: All orders are "buy" orders, since they are flipped to be easier to handle. Keep them separated to
-            avoid confusion on problems.
+        Note: All orders are "buy" orders, since they are flipped to be easier to handle. Keep them separated to
+        avoid confusion on problems.
 
-            Placing an order to the market has been made simple. Placing a buy order for example requires two values:
-            Amount (as QUOTE asset) and price (which is BASE amount divided by QUOTE amount)
+        Placing an order to the market has been made simple. Placing a buy order for example requires two values:
+        Amount (as QUOTE asset) and price (which is BASE amount divided by QUOTE amount)
 
-            "Placing to buy 100 ASSET_A with price of 10 ASSET_A / ASSET_B" would be place_market_buy_order(100, 10).
-            This would then cost 1000 USD to fulfil.
+        "Placing to buy 100 ASSET_A with price of 10 ASSET_A / ASSET_B" would be place_market_buy_order(100, 10).
+        This would then cost 1000 USD to fulfil.
 
-            Further documentation can be found from the function's documentation.
-
+        Further documentation can be found from the function's documentation.
         """
         # Start writing strategy logic from here.
         self.log.info("Starting {}".format(STRATEGY_NAME))
 
     def check_orders(self, *args, **kwargs):
-        """  """
-        pass
+        """"""
 
     def error(self, *args, **kwargs):
-        """ Defines what happens when error occurs """
+        """Defines what happens when error occurs."""
         self.disabled = True
 
     def pause(self):
-        """ Override pause() in StrategyBase """
-        pass
+        """Override pause() in StrategyBase."""
 
     def tick(self, d):
-        """ Ticks come in on every block """
+        """Ticks come in on every block."""
         if not (self.counter or 0) % 3:
             self.maintain_strategy()
         self.counter += 1

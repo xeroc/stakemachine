@@ -1,6 +1,7 @@
-from dexbot.config import Config
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QTreeWidgetItem
+
+from dexbot.config import Config
 
 
 class SettingsController:
@@ -9,8 +10,7 @@ class SettingsController:
         self.view = view
 
     def add_node(self):
-        """  Add item in the widget tree list
-        """
+        """Add item in the widget tree list."""
         item = QTreeWidgetItem(self.view.nodes_tree_widget)
         item.setText(0, '')
         item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
@@ -22,8 +22,7 @@ class SettingsController:
         self.view.notification_label.setText('Unsaved changes detected; Node added.')
 
     def move_up(self):
-        """  Move item up in the widget tree list
-        """
+        """Move item up in the widget tree list."""
         current_index = self.view.nodes_tree_widget.indexOfTopLevelItem(self.view.nodes_tree_widget.currentItem())
 
         # This prevents moving item out of the list
@@ -39,8 +38,7 @@ class SettingsController:
             self.view.notification_label.setText('Unsaved changes detected; List order has changed.')
 
     def move_down(self):
-        """  Move item down in the widget tree list
-        """
+        """Move item down in the widget tree list."""
         current_index = self.view.nodes_tree_widget.indexOfTopLevelItem(self.view.nodes_tree_widget.currentItem())
 
         # This prevents moving item out of the list
@@ -56,9 +54,10 @@ class SettingsController:
             self.view.notification_label.setText('Unsaved changes detected; List order has changed.')
 
     def save_settings(self):
-        """  Save items in the tree widget list into the config file and close window
+        """
+        Save items in the tree widget list into the config file and close window.
 
-            :returns int: 1 settings saved (accepted)
+        :returns int: 1 settings saved (accepted)
         """
         nodes = []
 
@@ -74,8 +73,7 @@ class SettingsController:
             self.view.accept()
 
     def remove_node(self):
-        """  Remove item from the widget tree list
-        """
+        """Remove item from the widget tree list."""
         node = self.view.nodes_tree_widget.currentItem()
 
         if node:
@@ -85,9 +83,10 @@ class SettingsController:
             self.view.notification_label.setText('Unsaved changes detected; Node removed.')
 
     def initialize_node_list(self, nodes=None):
-        """ Populates Tree Widget with nodes
+        """
+        Populates Tree Widget with nodes.
 
-            :param nodes: List of nodes that can be applied to the widget instead of getting them from the config file.
+        :param nodes: List of nodes that can be applied to the widget instead of getting them from the config file.
         """
         # Make sure there are no widgets in the list
         self.view.nodes_tree_widget.clear()
@@ -105,8 +104,7 @@ class SettingsController:
                 item.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
 
     def save_nodes_to_config(self, nodes):
-        """ Save nodes to the config file
-        """
+        """Save nodes to the config file."""
         # Remove empty nodes before saving, this is just to make sure no empty strings end up in config file
         nodes = self.remove_empty_items(nodes)
 
@@ -126,14 +124,14 @@ class SettingsController:
 
     @staticmethod
     def remove_empty_items(items):
-        """ Removes empty strings from a list
-        """
+        """Removes empty strings from a list."""
         return list(filter(None, items))
 
     @property
     def nodes(self):
-        """ Returns nodes list from the config file
+        """
+        Returns nodes list from the config file.
 
-            :return: Nodes list
+        :return: Nodes list
         """
         return self.config.get('node')

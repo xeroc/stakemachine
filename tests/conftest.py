@@ -33,17 +33,18 @@ def default_account():
 
 @pytest.fixture(scope='session')
 def session_id():
-    """ Generate unique session id. This is needed in case testsuite may run in parallel on the same server, for example
-        if CI/CD is being used. CI/CD infrastructure may run tests for each commit, so these tests should not influence
-        each other.
+    """
+    Generate unique session id.
+
+    This is needed in case testsuite may run in parallel on the same server, for example if CI/CD is being used. CI/CD
+    infrastructure may run tests for each commit, so these tests should not influence each other.
     """
     return str(uuid.uuid4())
 
 
 @pytest.fixture(scope='session')
 def unused_port():
-    """ Obtain unused port to bind some service
-    """
+    """Obtain unused port to bind some service."""
 
     def _unused_port():
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -55,17 +56,17 @@ def unused_port():
 
 @pytest.fixture(scope='session')
 def docker_manager():
-    """ Initialize docker management client
-    """
+    """Initialize docker management client."""
     return docker.from_env(version='auto')
 
 
 @pytest.fixture(scope='session')
 def bitshares_testnet(session_id, unused_port, docker_manager):
-    """ Run bitshares-core inside local docker container
+    """
+    Run bitshares-core inside local docker container.
 
-        Manual run example:
-        $ docker run --name bitshares -p 0.0.0.0:8091:8091 -v `pwd`/cfg:/etc/bitshares/ bitshares/bitshares-core:testnet
+    Manual run example: $ docker run --name bitshares -p 0.0.0.0:8091:8091 -v `pwd`/cfg:/etc/bitshares/
+    bitshares/bitshares-core:testnet
     """
     port = unused_port()
     container = docker_manager.containers.run(
@@ -89,8 +90,7 @@ def bitshares_testnet(session_id, unused_port, docker_manager):
 
 @pytest.fixture(scope='session')
 def bitshares_instance(bitshares_testnet):
-    """ Initialize BitShares instance connected to a local testnet
-    """
+    """Initialize BitShares instance connected to a local testnet."""
     bitshares = BitShares(
         node='ws://127.0.0.1:{}'.format(bitshares_testnet.service_port), keys=PRIVATE_KEYS, num_retries=10
     )
@@ -105,23 +105,20 @@ def bitshares_instance(bitshares_testnet):
 
 @pytest.fixture(scope='session')
 def claim_balance(bitshares_instance, default_account):
-    """ Transfer balance from genesis into actual account
-    """
+    """Transfer balance from genesis into actual account."""
     genesis_balance = GenesisBalance('1.15.0', bitshares_instance=bitshares_instance)
     genesis_balance.claim(account=default_account)
 
 
 @pytest.fixture(scope='session')
 def bitshares(bitshares_instance, claim_balance):
-    """ Prepare the testnet and return BitShares instance
-    """
+    """Prepare the testnet and return BitShares instance."""
     return bitshares_instance
 
 
 @pytest.fixture(scope='session')
 def create_asset(bitshares, default_account):
-    """ Create a new asset
-    """
+    """Create a new asset."""
 
     def _create_asset(asset, precision, is_bitasset=False):
         max_supply = 1000000000000000 / 10 ** precision if precision > 0 else 1000000000000000
@@ -134,11 +131,12 @@ def create_asset(bitshares, default_account):
 
 @pytest.fixture(scope='session')
 def issue_asset(bitshares):
-    """ Issue asset shares to specified account
+    """
+    Issue asset shares to specified account.
 
-        :param str asset: asset symbol to issue
-        :param float amount: amount to issue
-        :param str to: account name to receive new shares
+    :param str asset: asset symbol to issue
+    :param float amount: amount to issue
+    :param str to: account name to receive new shares
     """
 
     def _issue_asset(asset, amount, to):
@@ -171,8 +169,7 @@ def base_bitasset(bitshares, unused_asset, default_account):
 
 @pytest.fixture(scope='session')
 def create_account(bitshares, default_account):
-    """ Create new account
-    """
+    """Create new account."""
 
     def _create_account(account):
         parent_account = Account(default_account, bitshares_instance=bitshares)
@@ -193,8 +190,7 @@ def create_account(bitshares, default_account):
 
 @pytest.fixture(scope='session')
 def unused_account(bitshares):
-    """ Find unexistent account
-    """
+    """Find unexistent account."""
 
     def _unused_account():
         _range = 100000
@@ -223,14 +219,15 @@ def unused_asset(bitshares):
 
 @pytest.fixture(scope='session')
 def prepare_account(bitshares, unused_account, create_account, create_asset, issue_asset, default_account):
-    """ Ensure an account with specified amounts of assets. Account must not exist!
+    """
+    Ensure an account with specified amounts of assets. Account must not exist!
 
-        :param dict assets: assets to credit account balance with
-        :param str account: (optional) account name to prepare (default: generate random account name)
-        :return: account name
-        :rtype: str
+    :param dict assets: assets to credit account balance with
+    :param str account: (optional) account name to prepare (default: generate random account name)
+    :return: account name
+    :rtype: str
 
-        Example assets: {'FOO': 1000, 'BAR': 5000}
+    Example assets: {'FOO': 1000, 'BAR': 5000}
     """
 
     def _prepare_account(assets, account=None):

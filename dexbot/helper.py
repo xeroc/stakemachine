@@ -5,6 +5,7 @@ import os
 import shutil
 
 from appdirs import user_data_dir
+
 from dexbot import APP_NAME, AUTHOR
 
 
@@ -18,8 +19,7 @@ def mkdir(d):
 
 
 def remove(path):
-    """ Removes a file or a directory even if they don't exist
-    """
+    """Removes a file or a directory even if they don't exist."""
     if os.path.isfile(path):
         try:
             os.remove(path)
@@ -34,23 +34,23 @@ def remove(path):
 
 
 def truncate(number, decimals):
-    """ Change the decimal point of a number without rounding
+    """
+    Change the decimal point of a number without rounding.
 
-        :param float | number: A float number to be cut down
-        :param int | decimals: Number of decimals to be left to the float number
-        :return: Price with specified precision
+    :param float | number: A float number to be cut down
+    :param int | decimals: Number of decimals to be left to the float number
+    :return: Price with specified precision
     """
     return math.floor(number * 10 ** decimals) / 10 ** decimals
 
 
 def get_user_data_directory():
-    """ Returns the user data directory path which contains history, sql and logs
-    """
+    """Returns the user data directory path which contains history, sql and logs."""
     return user_data_dir(APP_NAME, AUTHOR)
 
 
 def initialize_data_folders():
-    """ Creates folders for strategies to store files """
+    """Creates folders for strategies to store files."""
     user_data_directory = get_user_data_directory()
     mkdir(os.path.join(user_data_directory, 'graphs'))
     mkdir(os.path.join(user_data_directory, 'data'))
@@ -58,8 +58,7 @@ def initialize_data_folders():
 
 
 def initialize_orders_log():
-    """ Creates .csv log file, adds the headers first time only
-    """
+    """Creates .csv log file, adds the headers first time only."""
     data_dir = get_user_data_directory()
     filename = os.path.join(data_dir, 'history.csv')
     file = os.path.isfile(filename)
@@ -84,13 +83,15 @@ try:
     import pkg_resources
 
     def find_external_strategies():
-        """Use setuptools introspection to find third-party strategies the user may have installed.
-        Packages that provide a strategy should export a setuptools "entry point" (see setuptools docs)
-        with group "dexbot.strategy", "name" is the display name of the strategy.
-        Only set the module not any attribute (because it would always be a class called "Strategy")
-        If you want a handwritten graphical UI, define "Ui_Form" and "StrategyController" in the same module
+        """
+        Use setuptools introspection to find third-party strategies the user may have installed. Packages that provide a
+        strategy should export a setuptools "entry point" (see setuptools docs) with group "dexbot.strategy", "name" is
+        the display name of the strategy. Only set the module not any attribute (because it would always be a class
+        called "Strategy") If you want a handwritten graphical UI, define "Ui_Form" and "StrategyController" in the same
+        module.
 
-        yields a 2-tuple: description, module name"""
+        yields a 2-tuple: description, module name
+        """
         for entry_point in pkg_resources.iter_entry_points("dexbot.strategy"):
             yield (entry_point.name, entry_point.module_name)
 

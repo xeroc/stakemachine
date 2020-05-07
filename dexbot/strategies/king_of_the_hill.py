@@ -2,6 +2,7 @@ import copy
 from decimal import Decimal
 
 from bitshares.price import Price
+
 from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.koth_config import KothConfig
@@ -10,18 +11,19 @@ STRATEGY_NAME = 'King of the Hill'
 
 
 class Strategy(StrategyBase):
-    """ King of the Hill strategy
+    """
+    King of the Hill strategy.
 
-        This worker will place a buy or sell order for an asset and update so that the users order stays closest to the
-        opposing order book.
+    This worker will place a buy or sell order for an asset and update so that the users order stays closest to the
+    opposing order book.
 
-        Moving forward: If any other orders are placed closer to the opposing order book the worker will cancel the
-        users order and replace it with one that is the smallest possible increment closer to the opposing order book
-        than any other orders.
+    Moving forward: If any other orders are placed closer to the opposing order book the worker will cancel the
+    users order and replace it with one that is the smallest possible increment closer to the opposing order book
+    than any other orders.
 
-        Moving backward: If the users order is the closest to the opposing order book but a gap opens up on the order
-        book behind the users order the worker will cancel the order and place it at the smallest possible increment
-        closer to the opposing order book than any other order.
+    Moving backward: If the users order is the closest to the opposing order book but a gap opens up on the order
+    book behind the users order the worker will cancel the order and place it at the smallest possible increment
+    closer to the opposing order book than any other order.
     """
 
     @classmethod
@@ -88,8 +90,7 @@ class Strategy(StrategyBase):
         self.log.info("{} initialized.".format(STRATEGY_NAME))
 
     def check_bitasset_market(self):
-        """ Check if worker market is MPA:COLLATERAL market
-        """
+        """Check if worker market is MPA:COLLATERAL market."""
         if not (self.market['base'].is_bitasset or self.market['quote'].is_bitasset):
             # One of the assets must be a bitasset
             return
@@ -114,8 +115,7 @@ class Strategy(StrategyBase):
 
     @check_last_run
     def maintain_strategy(self, *args):
-        """ Strategy main logic
-        """
+        """Strategy main logic."""
 
         if self.orders:
             self.check_orders()
@@ -123,8 +123,7 @@ class Strategy(StrategyBase):
             self.place_orders()
 
     def check_orders(self):
-        """ Check whether own orders needs intervention
-        """
+        """Check whether own orders needs intervention."""
         self.get_top_prices()
 
         orders = copy.deepcopy(self.orders)
@@ -165,8 +164,7 @@ class Strategy(StrategyBase):
                 self.place_order(order_type)
 
     def get_top_prices(self):
-        """ Get current top prices (foreign orders)
-        """
+        """Get current top prices (foreign orders)"""
         # Obtain orderbook orders excluding our orders
         market_orders = self.get_market_orders(depth=100)
         own_orders_ids = [order['id'] for order in self.own_orders]
@@ -239,10 +237,11 @@ class Strategy(StrategyBase):
             self.log.info('Market has empty orderbook')
 
     def get_cumulative_call_order(self, asset):
-        """ Get call orders, compound them and return as it was a single limit order
+        """
+        Get call orders, compound them and return as it was a single limit order.
 
-            :param Asset asset: bitshares asset
-            :return: dict representing an order
+        :param Asset asset: bitshares asset
+        :return: dict representing an order
         """
         # TODO: move this method to price engine to use for center price detection etc
         call_orders = asset.get_call_orders()
@@ -258,11 +257,13 @@ class Strategy(StrategyBase):
         return order
 
     def is_too_small_amounts(self, amount_quote, amount_base):
-        """ Check whether amounts are within asset precision limits
-            :param Decimal amount_quote: QUOTE asset amount
-            :param Decimal amount_base: BASE asset amount
-            :return: bool True = amounts are too small
-                          False = amounts are within limits
+        """
+        Check whether amounts are within asset precision limits.
+
+        :param Decimal amount_quote: QUOTE asset amount
+        :param Decimal amount_base: BASE asset amount
+        :return: bool True = amounts are too small
+                      False = amounts are within limits
         """
         if (
             amount_quote < Decimal(10) ** -self.market['quote']['precision']
@@ -273,8 +274,7 @@ class Strategy(StrategyBase):
         return False
 
     def place_order(self, order_type):
-        """ Place single order
-        """
+        """Place single order."""
         new_order = None
 
         if order_type == 'buy':
@@ -376,8 +376,7 @@ class Strategy(StrategyBase):
             self.log.error('Failed to place {} order'.format(order_type))
 
     def place_orders(self):
-        """ Place new orders
-        """
+        """Place new orders."""
         place_buy = False
         place_sell = False
 
@@ -398,8 +397,7 @@ class Strategy(StrategyBase):
 
     @property
     def amount_quote(self):
-        """ Get quote amount, calculate if order size is relative
-        """
+        """Get quote amount, calculate if order size is relative."""
         amount = self.sell_order_amount
         if self.is_relative_order_size:
             quote_balance = float(self.balance(self.market['quote']))
@@ -409,8 +407,7 @@ class Strategy(StrategyBase):
 
     @property
     def amount_base(self):
-        """ Get base amount, calculate if order size is relative
-        """
+        """Get base amount, calculate if order size is relative."""
         amount = self.buy_order_amount
         if self.is_relative_order_size:
             base_balance = float(self.balance(self.market['base']))
@@ -419,11 +416,11 @@ class Strategy(StrategyBase):
         return amount
 
     def error(self, *args, **kwargs):
-        """ Defines what happens when error occurs """
+        """Defines what happens when error occurs."""
         self.disabled = True
 
     def tick(self, d):
-        """ Ticks come in on every block """
+        """Ticks come in on every block."""
         if not (self.counter or 0) % 4:
             self.maintain_strategy()
         self.counter += 1

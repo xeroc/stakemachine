@@ -1,7 +1,8 @@
 import importlib
 
-import dexbot.controllers.strategy_controller
 from PyQt5 import QtCore, QtGui, QtWidgets
+
+import dexbot.controllers.strategy_controller
 
 
 class StrategyFormWidget(QtWidgets.QWidget):
@@ -42,14 +43,12 @@ class StrategyFormWidget(QtWidgets.QWidget):
 
     @property
     def values(self):
-        """ Returns all the form values based on the selected strategy
-        """
+        """Returns all the form values based on the selected strategy."""
         return self.strategy_controller.values
 
 
 class AutoStrategyFormGenerator:
-    """ Automatic strategy form UI generator
-    """
+    """Automatic strategy form UI generator."""
 
     def __init__(self, view, configure):
         self.view = view

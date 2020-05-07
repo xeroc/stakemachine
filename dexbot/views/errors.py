@@ -1,9 +1,10 @@
 import logging
 import traceback
 
+from PyQt5 import QtCore, QtWidgets
+
 from dexbot.qt_queue.idle_queue import idle_add
 from dexbot.ui import translate_error
-from PyQt5 import QtCore, QtWidgets
 
 from .ui.error_dialog_ui import Ui_Dialog
 
@@ -11,6 +12,7 @@ from .ui.error_dialog_ui import Ui_Dialog
 class PyQtHandler(logging.Handler):
     """
     Logging handler for Py Qt events.
+
     Based on Vinay Sajip's DBHandler class (http://www.red-dove.com/python_logging.html)
     """
 

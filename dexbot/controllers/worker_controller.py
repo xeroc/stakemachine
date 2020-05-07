@@ -2,6 +2,8 @@ import collections
 import re
 
 from bitshares.instance import shared_bitshares_instance
+from PyQt5 import QtGui
+
 from dexbot.config import Config
 from dexbot.config_validator import ConfigValidator
 from dexbot.helper import find_external_strategies
@@ -9,7 +11,6 @@ from dexbot.views.confirmation import ConfirmationDialog
 from dexbot.views.errors import gui_error
 from dexbot.views.notice import NoticeDialog
 from dexbot.views.strategy_form import StrategyFormWidget
-from PyQt5 import QtGui
 
 
 class WorkerController:
@@ -20,13 +21,14 @@ class WorkerController:
 
     @property
     def strategies(self):
-        """ Defines strategies that are configurable from the GUI.
+        """
+        Defines strategies that are configurable from the GUI.
 
-            key: Strategy location in the project
-            name: The name that is shown in the GUI for user
-            form_module: If there is custom form module created with QTDesigner
+        key: Strategy location in the project
+        name: The name that is shown in the GUI for user
+        form_module: If there is custom form module created with QTDesigner
 
-            :return: List of strategies
+        :return: List of strategies
         """
         strategies = collections.OrderedDict()
         strategies['dexbot.strategies.relative_orders'] = {
@@ -42,14 +44,15 @@ class WorkerController:
 
     @classmethod
     def get_strategies(cls):
-        """ Class method for getting the strategies
-        """
+        """Class method for getting the strategies."""
         return cls(None, None, None).strategies
 
     @staticmethod
     def get_unique_worker_name():
-        """ Returns unique worker name "Worker %n"
-            %n is the next available index
+        """
+        Returns unique worker name "Worker %n".
+
+        %n is the next available index
         """
         index = 1
         workers = Config().workers_data.keys()

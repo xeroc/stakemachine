@@ -1,9 +1,10 @@
 import sys
 
+from PyQt5.QtWidgets import QApplication
+
 from dexbot.config import Config
 from dexbot.controllers.main_controller import MainController
 from dexbot.views.worker_list import MainView
-from PyQt5.QtWidgets import QApplication
 
 
 class App(QApplication):

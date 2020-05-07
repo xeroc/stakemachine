@@ -103,7 +103,7 @@ class Whiptail:
         return self.showlist('checklist', msg, items, prefix)
 
     def view_text(self, text, **kwargs):
-        """Whiptail wants a file but we want to provide a text string"""
+        """Whiptail wants a file but we want to provide a text string."""
         fd, nam = tempfile.mkstemp()
         f = os.fdopen(fd, 'w')
         f.write(text)
@@ -118,10 +118,9 @@ class Whiptail:
 
 class NoWhiptail:
     """
-    Imitates the interface of whiptail but uses click only
+    Imitates the interface of whiptail but uses click only.
 
-    This is very basic CLI: real state-of-the-1970s stuff,
-    but it works *everywhere*
+    This is very basic CLI: real state-of-the-1970s stuff, but it works *everywhere*
     """
 
     def prompt(self, msg, default='', password=False):
@@ -162,8 +161,7 @@ class NoWhiptail:
         return self.menu(msg, [(k, v) for k, v, s in items], default=default)
 
     def node_radiolist(self, *args, **kwargs):
-        """ Proxy stub to maintain compatibility with Whiptail class
-        """
+        """Proxy stub to maintain compatibility with Whiptail class."""
         return self.radiolist(*args, **kwargs)
 
     def clear(self):

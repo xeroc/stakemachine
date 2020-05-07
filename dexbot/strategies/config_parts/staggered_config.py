@@ -4,25 +4,26 @@ from dexbot.strategies.config_parts.base_config import BaseConfig, ConfigElement
 class StaggeredConfig(BaseConfig):
     @classmethod
     def configure(cls, return_base_config=True):
-        """ Modes description:
+        """
+        Modes description:
 
-            Mountain:
-            - Buy orders same QUOTE
-            - Sell orders same BASE
+        Mountain:
+        - Buy orders same QUOTE
+        - Sell orders same BASE
 
-            Neutral:
-            - Buy orders lower_order_base * sqrt(1 + increment)
-            - Sell orders higher_order_quote * sqrt(1 + increment)
+        Neutral:
+        - Buy orders lower_order_base * sqrt(1 + increment)
+        - Sell orders higher_order_quote * sqrt(1 + increment)
 
-            Valley:
-            - Buy orders same BASE
-            - Sell orders same QUOTE
+        Valley:
+        - Buy orders same BASE
+        - Sell orders same QUOTE
 
-            Buy slope:
-            - All orders same BASE (profit comes in QUOTE)
+        Buy slope:
+        - All orders same BASE (profit comes in QUOTE)
 
-            Sell slope:
-            - All orders same QUOTE (profit made in BASE)
+        Sell slope:
+        - All orders same QUOTE (profit made in BASE)
         """
         modes = [
             ('mountain', 'Mountain'),

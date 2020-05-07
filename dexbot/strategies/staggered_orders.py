@@ -6,13 +6,14 @@ from functools import reduce
 import bitsharesapi.exceptions
 from bitshares.amount import Amount
 from bitshares.dex import Dex
+
 from dexbot.decorators import check_last_run
 from dexbot.strategies.base import StrategyBase
 from dexbot.strategies.config_parts.staggered_config import StaggeredConfig
 
 
 class Strategy(StrategyBase):
-    """ Staggered Orders strategy """
+    """Staggered Orders strategy."""
 
     @classmethod
     def configure(cls, return_base_config=True):
@@ -121,9 +122,11 @@ class Strategy(StrategyBase):
 
     @check_last_run
     def maintain_strategy(self, *args, **kwargs):
-        """ Logic of the strategy
-            :param args:
-            :param kwargs:
+        """
+        Logic of the strategy.
+
+        :param args:
+        :param kwargs:
         """
         # Get all user's orders on current market
         self.refresh_orders()
@@ -193,8 +196,11 @@ class Strategy(StrategyBase):
             try:
                 trx = self.retry_action(self.execute)
             except bitsharesapi.exceptions.RPCError as exception:
-                """ Handle exception without stopping the worker. The goal is to handle race condition when partially
-                    filled order was further filled before we actually replaced them.
+                """
+                Handle exception without stopping the worker.
+
+                The goal is to handle race condition when partially filled order was further filled before we actually
+                replaced them.
                 """
                 if str(exception).startswith('Assert Exception: maybe_found != nullptr: Unable to find Object'):
                     self.log.warning(exception)
@@ -281,8 +287,7 @@ class Strategy(StrategyBase):
             self.update_gui_profit()
 
     def get_actual_spread(self, buy_price=None, sell_price=None):
-        """ Calculates current spread on own orders using cached orders
-        """
+        """Calculates current spread on own orders using cached orders."""
         if buy_price and sell_price:
             highest_buy_price = buy_price
             lowest_sell_price = sell_price
@@ -298,14 +303,12 @@ class Strategy(StrategyBase):
         return spread
 
     def calculate_min_amounts(self):
-        """ Calculate minimal order amounts depending on defined increment
-        """
+        """Calculate minimal order amounts depending on defined increment."""
         self.order_min_base = 2 * 10 ** -self.market['base']['precision'] / self.increment
         self.order_min_quote = 2 * 10 ** -self.market['quote']['precision'] / self.increment
 
     def stop_loss_check(self):
-        """ Check for Stop Loss condition and execute SL if needed
-        """
+        """Check for Stop Loss condition and execute SL if needed."""
         if self.buy_orders:
             return
 
@@ -329,12 +332,13 @@ class Strategy(StrategyBase):
         self.error()
 
     def refresh_balances(self, use_cached_orders=False):
-        """ This function is used to refresh account balances
+        """
+        This function is used to refresh account balances.
 
-            :param bool use_cached_orders (optional): when calculating orders
-                balance, use cached orders from self.cached_orders
+        :param bool use_cached_orders (optional): when calculating orders
+            balance, use cached orders from self.cached_orders
 
-            This version supports usage of same bitshares account across multiple workers with assets intersections.
+        This version supports usage of same bitshares account across multiple workers with assets intersections.
         """
         # Balances in orders on all related markets
         orders = self.get_all_own_orders(refresh=not use_cached_orders)
@@ -418,8 +422,7 @@ class Strategy(StrategyBase):
             self.quote_balance['amount'] -= fee_reserve
 
     def refresh_orders(self):
-        """ Updates buy and sell orders
-        """
+        """Updates buy and sell orders."""
         orders = self.get_own_orders()
 
         # Sort virtual orders
@@ -436,8 +439,7 @@ class Strategy(StrategyBase):
         self.sell_orders = self.real_sell_orders + self.virtual_sell_orders
 
     def sync_current_orders(self):
-        """ Sync current orders to the db
-        """
+        """Sync current orders to the db."""
         current_real_orders = self.real_buy_orders + self.real_sell_orders
         current_all_orders = self.buy_orders + self.sell_orders
         current_real_ids = set([order['id'] for order in current_real_orders])
@@ -456,8 +458,7 @@ class Strategy(StrategyBase):
             self.save_order_extended(order, custom='current')
 
     def dump_initial_orders(self):
-        """ Save orders after initial placement for later use (visualization and so on)
-        """
+        """Save orders after initial placement for later use (visualization and so on)"""
         self.refresh_orders()
         orders = self.buy_orders + self.sell_orders
         self.log.info('Dumping initial orders into db')
@@ -470,15 +471,16 @@ class Strategy(StrategyBase):
                 self.save_order_extended(order, virtual=False, custom='initial')
 
     def drop_initial_orders(self):
-        """ Drop old "initial" orders from the db
-        """
+        """Drop old "initial" orders from the db."""
         self.log.debug('Removing initial orders from the db')
         self.clear_orders_extended(custom='initial')
 
     def remove_outside_orders(self, sell_orders, buy_orders):
-        """ Remove orders that exceed boundaries
-            :param list | sell_orders: User's sell orders
-            :param list | buy_orders: User's buy orders
+        """
+        Remove orders that exceed boundaries.
+
+        :param list | sell_orders: User's sell orders
+        :param list | buy_orders: User's buy orders
         """
         orders_to_cancel = []
 
@@ -513,10 +515,11 @@ class Strategy(StrategyBase):
         return True
 
     def restore_virtual_orders(self):
-        """ Create virtual further orders in batch manner. This helps to place further orders quickly on startup.
+        """
+        Create virtual further orders in batch manner. This helps to place further orders quickly on startup.
 
-            If we have both buy and sell real orders, restore both. If we have only one type of orders, restore
-            corresponding virtual orders and purge opposite orders.
+        If we have both buy and sell real orders, restore both. If we have only one type of orders, restore
+        corresponding virtual orders and purge opposite orders.
         """
 
         def place_further_buy_orders():
@@ -584,10 +587,11 @@ class Strategy(StrategyBase):
         self.virtual_orders_restored = True
 
     def check_operational_depth(self, real_orders, virtual_orders):
-        """ Ensure proper operational depth. Replace excessive real orders or put real orders if needed.
+        """
+        Ensure proper operational depth. Replace excessive real orders or put real orders if needed.
 
-            :param list real_orders: list of real orders
-            :param list virtual_orders: list of virtual orders
+        :param list real_orders: list of real orders
+        :param list virtual_orders: list of virtual orders
         """
         num_real_orders = len(real_orders)
         num_virtual_orders = len(virtual_orders)
@@ -613,16 +617,17 @@ class Strategy(StrategyBase):
         self.refresh_balances(use_cached_orders=True)
 
     def replace_real_order_with_virtual(self, order):
-        """ Replace real limit order with virtual order
+        """
+        Replace real limit order with virtual order.
 
-            :param Order | order: market order to replace
-            :return bool | True = order replace success
-                           False = order replace failed
+        :param Order | order: market order to replace
+        :return bool | True = order replace success
+                       False = order replace failed
 
-            Logic:
-            1. Cancel real order
-            2. Wait until transaction included in head block
-            3. Place virtual order
+        Logic:
+        1. Cancel real order
+        2. Wait until transaction included in head block
+        3. Place virtual order
         """
         success = self.cancel_orders(order)
         if success and order['base']['symbol'] == self.market['base']['symbol']:
@@ -639,16 +644,17 @@ class Strategy(StrategyBase):
             return False
 
     def replace_virtual_order_with_real(self, order):
-        """ Replace virtual order with real one
+        """
+        Replace virtual order with real one.
 
-            :param Order | order: market order to replace
-            :return bool | True = order replace success
-                           False = order replace failed
+        :param Order | order: market order to replace
+        :return bool | True = order replace success
+                       False = order replace failed
 
-            Logic:
-            1. Place real order instead of virtual
-            2. Wait until transaction included in head block
-            3. Remove existing virtual order
+        Logic:
+        1. Place real order instead of virtual
+        2. Wait until transaction included in head block
+        3. Remove existing virtual order
         """
         if order['base']['symbol'] == self.market['base']['symbol']:
             quote_amount = order['quote']['amount']
@@ -676,11 +682,12 @@ class Strategy(StrategyBase):
         return False
 
     def store_profit_estimation_data(self, force=False):
-        """ Stores balance history entry if center price moved enough
+        """
+        Stores balance history entry if center price moved enough.
 
-            :param bool | force: True = force store data, False = store data only on center price change
+        :param bool | force: True = force store data, False = store data only on center price change
 
-            Todo: this method is inaccurate when using single account accross multiple workers
+        Todo: this method is inaccurate when using single account accross multiple workers
         """
         need_store = False
         account = self.config['workers'][self.worker_name].get('account')
@@ -720,10 +727,11 @@ class Strategy(StrategyBase):
             self.old_center_price = self.market_center_price
 
     def allocate_asset(self, asset, asset_balance):
-        """ Allocates available asset balance as buy or sell orders.
+        """
+        Allocates available asset balance as buy or sell orders.
 
-            :param str | asset: 'base' or 'quote'
-            :param Amount | asset_balance: Amount of the asset available to use
+        :param str | asset: 'base' or 'quote'
+        :param Amount | asset_balance: Amount of the asset available to use
         """
         self.log.debug('Need to allocate {}: {}'.format(asset, asset_balance))
         closest_opposite_order = None
@@ -783,10 +791,12 @@ class Strategy(StrategyBase):
             if actual_spread >= self.target_spread + self.increment:
                 if not self.check_partial_fill(closest_own_order, fill_threshold=0):
                     # Replace closest order if it was partially filled for any %
-                    """ Note on partial filled orders handling: if target spread is not reached and we need to place
-                        closer order, we need to make sure current closest order is 100% unfilled. When target spread is
-                        reached, we are replacing order only if it was filled no less than `self.fill_threshold`. This
-                        helps to avoid too often replacements.
+                    """
+                    Note on partial filled orders handling: if target spread is not reached and we need to place closer
+                    order, we need to make sure current closest order is 100% unfilled.
+
+                    When target spread is reached, we are replacing order only if it was filled no less than
+                    `self.fill_threshold`. This helps to avoid too often replacements.
                     """
                     self.replace_partially_filled_order(closest_own_order)
                     return
@@ -822,9 +832,8 @@ class Strategy(StrategyBase):
                 if self['bootstrapping']:
                     self.place_closer_order(asset, closest_own_order)
                 elif opposite_orders and actual_spread - self.increment < self.target_spread + self.increment:
-                    """ Place max-sized closer order if only one order needed to reach target spread (avoid unneeded
-                        increases)
-                    """
+                    """Place max-sized closer order if only one order needed to reach target spread (avoid unneeded
+                    increases)"""
                     self.place_closer_order(asset, closest_own_order, allow_partial=True)
                 elif opposite_orders:
                     # Place order limited by size of the opposite-side order
@@ -888,9 +897,8 @@ class Strategy(StrategyBase):
             else:
                 # Target spread is reached, let's allocate remaining funds
                 if not self.check_partial_fill(closest_own_order, fill_threshold=0):
-                    """ Detect partially filled order on the own side and reserve funds to replace order in case
-                        opposite order will be fully filled.
-                    """
+                    """Detect partially filled order on the own side and reserve funds to replace order in case opposite
+                    order will be fully filled."""
                     funds_to_reserve = closest_own_order['base']['amount']
                     self.log.debug(
                         'Partially filled order on own side, reserving funds to replace: '
@@ -899,9 +907,12 @@ class Strategy(StrategyBase):
                     asset_balance -= funds_to_reserve
 
                 if not self.check_partial_fill(closest_opposite_order, fill_threshold=0):
-                    """ Detect partially filled order on the opposite side and reserve appropriate amount to place
-                        closer order. We adding some additional reserve to be able to place next order whether
-                        new allocation round will be started, this is mostly for valley-like modes.
+                    """
+                    Detect partially filled order on the opposite side and reserve appropriate amount to place closer
+                    order.
+
+                    We adding some additional reserve to be able to place next order whether new allocation round will
+                    be started, this is mostly for valley-like modes.
                     """
                     funds_to_reserve = 0
                     additional_reserve = max(1 + self.increment, self.min_increase_factor) * 1.05
@@ -939,17 +950,18 @@ class Strategy(StrategyBase):
                 and not self.check_partial_fill(closest_own_order)
                 and not self.check_partial_fill(closest_opposite_order, fill_threshold=0)
             ):
-                """ Replace partially filled closest orders only when allocation of excess funds was finished. This
-                    would prevent an abuse case when we are operating inactive market. An attacker can massively dump
-                    the price and then he can buy back the asset cheaper. Similar case may happen on the "normal" market
-                    on significant price drops or spikes.
+                """
+                Replace partially filled closest orders only when allocation of excess funds was finished. This would
+                prevent an abuse case when we are operating inactive market. An attacker can massively dump the price
+                and then he can buy back the asset cheaper. Similar case may happen on the "normal" market on
+                significant price drops or spikes.
 
-                    The logic how it works is following:
-                    1. If we have partially filled closest orders, reserve fuds to replace them later
-                    2. If we have excess funds, allocate them by increasing order sizes or expand bounds if needed
-                    3. When increase is finished, replace partially filled closest orders
+                The logic how it works is following:
+                1. If we have partially filled closest orders, reserve fuds to replace them later
+                2. If we have excess funds, allocate them by increasing order sizes or expand bounds if needed
+                3. When increase is finished, replace partially filled closest orders
 
-                    Thus we are don't need to precisely count how much was filled on closest orders.
+                Thus we are don't need to precisely count how much was filled on closest orders.
                 """
                 # Refresh balances to make "reserved" funds available
                 self.refresh_balances(use_cached_orders=True)
@@ -990,15 +1002,16 @@ class Strategy(StrategyBase):
             self.refresh_orders()
 
     def _increase_single_order(self, asset, asset_balance, order, new_order_amount):
-        """ To avoid code doubling, use this unified function to increase single order
+        """
+        To avoid code doubling, use this unified function to increase single order.
 
-            :param str asset: 'base' or 'quote', depending if checking sell or buy
-            :param Amount asset_balance: asset balance available for increase
-            :param order order: order needed to be increased
-            :param float new_order_amount: BASE or QUOTE amount of a new order (depending on asset)
-            :return: True = available funds were allocated, cannot allocate remainder
-                     False = not all funds were allocated, can increase more orders next time
-            :rtype: bool
+        :param str asset: 'base' or 'quote', depending if checking sell or buy
+        :param Amount asset_balance: asset balance available for increase
+        :param order order: order needed to be increased
+        :param float new_order_amount: BASE or QUOTE amount of a new order (depending on asset)
+        :return: True = available funds were allocated, cannot allocate remainder
+                 False = not all funds were allocated, can increase more orders next time
+        :rtype: bool
         """
         quote_amount = 0
         base_amount = 0
@@ -1067,15 +1080,16 @@ class Strategy(StrategyBase):
         return False
 
     def _calc_increase(self, asset, asset_balance, orders):
-        """ Calculate increased order sizes for specified orders with inplace replacement of order amounts.
-            Only one increase is performed at a time.
+        """
+        Calculate increased order sizes for specified orders with inplace replacement of order amounts. Only one
+        increase is performed at a time.
 
-            :param str asset: 'base' or 'quote', depending if checking sell or buy
-            :param Amount asset_balance: Balance of the account
-            :param list orders: List of buy or sell orders
-            :return: True = all available funds were allocated
-                     False = not all funds was allocated, can increase more orders next time
-            :rtype: bool
+        :param str asset: 'base' or 'quote', depending if checking sell or buy
+        :param Amount asset_balance: Balance of the account
+        :param list orders: List of buy or sell orders
+        :return: True = all available funds were allocated
+                 False = not all funds was allocated, can increase more orders next time
+        :rtype: bool
         """
 
         new_order_amount = 0
@@ -1093,20 +1107,19 @@ class Strategy(StrategyBase):
             or (self.mode == 'buy_slope' and asset == 'quote')
             or (self.mode == 'sell_slope' and asset == 'base')
         ):
-            """ Starting from the furthest order. For each order, see if it is approximately
-                maximum size.
-                If it is, move on to next.
-                If not, cancel it and replace with maximum size order. Then return.
-                If highest_sell_order is reached, increase it to maximum size
+            """
+            Starting from the furthest order. For each order, see if it is approximately maximum size. If it is, move on
+            to next. If not, cancel it and replace with maximum size order. Then return. If highest_sell_order is
+            reached, increase it to maximum size.
 
-                Maximum size is:
-                1. As many "amount * (1 + increment)" as the order further (further_bound)
-                AND
-                2. As many "amount" as the order closer to center (closer_bound)
+            Maximum size is:
+            1. As many "amount * (1 + increment)" as the order further (further_bound)
+            AND
+            2. As many "amount" as the order closer to center (closer_bound)
 
-                Note: for buy orders "amount" is BASE asset amount, and for sell order "amount" is QUOTE.
+            Note: for buy orders "amount" is BASE asset amount, and for sell order "amount" is QUOTE.
 
-                Also when making an order it's size always will be limited by available free balance
+            Also when making an order it's size always will be limited by available free balance
             """
             # Get orders and amounts to be compared. Note: orders are sorted from low price to high
             for order in orders:
@@ -1139,18 +1152,20 @@ class Strategy(StrategyBase):
                     and further_bound - order_amount >= order_amount * self.increment / 2
                 ):
                     # Calculate new order size and place the order to the market
-                    """ To prevent moving liquidity away from center, let new order be no more than `order_amount *
-                        increase_factor`. This is for situations when we increasing order on side which was previously
-                        bigger. Example: buy side, amounts in QUOTE:
-                        [1000 1000 1000 100 100 100 <center>]
+                    """
+                    To prevent moving liquidity away from center, let new order be no more than `order_amount *
+                    increase_factor`. This is for situations when we increasing order on side which was previously
+                    bigger. Example: buy side, amounts in QUOTE:
 
-                        Without increase_factor:
-                        [1000 1000 1000 1000 100 100 <center>]
+                    [1000 1000 1000 100 100 100 <center>]
 
-                        With increase_factor:
-                        [1000 1000 1000 200 100 100 <center>]
-                        [1000 1000 1000 200 200 100 <center>]
-                        [1000 1000 1000 200 200 200 <center>]
+                    Without increase_factor:
+                    [1000 1000 1000 1000 100 100 <center>]
+
+                    With increase_factor:
+                    [1000 1000 1000 200 100 100 <center>]
+                    [1000 1000 1000 200 200 100 <center>]
+                    [1000 1000 1000 200 200 200 <center>]
                     """
                     new_order_amount = further_bound
                     increase_factor = max(1 + self.increment, self.min_increase_factor)
@@ -1164,16 +1179,14 @@ class Strategy(StrategyBase):
             or (self.mode == 'buy_slope' and asset == 'base')
             or (self.mode == 'sell_slope' and asset == 'quote')
         ):
-            """ Starting from the furthest order, for each order, see if it is approximately
-                maximum size.
-                If it is, move on to next.
-                If not, cancel it and replace with maximum size order. Maximum order size will be a
-                size of closer-to-center order. Then return.
-                If furthest is reached, increase it to maximum size.
+            """
+            Starting from the furthest order, for each order, see if it is approximately maximum size. If it is, move on
+            to next. If not, cancel it and replace with maximum size order. Maximum order size will be a size of closer-
+            to-center order. Then return. If furthest is reached, increase it to maximum size.
 
-                Maximum size is (example for buy orders):
-                1. As many "base" as the further order (further_order_bound)
-                2. As many "base" as the order closer to center (closer_order_bound)
+            Maximum size is (example for buy orders):
+            1. As many "base" as the further order (further_order_bound)
+            2. As many "base" as the order closer to center (closer_order_bound)
             """
             orders_count = len(orders)
             orders = list(reversed(orders))
@@ -1202,10 +1215,11 @@ class Strategy(StrategyBase):
                     closer_order = orders[order_index + 1]
                     closer_order_bound = closer_order['base']['amount']
                 else:
-                    """ Special processing for the closest order.
+                    """
+                    Special processing for the closest order.
 
-                        Calculate new order amount based on orders count, but do not allow to perform too small
-                        increase rounds. New lowest buy / highest sell should be higher by at least one increment.
+                    Calculate new order amount based on orders count, but do not allow to perform too small increase
+                    rounds. New lowest buy / highest sell should be higher by at least one increment.
                     """
                     closer_order_bound = closest_order_bound
                     new_amount = (total_balance / orders_count) / (1 + self.increment / 100)
@@ -1247,20 +1261,21 @@ class Strategy(StrategyBase):
                     and order_amount_normalized < closest_order_bound
                     and closer_order_bound - order_amount >= order_amount * self.increment / 2
                 ):
-                    """ Check whether order amount is less than closer or order and the diff is more than 50% of one
-                        increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with
-                        diff 80% an order may have an actual difference like 30% from closer and 70% from further.
+                    """
+                    Check whether order amount is less than closer or order and the diff is more than 50% of one
+                    increment. Note: we can use only 50% or less diffs. Bigger will not work. For example, with diff 80%
+                    an order may have an actual difference like 30% from closer and 70% from further.
 
-                        Also prevent moving liqudity away from closer-to-center orders. Instead of increasing "80"
-                        orders, increase closer-to-center orders first:
+                    Also prevent moving liqudity away from closer-to-center orders. Instead of increasing "80"
+                    orders, increase closer-to-center orders first:
 
-                        [80 80 80 100 100 100 60 50 40 40]
-                        [80 80 80 100 100 100 60 50 50 40]
-                        [80 80 80 100 100 100 60 50 50 50]
-                        ...
-                        [80 80 80 100 100 100 60 60 60 60]
-                        ...
-                        [80 80 80 100 100 100 80 80 80 80]
+                    [80 80 80 100 100 100 60 50 40 40]
+                    [80 80 80 100 100 100 60 50 50 40]
+                    [80 80 80 100 100 100 60 50 50 50]
+                    ...
+                    [80 80 80 100 100 100 60 60 60 60]
+                    ...
+                    [80 80 80 100 100 100 80 80 80 80]
                     """
                     new_order_amount = min(closest_order_bound, closer_order_bound)
                     need_increase = True
@@ -1269,16 +1284,14 @@ class Strategy(StrategyBase):
                     return self._increase_single_order(asset, asset_balance, order, new_order_amount)
 
         elif self.mode == 'neutral':
-            """ Starting from the furthest order, for each order, see if it is approximately
-                maximum size.
-                If it is, move on to next.
-                If not, cancel it and replace with maximum size order. Maximum order size will be a
-                size of closer-to-center order. Then return.
-                If furthest is reached, increase it to maximum size.
+            """
+            Starting from the furthest order, for each order, see if it is approximately maximum size. If it is, move on
+            to next. If not, cancel it and replace with maximum size order. Maximum order size will be a size of closer-
+            to-center order. Then return. If furthest is reached, increase it to maximum size.
 
-                Maximum size is (example for buy orders):
-                1. As many "base * sqrt(1 + increment)" as the further order (further_order_bound)
-                2. As many "base / sqrt(1 + increment)" as the order closer to center (closer_order_bound)
+            Maximum size is (example for buy orders):
+            1. As many "base * sqrt(1 + increment)" as the further order (further_order_bound)
+            2. As many "base / sqrt(1 + increment)" as the order closer to center (closer_order_bound)
             """
 
             orders_count = len(orders)
@@ -1347,38 +1360,38 @@ class Strategy(StrategyBase):
                     return self._increase_single_order(asset, asset_balance, order, new_order_amount)
 
     def increase_order_sizes(self, asset, asset_balance, orders):
-        """ Checks which order should be increased in size and replaces it
-            with a maximum size order, according to global limits. Logic
-            depends on mode in question.
+        """
+        Checks which order should be increased in size and replaces it with a maximum size order, according to global
+        limits. Logic depends on mode in question.
 
-            Mountain:
-            Maximize order size as close to center as possible. When all orders are max, the new increase round is
-            started from the furthest order.
+        Mountain:
+        Maximize order size as close to center as possible. When all orders are max, the new increase round is
+        started from the furthest order.
 
-            Neutral:
-            Try to flatten everything by increasing order sizes to neutral. When everything is correct, maximize
-            closest orders and then increase other orders to match that.
+        Neutral:
+        Try to flatten everything by increasing order sizes to neutral. When everything is correct, maximize
+        closest orders and then increase other orders to match that.
 
-            Valley:
-            Maximize order sizes as far as possible from center first. When all orders are max, the new increase round
-            is started from the closest-to-center order.
+        Valley:
+        Maximize order sizes as far as possible from center first. When all orders are max, the new increase round
+        is started from the closest-to-center order.
 
-            Buy slope:
-            Maximize order size as low as possible. Buy orders maximized as far as possible (same as valley), and sell
-            orders as close as possible to cp (same as mountain).
+        Buy slope:
+        Maximize order size as low as possible. Buy orders maximized as far as possible (same as valley), and sell
+        orders as close as possible to cp (same as mountain).
 
-            Sell slope:
-            Maximize order size as high as possible. Buy orders as close (same as mountain), and sell orders as far as
-            possible from cp (same as valley).
+        Sell slope:
+        Maximize order size as high as possible. Buy orders as close (same as mountain), and sell orders as far as
+        possible from cp (same as valley).
 
-            :param str asset: 'base' or 'quote', depending if checking sell or buy
-            :param Amount asset_balance: Balance of the account
-            :param list orders: List of buy or sell orders
-            :return: status of funds allocation
-                    done = all funds were allocated
-                    done_with_ops = all funds were allocated, operations are pending in txbuffer
-                    in_progress = not all funds were allocated, can increase more orders next time
-            :rtype: str
+        :param str asset: 'base' or 'quote', depending if checking sell or buy
+        :param Amount asset_balance: Balance of the account
+        :param list orders: List of buy or sell orders
+        :return: status of funds allocation
+                done = all funds were allocated
+                done_with_ops = all funds were allocated, operations are pending in txbuffer
+                in_progress = not all funds were allocated, can increase more orders next time
+        :rtype: str
         """
 
         # Create temp order list (copy.deepcopy() doesn't work here)
@@ -1474,12 +1487,13 @@ class Strategy(StrategyBase):
         return 'done'
 
     def check_partial_fill(self, order, fill_threshold=None):
-        """ Checks whether order was partially filled it needs to be replaced
+        """
+        Checks whether order was partially filled it needs to be replaced.
 
-            :param dict | order: Order closest to the center price from buy or sell side
-            :param float | fill_threshold: Order fill threshold, relative
-            :return: bool | True = Order is correct size or within the threshold
-                            False = Order is not right size
+        :param dict | order: Order closest to the center price from buy or sell side
+        :param float | fill_threshold: Order fill threshold, relative
+        :return: bool | True = Order is correct size or within the threshold
+                        False = Order is not right size
         """
         if fill_threshold is None:
             fill_threshold = self.partial_fill_threshold
@@ -1504,9 +1518,10 @@ class Strategy(StrategyBase):
         return True
 
     def replace_partially_filled_order(self, order):
-        """ Replace partially filled order
+        """
+        Replace partially filled order.
 
-            :param order: Order instance
+        :param order: Order instance
         """
 
         if order['base']['symbol'] == self.market['base']['symbol']:
@@ -1541,15 +1556,15 @@ class Strategy(StrategyBase):
     def place_closer_order(
         self, asset, order, place_order=True, allow_partial=False, own_asset_limit=None, opposite_asset_limit=None
     ):
-        """ Place order closer to the center
+        """
+        Place order closer to the center.
 
-            :param asset:
-            :param order: Previously closest order
-            :param bool | place_order: True = Places order to the market, False = returns amount and price
-            :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
-            :param float | own_asset_limit: order should be limited in size by amount of order's "base"
-            :param float | opposite_asset_limit: order should be limited in size by order's "quote" amount
-
+        :param asset:
+        :param order: Previously closest order
+        :param bool | place_order: True = Places order to the market, False = returns amount and price
+        :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
+        :param float | own_asset_limit: order should be limited in size by amount of order's "base"
+        :param float | opposite_asset_limit: order should be limited in size by order's "quote" amount
         """
         if own_asset_limit and opposite_asset_limit:
             self.log.error('Only own_asset_limit or opposite_asset_limit should be specified')
@@ -1707,13 +1722,14 @@ class Strategy(StrategyBase):
         return new_order
 
     def place_further_order(self, asset, order, place_order=True, allow_partial=False, virtual=False):
-        """ Place order further from specified order
+        """
+        Place order further from specified order.
 
-            :param asset:
-            :param order: furthest buy or sell order
-            :param bool | place_order: True = Places order to the market, False = returns amount and price
-            :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
-            :param bool | virtual: True = Force place a virtual order
+        :param asset:
+        :param order: furthest buy or sell order
+        :param bool | place_order: True = Places order to the market, False = returns amount and price
+        :param bool | allow_partial: True = Allow to downsize order whether there is not enough balance
+        :param bool | virtual: True = Force place a virtual order
         """
         balance = 0
         order_type = ''
@@ -1829,12 +1845,13 @@ class Strategy(StrategyBase):
         return new_order
 
     def place_highest_sell_order(self, quote_balance, place_order=True, market_center_price=None):
-        """ Places sell order furthest to the market center price
+        """
+        Places sell order furthest to the market center price.
 
-            :param Amount | quote_balance: Available QUOTE asset balance
-            :param bool | place_order: True = Places order to the market, False = returns amount and price
-            :param float | market_center_price: Optional market center price, used to to check order
-            :return dict | order: Returns highest sell order
+        :param Amount | quote_balance: Available QUOTE asset balance
+        :param bool | place_order: True = Places order to the market, False = returns amount and price
+        :param float | market_center_price: Optional market center price, used to to check order
+        :return dict | order: Returns highest sell order
         """
         if not market_center_price:
             market_center_price = self.market_center_price
@@ -1925,42 +1942,43 @@ class Strategy(StrategyBase):
         return order
 
     def place_lowest_buy_order(self, base_balance, place_order=True, market_center_price=None):
-        """ Places buy order furthest to the market center price
+        """
+        Places buy order furthest to the market center price.
 
-            Turn BASE amount into QUOTE amount (we will buy this QUOTE amount).
-            QUOTE = BASE / price
+        Turn BASE amount into QUOTE amount (we will buy this QUOTE amount).
+        QUOTE = BASE / price
 
-            Furthest order amount calculations:
-            -----------------------------------
+        Furthest order amount calculations:
+        -----------------------------------
 
-            Mountain:
-            For asset to be allocated (base for buy and quote for sell orders)
-            First order (furthest) = balance * increment
-            Next order = previous order / (1 + increment)
-            Repeat until last order.
+        Mountain:
+        For asset to be allocated (base for buy and quote for sell orders)
+        First order (furthest) = balance * increment
+        Next order = previous order / (1 + increment)
+        Repeat until last order.
 
-            Neutral:
-            For asset to be allocated (base for buy and quote for sell orders)
-            First order (furthest) = balance * (sqrt(1 + increment) - 1)
-            Next order = previous order / sqrt(1 + increment)
-            Repeat until last order
+        Neutral:
+        For asset to be allocated (base for buy and quote for sell orders)
+        First order (furthest) = balance * (sqrt(1 + increment) - 1)
+        Next order = previous order / sqrt(1 + increment)
+        Repeat until last order
 
-            Valley:
-            For asset to be allocated (base for buy and quote for sell orders)
-            All orders = balance / number of orders (per side)
+        Valley:
+        For asset to be allocated (base for buy and quote for sell orders)
+        All orders = balance / number of orders (per side)
 
-            Buy slope:
-            Buy orders same as valley
-            Sell orders same as mountain
+        Buy slope:
+        Buy orders same as valley
+        Sell orders same as mountain
 
-            Sell slope:
-            Buy orders same as mountain
-            Sell orders same as valley
+        Sell slope:
+        Buy orders same as mountain
+        Sell orders same as valley
 
-            :param Amount | base_balance: Available BASE asset balance
-            :param bool | place_order: True = Places order to the market, False = returns amount and price
-            :param float | market_center_price: Optional market center price, used to to check order
-            :return dict | order: Returns lowest buy order
+        :param Amount | base_balance: Available BASE asset balance
+        :param bool | place_order: True = Places order to the market, False = returns amount and price
+        :param float | market_center_price: Optional market center price, used to to check order
+        :return dict | order: Returns lowest buy order
         """
         if not market_center_price:
             market_center_price = self.market_center_price
@@ -2054,11 +2072,12 @@ class Strategy(StrategyBase):
         return order
 
     def calc_buy_orders_count(self, price_high, price_low):
-        """ Calculate number of buy orders to place between high price and low price
+        """
+        Calculate number of buy orders to place between high price and low price.
 
-            :param float | price_high: Highest buy price bound
-            :param float | price_low: Lowest buy price bound
-            :return int | count: Returns number of orders
+        :param float | price_high: Highest buy price bound
+        :param float | price_low: Lowest buy price bound
+        :return int | count: Returns number of orders
         """
         orders_count = 0
         while price_high >= price_low:
@@ -2067,11 +2086,12 @@ class Strategy(StrategyBase):
         return orders_count
 
     def calc_sell_orders_count(self, price_low, price_high):
-        """ Calculate number of sell orders to place between low price and high price
+        """
+        Calculate number of sell orders to place between low price and high price.
 
-            :param float | price_low: Lowest sell price bound
-            :param float | price_high: Highest sell price bound
-            :return int | count: Returns number of orders
+        :param float | price_low: Lowest sell price bound
+        :param float | price_high: Highest sell price bound
+        :return int | count: Returns number of orders
         """
         orders_count = 0
         while price_low <= price_high:
@@ -2080,11 +2100,12 @@ class Strategy(StrategyBase):
         return orders_count
 
     def check_min_order_size(self, amount, price):
-        """ Check if order size is less than minimal allowed size
+        """
+        Check if order size is less than minimal allowed size.
 
-            :param float | amount: Order amount in QUOTE
-            :param float | price: Order price in BASE
-            :return float | new_amount: passed amount or minimal allowed amount
+        :param float | amount: Order amount in QUOTE
+        :param float | price: Order price in BASE
+        :return float | new_amount: passed amount or minimal allowed amount
         """
         # Calculate minimal orders amounts based on asset precision
         if not self.order_min_base or not self.order_min_quote:
@@ -2100,11 +2121,12 @@ class Strategy(StrategyBase):
         return amount
 
     def place_virtual_buy_order(self, amount, price):
-        """ Place a virtual buy order
+        """
+        Place a virtual buy order.
 
-            :param float | amount: Order amount in QUOTE
-            :param float | price: Order price in BASE
-            :return dict | order: Returns virtual order instance
+        :param float | amount: Order amount in QUOTE
+        :param float | price: Order price in BASE
+        :return dict | order: Returns virtual order instance
         """
         symbol = self.market['base']['symbol']
         order = VirtualOrder()
@@ -2135,11 +2157,12 @@ class Strategy(StrategyBase):
         return order
 
     def place_virtual_sell_order(self, amount, price):
-        """ Place a virtual sell order
+        """
+        Place a virtual sell order.
 
-            :param float | amount: Order amount in QUOTE
-            :param float | price: Order price in BASE
-            :return dict | order: Returns virtual order instance
+        :param float | amount: Order amount in QUOTE
+        :param float | price: Order price in BASE
+        :return dict | order: Returns virtual order instance
         """
         symbol = self.market['quote']['symbol']
         order = VirtualOrder()
@@ -2170,8 +2193,10 @@ class Strategy(StrategyBase):
         return order
 
     def cancel_orders_wrapper(self, orders, **kwargs):
-        """ Cancel specific order(s)
-            :param list orders: list of orders to cancel
+        """
+        Cancel specific order(s)
+
+        :param list orders: list of orders to cancel
         """
         if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
@@ -2195,25 +2220,22 @@ class Strategy(StrategyBase):
         self.disabled = True
 
     def pause(self):
-        """ Override pause() """
-        pass
+        """Override pause()"""
 
     def purge(self):
         """ We are not cancelling orders on save/remove worker from the GUI
             TODO: don't work yet because worker removal is happening via BaseStrategy staticmethod
         """
-        pass
 
     def tick(self, d):
-        """ Ticks come in on every block """
+        """Ticks come in on every block."""
         if not (self.counter or 0) % 3:
             self.maintain_strategy()
         self.counter += 1
 
 
 class VirtualOrder(dict):
-    """ Wrapper class to handle virtual orders comparison in list index() method
-    """
+    """Wrapper class to handle virtual orders comparison in list index() method."""
 
     def __float__(self):
         return self['price']

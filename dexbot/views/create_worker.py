@@ -1,5 +1,6 @@
-from dexbot.controllers.worker_controller import UppercaseValidator, WorkerController
 from PyQt5 import QtWidgets
+
+from dexbot.controllers.worker_controller import UppercaseValidator, WorkerController
 
 from .ui.create_worker_window_ui import Ui_Dialog
 

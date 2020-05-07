@@ -2,8 +2,7 @@ from PyQt5 import QtWidgets
 
 
 class StrategyController:
-    """ Parent controller for strategies that don't have a custom controller
-    """
+    """Parent controller for strategies that don't have a custom controller."""
 
     def __init__(self, view, configure, worker_controller, worker_data):
         self.view = view
@@ -57,8 +56,7 @@ class StrategyController:
 
     @property
     def elements(self):
-        """ Use ConfigElements of the strategy to find the input elements
-        """
+        """Use ConfigElements of the strategy to find the input elements."""
         elements = {}
         types = (
             QtWidgets.QDoubleSpinBox,

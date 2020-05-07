@@ -3,8 +3,10 @@ from functools import wraps
 
 
 def check_last_run(func):
-    """ This decorator is intended to be used for control maintain_strategy() execution. It requires self.last_check and
-        self.check_interval to be set in calling class.
+    """
+    This decorator is intended to be used for control maintain_strategy() execution.
+
+    It requires self.last_check and self.check_interval to be set in calling class.
     """
 
     @wraps(func)

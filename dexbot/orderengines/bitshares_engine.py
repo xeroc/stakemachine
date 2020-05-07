@@ -13,10 +13,11 @@ from bitshares.instance import shared_bitshares_instance
 from bitshares.market import Market
 from bitshares.price import FilledOrder, Order, UpdateCallOrder
 from bitshares.utils import formatTime
+from events import Events
+
 from dexbot.config import Config
 from dexbot.helper import truncate
 from dexbot.storage import Storage
-from events import Events
 
 # Number of maximum retries used to retry action before failing
 MAX_TRIES = 3
@@ -24,16 +25,16 @@ MAX_TRIES = 3
 
 class BitsharesOrderEngine(Storage, Events):
     """
-       All prices are passed and returned as BASE/QUOTE.
-        (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
-         - Buy orders reserve BASE
-         - Sell orders reserve QUOTE
+    All prices are passed and returned as BASE/QUOTE. (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1
+    BREAD).
 
-        OrderEngine inherits:
-            * :class:`dexbot.storage.Storage` : Stores data to sqlite database
-            * ``Events`` :The websocket endpoint of BitShares has notifications that are subscribed to
-                            and dispatched by dexbot. This uses python's native Events
+     - Buy orders reserve BASE
+     - Sell orders reserve QUOTE
 
+    OrderEngine inherits:
+        * :class:`dexbot.storage.Storage` : Stores data to sqlite database
+        * ``Events`` :The websocket endpoint of BitShares has notifications that are subscribed to
+                        and dispatched by dexbot. This uses python's native Events
     """
 
     def __init__(
@@ -112,8 +113,7 @@ class BitsharesOrderEngine(Storage, Events):
         self.log = logging.LoggerAdapter(logging.getLogger('dexbot.orderengine'), {})
 
     def _callbackPlaceFillOrders(self, d):
-        """ This method distinguishes notifications caused by Matched orders from those caused by placed orders
-        """
+        """This method distinguishes notifications caused by Matched orders from those caused by placed orders."""
         if isinstance(d, FilledOrder):
             self.onOrderMatched(d)
         elif isinstance(d, Order):
@@ -141,10 +141,11 @@ class BitsharesOrderEngine(Storage, Events):
         return True
 
     def account_total_value(self, return_asset):
-        """ Returns the total value of the account in given asset
+        """
+        Returns the total value of the account in given asset.
 
-            :param string | return_asset: Balance is returned as this asset
-            :return: float: Value of the account in one asset
+        :param string | return_asset: Balance is returned as this asset
+        :return: float: Value of the account in one asset
         """
         total_value = 0
 
@@ -172,11 +173,12 @@ class BitsharesOrderEngine(Storage, Events):
         return total_value
 
     def balance(self, asset, fee_reservation=0):
-        """ Return the balance of your worker's account in a specific asset.
+        """
+        Return the balance of your worker's account in a specific asset.
 
-            :param string | asset: In what asset the balance is wanted to be returned
-            :param float | fee_reservation: How much is saved in reserve for the fees
-            :return: Balance of specific asset
+        :param string | asset: In what asset the balance is wanted to be returned
+        :param float | fee_reservation: How much is saved in reserve for the fees
+        :return: Balance of specific asset
         """
         balance = self._account.balance(asset)
 
@@ -186,8 +188,7 @@ class BitsharesOrderEngine(Storage, Events):
         return balance
 
     def calculate_order_data(self, order_type, order, amount, price):
-        """ Reconstructs order data using price and amount
-        """
+        """Reconstructs order data using price and amount."""
         quote_asset = Amount(amount, self._market['quote']['symbol'], bitshares_instance=self.bitshares)
         base_asset = Amount(amount * price, self._market['base']['symbol'], bitshares_instance=self.bitshares)
         if order_type == 'buy':
@@ -204,11 +205,12 @@ class BitsharesOrderEngine(Storage, Events):
         return order
 
     def calculate_worker_value(self, unit_of_measure):
-        """ Returns the combined value of allocated and available BASE and QUOTE. Total value is
-            measured in "unit_of_measure", which is either BASE or QUOTE symbol.
+        """
+        Returns the combined value of allocated and available BASE and QUOTE. Total value is measured in
+        "unit_of_measure", which is either BASE or QUOTE symbol.
 
-            :param string | unit_of_measure: Asset symbol
-            :return: Value of the worker as float
+        :param string | unit_of_measure: Asset symbol
+        :return: Value of the worker as float
         """
         base_total = 0
         quote_total = 0
@@ -240,9 +242,10 @@ class BitsharesOrderEngine(Storage, Events):
         return base_total + quote_total
 
     def cancel_all_orders(self, all_markets=False):
-        """ Cancel all orders of the worker's market or all markets
+        """
+        Cancel all orders of the worker's market or all markets.
 
-            :param bool all_markets: True = cancel orders on all markets, False = cancel only own market
+        :param bool all_markets: True = cancel orders on all markets, False = cancel only own market
         """
         orders_to_cancel = []
 
@@ -263,11 +266,12 @@ class BitsharesOrderEngine(Storage, Events):
         self.log.info("Orders canceled")
 
     def cancel_orders(self, orders, batch_only=False):
-        """ Cancel specific order(s)
+        """
+        Cancel specific order(s)
 
-            :param list | orders: List of orders to cancel
-            :param bool | batch_only: Try cancel orders only in batch mode without one-by-one fallback
-            :return:
+        :param list | orders: List of orders to cancel
+        :param bool | batch_only: Try cancel orders only in batch mode without one-by-one fallback
+        :return:
         """
         if not isinstance(orders, (list, set, tuple)):
             orders = [orders]
@@ -286,14 +290,15 @@ class BitsharesOrderEngine(Storage, Events):
         return success
 
     def count_asset(self, order_ids=None, return_asset=False):
-        """ Returns the combined amount of the given order ids and the account balance
-            The amounts are returned in quote and base assets of the market
+        """
+        Returns the combined amount of the given order ids and the account balance The amounts are returned in quote and
+        base assets of the market.
 
-            :param list | order_ids: list of order ids to be added to the balance
-            :param bool | return_asset: true if returned values should be Amount instances
-            :return: dict with keys quote and base
+        :param list | order_ids: list of order ids to be added to the balance
+        :param bool | return_asset: true if returned values should be Amount instances
+        :return: dict with keys quote and base
 
-            Todo: When would we want the sum of a subset of orders? Why order_ids? Maybe just specify asset?
+        Todo: When would we want the sum of a subset of orders? Why order_ids? Maybe just specify asset?
         """
         quote = 0
         base = 0
@@ -322,11 +327,12 @@ class BitsharesOrderEngine(Storage, Events):
         return {'quote': quote, 'base': base}
 
     def get_allocated_assets(self, order_ids=None, return_asset=False):
-        """ Returns the amount of QUOTE and BASE allocated in orders, and that do not show up in available balance
+        """
+        Returns the amount of QUOTE and BASE allocated in orders, and that do not show up in available balance.
 
-            :param list | order_ids:
-            :param bool | return_asset:
-            :return: Dictionary of QUOTE and BASE amounts
+        :param list | order_ids:
+        :param bool | return_asset:
+        :return: Dictionary of QUOTE and BASE amounts
         """
         if not order_ids:
             order_ids = []
@@ -356,10 +362,11 @@ class BitsharesOrderEngine(Storage, Events):
         return {'quote': quote, 'base': base}
 
     def get_highest_own_buy_order(self, orders=None):
-        """ Returns highest own buy order.
+        """
+        Returns highest own buy order.
 
-            :param list | orders:
-            :return: Highest own buy order by price at the market or None
+        :param list | orders:
+        :return: Highest own buy order by price at the market or None
         """
         if not orders:
             orders = self.get_own_buy_orders()
@@ -370,10 +377,11 @@ class BitsharesOrderEngine(Storage, Events):
             return None
 
     def get_lowest_own_sell_order(self, orders=None):
-        """ Returns lowest own sell order.
+        """
+        Returns lowest own sell order.
 
-            :param list | orders:
-            :return: Lowest own sell order by price at the market
+        :param list | orders:
+        :return: Lowest own sell order by price at the market
         """
         if not orders:
             orders = self.get_own_sell_orders()
@@ -384,14 +392,15 @@ class BitsharesOrderEngine(Storage, Events):
             return None
 
     def get_market_orders(self, depth=1, updated=True):
-        """ Returns orders from the current market. Orders are sorted by price.
+        """
+        Returns orders from the current market. Orders are sorted by price.
 
-            get_limit_orders() call does not have any depth limit.
+        get_limit_orders() call does not have any depth limit.
 
-            :param int | depth: Amount of orders per side will be fetched, default=1
-            :param bool | updated: Return updated orders. "Updated" means partially filled orders will represent
-                                   remainders and not just initial amounts
-            :return: Returns a list of orders or None
+        :param int | depth: Amount of orders per side will be fetched, default=1
+        :param bool | updated: Return updated orders. "Updated" means partially filled orders will represent
+                               remainders and not just initial amounts
+        :return: Returns a list of orders or None
         """
         orders = self.bitshares.rpc.get_limit_orders(self._market['base']['id'], self._market['quote']['id'], depth)
         if updated:
@@ -400,10 +409,11 @@ class BitsharesOrderEngine(Storage, Events):
         return orders
 
     def get_order_cancellation_fee(self, fee_asset):
-        """ Returns the order cancellation fee in the specified asset.
+        """
+        Returns the order cancellation fee in the specified asset.
 
-            :param string | fee_asset: Asset in which the fee is wanted
-            :return: Cancellation fee as fee asset
+        :param string | fee_asset: Asset in which the fee is wanted
+        :return: Cancellation fee as fee asset
         """
         # Get fee
         fees = self.dex.returnFees()
@@ -411,10 +421,11 @@ class BitsharesOrderEngine(Storage, Events):
         return self.convert_fee(limit_order_cancel['fee'], fee_asset)
 
     def get_order_creation_fee(self, fee_asset):
-        """ Returns the cost of creating an order in the asset specified
+        """
+        Returns the cost of creating an order in the asset specified.
 
-            :param fee_asset: QUOTE, BASE, BTS, or any other
-            :return:
+        :param fee_asset: QUOTE, BASE, BTS, or any other
+        :return:
         """
         # Get fee
         fees = self.dex.returnFees()
@@ -422,9 +433,10 @@ class BitsharesOrderEngine(Storage, Events):
         return self.convert_fee(limit_order_create['fee'], fee_asset)
 
     def get_own_buy_orders(self, orders=None):
-        """ Get own buy orders from current market, or from a set of orders passed for this function.
+        """
+        Get own buy orders from current market, or from a set of orders passed for this function.
 
-            :return: List of buy orders
+        :return: List of buy orders
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
@@ -433,9 +445,10 @@ class BitsharesOrderEngine(Storage, Events):
         return self.filter_buy_orders(orders)
 
     def get_own_sell_orders(self, orders=None):
-        """ Get own sell orders from current market
+        """
+        Get own sell orders from current market.
 
-            :return: List of sell orders
+        :return: List of sell orders
         """
         if not orders:
             # List of orders was not given so fetch everything from the market
@@ -444,9 +457,10 @@ class BitsharesOrderEngine(Storage, Events):
         return self.filter_sell_orders(orders)
 
     def get_own_spread(self):
-        """ Returns the difference between own closest opposite orders.
+        """
+        Returns the difference between own closest opposite orders.
 
-            :return: float or None: Own spread
+        :return: float or None: Own spread
         """
         try:
             # Try fetching own orders
@@ -460,9 +474,10 @@ class BitsharesOrderEngine(Storage, Events):
         return actual_spread
 
     def get_updated_order(self, order_id):
-        """ Tries to get the updated order from the API. Returns None if the order doesn't exist
+        """
+        Tries to get the updated order from the API. Returns None if the order doesn't exist.
 
-            :param str|dict order_id: blockchain Order object or id of the order
+        :param str|dict order_id: blockchain Order object or id of the order
         """
         if isinstance(order_id, dict):
             order_id = order_id['id']
@@ -486,9 +501,10 @@ class BitsharesOrderEngine(Storage, Events):
         return Order(updated_order, bitshares_instance=self.bitshares)
 
     def execute(self):
-        """ Execute a bundle of operations
+        """
+        Execute a bundle of operations.
 
-            :return: dict: transaction
+        :return: dict: transaction
         """
         self.bitshares.blocking = "head"
         r = self.bitshares.txbuffer.broadcast()
@@ -496,10 +512,11 @@ class BitsharesOrderEngine(Storage, Events):
         return r
 
     def is_buy_order(self, order):
-        """ Check whether an order is buy order
+        """
+        Check whether an order is buy order.
 
-            :param dict | order: dict or Order object
-            :return bool
+        :param dict | order: dict or Order object
+        :return bool
         """
         # Check if the order is buy order, by comparing asset symbol of the order and the market
         if order['base']['symbol'] == self._market['base']['symbol']:
@@ -508,9 +525,10 @@ class BitsharesOrderEngine(Storage, Events):
             return False
 
     def is_current_market(self, base_asset_id, quote_asset_id):
-        """ Returns True if given asset id's are of the current market
+        """
+        Returns True if given asset id's are of the current market.
 
-            :return: bool: True = Current market, False = Not current market
+        :return: bool: True = Current market, False = Not current market
         """
         if quote_asset_id == self._market['quote']['id']:
             if base_asset_id == self._market['base']['id']:
@@ -526,10 +544,11 @@ class BitsharesOrderEngine(Storage, Events):
         return False
 
     def is_sell_order(self, order):
-        """ Check whether an order is sell order
+        """
+        Check whether an order is sell order.
 
-            :param dict | order: dict or Order object
-            :return bool
+        :param dict | order: dict or Order object
+        :return bool
         """
         # Check if the order is sell order, by comparing asset symbol of the order and the market
         if order['base']['symbol'] == self._market['quote']['symbol']:
@@ -538,14 +557,15 @@ class BitsharesOrderEngine(Storage, Events):
             return False
 
     def place_market_buy_order(self, amount, price, return_none=False, *args, **kwargs):
-        """ Places a buy order in the market
+        """
+        Places a buy order in the market.
 
-            :param float | amount: Order amount in QUOTE
-            :param float | price: Order price in BASE
-            :param bool | return_none:
-            :param args:
-            :param kwargs:
-            :return:
+        :param float | amount: Order amount in QUOTE
+        :param float | price: Order price in BASE
+        :param bool | return_none:
+        :param args:
+        :param kwargs:
+        :return:
         """
         symbol = self._market['base']['symbol']
         precision = self._market['base']['precision']
@@ -595,15 +615,16 @@ class BitsharesOrderEngine(Storage, Events):
             return True
 
     def place_market_sell_order(self, amount, price, return_none=False, invert=False, *args, **kwargs):
-        """ Places a sell order in the market
+        """
+        Places a sell order in the market.
 
-            :param float | amount: Order amount in QUOTE
-            :param float | price: Order price in BASE
-            :param bool | return_none:
-            :param bool | invert: True = return inverted sell order
-            :param args:
-            :param kwargs:
-            :return:
+        :param float | amount: Order amount in QUOTE
+        :param float | price: Order price in BASE
+        :param bool | return_none:
+        :param bool | invert: True = return inverted sell order
+        :param args:
+        :param kwargs:
+        :return:
         """
         symbol = self._market['quote']['symbol']
         precision = self._market['quote']['precision']
@@ -654,12 +675,13 @@ class BitsharesOrderEngine(Storage, Events):
             return True
 
     def retry_action(self, action, *args, **kwargs):
-        """ Perform an action, and if certain suspected-to-be-spurious grapheme bugs occur,
-            instead of bubbling the exception, it is quietly logged (level WARN), and try again
-            tries a fixed number of times (MAX_TRIES) before failing
+        """
+        Perform an action, and if certain suspected-to-be-spurious grapheme bugs occur, instead of bubbling the
+        exception, it is quietly logged (level WARN), and try again tries a fixed number of times (MAX_TRIES) before
+        failing.
 
-            :param action:
-            :return:
+        :param action:
+        :return:
         """
         tries = 0
         while True:
@@ -723,16 +745,19 @@ class BitsharesOrderEngine(Storage, Events):
 
     @property
     def balances(self):
-        """ Returns all the balances of the account assigned for the worker.
-            :return: Balances in list where each asset is in their own Amount object
+        """
+        Returns all the balances of the account assigned for the worker.
+
+        :return: Balances in list where each asset is in their own Amount object
         """
         return self._account.balances
 
     def get_own_orders(self, refresh=True):
-        """ Return the account's open orders in the current market
+        """
+        Return the account's open orders in the current market.
 
-            :param bool refresh: Use most recent data
-            :return: List of Order objects
+        :param bool refresh: Use most recent data
+        :return: List of Order objects
         """
         orders = []
 
@@ -748,10 +773,11 @@ class BitsharesOrderEngine(Storage, Events):
         return orders
 
     def get_all_own_orders(self, refresh=True):
-        """ Return the worker's open orders in all markets
+        """
+        Return the worker's open orders in all markets.
 
-            :param bool refresh: Use most recent data
-            :return: List of Order objects
+        :param bool refresh: Use most recent data
+        :return: List of Order objects
         """
         # Refresh account data
         if refresh:
@@ -765,17 +791,16 @@ class BitsharesOrderEngine(Storage, Events):
 
     @property
     def account(self):
-        """ Return the full account as :class:`bitshares.account.Account` object!
-            Can be refreshed by using ``x.refresh()``
+        """
+        Return the full account as :class:`bitshares.account.Account` object! Can be refreshed by using ``x.refresh()``
 
-            :return: object | Account
+        :return: object | Account
         """
         return self._account
 
     @property
     def market(self):
-        """ Return the market object as :class:`bitshares.market.Market`
-        """
+        """Return the market object as :class:`bitshares.market.Market`"""
         return self._market
 
     @property
@@ -788,23 +813,22 @@ class BitsharesOrderEngine(Storage, Events):
 
     @property
     def all_own_orders(self):
-        """ Return the worker's open orders in all markets
-        """
+        """Return the worker's open orders in all markets."""
         return self.get_all_own_orders()
 
     @property
     def own_orders(self):
-        """ Return the account's open orders in the current market
-        """
+        """Return the account's open orders in the current market."""
         return self.get_own_orders()
 
     @staticmethod
     def get_updated_limit_order(limit_order):
-        """ Returns a modified limit_order so that when passed to Order class,
-            will return an Order object with updated amount values
+        """
+        Returns a modified limit_order so that when passed to Order class, will return an Order object with updated
+        amount values.
 
-            :param limit_order: an item of Account['limit_orders'] or bitshares.rpc.get_limit_orders()
-            :return: Order
+        :param limit_order: an item of Account['limit_orders'] or bitshares.rpc.get_limit_orders()
+        :return: Order
         """
         order = copy.deepcopy(limit_order)
         price = float(order['sell_price']['base']['amount']) / float(order['sell_price']['quote']['amount'])
@@ -816,12 +840,13 @@ class BitsharesOrderEngine(Storage, Events):
 
     @staticmethod
     def convert_asset(from_value, from_asset, to_asset):
-        """ Converts asset to another based on the latest market value
+        """
+        Converts asset to another based on the latest market value.
 
-            :param float | from_value: Amount of the input asset
-            :param string | from_asset: Symbol of the input asset
-            :param string | to_asset: Symbol of the output asset
-            :return: float Asset converted to another asset as float value
+        :param float | from_value: Amount of the input asset
+        :param string | from_asset: Symbol of the input asset
+        :param string | to_asset: Symbol of the output asset
+        :return: float Asset converted to another asset as float value
         """
         market = Market('{}/{}'.format(from_asset, to_asset))
         ticker = market.ticker()
@@ -831,11 +856,12 @@ class BitsharesOrderEngine(Storage, Events):
         return truncate((from_value * latest_price), precision)
 
     def convert_fee(self, fee_amount, fee_asset):
-        """ Convert fee amount in BTS to fee in fee_asset
+        """
+        Convert fee amount in BTS to fee in fee_asset.
 
-            :param float | fee_amount: fee amount paid in BTS
-            :param Asset | fee_asset: fee asset to pay fee in
-            :return: float | amount of fee_asset to pay fee
+        :param float | fee_amount: fee amount paid in BTS
+        :param Asset | fee_asset: fee asset to pay fee in
+        :return: float | amount of fee_asset to pay fee
         """
         if isinstance(fee_asset, str):
             fee_asset = Asset(fee_asset, bitshares_instance=self.bitshares)
@@ -851,11 +877,12 @@ class BitsharesOrderEngine(Storage, Events):
             return fee_amount * self.core_exchange_rate['base']['amount']
 
     def get_order(self, order_id, return_none=True):
-        """ Get Order object with order_id
+        """
+        Get Order object with order_id.
 
-            :param str | dict order_id: blockchain object id of the order can be an order dict with the id key in it
-            :param bool return_none: return None instead of an empty Order object when the order doesn't exist
-            :return: Order object
+        :param str | dict order_id: blockchain object id of the order can be an order dict with the id key in it
+        :param bool return_none: return None instead of an empty Order object when the order doesn't exist
+        :return: Order object
         """
         if not order_id:
             return None
@@ -871,12 +898,13 @@ class BitsharesOrderEngine(Storage, Events):
         return order
 
     def is_partially_filled(self, order, threshold=0.3):
-        """ Checks whether order was partially filled
+        """
+        Checks whether order was partially filled.
 
-            :param dict order: Order instance
-            :param float fill_threshold: Order fill threshold, relative
-            :return: bool True = Order is filled more than threshold
-                          False = Order is not partially filled
+        :param dict order: Order instance
+        :param float fill_threshold: Order fill threshold, relative
+        :return: bool True = Order is filled more than threshold
+                      False = Order is not partially filled
         """
         if self.is_buy_order(order):
             order_type = 'buy'

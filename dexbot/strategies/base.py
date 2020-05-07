@@ -15,52 +15,53 @@ MAX_TRIES = 3
 
 
 class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
-    """ A strategy based on this class is intended to work in one market. This class contains
-        most common methods needed by the strategy.
+    """
+    A strategy based on this class is intended to work in one market. This class contains most common methods needed by
+    the strategy.
 
-        NOTE: StrategyBase currently requires BitsharesOrderEngine inheritance
-        as all configuration from Worker is located here.
+    NOTE: StrategyBase currently requires BitsharesOrderEngine inheritance
+    as all configuration from Worker is located here.
 
-        Post Core-refactor, in the future it should not be this way.
+    Post Core-refactor, in the future it should not be this way.
 
-        TODO: The StrategyBase should be able to select any {N} OrderEngine(s) and {M} PriceFeed(s)
-        and not be tied to the BitsharesOrderEngine only. (where N and M are integers)
-        This would allow for cross dex or cex strategy flexibility
+    TODO: The StrategyBase should be able to select any {N} OrderEngine(s) and {M} PriceFeed(s)
+    and not be tied to the BitsharesOrderEngine only. (where N and M are integers)
+    This would allow for cross dex or cex strategy flexibility
 
-        In process: make StrategyBase an ABC.
+    In process: make StrategyBase an ABC.
 
-        Unit tests should take above into consideration
+    Unit tests should take above into consideration
 
 
-        All prices are passed and returned as BASE/QUOTE.
-        (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
-        - Buy orders reserve BASE
-        - Sell orders reserve QUOTE
+    All prices are passed and returned as BASE/QUOTE.
+    (In the BREAD:USD market that would be USD/BREAD, 2.5 USD / 1 BREAD).
+    - Buy orders reserve BASE
+    - Sell orders reserve QUOTE
 
-        Strategy inherits:
-            * :class:`dexbot.storage.Storage` : Stores data to sqlite database
-            * ``Events``
+    Strategy inherits:
+        * :class:`dexbot.storage.Storage` : Stores data to sqlite database
+        * ``Events``
 
-        Available attributes:
-            * ``worker.bitshares``: instance of ´`bitshares.BitShares()``
-            * ``worker.account``: The Account object of this worker
-            * ``worker.market``: The market used by this worker
-            * ``worker.orders``: List of open orders of the worker's account in the worker's market
-            * ``worker.balance``: List of assets and amounts available in the worker's account
-            * ``worker.log``: a per-worker logger (actually LoggerAdapter) adds worker-specific context:
-                worker name & account (Because some UIs might want to display per-worker logs)
+    Available attributes:
+        * ``worker.bitshares``: instance of ´`bitshares.BitShares()``
+        * ``worker.account``: The Account object of this worker
+        * ``worker.market``: The market used by this worker
+        * ``worker.orders``: List of open orders of the worker's account in the worker's market
+        * ``worker.balance``: List of assets and amounts available in the worker's account
+        * ``worker.log``: a per-worker logger (actually LoggerAdapter) adds worker-specific context:
+            worker name & account (Because some UIs might want to display per-worker logs)
 
-        Also, Worker inherits :class:`dexbot.storage.Storage`
-        which allows to permanently store data in a sqlite database
-        using:
+    Also, Worker inherits :class:`dexbot.storage.Storage`
+    which allows to permanently store data in a sqlite database
+    using:
 
-        ``worker["key"] = "value"``
+    ``worker["key"] = "value"``
 
-        .. note:: This applies a ``json.loads(json.dumps(value))``!
+    .. note:: This applies a ``json.loads(json.dumps(value))``!
 
-        Workers must never attempt to interact with the user, they must assume they are running unattended.
-        They can log events. If a problem occurs they can't fix they should set self.disabled = True and
-        throw an exception. The framework catches all exceptions thrown from event handlers and logs appropriately.
+    Workers must never attempt to interact with the user, they must assume they are running unattended.
+    They can log events. If a problem occurs they can't fix they should set self.disabled = True and
+    throw an exception. The framework catches all exceptions thrown from event handlers and logs appropriately.
     """
 
     @classmethod
@@ -144,9 +145,10 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         self.orders_log = logging.LoggerAdapter(logging.getLogger('dexbot.orders_log'), {})
 
     def pause(self):
-        """ Pause the worker
+        """
+        Pause the worker.
 
-            Note: By default pause cancels orders, but this can be overridden by strategy
+        Note: By default pause cancels orders, but this can be overridden by strategy
         """
         # Cancel all orders from the market
         self.cancel_all_orders()
@@ -155,8 +157,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         self.clear_orders()
 
     def clear_all_worker_data(self):
-        """ Clear all the worker data from the database and cancel all orders
-        """
+        """Clear all the worker data from the database and cancel all orders."""
         # Removes worker's orders from local database
         self.clear_orders()
 
@@ -167,11 +168,12 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         self.clear()
 
     def get_worker_share_for_asset(self, asset):
-        """ Returns operational percent of asset available to the worker
+        """
+        Returns operational percent of asset available to the worker.
 
-            :param str asset: Which asset should be checked
-            :return: a value between 0-1 representing a percent
-            :rtype: float
+        :param str asset: Which asset should be checked
+        :return: a value between 0-1 representing a percent
+        :rtype: float
         """
         intersections_data = self.assets_intersections_data[self.account.name][asset]
 
@@ -189,8 +191,7 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
             self.log.error('Got asset which is not used by this worker')
 
     def store_profit_estimation_data(self):
-        """ Save total quote, total base, center_price, and datetime in to the database
-        """
+        """Save total quote, total base, center_price, and datetime in to the database."""
         assets = self.count_asset()
         account = self.config['workers'][self.worker_name].get('account')
         base_amount = assets['base']
@@ -208,17 +209,17 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
         )
 
     def get_profit_estimation_data(self, seconds):
-        """ Get balance history closest to the given time
+        """
+        Get balance history closest to the given time.
 
-            :returns The data as dict from the first timestamp going backwards from seconds argument
+        :returns The data as dict from the first timestamp going backwards from seconds argument
         """
         return self.get_balance_history(
             self.config['workers'][self.worker_name].get('account'), self.worker_name, seconds
         )
 
     def calc_profit(self):
-        """ Calculate relative profit for the current worker
-        """
+        """Calculate relative profit for the current worker."""
         profit = 0
         time_range = 60 * 60 * 24 * 7  # 7 days
         current_time = time.time()
@@ -265,17 +266,19 @@ class StrategyBase(BitsharesOrderEngine, BitsharesPriceFeed):
 
     @property
     def balances(self):
-        """ Returns all the balances of the account assigned for the worker.
+        """
+        Returns all the balances of the account assigned for the worker.
 
-            :return: Balances in list where each asset is in their own Amount object
+        :return: Balances in list where each asset is in their own Amount object
         """
         return self._account.balances
 
     @staticmethod
     def purge_all_local_worker_data(worker_name):
-        """ Removes worker's data and orders from local sqlite database
+        """
+        Removes worker's data and orders from local sqlite database.
 
-            :param worker_name: Name of the worker to be removed
+        :param worker_name: Name of the worker to be removed
         """
         Storage.clear_worker_data(worker_name)
 

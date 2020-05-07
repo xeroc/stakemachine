@@ -6,10 +6,11 @@ from bitsharesbase.account import PrivateKey
 
 
 class ConfigValidator:
-    """ Config validation methods
+    """
+    Config validation methods.
 
-        :param dexbot.config.Config config: dexbot config
-        :param bitshares.BitShares: BitShares instance
+    :param dexbot.config.Config config: dexbot config
+    :param bitshares.BitShares: BitShares instance
     """
 
     def __init__(self, config, bitshares_instance):
@@ -17,9 +18,10 @@ class ConfigValidator:
         self.bitshares = bitshares_instance or shared_bitshares_instance()
 
     def validate_account_name(self, account):
-        """ Check whether bitshares account exists
+        """
+        Check whether bitshares account exists.
 
-            :param str account: bitshares account name
+        :param str account: bitshares account name
         """
         if not account:
             return False
@@ -30,10 +32,11 @@ class ConfigValidator:
             return False
 
     def validate_private_key(self, account, private_key):
-        """ Check whether private key is associated with account
+        """
+        Check whether private key is associated with account.
 
-            :param str account: bitshares account name
-            :param str private_key: private key
+        :param str account: bitshares account name
+        :param str private_key: private key
         """
         wallet = self.bitshares.wallet
         if not private_key:
@@ -59,10 +62,11 @@ class ConfigValidator:
             return False
 
     def validate_private_key_type(self, account, private_key):
-        """ Check whether private key type is "active" or "owner"
+        """
+        Check whether private key type is "active" or "owner".
 
-            :param str account: bitshares account name
-            :param str private_key: private key
+        :param str account: bitshares account name
+        :param str private_key: private key
         """
         account = Account(account)
         pubkey = format(PrivateKey(private_key).pubkey, self.bitshares.prefix)
@@ -72,10 +76,11 @@ class ConfigValidator:
         return True
 
     def validate_worker_name(self, worker_name, old_worker_name=None):
-        """ Check whether worker name is unique or not
+        """
+        Check whether worker name is unique or not.
 
-            :param str worker_name: name of the new worker
-            :param str old_worker_name: old name of the worker
+        :param str worker_name: name of the new worker
+        :param str old_worker_name: old name of the worker
         """
         if old_worker_name != worker_name:
             worker_names = self.config.workers_data.keys()
@@ -86,9 +91,10 @@ class ConfigValidator:
         return True
 
     def validate_account_not_in_use(self, account):
-        """ Check whether account is already used for another worker or not
+        """
+        Check whether account is already used for another worker or not.
 
-            :param str account: bitshares account name
+        :param str account: bitshares account name
         """
         workers = self.config.workers_data
         for worker_name, worker in workers.items():
@@ -97,9 +103,10 @@ class ConfigValidator:
         return True
 
     def validate_asset(self, asset):
-        """ Check whether asset is exists on the network
+        """
+        Check whether asset is exists on the network.
 
-            :param str asset: asset name
+        :param str asset: asset name
         """
         try:
             Asset(asset, bitshares_instance=self.bitshares)
@@ -109,17 +116,19 @@ class ConfigValidator:
 
     @staticmethod
     def validate_market(base_asset, quote_asset):
-        """ Check whether market tickers is not the same
+        """
+        Check whether market tickers is not the same.
 
-            :param str base_asset: BASE asset ticker
-            :param str quote_asset: QUOTE asset ticker
+        :param str base_asset: BASE asset ticker
+        :param str quote_asset: QUOTE asset ticker
         """
         return base_asset.lower() != quote_asset.lower()
 
     def add_private_key(self, private_key):
-        """ Add private key into local wallet
+        """
+        Add private key into local wallet.
 
-            :param str private_key: private key
+        :param str private_key: private key
         """
         wallet = self.bitshares.wallet
         try:

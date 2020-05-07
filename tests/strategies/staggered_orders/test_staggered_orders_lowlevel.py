@@ -45,8 +45,7 @@ def test_place_virtual_sell_order(worker, init_empty_balances):
 
 
 def test_sync_current_orders(orders1):
-    """ Sync current orders then fetch them back and compare to these orders
-    """
+    """Sync current orders then fetch them back and compare to these orders."""
     worker = orders1
     worker.refresh_orders()
     worker.sync_current_orders()

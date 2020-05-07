@@ -2,6 +2,11 @@ import time
 import webbrowser
 from threading import Thread
 
+from grapheneapi.exceptions import NumRetriesReached
+from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtGui import QFontDatabase
+from PyQt5.QtWidgets import QMainWindow
+
 from dexbot import __version__
 from dexbot.config import Config
 from dexbot.controllers.wallet_controller import WalletController
@@ -15,10 +20,6 @@ from dexbot.views.settings import SettingsView
 from dexbot.views.ui.worker_list_window_ui import Ui_MainWindow
 from dexbot.views.unlock_wallet import UnlockWalletView
 from dexbot.views.worker_item import WorkerItemWidget
-from grapheneapi.exceptions import NumRetriesReached
-from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtGui import QFontDatabase
-from PyQt5.QtWidgets import QMainWindow
 
 
 class MainView(QMainWindow, Ui_MainWindow):
