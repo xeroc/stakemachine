@@ -208,7 +208,11 @@ class Strategy(StrategyBase):
                     return
                 else:
                     raise
-            order_ids = [result[1] for result in trx['operation_results']]
+            try:
+                order_ids = [result[1] for result in trx['operation_results']]
+            except TypeError:
+                # For some reason 'operation_results' may be None, this should not fail us
+                order_ids = []
             self.log.debug('Placed orders: %s', order_ids)
             self.refresh_orders()
             self.sync_current_orders()

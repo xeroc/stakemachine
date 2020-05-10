@@ -41,6 +41,18 @@ def test_maintain_strategy_no_manual_cp_empty_market(worker):
     assert worker.market_center_price is None
 
 
+def test_maintain_strategy_no_operation_results(worker, monkeypatch):
+    """https://github.com/Codaone/DEXBot/issues/764."""
+
+    def mock(*args, **kwargs):
+        return {'operation_results': None}
+
+    monkeypatch.setattr(worker, 'retry_action', mock)
+    worker.maintain_strategy()
+    # Run twice!
+    worker.maintain_strategy()
+
+
 @pytest.mark.parametrize('mode', MODES)
 def test_maintain_strategy_basic(mode, worker, do_initial_allocation):
     """Check if intial orders placement is correct."""
