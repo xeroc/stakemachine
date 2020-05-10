@@ -18,7 +18,6 @@ before_install:
   - docker build -t dexbot/dexbot .
   - docker pull bitshares/bitshares-core:testnet
 install:
-  - pip install pyinstaller
   - pip install --upgrade setuptools
   - make install
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then python3 -m pip install -r requirements-dev.txt ; fi
@@ -30,6 +29,7 @@ before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then pytest -m mandatory tests/ &&
       python3 -m pip uninstall -y -r requirements-dev.txt; fi
 script:
+  - pip install pyinstaller
   - pyinstaller --distpath dist/$TRAVIS_OS_NAME gui.spec
 before_deploy:
   - git config --local user.name "Travis"
