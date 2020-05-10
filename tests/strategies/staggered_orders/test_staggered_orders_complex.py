@@ -1193,12 +1193,13 @@ def test_allocate_asset_partially_filled_order_on_massively_imbalanced_sides(
 def test_allocate_asset_several_filled_orders_on_massively_imbalanced_sides(
     mode, worker, other_worker, do_initial_allocation, base_account
 ):
-    """ When sides are massively imbalanced, make sure that spread will be closed after filling several orders on
-        smaller side. The goal is to test a situation when one side has a big-sized orders, and other side has much
-        smaller orders. Correct behavior: when multiple orders on smaller side filled at once, big side should place
-        appropriate number of closer orders to close the spread.
+    """
+    When sides are massively imbalanced, make sure that spread will be closed after filling several orders on smaller
+    side. The goal is to test a situation when one side has a big-sized orders, and other side has much smaller orders.
+    Correct behavior: when multiple orders on smaller side filled at once, big side should place appropriate number of
+    closer orders to close the spread.
 
-        Test for https://github.com/Codaone/DEXBot/issues/601
+    Test for https://github.com/Codaone/DEXBot/issues/601
     """
     worker.mode = mode
     do_initial_allocation(worker, worker.mode)
