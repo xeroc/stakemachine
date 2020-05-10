@@ -1,5 +1,9 @@
 # Packages needed for running testsuite
 docker>=3.7.2,<4
 pytest>=4.4.0,<5
+
 # Needed for development
 pre-commit>=1.20.0,<2
+
+# Make bundled executables
+pyinstaller>=3.4,<4

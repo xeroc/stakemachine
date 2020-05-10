@@ -1,6 +1,5 @@
 pyqt5==5.10
 pyqt-distutils==0.7.3
-pyinstaller==3.4
 requests==2.21.0
 ccxt==1.17.434
 pywaves==0.8.20
