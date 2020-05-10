@@ -143,6 +143,25 @@ def test_place_lowest_buy_order(worker2):
     assert worker.buy_orders[-1]['price'] < worker.lower_bound * (1 + worker.increment * 2)
 
 
+def test_place_lowest_buy_order_corrected_amount(worker, monkeypatch):
+    """Test if worker handles situation when avail balance is not enough to place minimal allowed order
+    https://github.com/Codaone/DEXBot/issues/765."""
+
+    def mock(amount, price):
+        return max(amount * 1.01, 1)
+
+    worker.refresh_balances()
+    monkeypatch.setattr(worker, 'check_min_order_size', mock)
+    order = worker.place_lowest_buy_order(worker.base_balance)
+    assert order
+
+    worker.refresh_balances()
+    worker.bitshares.reserve(worker.base_balance, account=worker.account)
+    worker.base_balance['amount'] = 0
+    worker.place_lowest_buy_order(worker.base_balance)
+    assert worker.disabled is False
+
+
 def test_place_highest_sell_order(worker2):
     """Check if placement of highest sell order works in general."""
     worker = worker2
@@ -152,6 +171,25 @@ def test_place_highest_sell_order(worker2):
 
     # Expect furthest order price to be less than increment x2
     assert worker.sell_orders[-1]['price'] ** -1 > worker.upper_bound / (1 + worker.increment * 2)
+
+
+def test_place_highest_sell_order_corrected_amount(worker, monkeypatch):
+    """Test if worker handles situation when avail balance is not enough to place minimal allowed order
+    https://github.com/Codaone/DEXBot/issues/765."""
+
+    def mock(amount, price):
+        return max(amount * 1.01, 1)
+
+    worker.refresh_balances()
+    monkeypatch.setattr(worker, 'check_min_order_size', mock)
+    order = worker.place_highest_sell_order(worker.quote_balance)
+    assert order
+
+    worker.refresh_balances()
+    worker.bitshares.reserve(worker.quote_balance, account=worker.account)
+    worker.quote_balance['amount'] = 0
+    worker.place_highest_sell_order(worker.quote_balance)
+    assert worker.disabled is False
 
 
 @pytest.mark.parametrize('asset', ['base', 'quote'])

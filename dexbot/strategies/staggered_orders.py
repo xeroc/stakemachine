@@ -1932,8 +1932,12 @@ class Strategy(StrategyBase):
             # Make sure new order is bigger than allowed minimum
             corrected_amount = self.check_min_order_size(amount_quote, price)
             if corrected_amount > amount_quote:
-                self.log.warning('Placing increased order because calculated size is less than allowed minimum')
-                amount_quote = corrected_amount
+                if quote_balance >= corrected_amount:
+                    self.log.warning('Placing increased order because calculated size is less than allowed minimum')
+                    amount_quote = corrected_amount
+                else:
+                    self.log.debug('Insufficient balance to place sell order')
+                    return
 
             if sell_orders_count > self.operational_depth:
                 order = self.place_virtual_sell_order(amount_quote, price)
@@ -2062,8 +2066,12 @@ class Strategy(StrategyBase):
             # Make sure new order is bigger than allowed minimum
             corrected_amount = self.check_min_order_size(amount_quote, price)
             if corrected_amount > amount_quote:
-                self.log.warning('Placing increased order because calculated size is less than allowed minimum')
-                amount_quote = corrected_amount
+                if base_balance >= corrected_amount:
+                    self.log.warning('Placing increased order because calculated size is less than allowed minimum')
+                    amount_quote = corrected_amount
+                else:
+                    self.log.debug('Insufficient balance to place buy order')
+                    return
 
             if buy_orders_count > self.operational_depth:
                 order = self.place_virtual_buy_order(amount_quote, price)
