@@ -7,7 +7,7 @@ from dexbot import APP_NAME, VERSION
 
 cmd_class = {}
 console_scripts = ['dexbot-cli = dexbot.cli:main']
-install_requires = []
+install_requires = open("requirements.txt").readlines()
 
 
 class BuildCommand(build_module.build):
