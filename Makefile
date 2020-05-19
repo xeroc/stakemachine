@@ -18,6 +18,9 @@ clean-pyc:
 pip:
 	python3 -m pip install -r requirements.txt
 
+pip-dev:
+	python3 -m pip install -r requirements-dev.txt
+
 pip-user:
 	python3 -m pip install --user -r requirements.txt
 
@@ -48,7 +51,7 @@ git:
 check: pip
 	python3 setup.py check
 
-package: build
+package: build pip-dev
 	pyinstaller gui.spec
 	pyinstaller cli.spec
 

@@ -1,4 +1,3 @@
-sudo: true
 services:
   - docker
 matrix:
@@ -18,7 +17,6 @@ before_install:
   - docker build -t dexbot/dexbot .
   - docker pull bitshares/bitshares-core:testnet
 install:
-  - pip install pyinstaller
   - pip install --upgrade setuptools
   - make install
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then python3 -m pip install -r requirements-dev.txt ; fi
@@ -30,6 +28,7 @@ before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then pytest -m mandatory tests/ &&
       python3 -m pip uninstall -y -r requirements-dev.txt; fi
 script:
+  - pip install pyinstaller
   - pyinstaller --distpath dist/$TRAVIS_OS_NAME gui.spec
 before_deploy:
   - git config --local user.name "Travis"
@@ -38,7 +37,6 @@ before_deploy:
   - tar -czvf dist/DEXBot-gui-$TRAVIS_OS_NAME-$TRAVIS_TAG.tar.gz dist/$TRAVIS_OS_NAME/DEXBot-gui
 deploy:
   - provider: releases
-    skip_cleanup: true
     api_key:
       secure: YHAPA2G3qu7at2hMu4AplXH/niI1ChlgldJVetaKO92iDQiyOk5VqFfhV1ec+nYdX8rtniwfD7YJr2nG2x1ATwKw4MyFcJEXqaOUmKWTeZ/Q3PnQQsa+2BnN4Rfz1aynpsKHDYS9gCU/YTqymujE8bdlxW1WtpYOqOSDkspGxZGZTiUKQ7/qhrjB3Dywm/KF9WEoba/X7tbhmSuU8sL45gBGY008TXZRWqAPM42qa/aBIrG/cIA865VlCUltPC6vzskcWI5q1UtYh6g2CiXJghcpFEO2rWWXmS1A+5nQp6ptJigjRgnhyFHmHb27lRM8aRGRDTeyJvlNuoyIvNj/FxhLXZvomgTyGyzTIl67WIXcxWMKx6KqqrqGyiooRMeFpDEYobZL/FY9whi3M+gUwsofAVQ6oL4a1L185egaXlMKGbM5GYB4OxVLsVtL2c0pJjvNIkCGGDzaqNpdo+vZflB4iCwvw548rWJsqsHnP1XMo28ZU86hibD7V0x+JW2BJEI0lMvOkRBslOhYBafIsbZakO4Zf4d+5b2dd8/xY/wTbuxwgDuBOmpqoByVYeCBah4bbnb8JS6eze+vUyxaI1XLAdQXbLQ788Agr2jdHGuy1wI8io9g5vtzS5oOyq8YFBM1tVKM2Mtw5nkSsTbPJsZg8m/kkre6qiXJl2gPQTE=
     file: dist/*.tar.gz
