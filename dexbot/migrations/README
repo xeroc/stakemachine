@@ -1,0 +1,13 @@
+Dexbot database migrations are handled by alembic. See https://alembic.sqlalchemy.org/
+
+## Create new migration
+
+```
+alembic revision -m "Short summary of changes"
+```
+
+Next, modify the migration script in dexbot/migrations/versions/
+
+Migration will be applied automatically on next run of dexbot, see `run_migrations()` in dexbot/storage.py
+
+Don't forget to change table definitions in dexbot/storage.py.

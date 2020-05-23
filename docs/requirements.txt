@@ -1,1 +1,7 @@
-stakemachine
+sphinxcontrib-apidoc
+ccxt
+appdirs
+click
+ruamel.yaml
+sqlalchemy
+events

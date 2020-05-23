@@ -1,25 +1,43 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+from distutils.command import build as build_module
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-VERSION = '0.0.6'
+from dexbot import APP_NAME, VERSION
+
+cmd_class = {}
+console_scripts = ['dexbot-cli = dexbot.cli:main']
+install_requires = open("requirements.txt").readlines()
+
+
+class BuildCommand(build_module.build):
+    def run(self):
+        self.run_command('build_ui')
+        build_module.build.run(self)
+
+
+try:
+    from pyqt_distutils.build_ui import build_ui
+
+    cmd_class = {'build_ui': build_ui, 'build': BuildCommand}
+    console_scripts.append('dexbot-gui = dexbot.gui:main')
+    install_requires.extend(["pyqt-distutils"])
+except BaseException as e:
+    print("GUI not available: {}".format(e))
+
 
 setup(
-    name='stakemachine',
+    name=APP_NAME,
     version=VERSION,
-    description='Trading bot infrastructure for the DEX (BitShares)',
+    description='Trading bot for the DEX (BitShares)',
     long_description=open('README.md').read(),
-    download_url='https://github.com/xeroc/stakemachine/tarball/' + VERSION,
-    author='Fabian Schuh',
-    author_email='Fabian@chainsquad.com',
-    maintainer='Fabian Schuh',
-    maintainer_email='Fabian@chainsquad.com',
-    url='http://www.github.com/xeroc/stakemachine',
-    keywords=['stake', 'bot', 'trading', 'api', 'blog', 'blockchain'],
-    packages=[
-        "stakemachine",
-        "stakemachine.strategies",
-    ],
+    author='Codaone Oy',
+    author_email='support@codaone.com',
+    maintainer='Codaone Oy',
+    maintainer_email='support@codaone.com',
+    url='http://www.github.com/codaone/dexbot',
+    keywords=['DEX', 'bot', 'trading', 'api', 'blockchain'],
+    packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
@@ -27,22 +45,8 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
     ],
-    entry_points={
-        'console_scripts': [
-            'stakemachine = stakemachine.cli:main',
-        ],
-    },
-    install_requires=[
-        "bitshares>=0.1.7",
-        "uptick>=0.1.4",
-        "prettytable",
-        "click",
-        "click-datetime",
-        "colorama",
-        "tqdm",
-        "pyyaml",
-        "sqlalchemy",
-        "appdirs"
-    ],
+    cmdclass=cmd_class,
+    entry_points={'console_scripts': console_scripts},
+    install_requires=install_requires,
     include_package_data=True,
 )

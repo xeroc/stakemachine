@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
-from stakemachine import cli
+from dexbot import cli
 
-cli.main()
+if __name__ == '__main__':
+    cli.main()

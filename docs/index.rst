@@ -1,5 +1,5 @@
-Welcome to StakeMachine's documentation!
-========================================
+Welcome to DEXBot's documentation!
+==================================
 
 Basics
 ------
@@ -9,6 +9,7 @@ Basics
 
    setup
    configuration
+   manual
 
 Strategies
 ----------
@@ -16,20 +17,15 @@ Strategies
 .. toctree::
    :maxdepth: 1
 
-   wall
-
 Developing own Strategies
 -------------------------
 
 .. toctree::
    :maxdepth: 1
 
-   basestrategy
-   configuration
    storage
-   statemachine
+   strategybase
    events
-   echo
 
 Indices and tables
 ==================
